@@ -14,35 +14,57 @@ export default async function handler(req, res) {
             digits = digits.substring(1);
         }
 
-        // ИСПРАВЛЕНИЕ ТВОЕЙ ЛОГИКИ: Включаем телефонный хак уже с 4 введенных цифр (а не с 7)
-        const isPhoneSearch = digits.length >= 4;
+        // НАЧИНАЕМ ПОИСК С 3-Й ЦИФРЫ (как ты и просил)
+        const isPhoneSearch = digits.length >= 3;
 
         let contacts = [];
 
         if (isPhoneSearch) {
-            // ТВОЙ ОРИГИНАЛЬНЫЙ ХАК: Ищем только по последним 4 цифрам
-            const last4 = digits.slice(-4);
-            const phoneRes = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${last4}`, {
-                headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+            // АГРЕССИВНАЯ СЕТЬ DOCKETWISE
+            // Делаем сразу 3 запроса, чтобы вытащить клиента, как бы криво ни был записан его номер
+            let queriesToTry = new Set();
+            queriesToTry.add(digits); // Ищем то, что ввели (сработает для 9433000050)
+            if (digits.length >= 3) queriesToTry.add(digits.slice(0, 3)); // Ищем по префиксу
+            if (digits.length >= 4) queriesToTry.add(digits.slice(-4)); // Ищем по хвосту
+
+            // Запускаем все запросы одновременно (работает мгновенно)
+            const fetchPromises = Array.from(queriesToTry).map(q => 
+                fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodeURIComponent(q)}`, {
+                    headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+                }).then(res => res.ok ? res.json() : { contacts: [] })
+            );
+
+            const results = await Promise.all(fetchPromises);
+            
+            // Сливаем всех найденных людей в одну кучу
+            let potentialContacts = [];
+            results.forEach(data => {
+                const arr = Array.isArray(data) ? data : (data.contacts || []);
+                potentialContacts = potentialContacts.concat(arr);
+            });
+
+            // ЖЕСТКИЙ ФИЛЬТР (СУЖЕНИЕ КРУГА)
+            const uniqueMap = new Map();
+            
+            potentialContacts.forEach(c => {
+                let cPhone = "";
+                if (c.phone_numbers && c.phone_numbers.length > 0) cPhone = c.phone_numbers[0].number || c.phone_numbers[0];
+                else if (c.phone) cPhone = c.phone;
+                
+                if (typeof cPhone === 'string') {
+                    let cDigits = cPhone.replace(/\D/g, '');
+                    // Убираем единицу из базы Docketwise, если кто-то сохранил номер через +1
+                    if (cDigits.length === 11 && cDigits.startsWith('1')) cDigits = cDigits.substring(1);
+                    
+                    // Если в номере есть точная последовательность введенных цифр - оставляем клиента
+                    if (cDigits.includes(digits) || digits.includes(cDigits)) {
+                        uniqueMap.set(c.id, c);
+                    }
+                }
             });
             
-            if (phoneRes.ok) {
-                const data = await phoneRes.json();
-                const potentialContacts = Array.isArray(data) ? data : (data.contacts || []);
-                
-                // ТВОЙ ОРИГИНАЛЬНЫЙ ФИЛЬТР: точное совпадение
-                contacts = potentialContacts.filter(c => {
-                    let cPhone = "";
-                    if (c.phone_numbers && c.phone_numbers.length > 0) cPhone = c.phone_numbers[0].number || c.phone_numbers[0];
-                    else if (c.phone) cPhone = c.phone;
-                    
-                    if (typeof cPhone === 'string') {
-                        const cDigits = cPhone.replace(/\D/g, '');
-                        return cDigits.includes(digits) || digits.includes(cDigits);
-                    }
-                    return false;
-                });
-            }
+            contacts = Array.from(uniqueMap.values());
+
         } else {
             // СТАНДАРТНЫЙ ПОИСК ПО ИМЕНИ
             const encodedQuery = encodeURIComponent(rawQuery);
@@ -57,7 +79,7 @@ export default async function handler(req, res) {
 
         if (contacts.length === 0) return res.status(404).json({ success: false, error: "No clients found" });
 
-        // Ограничиваем список до 12 совпадений
+        // Ограничиваем список
         const topMatches = contacts.slice(0, 12);
 
         // Вытягиваем дела (Matters)
