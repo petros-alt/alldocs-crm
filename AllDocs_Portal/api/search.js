@@ -7,9 +7,10 @@ export default async function handler(req, res) {
 
     try {
         const rawQuery = query.toLowerCase().trim();
+        // 1. Оставляем ТОЛЬКО цифры
         let digits = rawQuery.replace(/\D/g, '');
         
-        // Отсекаем код страны +1 или 1 для американских номеров, если номер пришел из телефонии
+        // 2. Отсекаем код страны +1 для американских номеров (важно для входящих звонков)
         if (digits.length === 11 && digits.startsWith('1')) {
             digits = digits.substring(1);
         }
@@ -18,28 +19,28 @@ export default async function handler(req, res) {
         let contacts = [];
 
         if (isPhoneSearch) {
-            // УМНЫЙ АЛГОРИТМ: Динамически форматируем введенные цифры под стандарт Docketwise
-            let searchStr = digits;
-            if (digits.length >= 10) {
-                searchStr = `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6,10)}`;
-            } else if (digits.length > 6) {
-                searchStr = `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
-            } else if (digits.length > 3) {
-                searchStr = `(${digits.slice(0,3)}) ${digits.slice(3)}`;
-            }
+            // 3. ХИТРОСТЬ ДЛЯ DOCKETWISE: 
+            // Отправляем в базу только последние 4 цифры (или меньше, если ввели мало).
+            // Это гарантированно находит нужных людей в обход любых скобок и тире в их базе.
+            let queryStr = digits.length >= 4 ? digits.slice(-4) : digits;
 
-            let phoneRes = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodeURIComponent(searchStr)}`, {
+            let phoneRes = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${queryStr}`, {
                 headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
             });
             
             let data = phoneRes.ok ? await phoneRes.json() : { contacts: [] };
             let potentialContacts = Array.isArray(data) ? data : (data.contacts || []);
 
-            // Фильтруем на нашем сервере: оставляем только те контакты, где номер содержит введенные цифры строго по порядку
+            // 4. ЖЕСТКИЙ ФИЛЬТР НА СЕРВЕРЕ:
+            // Берем грязные номера из Docketwise, очищаем их от скобок и проверяем,
+            // есть ли внутри точная последовательность ВСЕХ цифр, которые ввел оператор.
             contacts = potentialContacts.filter(c => {
                 let cPhone = "";
-                if (c.phone_numbers && c.phone_numbers.length > 0) cPhone = c.phone_numbers[0].number || c.phone_numbers[0];
-                else if (c.phone) cPhone = c.phone;
+                if (c.phone_numbers && c.phone_numbers.length > 0) {
+                    cPhone = c.phone_numbers[0].number || c.phone_numbers[0];
+                } else if (c.phone) {
+                    cPhone = c.phone;
+                }
                 
                 if (typeof cPhone === 'string') {
                     const cDigits = cPhone.replace(/\D/g, '');
@@ -48,7 +49,7 @@ export default async function handler(req, res) {
                 return false;
             });
         } else {
-            // Обычный поиск по имени
+            // Обычный поиск по имени и фамилии
             const encodedQuery = encodeURIComponent(rawQuery);
             const response = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodedQuery}`, {
                 headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
@@ -61,14 +62,19 @@ export default async function handler(req, res) {
 
         if (contacts.length === 0) return res.status(404).json({ success: false, error: "No clients found" });
 
+        // Ограничиваем выдачу до 10 человек, чтобы не перегружать форму
         const topMatches = contacts.slice(0, 10);
 
         // Вытягиваем дела (Matters)
         const clientsData = await Promise.all(topMatches.map(async (contact) => {
             const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || contact.name || "Unknown Name";
+            
             let phoneStr = "";
-            if (contact.phone_numbers && contact.phone_numbers.length > 0) phoneStr = contact.phone_numbers[0].number || contact.phone_numbers[0];
-            else if (contact.phone) phoneStr = contact.phone;
+            if (contact.phone_numbers && contact.phone_numbers.length > 0) {
+                phoneStr = contact.phone_numbers[0].number || contact.phone_numbers[0];
+            } else if (contact.phone) {
+                phoneStr = contact.phone;
+            }
 
             let mattersArray = [];
             try {
