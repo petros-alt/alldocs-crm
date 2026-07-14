@@ -1,5 +1,6 @@
 export default async function handler(req, res) {
-    const { query } = req.query;
+    // Теперь мы ловим параметр type из нашего URL
+    const { query, type } = req.query;
     const apiKey = process.env.DOCKETWISE_CLIENT_SECRET || process.env.DOCKETWISE_CLIENT_ID;
 
     if (!apiKey) return res.status(500).json({ success: false, error: "Ключ не найден" });
@@ -7,39 +8,57 @@ export default async function handler(req, res) {
 
     try {
         const rawQuery = query.toLowerCase().trim();
-        const digits = rawQuery.replace(/\D/g, '');
-        const isPhoneSearch = digits.length >= 7;
+        // Сервер больше не гадает! Он точно знает, что мы ищем, благодаря type
+        const isPhoneSearch = type === 'phone';
+        const MAX_PER_PAGE = 100;
 
         let contacts = [];
 
         if (isPhoneSearch) {
-            // ХАК: Ищем только по последним 4 цифрам! Docketwise их найдет мгновенно.
-            const last4 = digits.slice(-4);
-            const phoneRes = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${last4}`, {
+            let digits = rawQuery.replace(/\D/g, '');
+            // Отсекаем +1 от телефонии Ooma
+            if (digits.length === 11 && digits.startsWith('1')) {
+                digits = digits.substring(1);
+            }
+
+            // ХАК: Ищем по 4 последним цифрам (если номер длинный), чтобы обойти скобки в Docketwise
+            const searchQuery = digits.length >= 4 ? digits.slice(-4) : digits;
+            
+            const response = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${searchQuery}&per_page=${MAX_PER_PAGE}`, {
                 headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
             });
             
-            if (phoneRes.ok) {
-                const data = await phoneRes.json();
+            if (response.ok) {
+                const data = await response.json();
                 const potentialContacts = Array.isArray(data) ? data : (data.contacts || []);
                 
-                // Фильтруем на нашем сервере точное совпадение по всему номеру
+                // ЖЕСТКИЙ ФИЛЬТР: Проверяем ВСЕ поля телефонов. Если совпадения нет - в мусорку!
                 contacts = potentialContacts.filter(c => {
-                    let cPhone = "";
-                    if (c.phone_numbers && c.phone_numbers.length > 0) cPhone = c.phone_numbers[0].number || c.phone_numbers[0];
-                    else if (c.phone) cPhone = c.phone;
-                    
-                    if (typeof cPhone === 'string') {
-                        const cDigits = cPhone.replace(/\D/g, '');
-                        return cDigits.includes(digits) || digits.includes(cDigits);
+                    let phonesToTest = [];
+                    if (c.phone) phonesToTest.push(c.phone);
+                    if (c.mobile_number) phonesToTest.push(c.mobile_number);
+                    if (c.home_number) phonesToTest.push(c.home_number);
+                    if (c.work_number) phonesToTest.push(c.work_number);
+                    if (Array.isArray(c.phone_numbers)) {
+                        c.phone_numbers.forEach(p => {
+                            if (typeof p === 'string') phonesToTest.push(p);
+                            else if (p && p.number) phonesToTest.push(p.number);
+                        });
                     }
-                    return false;
+                    
+                    return phonesToTest.some(p => {
+                        if (typeof p === 'string') {
+                            const cDigits = p.replace(/\D/g, '');
+                            return cDigits.includes(digits) || digits.includes(cDigits);
+                        }
+                        return false;
+                    });
                 });
             }
         } else {
-            // Стандартный быстрый поиск по имени
+            // Стандартный поиск по имени
             const encodedQuery = encodeURIComponent(rawQuery);
-            const response = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodedQuery}`, {
+            const response = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodedQuery}&per_page=${MAX_PER_PAGE}`, {
                 headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
             });
             if (response.ok) {
@@ -50,15 +69,18 @@ export default async function handler(req, res) {
 
         if (contacts.length === 0) return res.status(404).json({ success: false, error: "Клиенты не найдены" });
 
-        // Ограничиваем список до 12 совпадений
-        const topMatches = contacts.slice(0, 12);
+        // Ограничиваем список до 15 совпадений
+        const topMatches = contacts.slice(0, 15);
 
         // Вытягиваем дела (Matters)
         const clientsData = await Promise.all(topMatches.map(async (contact) => {
-            const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || contact.name || "Имя не указано";
-            let phoneStr = "";
-            if (contact.phone_numbers && contact.phone_numbers.length > 0) phoneStr = contact.phone_numbers[0].number || contact.phone_numbers[0];
-            else if (contact.phone) phoneStr = contact.phone;
+            const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || contact.name || "Unknown Name";
+            
+            // Находим правильный телефон для отображения
+            let phoneStr = contact.mobile_number || contact.home_number || contact.work_number || contact.phone || "";
+            if (!phoneStr && Array.isArray(contact.phone_numbers) && contact.phone_numbers.length > 0) {
+                phoneStr = contact.phone_numbers[0].number || contact.phone_numbers[0] || "";
+            }
 
             let mattersArray = [];
             try {
