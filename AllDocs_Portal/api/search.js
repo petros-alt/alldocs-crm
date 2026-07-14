@@ -19,28 +19,29 @@ export default async function handler(req, res) {
         const MAX_PER_PAGE = 100;
 
         if (isPhoneSearch) {
-            // ДВОЙНОЙ УДАР ПО ТЕЛЕФОНУ: Ищем и полный ввод, и хвост (чтобы обойти любые скобки)
-            let fetchPromises = [
-                fetch(`https://app.docketwise.com/api/v1/contacts?search=${digits}&per_page=${MAX_PER_PAGE}`, {
+            // КОВРОВАЯ БОМБАРДИРОВКА: Создаем 4 варианта номера, чтобы пробить любую логику Docketwise
+            const queries = new Set();
+            queries.add(digits); // Полный номер
+            if (digits.length >= 3) queries.add(digits.slice(0, 3)); // Первые 3 цифры (код)
+            if (digits.length >= 4) queries.add(digits.slice(-4)); // Последние 4 цифры
+            if (digits.length >= 6) queries.add(digits.slice(3, 6)); // Цифры из середины
+
+            // Отправляем все 4 запроса одновременно (это занимает доли секунды)
+            let fetchPromises = Array.from(queries).map(q => 
+                fetch(`https://app.docketwise.com/api/v1/contacts?search=${q}&per_page=${MAX_PER_PAGE}`, {
                     headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
                 }).then(r => r.ok ? r.json() : { contacts: [] })
-            ];
-
-            if (digits.length >= 4) {
-                fetchPromises.push(
-                    fetch(`https://app.docketwise.com/api/v1/contacts?search=${digits.slice(-4)}&per_page=${MAX_PER_PAGE}`, {
-                        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
-                    }).then(r => r.ok ? r.json() : { contacts: [] })
-                );
-            }
+            );
 
             const results = await Promise.all(fetchPromises);
+            
+            // Сваливаем всех найденных людей в одну кучу
             let potentialContacts = [];
             results.forEach(data => {
                 potentialContacts = potentialContacts.concat(Array.isArray(data) ? data : (data.contacts || []));
             });
 
-            // ЖЕСТКИЙ ФИЛЬТР: Проверяем ВСЕ возможные поля телефонов в Docketwise
+            // ЖЕСТКИЙ ФИЛЬТР: Проверяем абсолютно ВСЕ поля телефонов у каждого найденного человека
             const uniqueMap = new Map();
             potentialContacts.forEach(c => {
                 let phonesToTest = [];
@@ -59,6 +60,7 @@ export default async function handler(req, res) {
                 for (let p of phonesToTest) {
                     if (typeof p === 'string') {
                         const cDigits = p.replace(/\D/g, '');
+                        // Если очищенный номер клиента содержит то, что мы ввели — берем его!
                         if (cDigits.includes(digits)) {
                             matched = true;
                             break;
@@ -90,6 +92,7 @@ export default async function handler(req, res) {
 
         if (contacts.length === 0) return res.status(404).json({ success: false, error: "No clients found" });
 
+        // Ограничиваем список для красивого отображения в форме
         const topMatches = contacts.slice(0, 15);
 
         // Вытягиваем дела и НАХОДИМ ПРАВИЛЬНЫЙ ТЕЛЕФОН для отображения
@@ -119,6 +122,7 @@ export default async function handler(req, res) {
         res.status(200).json({ success: true, clients: clientsData });
 
     } catch (error) {
+        console.error("Search Error:", error);
         res.status(500).json({ success: false, error: "Server Error" });
     }
 }
