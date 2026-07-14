@@ -51,9 +51,16 @@
         input[type="text"], input[type="tel"], input[type="date"], input[type="time"], select, textarea { width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-family: inherit; background-color: #fcfbfa; transition: all 0.3s ease; font-size: 15px; }
         textarea { resize: vertical; min-height: 90px; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent-color); background-color: var(--form-bg); box-shadow: 0 0 0 3px rgba(161, 104, 58, 0.15); }
-        .radio-group, .checkbox-group { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
-        .radio-item, .checkbox-item { display: flex; align-items: center; font-weight: 500; color: var(--secondary-color); cursor: pointer; }
-        .radio-item input, .checkbox-item input { margin-right: 12px; cursor: pointer; accent-color: var(--accent-color); width: 16px; height: 16px; }
+        
+        /* НОВЫЙ ДИЗАЙН КАТЕГОРИЙ ЗВОНКА (КНОПКИ-КАРТОЧКИ) */
+        .category-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
+        @media (max-width: 600px) { .category-grid { grid-template-columns: 1fr; } }
+        .category-card { cursor: pointer; display: block; margin: 0; }
+        .category-card input { display: none; }
+        .category-card span { display: flex; align-items: center; justify-content: center; padding: 12px 15px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 8px; font-size: 13.5px; font-weight: 600; color: var(--secondary-color); transition: all 0.2s ease; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.02); height: 100%; box-sizing: border-box; }
+        .category-card:hover span { border-color: var(--accent-color); background: #fdfaf6; }
+        .category-card input:checked + span { background: var(--accent-color); color: white; border-color: var(--accent-color); box-shadow: 0 4px 12px rgba(161, 104, 58, 0.25); transform: translateY(-1px); }
+
         .submit-btn { background-color: var(--accent-color); color: white; border: none; padding: 16px 20px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; width: 100%; transition: all 0.3s ease; margin-top: 30px; box-shadow: 0 4px 15px rgba(161, 104, 58, 0.25); }
         .submit-btn:hover { background-color: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(161, 104, 58, 0.35); }
         .autocomplete-wrapper { position: relative; display: flex; align-items: center; }
@@ -65,7 +72,6 @@
         .client-phone-list { font-size: 12.5px; color: var(--secondary-color); opacity: 0.8; }
         .loading-indicator { position: absolute; right: 12px; color: var(--accent-color); font-size: 12px; display: none; font-weight: bold; }
         
-        /* НОВЫЙ ДИЗАЙН КОЛОКОЛЬЧИКА И УВЕДОМЛЕНИЙ */
         #notificationContainer { position: fixed; top: 25px; right: 35px; z-index: 1000; }
         #notificationBell { font-size: 24px; cursor: pointer; position: relative; background: white; padding: 12px 15px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: transform 0.2s, box-shadow 0.2s; border: 1px solid var(--border-color); }
         #notificationBell:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
@@ -83,7 +89,6 @@
         .notif-title .new-tag { background: var(--accent-color); color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; text-transform: uppercase; }
         .notif-preview { font-size: 13px; color: var(--secondary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* ВСПЛЫВАЮЩЕЕ ОКНО (МОДАЛКА) */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(2px); animation: fadeIn 0.2s ease; }
         .modal-content { background: var(--form-bg); padding: 35px; border-radius: 16px; width: 90%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); position: relative; }
         .modal-content h3 { margin: 0 0 15px 0; color: var(--primary-color); font-size: 22px; }
@@ -123,9 +128,7 @@
         <textarea id="modalStaffNote" placeholder="e.g., Called client back, question resolved."></textarea>
         
         <div class="modal-actions">
-            <!-- Кнопка Close просто закрывает окно, задача остается висеть -->
             <button class="btn-cancel" onclick="closeNotifModal()">Close window</button>
-            <!-- Кнопка Resolve закрывает задачу навсегда и сохраняет нот -->
             <button class="btn-resolve" onclick="resolveNotification()" id="resolveBtn">Mark as Resolved ✓</button>
         </div>
     </div>
@@ -203,33 +206,40 @@
                     <select id="matterSelect"><option value="">-- Auto-detecting matters... --</option></select>
                 </div>
 
-                <h2 class="section-title">3. Case Details & Core Program</h2>
-                <div class="form-group">
-                    <label>Program / Category:</label>
-                    <div class="radio-group">
-                        <label class="radio-item"><input type="radio" name="program" value="USCIS" required> USCIS</label>
-                        <label class="radio-item"><input type="radio" name="program" value="IHSS"> IHSS</label>
-                        <label class="radio-item"><input type="radio" name="program" value="CAPI"> CAPI</label>
-                        <label class="radio-item"><input type="radio" name="program" value="Other"> Other</label>
+                <div style="background: #fdfaf6; padding: 20px; border-left: 4px solid var(--accent-color); border-radius: 8px; margin-bottom: 20px;">
+                    <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 12px; display: block;">Call Category:</label>
+                    <div class="category-grid">
+                        <label class="category-card">
+                            <input type="radio" name="noteCategory" value="01-Initial Consultation">
+                            <span>01-Initial Consultation</span>
+                        </label>
+                        <label class="category-card">
+                            <input type="radio" name="noteCategory" value="03-Client Communication">
+                            <span>03-Client Communication</span>
+                        </label>
+                        <label class="category-card">
+                            <input type="radio" name="noteCategory" value="04-Phone Call" checked>
+                            <span>04-Phone Call</span>
+                        </label>
+                        <label class="category-card">
+                            <input type="radio" name="noteCategory" value="05-Follow-Up Needed">
+                            <span>05-Follow-Up Needed</span>
+                        </label>
+                        <label class="category-card">
+                            <input type="radio" name="noteCategory" value="20-Interview">
+                            <span>20-Interview</span>
+                        </label>
+                        <label class="category-card">
+                            <input type="radio" name="noteCategory" value="General Call">
+                            <span>General Call</span>
+                        </label>
                     </div>
-                </div>
-                
-                <div style="background: #fdfaf6; padding: 15px; border-left: 4px solid var(--accent-color); border-radius: 8px; margin-bottom: 20px;">
-                    <label style="color: var(--accent-color);">Call Category:</label>
-                    <select id="noteCategory" style="margin-bottom: 12px;">
-                        <option value="">-- General Call (No specific category) --</option>
-                        <option value="01-Initial Consultation">01-Initial Consultation</option>
-                        <option value="03-Client Communication">03-Client Communication</option>
-                        <option value="04-Phone Call">04-Phone Call</option>
-                        <option value="05-Follow-Up Needed">05-Follow-Up Needed</option>
-                        <option value="20-Interview">20-Interview</option>
-                    </select>
 
-                    <label>Call Description / Note Text:</label>
+                    <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 8px; display: block; margin-top: 15px;">Call Description / Note Text:</label>
                     <textarea id="briefDescription" placeholder="Summarize the client's inquiry..." required></textarea>
                 </div>
 
-                <h2 class="section-title">4. Internal CRM Logging & Routing</h2>
+                <h2 class="section-title">3. Internal CRM Logging & Routing</h2>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Assigned To / Staff (Notify via Bell 🔔):</label>
@@ -305,7 +315,6 @@
         userProfile.addEventListener('click', () => logoutMenu.style.display = (logoutMenu.style.display === 'block') ? 'none' : 'block');
         document.addEventListener('click', (e) => { if (!userProfile.contains(e.target) && !logoutMenu.contains(e.target)) logoutMenu.style.display = 'none'; });
 
-        // --- УВЕДОМЛЕНИЯ И МОДАЛЬНОЕ ОКНО ---
         const bellBtn = document.getElementById('notificationBell');
         const notifDropdown = document.getElementById('notificationDropdown');
         const notifList = document.getElementById('notifList');
@@ -320,12 +329,10 @@
             notifDropdown.style.display = 'none';
         });
 
-        // Открытие и форматирование текста внутри модалки
         window.openNotifModal = function(id, clientName, message) {
             currentActiveNotifId = id;
             document.getElementById('modalClientName').textContent = '📞 ' + clientName;
             
-            // Разделяем технический текст от реальной проблемы клиента
             let operatorInfo = "System Alert";
             let issueText = message;
             
@@ -335,7 +342,6 @@
                 issueText = parts[1].trim();
             }
 
-            // Создаем красивый HTML внутри модалки
             document.getElementById('modalMessage').innerHTML = `
                 <div style="font-size: 12px; color: #a1683a; font-weight: bold; margin-bottom: 8px;">👤 ${operatorInfo}</div>
                 <div style="color: var(--primary-color); background: white; padding: 15px; border-radius: 8px; border: 1px solid #eaeaea; font-family: monospace; font-size: 13.5px;">
@@ -353,7 +359,6 @@
             currentActiveNotifId = null;
         };
 
-        // Логика закрытия задачи навсегда и сохранения текста
         window.resolveNotification = async function() {
             if (!currentActiveNotifId) return;
             const extraNote = document.getElementById('modalStaffNote').value.trim();
@@ -363,14 +368,13 @@
             btn.disabled = true;
             
             try {
-                // Отправляем ID задачи и текст ответа на сервер
                 await fetch(`/api/get-notifications?action=read&notificationId=${currentActiveNotifId}&note=${encodeURIComponent(extraNote)}`);
                 
                 closeNotifModal();
-                checkNotifications(); // Обновляем список, и задача сразу исчезнет!
+                checkNotifications(); 
                 
                 if (document.getElementById('btnHistoryTab').classList.contains('active')) {
-                    renderCallHistoryList(); // Перерисовываем журнал, чтобы увидеть свой нот
+                    renderCallHistoryList(); 
                 }
             } catch (e) {
                 alert('Ошибка связи с сервером');
@@ -391,7 +395,6 @@
                     badge.style.display = 'block';
                     badge.textContent = data.notifications.length;
 
-                    // Звук играет только если количество задач увеличилось
                     if (data.notifications.length > previousNotifCount) {
                         bellSound.play().catch(e => console.log('Audio blocked by browser - user must click on page first.'));
                     }
@@ -418,7 +421,6 @@
                 }
             } catch(e) {}
         }
-        // УСКОРИЛИ ПРОВЕРКУ ДО 3 СЕКУНД
         setInterval(checkNotifications, 3000); 
         checkNotifications();
 
@@ -444,7 +446,6 @@
             renderCallHistoryList(); 
         });
 
-        // --- ЖУРНАЛ ЗВОНКОВ С НОВЫМ КОММЕНТАРИЕМ ---
         async function renderCallHistoryList() {
             const tbody = document.getElementById('oomaCallHistoryBody');
             const tableContainer = document.getElementById('historyTableContainer');
@@ -467,7 +468,6 @@
                         if (log.call_description) {
                             noteHTML = `<div style="font-size: 12.5px; color: #795548; margin-top: 6px; border-left: 2px solid var(--accent-color); padding-left: 8px;">${log.call_description}</div>`;
                         }
-                        // Отображаем комментарий от сотрудника, если он есть
                         if (log.follow_up_notes) {
                             noteHTML += `<div style="font-size: 12.5px; color: #2e7d32; margin-top: 6px; border-left: 2px solid #4CAF50; padding-left: 8px; background: #e8f5e9; padding: 5px; border-radius: 4px;"><strong>Staff Reply:</strong> ${log.follow_up_notes}</div>`;
                         }
@@ -613,10 +613,13 @@
             submitBtn.textContent = 'Saving to Internal Database...';
 
             let finalDescription = document.getElementById('briefDescription').value;
-            const noteCategory = document.getElementById('noteCategory').value;
+            
+            // Получаем выбранную категорию из новой сетки кнопок
+            const checkedCategory = document.querySelector('input[name="noteCategory"]:checked');
+            const noteCategory = checkedCategory && checkedCategory.value !== 'General Call' ? checkedCategory.value : "";
 
             if (noteCategory) {
-                finalDescription = `[${noteCategory}]\n${finalDescription}`;
+                finalDescription = `${noteCategory}\n\n${finalDescription}`; // Убрали квадратные скобки
             }
 
             const staffSelect = document.getElementById('assignedStaff');
@@ -628,7 +631,7 @@
                 clientName: document.getElementById('fullName').value || "Unknown Client",
                 clientPhone: document.getElementById('phoneNumber').value || "",
                 matterTitle: document.getElementById('matterSelect').options[document.getElementById('matterSelect').selectedIndex]?.text || "",
-                program: document.querySelector('input[name="program"]:checked')?.value || "",
+                program: "", // Удалено из интерфейса, передаем пустую строку, чтобы не сломать бэкенд
                 description: finalDescription,
                 operatorName: loggedInStaff || "Unknown Operator",
                 assignedStaffName: assignedStaffName,
