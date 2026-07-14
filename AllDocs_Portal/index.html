@@ -41,8 +41,6 @@
         .history-table tr:last-child td { border-bottom: none; }
         .history-table tr:hover td { background-color: #fcfbfa; }
         .no-calls { text-align: center; color: #8d6e63; padding: 50px; font-style: italic; background: var(--surface-color); border: 1px dashed var(--border-color); border-radius: 10px; }
-        .instructions { background-color: #fdfaf6; border-left: 4px solid var(--accent-color); padding: 18px; margin-bottom: 30px; border-radius: 0 8px 8px 0; font-size: 14.5px; color: var(--secondary-color); }
-        .instructions ul { margin: 10px 0 0 0; padding-left: 20px; }
         .section-title { color: var(--primary-color); padding-bottom: 8px; border-bottom: 2px solid var(--border-color); font-size: 18px; margin-bottom: 20px; margin-top: 35px; font-weight: 700; }
         .section-title:first-of-type { margin-top: 0; }
         .form-row { display: flex; gap: 20px; margin-bottom: 15px; }
@@ -51,16 +49,9 @@
         input[type="text"], input[type="tel"], input[type="date"], input[type="time"], select, textarea { width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-family: inherit; background-color: #fcfbfa; transition: all 0.3s ease; font-size: 15px; }
         textarea { resize: vertical; min-height: 90px; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent-color); background-color: var(--form-bg); box-shadow: 0 0 0 3px rgba(161, 104, 58, 0.15); }
-        
-        /* НОВЫЙ ДИЗАЙН КАТЕГОРИЙ ЗВОНКА (КНОПКИ-КАРТОЧКИ) */
-        .category-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px; }
-        @media (max-width: 600px) { .category-grid { grid-template-columns: 1fr; } }
-        .category-card { cursor: pointer; display: block; margin: 0; }
-        .category-card input { display: none; }
-        .category-card span { display: flex; align-items: center; justify-content: center; padding: 12px 15px; background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 8px; font-size: 13.5px; font-weight: 600; color: var(--secondary-color); transition: all 0.2s ease; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.02); height: 100%; box-sizing: border-box; }
-        .category-card:hover span { border-color: var(--accent-color); background: #fdfaf6; }
-        .category-card input:checked + span { background: var(--accent-color); color: white; border-color: var(--accent-color); box-shadow: 0 4px 12px rgba(161, 104, 58, 0.25); transform: translateY(-1px); }
-
+        .radio-group, .checkbox-group { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+        .radio-item, .checkbox-item { display: flex; align-items: center; font-weight: 500; color: var(--secondary-color); cursor: pointer; font-size: 14.5px; }
+        .radio-item input, .checkbox-item input { margin-right: 12px; cursor: pointer; accent-color: var(--accent-color); width: 16px; height: 16px; }
         .submit-btn { background-color: var(--accent-color); color: white; border: none; padding: 16px 20px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; width: 100%; transition: all 0.3s ease; margin-top: 30px; box-shadow: 0 4px 15px rgba(161, 104, 58, 0.25); }
         .submit-btn:hover { background-color: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(161, 104, 58, 0.35); }
         .autocomplete-wrapper { position: relative; display: flex; align-items: center; }
@@ -167,14 +158,6 @@
         </div>
 
         <div id="tabFormContent" class="tab-content active">
-            <div class="instructions">
-                <strong>Operator Instructions:</strong>
-                <ul>
-                    <li>Calls are saved directly to our <strong>Internal CRM Database</strong>.</li>
-                    <li>Select a staff member below if you need to notify them. They will receive an audio alert 🔔.</li>
-                </ul>
-            </div>
-
             <form id="callForm">
                 <input type="hidden" id="hiddenClientId" value="">
                 <h2 class="section-title">1. Basic Call Information</h2>
@@ -192,6 +175,16 @@
                         <ul class="autocomplete-list" id="clientList"></ul>
                     </div>
                 </div>
+
+                <div class="form-group" style="margin-top: 15px; background: var(--surface-color); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <label style="margin-bottom: 12px;">Client Status:</label>
+                    <div class="radio-group">
+                        <label class="radio-item"><input type="radio" name="clientStatus" value="Lead"> Lead</label>
+                        <label class="radio-item"><input type="radio" name="clientStatus" value="Existing Client"> Existing Client</label>
+                        <label class="radio-item"><input type="radio" name="clientStatus" value="Unrecognized Number (Existing Client)"> Unrecognized Number (Existing Client)</label>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label>Phone Number:</label>
                     <div class="autocomplete-wrapper" id="phoneAutocompleteWrapper">
@@ -206,36 +199,18 @@
                     <select id="matterSelect"><option value="">-- Auto-detecting matters... --</option></select>
                 </div>
 
-                <div style="background: #fdfaf6; padding: 20px; border-left: 4px solid var(--accent-color); border-radius: 8px; margin-bottom: 20px;">
+                <div style="background: #fdfaf6; padding: 20px; border-left: 4px solid var(--accent-color); border-radius: 8px; margin-bottom: 20px; margin-top: 30px;">
                     <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 12px; display: block;">Call Category:</label>
-                    <div class="category-grid">
-                        <label class="category-card">
-                            <input type="radio" name="noteCategory" value="01-Initial Consultation">
-                            <span>01-Initial Consultation</span>
-                        </label>
-                        <label class="category-card">
-                            <input type="radio" name="noteCategory" value="03-Client Communication">
-                            <span>03-Client Communication</span>
-                        </label>
-                        <label class="category-card">
-                            <input type="radio" name="noteCategory" value="04-Phone Call" checked>
-                            <span>04-Phone Call</span>
-                        </label>
-                        <label class="category-card">
-                            <input type="radio" name="noteCategory" value="05-Follow-Up Needed">
-                            <span>05-Follow-Up Needed</span>
-                        </label>
-                        <label class="category-card">
-                            <input type="radio" name="noteCategory" value="20-Interview">
-                            <span>20-Interview</span>
-                        </label>
-                        <label class="category-card">
-                            <input type="radio" name="noteCategory" value="General Call">
-                            <span>General Call</span>
-                        </label>
+                    <div class="radio-group" style="margin-bottom: 20px;">
+                        <label class="radio-item"><input type="radio" name="noteCategory" value="01-Initial Consultation"> 01-Initial Consultation</label>
+                        <label class="radio-item"><input type="radio" name="noteCategory" value="03-Client Communication"> 03-Client Communication</label>
+                        <label class="radio-item"><input type="radio" name="noteCategory" value="04-Phone Call" checked> 04-Phone Call</label>
+                        <label class="radio-item"><input type="radio" name="noteCategory" value="05-Follow-Up Needed"> 05-Follow-Up Needed</label>
+                        <label class="radio-item"><input type="radio" name="noteCategory" value="20-Interview"> 20-Interview</label>
+                        <label class="radio-item"><input type="radio" name="noteCategory" value="General Call"> General Call</label>
                     </div>
 
-                    <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 8px; display: block; margin-top: 15px;">Call Description / Note Text:</label>
+                    <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 8px; display: block;">Call Description / Note Text:</label>
                     <textarea id="briefDescription" placeholder="Summarize the client's inquiry..." required></textarea>
                 </div>
 
@@ -523,6 +498,10 @@
             document.getElementById('fullName').value = client.name;
             if (!skipPhone) document.getElementById('phoneNumber').value = client.phone;
             
+            // Автоматически ставим галочку на "Existing Client" при подтягивании данных из базы
+            const existingClientRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
+            if (existingClientRadio) existingClientRadio.checked = true;
+            
             const matterSelect = document.getElementById('matterSelect');
             matterSelect.innerHTML = '<option value="">-- Please select a matter --</option>';
             if (client.matters && client.matters.length > 0) {
@@ -614,12 +593,14 @@
 
             let finalDescription = document.getElementById('briefDescription').value;
             
-            // Получаем выбранную категорию из новой сетки кнопок
             const checkedCategory = document.querySelector('input[name="noteCategory"]:checked');
             const noteCategory = checkedCategory && checkedCategory.value !== 'General Call' ? checkedCategory.value : "";
+            
+            const checkedStatus = document.querySelector('input[name="clientStatus"]:checked');
+            const statusText = checkedStatus ? `[Status: ${checkedStatus.value}]` : "";
 
-            if (noteCategory) {
-                finalDescription = `${noteCategory}\n\n${finalDescription}`; // Убрали квадратные скобки
+            if (noteCategory || statusText) {
+                finalDescription = `${statusText} ${noteCategory}\n\n${finalDescription}`.trim(); 
             }
 
             const staffSelect = document.getElementById('assignedStaff');
@@ -631,7 +612,7 @@
                 clientName: document.getElementById('fullName').value || "Unknown Client",
                 clientPhone: document.getElementById('phoneNumber').value || "",
                 matterTitle: document.getElementById('matterSelect').options[document.getElementById('matterSelect').selectedIndex]?.text || "",
-                program: "", // Удалено из интерфейса, передаем пустую строку, чтобы не сломать бэкенд
+                program: "", 
                 description: finalDescription,
                 operatorName: loggedInStaff || "Unknown Operator",
                 assignedStaffName: assignedStaffName,
