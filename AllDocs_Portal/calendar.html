@@ -31,7 +31,6 @@
         .container { max-width: 1000px; margin: 0 auto; background: var(--form-bg); padding: 45px; border-radius: 16px; box-shadow: 0 10px 40px rgba(62, 39, 35, 0.08); border: 1px solid rgba(255, 255, 255, 0.6); }
         .header { text-align: center; border-bottom: 2px solid var(--border-color); padding-bottom: 20px; margin-bottom: 30px; }
         
-        /* TABS */
         .tab-navigation { display: flex; background: var(--surface-color); padding: 6px; border-radius: 12px; margin-bottom: 30px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
         .tab-btn { flex: 1; background: transparent; border: none; padding: 12px 20px; cursor: pointer; border-radius: 8px; font-weight: 600; color: var(--secondary-color); transition: all 0.3s ease; font-size: 15px; }
         .tab-btn.active { background-color: var(--form-bg); color: var(--primary-color); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06); }
@@ -39,7 +38,6 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* FORM ELEMENTS */
         .section-title { color: var(--primary-color); padding-bottom: 8px; border-bottom: 2px solid var(--border-color); font-size: 18px; margin-bottom: 20px; margin-top: 35px; font-weight: 700; }
         .section-title:first-of-type { margin-top: 0; }
         .form-row { display: flex; gap: 20px; margin-bottom: 15px; }
@@ -62,7 +60,8 @@
         .category-card input:checked + span { background: var(--accent-color); color: white; border-color: var(--accent-color); box-shadow: 0 4px 12px rgba(161, 104, 58, 0.25); transform: translateY(-2px); }
 
         .submit-btn { background-color: var(--accent-color); color: white; border: none; padding: 18px 20px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; width: 100%; transition: all 0.3s ease; margin-top: 30px; box-shadow: 0 4px 15px rgba(161, 104, 58, 0.25); }
-        .submit-btn:hover { background-color: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(161, 104, 58, 0.35); }
+        .submit-btn:hover:not(:disabled) { background-color: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(161, 104, 58, 0.35); }
+        .submit-btn:disabled { background-color: #d7ccc8; cursor: not-allowed; box-shadow: none; transform: none; }
         
         .book-appt-btn { background-color: #2e7d32; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 14.5px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(46,125,50,0.2); display: flex; align-items: center; gap: 8px;}
         .book-appt-btn:hover { background-color: #1b5e20; transform: translateY(-1px); box-shadow: 0 6px 15px rgba(46,125,50,0.3);}
@@ -80,8 +79,6 @@
         .autocomplete-list li:hover { background-color: #fdfaf6; }
         .client-name-list { font-weight: 600; color: var(--accent-color); display: block; }
         .client-phone-list { font-size: 12.5px; color: var(--secondary-color); opacity: 0.8; }
-        
-        /* ИСПРАВЛЕНО ПОЗИЦИОНИРОВАНИЕ ЗАГРУЗЧИКА */
         .loading-indicator { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--accent-color); font-size: 13px; display: none; font-weight: bold; pointer-events: none; background: #fcfbfa; padding-left: 5px;}
 
         /* NOTIFICATIONS & MODALS */
@@ -107,7 +104,8 @@
         .btn-cancel { flex: 1; background: var(--surface-color); border: 1px solid var(--border-color); padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--secondary-color); transition: 0.2s; }
         .btn-cancel:hover { background: #e0d8d3; color: var(--primary-color); }
         .btn-resolve { flex: 2; background: var(--accent-color); border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 700; color: white; transition: 0.2s; box-shadow: 0 4px 10px rgba(161, 104, 58, 0.2); }
-        .btn-resolve:hover { background: var(--accent-hover); transform: translateY(-2px); }
+        .btn-resolve:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-2px); }
+        .btn-resolve:disabled { background: #d7ccc8; cursor: not-allowed; box-shadow: none; transform: none; }
 
         .calendar-widget { background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.03);}
         .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: 700; font-size: 15px; color: var(--primary-color);}
@@ -119,7 +117,7 @@
         .cal-btn:hover:not(:disabled) { background: #f0ebe1; }
         .cal-btn.selected { background-color: var(--accent-color); color: white; font-weight: bold; box-shadow: 0 2px 8px rgba(161, 104, 58, 0.3); }
         .time-select-group { display: flex; gap: 8px; margin-top: 5px;}
-        .time-select-group select { padding: 10px; text-align: center; }
+        .time-select-group select { padding: 10px; text-align: center; border: 1px solid var(--border-color); border-radius: 6px; background: white;}
 
         .calendar-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; flex-wrap: wrap;}
         .date-nav { display: flex; align-items: center; gap: 15px; font-size: 20px; font-weight: 700; color: var(--primary-color); }
@@ -384,34 +382,38 @@
                     </div>
                 </div>
 
-                <h2 class="section-title">2. Case & Logging Details</h2>
-                
-                <div id="matterContainer" class="form-group" style="display: none; padding: 18px; border-radius: 8px; border-left: 4px solid var(--accent-color); margin-top: 20px;">
-                    <label>Select Matter (Active Case):</label>
-                    <select id="matterSelect"><option value="">-- Auto-detecting matters... --</option></select>
+                <!-- SECTION: STANDARD CALL LOGGING (EXISTING CLIENT) -->
+                <div id="standardCallSection">
+                    <h2 class="section-title">2. Case & Logging Details</h2>
+                    
+                    <div id="matterContainer" class="form-group" style="display: none; padding: 18px; border-radius: 8px; border-left: 4px solid var(--accent-color); margin-top: 20px;">
+                        <label>Select Matter (Active Case):</label>
+                        <select id="matterSelect"><option value="">-- Auto-detecting matters... --</option></select>
+                    </div>
+
+                    <div style="background: #fcfbfa; padding: 20px; border-left: 4px solid var(--accent-color); border-radius: 8px; margin-bottom: 20px;">
+                        <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 12px; display: block;">Call Category:</label>
+                        <div class="radio-group" style="margin-bottom: 20px;">
+                            <label class="radio-item"><input type="radio" name="noteCategory" value="01-Initial Consultation"> 01-Initial Consultation</label>
+                            <label class="radio-item"><input type="radio" name="noteCategory" value="03-Client Communication"> 03-Client Communication</label>
+                            <label class="radio-item"><input type="radio" name="noteCategory" value="04-Phone Call" checked> 04-Phone Call</label>
+                            <label class="radio-item"><input type="radio" name="noteCategory" value="05-Follow-Up Needed"> 05-Follow-Up Needed</label>
+                            <label class="radio-item"><input type="radio" name="noteCategory" value="20-Interview"> 20-Interview</label>
+                            <label class="radio-item"><input type="radio" name="noteCategory" value="General Call"> General Call</label>
+                        </div>
+                        <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 8px; display: block;">Call Description / Note Text:</label>
+                        <textarea id="briefDescription" placeholder="Summarize the client's inquiry..." required></textarea>
+                    </div>
+
+                    <h2 class="section-title">3. Internal CRM Routing</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Assigned To / Staff (Notify via Bell 🔔):</label>
+                            <select id="assignedStaff"></select>
+                        </div>
+                    </div>
                 </div>
 
-                <div style="background: #fcfbfa; padding: 20px; border-left: 4px solid var(--accent-color); border-radius: 8px; margin-bottom: 20px;">
-                    <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 12px; display: block;">Call Category:</label>
-                    <div class="radio-group" style="margin-bottom: 20px;">
-                        <label class="radio-item"><input type="radio" name="noteCategory" value="01-Initial Consultation"> 01-Initial Consultation</label>
-                        <label class="radio-item"><input type="radio" name="noteCategory" value="03-Client Communication"> 03-Client Communication</label>
-                        <label class="radio-item"><input type="radio" name="noteCategory" value="04-Phone Call" checked> 04-Phone Call</label>
-                        <label class="radio-item"><input type="radio" name="noteCategory" value="05-Follow-Up Needed"> 05-Follow-Up Needed</label>
-                        <label class="radio-item"><input type="radio" name="noteCategory" value="20-Interview"> 20-Interview</label>
-                        <label class="radio-item"><input type="radio" name="noteCategory" value="General Call"> General Call</label>
-                    </div>
-                    <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 8px; display: block;">Call Description / Note Text:</label>
-                    <textarea id="briefDescription" placeholder="Summarize the client's inquiry..." required></textarea>
-                </div>
-
-                <h2 class="section-title">3. Internal CRM Routing</h2>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Assigned To / Staff (Notify via Bell 🔔):</label>
-                        <select id="assignedStaff"></select>
-                    </div>
-                </div>
                 <button type="submit" class="submit-btn" id="submitBtn">Save Call Log to Internal CRM</button>
             </form>
         </div>
@@ -725,6 +727,23 @@
             }
         });
 
+        const statusRadios = document.querySelectorAll('input[name="clientStatus"]');
+        const standardSection = document.getElementById('standardCallSection');
+        const mainSubmitBtn = document.getElementById('submitBtn');
+
+        statusRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'Lead') {
+                    standardSection.style.display = 'none';
+                    mainSubmitBtn.style.display = 'none'; // Скрываем основную кнопку для Лида
+                } else {
+                    standardSection.style.display = 'block';
+                    mainSubmitBtn.style.display = 'block';
+                    mainSubmitBtn.textContent = 'Save Call Log to Internal CRM';
+                }
+            });
+        });
+
         async function fetchDocketwiseData(query, isPhone) {
             try {
                 const type = isPhone ? 'phone' : 'name';
@@ -744,11 +763,14 @@
                 document.getElementById('clientBadge').style.display = 'inline-block';
             }
             document.getElementById('fullName').value = client.name;
-            // ТЕПЕРЬ НОМЕР БУДЕТ ЗАПОЛНЯТЬСЯ ВСЕГДА!
+            // ИСПРАВЛЕНО: номер теперь переносится 100%
             document.getElementById('phoneNumber').value = client.phone || '';
             
             const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
-            if (existingRadio) existingRadio.checked = true;
+            if (existingRadio) {
+                existingRadio.checked = true;
+                existingRadio.dispatchEvent(new Event('change')); // Заставляем интерфейс отреагировать
+            }
             
             const matterSelect = document.getElementById('matterSelect');
             matterSelect.innerHTML = '<option value="">-- Please select a matter --</option>';
@@ -768,7 +790,7 @@
             if (query.length < 3) { list.style.display = 'none'; return; }
             const loader = isPhone ? document.getElementById('phoneLoader') : document.getElementById('nameLoader');
             
-            loader.style.display = 'inline-block'; // Защита от кривого отображения[cite: 1]
+            loader.style.display = 'inline-block'; 
             try {
                 const results = await fetchDocketwiseData(query, isPhone);
                 list.innerHTML = '';
@@ -801,17 +823,32 @@
             if (!e.target.closest('#phoneAutocompleteWrapper')) { const phoneList = document.getElementById('phoneList'); if (phoneList) phoneList.style.display = 'none'; }
         });
 
+        // --- УМНЫЙ АВТО-ОПРЕДЕЛИТЕЛЬ ЗВОНКОВ ---
         async function checkIncomingCall() {
             if (incomingPhone) {
                 let cleanedPhone = incomingPhone.replace(/[^\d+]/g, '');
                 if (cleanedPhone.length < 2) { document.getElementById('phoneNumber').value = incomingPhone; return; }
                 document.getElementById('phoneNumber').value = cleanedPhone;
-                document.getElementById('phoneLoader').style.display = 'inline-block';
+                
+                const loader = document.getElementById('phoneLoader');
+                if (loader) loader.style.display = 'inline-block';
+                
                 try {
                     const clients = await fetchDocketwiseData(cleanedPhone, true);
-                    if(clients.length > 0) { applyClientData(clients[0]); }
+                    if(clients && clients.length > 0) { 
+                        applyClientData(clients[0]); 
+                    } else {
+                        // НОВАЯ МАГИЯ: ЕСЛИ КЛИЕНТА НЕТ В БАЗЕ, АВТОМАТИЧЕСКИ ВЫБИРАЕМ "LEAD"
+                        const leadRadio = document.querySelector('input[name="clientStatus"][value="Lead"]');
+                        if (leadRadio) {
+                            leadRadio.checked = true;
+                            leadRadio.dispatchEvent(new Event('change')); // Обновляем форму под лида
+                        }
+                    }
+                } catch(error) {
+                    console.error("Caller ID Error:", error);
                 } finally {
-                    document.getElementById('phoneLoader').style.display = 'none';
+                    if (loader) loader.style.display = 'none';
                 }
             }
         }
