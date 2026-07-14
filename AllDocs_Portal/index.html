@@ -839,6 +839,28 @@
                 try {
                     const clients = await fetchDocketwiseData(cleanedPhone, true);
                     if(clients && clients.length > 0) { 
+                        // Автоматически ставим "Existing Client", ТОЛЬКО если нашли совпадение в базе
+                        applyClientData(clients[0]); 
+                    }
+                    // Если не нашли — ничего не делаем. Оставляем выбор за оператором!
+                } catch(error) {
+                    console.error("Caller ID Error:", error);
+                } finally {
+                    if (loader) loader.style.display = 'none';
+                }
+            }
+        }
+            if (incomingPhone) {
+                let cleanedPhone = incomingPhone.replace(/[^\d+]/g, '');
+                if (cleanedPhone.length < 2) { document.getElementById('phoneNumber').value = incomingPhone; return; }
+                document.getElementById('phoneNumber').value = cleanedPhone;
+                
+                const loader = document.getElementById('phoneLoader');
+                if (loader) loader.style.display = 'inline-block';
+                
+                try {
+                    const clients = await fetchDocketwiseData(cleanedPhone, true);
+                    if(clients && clients.length > 0) { 
                         applyClientData(clients[0]); 
                     } else {
                         const leadRadio = document.querySelector('input[name="clientStatus"][value="Lead"]');
