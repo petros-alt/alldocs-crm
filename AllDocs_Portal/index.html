@@ -223,7 +223,6 @@
 
     document.addEventListener("DOMContentLoaded", function() {
         
-        // --- 1. ПРОВЕРКА ВХОДА ---
         const loggedInStaff = localStorage.getItem('loggedInStaff');
         const urlParams = new URLSearchParams(window.location.search);
         let incomingPhone = urlParams.get('phone');
@@ -241,7 +240,6 @@
             window.history.replaceState({}, document.title, window.location.pathname + "?phone=" + incomingPhone);
         }
 
-        // --- 2. НАСТРОЙКА ИНТЕРФЕЙСА СОТРУДНИКА ---
         document.getElementById('userProfile').style.display = 'flex';
         document.getElementById('topAvatar').textContent = localStorage.getItem('staffInitials');
         document.getElementById('sidebarUserName').textContent = loggedInStaff;
@@ -271,7 +269,6 @@
         userProfile.addEventListener('click', () => logoutMenu.style.display = (logoutMenu.style.display === 'block') ? 'none' : 'block');
         document.addEventListener('click', (e) => { if (!userProfile.contains(e.target) && !logoutMenu.contains(e.target)) logoutMenu.style.display = 'none'; });
 
-        // --- 3. ИНТЕРАКТИВНЫЙ КОЛОКОЛЬЧИК (С АУДИО И НОВЫМ UI) ---
         const bellBtn = document.getElementById('notificationBell');
         const notifDropdown = document.getElementById('notificationDropdown');
         const notifList = document.getElementById('notifList');
@@ -337,7 +334,6 @@
         setInterval(checkNotifications, 15000); 
         checkNotifications();
 
-        // --- 4. ДАТА, ВРЕМЯ И ВКЛАДКИ ---
         function setDateTime() {
             const now = new Date();
             document.getElementById('callDate').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -360,7 +356,6 @@
             renderCallHistoryList(); 
         });
 
-        // --- 5. ЖУРНАЛ И ПОИСК ПО ЖУРНАЛУ ---
         async function renderCallHistoryList() {
             const tbody = document.getElementById('oomaCallHistoryBody');
             const tableContainer = document.getElementById('historyTableContainer');
@@ -414,10 +409,14 @@
             }
         });
 
-        // --- 6. АВТОПОИСК КЛИЕНТА (С КРЕСТИКОМ) ---
-        async function fetchDocketwiseData(query) {
+        // -------------------------------------------------------------
+        // ОБНОВЛЕННАЯ ЛОГИКА: ПЕРЕДАЕМ TYPE (phone ИЛИ name) НА СЕРВЕР
+        // -------------------------------------------------------------
+        async function fetchDocketwiseData(query, isPhone) {
             try {
-                const res = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+                // Сервер будет точно знать, что именно мы сейчас ищем
+                const type = isPhone ? 'phone' : 'name';
+                const res = await fetch(`/api/search?query=${encodeURIComponent(query)}&type=${type}`);
                 const data = await res.json();
                 return data.success && data.clients ? data.clients : [];
             } catch (error) { return []; }
@@ -456,12 +455,14 @@
             }
             const loader = isPhone ? document.getElementById('phoneLoader') : document.getElementById('nameLoader');
             loader.style.display = 'block';
-            const results = await fetchDocketwiseData(query);
+            
+            // ВАЖНО: Передаем флаг isPhone в функцию запроса
+            const results = await fetchDocketwiseData(query, isPhone);
+            
             loader.style.display = 'none';
             list.innerHTML = '';
             
             if (results.length > 0) {
-                // ДОБАВЛЯЕМ КНОПКУ ЗАКРЫТИЯ С КРЕСТИКОМ
                 const closeLi = document.createElement('li');
                 closeLi.innerHTML = `<span style="color:#d32f2f; font-weight:bold; float:right; cursor:pointer; font-size:13px;">✖ Close</span><div style="clear:both;"></div>`;
                 closeLi.style.backgroundColor = "#f9f9f9";
@@ -481,10 +482,11 @@
             }
         }, 500);
 
+        // Обработчики ввода: сайт точно понимает, какое поле мы заполняем
         document.getElementById('fullName').addEventListener('input', e => handleSearch(e.target.value.trim(), false));
-        document.getElementById('phoneNumber').addEventListener('input', e => handleSearch(e.target.value.trim(), true));
+        // Для телефона убираем все буквы и передаем флаг true
+        document.getElementById('phoneNumber').addEventListener('input', e => handleSearch(e.target.value.replace(/\D/g, ''), true));
 
-        // ЗАКРЫТИЕ СПИСКА ПРИ КЛИКЕ МИМО
         document.addEventListener('click', (e) => {
             if (!e.target.closest('#autocompleteWrapper')) {
                 const clientList = document.getElementById('clientList');
@@ -496,7 +498,6 @@
             }
         });
 
-        // --- 7. ПЕРЕХВАТ ВХОДЯЩЕГО ЗВОНКА ---
         async function checkIncomingCall() {
             if (incomingPhone) {
                 let cleanedPhone = incomingPhone.replace(/[^\d+]/g, '');
@@ -507,7 +508,8 @@
                 document.getElementById('phoneNumber').value = cleanedPhone;
                 document.getElementById('phoneLoader').style.display = 'block';
                 
-                const clients = await fetchDocketwiseData(cleanedPhone);
+                // Передаем true, так как это звонок (поиск по телефону)
+                const clients = await fetchDocketwiseData(cleanedPhone, true);
                 document.getElementById('phoneLoader').style.display = 'none';
 
                 if(clients.length > 0) {
@@ -517,7 +519,6 @@
         }
         checkIncomingCall();
 
-        // --- 8. СОХРАНЕНИЕ ВО ВНУТРЕННЮЮ БАЗУ ---
         const callForm = document.getElementById('callForm');
         callForm.addEventListener('submit', async function(event) {
             event.preventDefault();
