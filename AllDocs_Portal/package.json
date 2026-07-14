@@ -1,0 +1,7 @@
+{
+  "name": "alldocs-crm",
+  "version": "1.0.0",
+  "dependencies": {
+    "@vercel/postgres": "latest"
+  }
+}

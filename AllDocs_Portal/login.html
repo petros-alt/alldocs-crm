@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Docs Consulting - Staff Login</title>
+    <style>
+        :root {
+            /* MODERN BROWN PALETTE */
+            --primary-color: #3e2723;
+            --secondary-color: #5d4037;
+            --accent-color: #a1683a;
+            --accent-hover: #8b552b;
+            --bg-color: #f5f2eb;
+            --form-bg: #ffffff;
+            --border-color: #d7ccc8;
+            --surface-color: #faf7f2;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            line-height: 1.6;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .login-container {
+            background: var(--form-bg);
+            padding: 50px 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(62, 39, 35, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .logo-container img {
+            width: 100%;
+            max-width: 200px;
+            height: auto;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .login-title {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 26px;
+            font-weight: bold;
+            font-style: italic;
+            color: var(--primary-color);
+            margin: 0 0 10px 0;
+        }
+
+        .login-subtitle {
+            font-size: 14.5px;
+            color: var(--secondary-color);
+            margin-bottom: 35px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--primary-color);
+        }
+
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-family: inherit;
+            background-color: #fcfbfa;
+            transition: all 0.3s ease;
+            font-size: 15px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            background-color: var(--form-bg);
+            box-shadow: 0 0 0 3px rgba(161, 104, 58, 0.15);
+        }
+
+        /* INLINE ERROR MESSAGE */
+        .error-message {
+            color: #d32f2f;
+            background-color: #ffebee;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 13.5px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            display: none;
+            border: 1px solid #ffcdd2;
+        }
+
+        .submit-btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 16px 20px;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            margin-top: 5px;
+            box-shadow: 0 4px 15px rgba(161, 104, 58, 0.25);
+        }
+
+        .submit-btn:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(161, 104, 58, 0.35);
+        }
+
+        /* --- SUCCESS STATE & AVATAR MOCKUP --- */
+        .success-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--form-bg);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 16px;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .avatar-circle {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(161, 104, 58, 0.3);
+        }
+
+        .welcome-text {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+        
+        .redirect-text {
+            font-size: 14px;
+            color: var(--secondary-color);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-wrapper">
+    <div class="login-container">
+        
+        <div class="logo-container">
+            <img src="https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png?w=2128&ssl=1" alt="All Docs Consulting">
+        </div>
+        
+        <h1 class="login-title">Staff Portal</h1>
+        <p class="login-subtitle">Please sign in to access the dashboard</p>
+
+        <form id="loginForm">
+            <div class="error-message" id="errorMessage">Invalid email or password. Please try again.</div>
+
+            <div class="form-group">
+                <label for="email">Corporate Email</label>
+                <input type="email" id="email" placeholder="name@alldocsconsulting.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="submit-btn" id="loginBtn">Sign In</button>
+        </form>
+
+        <div class="success-overlay" id="successOverlay">
+            <div class="avatar-circle" id="userAvatar">--</div>
+            <div class="welcome-text" id="welcomeMessage">Welcome, Staff</div>
+            <div class="redirect-text">Loading your dashboard...</div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const successOverlay = document.getElementById('successOverlay');
+        const userAvatar = document.getElementById('userAvatar');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // --- БАЗА СОТРУДНИКОВ (С ДОБАВОЧНЫМИ НОМЕРАМИ OOMA) ---
+        const mockDatabase = {
+            "argishti@alldocsconsulting.com": { firstName: "Argishti", lastName: "S.", pass: "moshSq6dbxpa2404", role: "Staff", ext: "1005" },
+            "gohar@alldocsconsulting.com": { firstName: "Gohar", lastName: "A.", pass: "moshSq6dbxpa2404", role: "Staff", ext: "1001" },
+            "norayrbadalyan@alldocsconsulting.com": { firstName: "Norayr", lastName: "Badalyan", pass: "moshSq6dbxpa2404", role: "Staff", ext: "1000" },
+            "mariam@alldocsconsulting.com": { firstName: "Mariam", lastName: "D.", pass: "moshSq6dbxpa2404", role: "Staff", ext: "1002" },
+            "petros@alldocsconsulting.com": { firstName: "Petros", lastName: "E.", pass: "moshSq6dbxpa2404", role: "Staff", ext: "1008" },
+            "rima@alldocsconsulting.com": { firstName: "Rima", lastName: "A.", pass: "moshSq6dbxpa2404", role: "Staff", ext: "1007" },
+            "artak@alldocsconsulting.com": { firstName: "Artak", lastName: "B.", pass: "moshSq6dbxpa2404", role: "Staff", ext: "1004" },
+            "nairi@alldocsconsulting.com": { firstName: "Nairi", lastName: "H.", pass: "moshSq6dbxpa2404", role: "Staff", ext: "1006" },
+            "lilit@alldocsconsulting.com": { firstName: "Lilit", lastName: "A.", pass: "moshSq6dbxpa2404", role: "Operator", ext: "1009" }
+        };
+
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            errorMessage.style.display = 'none'; // Скрываем ошибку при новой попытке
+            
+            const emailInput = document.getElementById('email').value.toLowerCase().trim();
+            const passwordInput = document.getElementById('password').value;
+            
+            // Проверка почты и пароля
+            if (!mockDatabase[emailInput] || mockDatabase[emailInput].pass !== passwordInput) {
+                errorMessage.style.display = 'block'; // Показываем красную ошибку
+                // Тряска кнопки для визуального эффекта ошибки
+                loginBtn.style.transform = "translateX(-5px)";
+                setTimeout(() => loginBtn.style.transform = "translateX(5px)", 100);
+                setTimeout(() => loginBtn.style.transform = "translateX(0)", 200);
+                return;
+            }
+
+            // Если всё верно, начинаем анимацию входа
+            loginBtn.textContent = "Authenticating...";
+            loginBtn.disabled = true;
+
+            setTimeout(() => {
+                let userFirstName = mockDatabase[emailInput].firstName;
+                let userLastName = mockDatabase[emailInput].lastName;
+                let userRole = mockDatabase[emailInput].role;
+
+                // Генерируем кружок с инициалами
+                const firstInitial = userFirstName.charAt(0).toUpperCase();
+                const lastInitial = userLastName ? userLastName.charAt(0).toUpperCase() : "";
+                
+                userAvatar.textContent = `${firstInitial}${lastInitial}`;
+                welcomeMessage.textContent = `Welcome, ${userFirstName}`;
+
+                successOverlay.style.display = 'flex';
+
+                // Сохраняем данные для формы оператора (включая РОЛЬ и EXTENSION)
+                localStorage.setItem('loggedInStaff', `${userFirstName} ${userLastName}`.trim());
+                localStorage.setItem('staffInitials', `${firstInitial}${lastInitial}`);
+                localStorage.setItem('staffRole', userRole);
+                localStorage.setItem('staffExtension', mockDatabase[emailInput].ext); 
+
+                // Перекидываем на главную форму
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
+
+            }, 1000);
+        });
+    });
+</script>
+</body>
+</html>

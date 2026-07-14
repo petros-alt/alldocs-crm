@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Docs Consulting - CRM Portal</title>
+    <style>
+        :root { --primary-color: #3e2723; --secondary-color: #5d4037; --accent-color: #a1683a; --accent-hover: #8b552b; --bg-color: #f5f2eb; --form-bg: #ffffff; --border-color: #d7ccc8; --surface-color: #faf7f2; --sidebar-width: 260px; }
+        body { font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--primary-color); line-height: 1.6; margin: 0; display: flex; }
+        .sidebar { width: var(--sidebar-width); background-color: var(--primary-color); height: 100vh; position: fixed; left: 0; top: 0; display: flex; flex-direction: column; box-shadow: 4px 0 20px rgba(0,0,0,0.15); z-index: 100; color: var(--bg-color); }
+        .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-header img { width: 80%; max-width: 150px; border-radius: 8px; background: white; padding: 10px; }
+        .nav-menu { list-style: none; padding: 20px 0; margin: 0; flex: 1; }
+        .nav-item { margin-bottom: 5px; }
+        .nav-link { display: flex; align-items: center; padding: 15px 25px; color: rgba(255,255,255,0.7); text-decoration: none; font-weight: 500; font-size: 15px; transition: all 0.3s ease; border-left: 4px solid transparent; }
+        .nav-link:hover { background-color: rgba(255,255,255,0.05); color: white; }
+        .nav-link.active { background-color: rgba(255,255,255,0.1); color: white; border-left-color: var(--accent-color); font-weight: 600; }
+        .nav-icon { margin-right: 15px; font-size: 18px; }
+        .sidebar-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); position: relative; }
+        .user-profile { display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 10px; border-radius: 8px; transition: background 0.2s; }
+        .user-profile:hover { background-color: rgba(255,255,255,0.05); }
+        .avatar-circle-small { width: 40px; height: 40px; border-radius: 50%; background-color: var(--accent-color); color: white; display: flex; justify-content: center; align-items: center; font-size: 15px; font-weight: 700; user-select: none; }
+        .user-info { display: flex; flex-direction: column; }
+        .user-name { font-size: 14px; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+        .user-role { font-size: 12px; color: rgba(255,255,255,0.6); }
+        .logout-menu { display: none; position: absolute; bottom: 80px; left: 20px; right: 20px; background: var(--form-bg); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); padding: 8px; animation: fadeIn 0.2s ease; }
+        .logout-btn { background: transparent; border: none; color: #d32f2f; cursor: pointer; font-weight: 600; font-size: 14px; width: 100%; text-align: left; padding: 12px 15px; border-radius: 4px; transition: background-color 0.2s; }
+        .logout-btn:hover { background: #ffebee; }
+        .main-wrapper { margin-left: var(--sidebar-width); padding: 40px 20px; width: calc(100% - var(--sidebar-width)); box-sizing: border-box; }
+        .container { max-width: 800px; margin: 0 auto; background: var(--form-bg); padding: 45px; border-radius: 16px; box-shadow: 0 10px 40px rgba(62, 39, 35, 0.08); border: 1px solid rgba(255, 255, 255, 0.6); }
+        .header { text-align: center; border-bottom: 2px solid var(--border-color); padding-bottom: 20px; margin-bottom: 30px; }
+        .tab-navigation { display: flex; background: var(--surface-color); padding: 6px; border-radius: 12px; margin-bottom: 30px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .tab-btn { flex: 1; background: transparent; border: none; padding: 12px 20px; cursor: pointer; border-radius: 8px; font-weight: 600; color: var(--secondary-color); transition: all 0.3s ease; font-size: 15px; }
+        .tab-btn.active { background-color: var(--form-bg); color: var(--primary-color); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06); }
+        .tab-content { display: none; animation: fadeIn 0.4s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .search-container { margin-bottom: 20px; }
+        .search-input { width: 100%; padding: 14px 18px; border: 2px solid var(--border-color); border-radius: 10px; font-size: 15px; box-sizing: border-box; background-color: var(--surface-color); transition: all 0.3s ease; }
+        .search-input:focus { outline: none; border-color: var(--accent-color); background-color: var(--form-bg); box-shadow: 0 0 0 4px rgba(161, 104, 58, 0.1); }
+        .history-table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--form-bg); border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color); }
+        .history-table th { background-color: var(--surface-color); color: var(--primary-color); text-align: left; padding: 16px; font-size: 14px; font-weight: 700; border-bottom: 1px solid var(--border-color); }
+        .history-table td { padding: 16px; border-bottom: 1px solid #f0ebe1; font-size: 14.5px; color: var(--secondary-color); vertical-align: middle; transition: 0.2s; }
+        .history-table tr:last-child td { border-bottom: none; }
+        .history-table tr:hover td { background-color: #fcfbfa; }
+        .load-btn { background-color: var(--secondary-color); color: white; border: none; padding: 8px 16px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
+        .load-btn:hover { background-color: var(--primary-color); transform: translateY(-1px); }
+        .no-calls { text-align: center; color: #8d6e63; padding: 50px; font-style: italic; background: var(--surface-color); border: 1px dashed var(--border-color); border-radius: 10px; }
+        .instructions { background-color: #fdfaf6; border-left: 4px solid var(--accent-color); padding: 18px; margin-bottom: 30px; border-radius: 0 8px 8px 0; font-size: 14.5px; color: var(--secondary-color); }
+        .instructions ul { margin: 10px 0 0 0; padding-left: 20px; }
+        .section-title { color: var(--primary-color); padding-bottom: 8px; border-bottom: 2px solid var(--border-color); font-size: 18px; margin-bottom: 20px; margin-top: 35px; font-weight: 700; }
+        .section-title:first-of-type { margin-top: 0; }
+        .form-row { display: flex; gap: 20px; margin-bottom: 15px; }
+        .form-group { flex: 1; margin-bottom: 20px; }
+        label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; color: var(--primary-color); }
+        input[type="text"], input[type="tel"], input[type="date"], input[type="time"], select, textarea { width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-family: inherit; background-color: #fcfbfa; transition: all 0.3s ease; font-size: 15px; }
+        textarea { resize: vertical; min-height: 90px; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent-color); background-color: var(--form-bg); box-shadow: 0 0 0 3px rgba(161, 104, 58, 0.15); }
+        .radio-group, .checkbox-group { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+        .radio-item, .checkbox-item { display: flex; align-items: center; font-weight: 500; color: var(--secondary-color); cursor: pointer; }
+        .radio-item input, .checkbox-item input { margin-right: 12px; cursor: pointer; accent-color: var(--accent-color); width: 16px; height: 16px; }
+        .submit-btn { background-color: var(--accent-color); color: white; border: none; padding: 16px 20px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; width: 100%; transition: all 0.3s ease; margin-top: 30px; box-shadow: 0 4px 15px rgba(161, 104, 58, 0.25); }
+        .submit-btn:hover { background-color: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(161, 104, 58, 0.35); }
+        .autocomplete-wrapper { position: relative; display: flex; align-items: center; }
+        .autocomplete-wrapper input { padding-right: 35px; }
+        .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--form-bg); border: 1px solid var(--border-color); border-radius: 8px; max-height: 250px; overflow-y: auto; margin: 4px 0 0 0; padding: 0; list-style: none; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: none; }
+        .autocomplete-list li { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f5f2eb; font-size: 14.5px; color: var(--primary-color); transition: background-color 0.2s; line-height: 1.4; }
+        .autocomplete-list li:hover { background-color: #fdfaf6; }
+        .client-name-list { font-weight: 600; color: var(--accent-color); display: block; }
+        .client-phone-list { font-size: 12.5px; color: var(--secondary-color); opacity: 0.8; }
+        .loading-indicator { position: absolute; right: 12px; color: var(--accent-color); font-size: 12px; display: none; font-weight: bold; }
+        
+        /* BELL STYLES */
+        #notificationContainer { position: fixed; top: 25px; right: 35px; z-index: 1000; }
+        #notificationBell { font-size: 26px; cursor: pointer; position: relative; background: white; padding: 12px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: transform 0.2s; }
+        #notificationBell:hover { transform: scale(1.05); }
+        .badge { background: #d32f2f; color: white; border-radius: 50%; padding: 2px 6px; font-size: 12px; position: absolute; top: -5px; right: -5px; font-weight: bold; border: 2px solid white; display: none; }
+        #notificationDropdown { display: none; position: absolute; top: 60px; right: 0; width: 320px; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 15px; max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); }
+        .notif-item { padding: 12px; border-bottom: 1px solid #f0ebe1; font-size: 13.5px; }
+        .notif-item:last-child { border-bottom: none; }
+        .notif-btn { margin-top: 8px; background: #4CAF50; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s; }
+        .notif-btn:hover { background: #388E3C; }
+    </style>
+</head>
+<body>
+
+<!-- КОЛОКОЛЬЧИК УВЕДОМЛЕНИЙ -->
+<div id="notificationContainer">
+    <div id="notificationBell">🔔<span id="notifBadge" class="badge">0</span></div>
+    <div id="notificationDropdown">
+        <h4 style="margin: 0 0 10px 0; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; color: var(--primary-color);">Входящие задачи от оператора</h4>
+        <div id="notifList"><div style="color: #888; text-align: center; padding: 20px;">Нет новых уведомлений</div></div>
+    </div>
+</div>
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <img src="https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png?w=2128&ssl=1" alt="All Docs Consulting">
+    </div>
+    <ul class="nav-menu">
+        <li class="nav-item"><a href="index.html" class="nav-link active"><span class="nav-icon">📞</span> Call Center Log</a></li>
+        <li class="nav-item"><a href="calendar.html" class="nav-link"><span class="nav-icon">📅</span> Master Calendar</a></li>
+        <li class="nav-item"><a href="forms.html" class="nav-link"><span class="nav-icon">📄</span> Forms & Documents</a></li>
+    </ul>
+    <div class="sidebar-footer">
+        <div class="user-profile" id="userProfile" style="display: none;">
+            <div class="avatar-circle-small" id="topAvatar">--</div>
+            <div class="user-info">
+                <span class="user-name" id="sidebarUserName">Staff Member</span>
+                <span class="user-role" id="sidebarUserRole">Role</span>
+            </div>
+        </div>
+        <div class="logout-menu" id="logoutMenu"><button class="logout-btn" id="logoutBtn">Log Out Securely</button></div>
+    </div>
+</aside>
+
+<main class="main-wrapper">
+    <div class="container">
+        
+        <div class="header">
+            <p style="font-family: 'Times New Roman', Times, serif; font-size: 28px; font-weight: bold; font-style: italic; margin-top: 5px; margin-bottom: 0; color: var(--primary-color);">Operator Call Form</p>
+        </div>
+
+        <div class="tab-navigation">
+            <button class="tab-btn active" id="btnFormTab">New Call Log</button>
+            <button class="tab-btn" id="btnHistoryTab">Internal Call History</button>
+        </div>
+
+        <div id="tabFormContent" class="tab-content active">
+            <div class="instructions">
+                <strong>Operator Instructions:</strong>
+                <ul>
+                    <li>Calls are saved directly to our <strong>Internal CRM Database</strong>, keeping Docketwise clean.</li>
+                    <li>Select a staff member below if you need to notify them about this call. They will receive an alert in the bell 🔔.</li>
+                </ul>
+            </div>
+
+            <form id="callForm">
+                <input type="hidden" id="hiddenClientId" value="">
+
+                <h2 class="section-title">1. Basic Call Information</h2>
+                <div class="form-row">
+                    <div class="form-group"><label>Date:</label><input type="date" id="callDate" required></div>
+                    <div class="form-group"><label>Time of Call:</label><input type="time" id="callTime" required></div>
+                </div>
+
+                <h2 class="section-title">2. Client Details (Docketwise Linked)</h2>
+                <div class="form-group">
+                    <label>Full Name: <span id="clientBadge" style="display: none; background: #4CAF50; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 10px; font-weight: bold;">✓ ID: <span id="displayClientId"></span></span></label>
+                    <div class="autocomplete-wrapper" id="autocompleteWrapper">
+                        <input type="text" id="fullName" placeholder="Type name to search Docketwise..." autocomplete="off" required>
+                        <span class="loading-indicator" id="nameLoader">Searching...</span>
+                        <ul class="autocomplete-list" id="clientList"></ul>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Phone Number:</label>
+                    <div class="autocomplete-wrapper" id="phoneAutocompleteWrapper">
+                        <input type="tel" id="phoneNumber" placeholder="+1 (555) 000-0000" autocomplete="off" required>
+                        <span class="loading-indicator" id="phoneLoader">Searching...</span>
+                        <ul class="autocomplete-list" id="phoneList"></ul>
+                    </div>
+                </div>
+
+                <div id="matterContainer" class="form-group" style="display: none; padding: 18px; border-radius: 8px; border-left: 4px solid var(--accent-color); margin-top: 20px;">
+                    <label>Select Matter (Active Case):</label>
+                    <select id="matterSelect"><option value="">-- Auto-detecting matters... --</option></select>
+                </div>
+
+                <h2 class="section-title">3. Case Details & Core Program</h2>
+                <div class="form-group">
+                    <label>Program / Category:</label>
+                    <div class="radio-group">
+                        <label class="radio-item"><input type="radio" name="program" value="USCIS" required> USCIS</label>
+                        <label class="radio-item"><input type="radio" name="program" value="IHSS"> IHSS</label>
+                        <label class="radio-item"><input type="radio" name="program" value="CAPI"> CAPI</label>
+                        <label class="radio-item"><input type="radio" name="program" value="Other"> Other</label>
+                    </div>
+                </div>
+                
+                <div style="background: #fdfaf6; padding: 15px; border-left: 4px solid var(--accent-color); border-radius: 8px; margin-bottom: 20px;">
+                    <label style="color: var(--accent-color);">Call Category:</label>
+                    <select id="noteCategory" style="margin-bottom: 12px;">
+                        <option value="">-- General Call (No specific category) --</option>
+                        <option value="01-Initial Consultation">01-Initial Consultation</option>
+                        <option value="03-Client Communication">03-Client Communication</option>
+                        <option value="04-Phone Call">04-Phone Call</option>
+                        <option value="05-Follow-Up Needed">05-Follow-Up Needed</option>
+                        <option value="20-Interview">20-Interview</option>
+                    </select>
+
+                    <label>Call Description / Note Text:</label>
+                    <textarea id="briefDescription" placeholder="Summarize the client's inquiry..." required></textarea>
+                </div>
+
+                <h2 class="section-title">4. Internal CRM Logging & Routing</h2>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Assigned To / Staff (Внутреннее Уведомление 🔔):</label>
+                        <select id="assignedStaff"></select>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">Save Call Log to Internal CRM</button>
+            </form>
+        </div>
+
+        <div id="tabHistoryContent" class="tab-content">
+            <h2 class="section-title" style="border:none; margin-bottom: 5px;">Internal Call History</h2>
+            <p style="font-size: 14.5px; color: var(--secondary-color); margin-bottom: 20px;">Live shared call journal for all staff members.</p>
+            <div id="noCallsMessage" class="no-calls">Loading internal call history...</div>
+            <table class="history-table" id="historyTableContainer" style="display: none;">
+                <thead><tr><th>Date & Time</th><th>Client Name</th><th>Phone Number</th><th style="width: 120px;">Staff</th></tr></thead>
+                <tbody id="oomaCallHistoryBody"></tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<script>
+    window.currentClient = null;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        
+        // --- 1. ПРОВЕРКА ВХОДА И ЗАЩИТА OOMA ЗВОНКОВ ---
+        const loggedInStaff = localStorage.getItem('loggedInStaff');
+        const urlParams = new URLSearchParams(window.location.search);
+        let incomingPhone = urlParams.get('phone');
+
+        // Если не залогинен - запоминаем номер и выкидываем на логин!
+        if (!loggedInStaff) {
+            if (incomingPhone) {
+                localStorage.setItem('pendingOomaCall', incomingPhone);
+            }
+            window.location.href = 'login.html';
+            return; // Скрипт дальше не идет!
+        }
+
+        // Если только что вошли и был пропущенный звонок Ooma - восстанавливаем!
+        const pendingCall = localStorage.getItem('pendingOomaCall');
+        if (pendingCall) {
+            incomingPhone = pendingCall;
+            localStorage.removeItem('pendingOomaCall');
+            // Меняем URL без перезагрузки, чтобы форма подхватила его ниже
+            window.history.replaceState({}, document.title, window.location.pathname + "?phone=" + incomingPhone);
+        }
+
+        // --- 2. НАСТРОЙКА ИНТЕРФЕЙСА СОТРУДНИКА ---
+        document.getElementById('userProfile').style.display = 'flex';
+        document.getElementById('topAvatar').textContent = localStorage.getItem('staffInitials');
+        document.getElementById('sidebarUserName').textContent = loggedInStaff;
+        document.getElementById('sidebarUserRole').textContent = localStorage.getItem('staffRole');
+        
+        // Маппинг имен для системы
+        const staffMapping = {
+            "Norayr Badalyan": "332487", "Petros Eghiazaryan": "418892", "Petros E.": "418892",
+            "Mariam Djaradjian": "339159", "Mariam D.": "339159", "Artak Badalyan": "332810", "Artak B.": "332810",
+            "Argishti S.": "1005", "Gohar A.": "1001", "Rima A.": "1007", "Nairi H.": "1006", "Lilit A.": "1009"
+        };
+        const myStaffId = staffMapping[loggedInStaff] || "";
+
+        // Наполняем выпадающий список
+        const staffSelect = document.getElementById('assignedStaff');
+        staffSelect.innerHTML = '<option value="">-- Не уведомлять никого --</option>';
+        Object.keys(staffMapping).forEach(name => {
+            const option = document.createElement('option');
+            option.value = staffMapping[name]; 
+            option.textContent = name;
+            staffSelect.appendChild(option);
+        });
+
+        const userProfile = document.getElementById('userProfile');
+        const logoutMenu = document.getElementById('logoutMenu');
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.clear(); window.location.href = 'login.html';
+        });
+        userProfile.addEventListener('click', () => logoutMenu.style.display = (logoutMenu.style.display === 'block') ? 'none' : 'block');
+        document.addEventListener('click', (e) => { if (!userProfile.contains(e.target) && !logoutMenu.contains(e.target)) logoutMenu.style.display = 'none'; });
+
+        // --- 3. ИНТЕРАКТИВНЫЙ КОЛОКОЛЬЧИК (УВЕДОМЛЕНИЯ) ---
+        const bellBtn = document.getElementById('notificationBell');
+        const notifDropdown = document.getElementById('notificationDropdown');
+        const notifList = document.getElementById('notifList');
+        
+        bellBtn.addEventListener('click', () => {
+            notifDropdown.style.display = notifDropdown.style.display === 'block' ? 'none' : 'block';
+        });
+
+        async function checkNotifications() {
+            if (!myStaffId) return; // Если у сотрудника нет ID, ему не придут уведомления
+            try {
+                const res = await fetch(`/api/get-notifications?staffId=${myStaffId}`);
+                const data = await res.json();
+                const badge = document.getElementById('notifBadge');
+                
+                if (data.success && data.notifications && data.notifications.length > 0) {
+                    badge.style.display = 'block';
+                    badge.textContent = data.notifications.length;
+                    
+                    notifList.innerHTML = '';
+                    data.notifications.forEach(notif => {
+                        const div = document.createElement('div');
+                        div.className = 'notif-item';
+                        div.innerHTML = `
+                            <strong style="color: var(--accent-color);">Клиент:</strong> ${notif.client_name}<br>
+                            <span style="color: var(--secondary-color);">${notif.message}</span>
+                            <button class="notif-btn" onclick="markAsRead(${notif.id})">Отметить как выполненное ✓</button>
+                        `;
+                        notifList.appendChild(div);
+                    });
+                } else {
+                    badge.style.display = 'none';
+                    notifList.innerHTML = '<div style="color: #888; text-align: center; padding: 20px;">Нет новых задач</div>';
+                }
+            } catch(e) { console.log("Ошибка загрузки уведомлений"); }
+        }
+
+        window.markAsRead = async function(notifId) {
+            try {
+                await fetch(`/api/get-notifications?action=read&notificationId=${notifId}`);
+                checkNotifications(); // Обновляем список сразу
+            } catch (e) { alert('Ошибка при закрытии уведомления'); }
+        }
+
+        setInterval(checkNotifications, 15000); // Проверять каждые 15 сек
+        checkNotifications();
+
+        // --- 4. ДАТА, ВРЕМЯ И ВКЛАДКИ ---
+        function setDateTime() {
+            const now = new Date();
+            document.getElementById('callDate').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            document.getElementById('callTime').value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        }
+        setDateTime();
+
+        const btnFormTab = document.getElementById('btnFormTab');
+        const btnHistoryTab = document.getElementById('btnHistoryTab');
+        const tabFormContent = document.getElementById('tabFormContent');
+        const tabHistoryContent = document.getElementById('tabHistoryContent');
+
+        btnFormTab.addEventListener('click', () => {
+            btnFormTab.classList.add('active'); btnHistoryTab.classList.remove('active');
+            tabFormContent.classList.add('active'); tabHistoryContent.classList.remove('active');
+        });
+        btnHistoryTab.addEventListener('click', () => {
+            btnHistoryTab.classList.add('active'); btnFormTab.classList.remove('active');
+            tabHistoryContent.classList.add('active'); tabFormContent.classList.remove('active');
+            renderCallHistoryList(); 
+        });
+
+        // --- 5. ЗАГРУЗКА ОБЩЕЙ ИСТОРИИ ИЗ БАЗЫ ---
+        async function renderCallHistoryList() {
+            const tbody = document.getElementById('oomaCallHistoryBody');
+            const tableContainer = document.getElementById('historyTableContainer');
+            const noCallsMessage = document.getElementById('noCallsMessage');
+            
+            try {
+                const response = await fetch('/api/get-journal');
+                const result = await response.json();
+
+                if (result.success && result.logs && result.logs.length > 0) {
+                    tbody.innerHTML = '';
+                    tableContainer.style.display = 'table';
+                    noCallsMessage.style.display = 'none';
+
+                    result.logs.forEach(log => {
+                        const tr = document.createElement('tr');
+                        const d = new Date(log.created_at);
+                        tr.innerHTML = `
+                            <td><strong>${d.toLocaleDateString()}</strong> <span style="color:#8d6e63; font-size:12.5px; margin-left:8px;">${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></td>
+                            <td style="font-weight:600; color:var(--primary-color);">${log.client_name || 'Unknown'}</td>
+                            <td style="font-weight:500; color:var(--secondary-color); letter-spacing:0.5px;">📞 ${log.client_phone || 'No Phone'}</td>
+                            <td><span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold;">${log.operator_name || 'Staff'}</span></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tableContainer.style.display = 'none'; 
+                    noCallsMessage.style.display = 'block';
+                    noCallsMessage.innerText = "The internal database journal is empty.";
+                }
+            } catch (e) {
+                noCallsMessage.innerText = "Убедитесь, что вы создали переменную POSTGRES_URL в Vercel.";
+            }
+        }
+
+        // --- 6. АВТОПОИСК КЛИЕНТА ---
+        async function fetchDocketwiseData(query) {
+            try {
+                const res = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                return data.success && data.clients ? data.clients : [];
+            } catch (error) { return []; }
+        }
+
+        function debounce(func, delay = 500) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => func(...args), delay); }; }
+
+        function applyClientData(client, skipPhone = false) {
+            window.currentClient = client; 
+            document.getElementById('hiddenClientId').value = client.id || '';
+            if (client.id) {
+                document.getElementById('displayClientId').textContent = client.id;
+                document.getElementById('clientBadge').style.display = 'inline-block';
+            }
+            document.getElementById('fullName').value = client.name;
+            if (!skipPhone) document.getElementById('phoneNumber').value = client.phone;
+            
+            document.querySelector('input[name="clientStatus"][value="Returning/Existing Client"]').checked = true;
+            
+            const matterSelect = document.getElementById('matterSelect');
+            matterSelect.innerHTML = '<option value="">-- Please select a matter --</option>';
+            if (client.matters && client.matters.length > 0) {
+                client.matters.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.id; opt.textContent = m.title;
+                    matterSelect.appendChild(opt);
+                });
+                matterSelect.selectedIndex = 1;
+            }
+            document.getElementById('matterContainer').style.display = 'block';
+        }
+
+        const handleSearch = debounce(async (query, isPhone) => {
+            if (query.length < 3) return;
+            const loader = isPhone ? document.getElementById('phoneLoader') : document.getElementById('nameLoader');
+            const list = isPhone ? document.getElementById('phoneList') : document.getElementById('clientList');
+            loader.style.display = 'block';
+            const results = await fetchDocketwiseData(query);
+            loader.style.display = 'none';
+            list.innerHTML = '';
+            
+            if (results.length > 0) {
+                results.forEach(client => {
+                    const li = document.createElement('li'); 
+                    li.innerHTML = `<span class="client-name-list">${client.name}</span><span class="client-phone-list">${client.phone || ''}</span>`;
+                    li.onmousedown = (e) => { e.preventDefault(); list.style.display = 'none'; applyClientData(client, isPhone); };
+                    list.appendChild(li);
+                });
+                list.style.display = 'block';
+            }
+        }, 500);
+
+        document.getElementById('fullName').addEventListener('input', e => handleSearch(e.target.value.trim(), false));
+        document.getElementById('phoneNumber').addEventListener('input', e => handleSearch(e.target.value.replace(/\D/g, ''), true));
+
+        // --- 7. ПЕРЕХВАТ ВХОДЯЩЕГО ЗВОНКА (OOMA) ---
+        async function checkIncomingCall() {
+            if (incomingPhone) {
+                let cleanedPhone = incomingPhone.replace(/[^\d+]/g, '');
+                if (cleanedPhone.length < 2) {
+                    document.getElementById('phoneNumber').value = incomingPhone;
+                    return; 
+                }
+                document.getElementById('phoneNumber').value = cleanedPhone;
+                document.getElementById('phoneLoader').style.display = 'block';
+                
+                const clients = await fetchDocketwiseData(cleanedPhone);
+                document.getElementById('phoneLoader').style.display = 'none';
+
+                if(clients.length > 0) {
+                    applyClientData(clients[0], true); 
+                } else {
+                    document.querySelector('input[name="clientStatus"][value="New Client"]').checked = true;
+                }
+            }
+        }
+        // Запускаем перехват, так как мы точно залогинены
+        checkIncomingCall();
+
+        // --- 8. СОХРАНЕНИЕ ВО ВНУТРЕННЮЮ БАЗУ ---
+        const callForm = document.getElementById('callForm');
+        callForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const submitBtn = document.getElementById('submitBtn');
+
+            submitBtn.disabled = true; 
+            submitBtn.textContent = 'Saving to Internal Database...';
+
+            let finalDescription = document.getElementById('briefDescription').value;
+            const noteCategory = document.getElementById('noteCategory').value;
+
+            if (noteCategory) {
+                finalDescription = `[${noteCategory}] Inbound Mobile Call\n\n${finalDescription}`;
+            }
+
+            const staffSelect = document.getElementById('assignedStaff');
+            const assignedStaffName = staffSelect.options[staffSelect.selectedIndex]?.text || "";
+            const assignedStaffId = staffSelect.value || "";
+
+            const formData = {
+                clientId: document.getElementById('hiddenClientId').value || "",
+                clientName: document.getElementById('fullName').value || "Unknown Client",
+                clientPhone: document.getElementById('phoneNumber').value || "",
+                matterTitle: document.getElementById('matterSelect').options[document.getElementById('matterSelect').selectedIndex]?.text || "",
+                program: document.querySelector('input[name="program"]:checked')?.value || "",
+                description: finalDescription,
+                operatorName: loggedInStaff || "Unknown Operator",
+                assignedStaffName: assignedStaffName,
+                assignedStaffId: assignedStaffId,
+                followUpNotes: "",
+                status: "Resolved"
+            };
+
+            try {
+                const response = await fetch('/api/save-call', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(`✅ Звонок успешно сохранен! \n\n${assignedStaffName !== "-- Не уведомлять никого --" ? "Сотрудник получит уведомление." : ""}`);
+                    callForm.reset();
+                    document.getElementById('hiddenClientId').value = '';
+                    document.getElementById('clientBadge').style.display = 'none';
+                    document.getElementById('matterContainer').style.display = 'none';
+                    setDateTime();
+                    window.currentClient = null;
+                } else {
+                    alert(`❌ Ошибка. Вы создали POSTGRES_URL в Vercel? ` + (result.error || ""));
+                }
+            } catch (error) {
+                alert('Сетевая ошибка. Настройте базу данных в Vercel.');
+            } finally {
+                submitBtn.disabled = false; 
+                submitBtn.textContent = 'Save Call Log to Internal CRM';
+            }
+        });
+    });
+</script>
+</body>
+</html>

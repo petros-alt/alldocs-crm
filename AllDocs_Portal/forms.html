@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Docs Consulting - Form Generator</title>
+    
+    <!-- ПОДКЛЮЧАЕМ БИБЛИОТЕКУ ДЛЯ РАБОТЫ С PDF -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    
+    <style>
+        :root {
+            /* MODERN BROWN PALETTE */
+            --primary-color: #3e2723;     
+            --secondary-color: #5d4037;   
+            --accent-color: #a1683a;      
+            --accent-hover: #8b552b;      
+            --bg-color: #f5f2eb;          
+            --form-bg: #ffffff;           
+            --border-color: #d7ccc8;      
+            --surface-color: #faf7f2;     
+            --sidebar-width: 260px;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ========================================= */
+        /* SIDEBAR STYLES                            */
+        /* ========================================= */
+        .sidebar { width: var(--sidebar-width); background-color: var(--primary-color); height: 100vh; position: fixed; left: 0; top: 0; display: flex; flex-direction: column; box-shadow: 4px 0 20px rgba(0,0,0,0.15); z-index: 100; color: var(--bg-color); }
+        .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-header img { width: 80%; max-width: 150px; border-radius: 8px; background: white; padding: 10px; }
+        .nav-menu { list-style: none; padding: 20px 0; margin: 0; flex: 1; }
+        .nav-item { margin-bottom: 5px; }
+        .nav-link { display: flex; align-items: center; padding: 15px 25px; color: rgba(255,255,255,0.7); text-decoration: none; font-weight: 500; font-size: 15px; transition: all 0.3s ease; border-left: 4px solid transparent; }
+        .nav-link:hover { background-color: rgba(255,255,255,0.05); color: white; }
+        .nav-link.active { background-color: rgba(255,255,255,0.1); color: white; border-left-color: var(--accent-color); font-weight: 600; }
+        .nav-icon { margin-right: 15px; font-size: 18px; }
+
+        .sidebar-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); position: relative; }
+        .user-profile { display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 10px; border-radius: 8px; transition: background 0.2s; }
+        .user-profile:hover { background-color: rgba(255,255,255,0.05); }
+        .avatar-circle-small { width: 40px; height: 40px; border-radius: 50%; background-color: var(--accent-color); color: white; display: flex; justify-content: center; align-items: center; font-size: 15px; font-weight: 700; user-select: none; }
+        .user-info { display: flex; flex-direction: column; }
+        .user-name { font-size: 14px; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+        .user-role { font-size: 12px; color: rgba(255,255,255,0.6); }
+
+        .logout-menu { display: none; position: absolute; bottom: 80px; left: 20px; right: 20px; background: var(--form-bg); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); padding: 8px; animation: fadeIn 0.2s ease; }
+        .logout-btn { background: transparent; border: none; color: #d32f2f; cursor: pointer; font-weight: 600; font-size: 14px; width: 100%; text-align: left; padding: 12px 15px; border-radius: 4px; transition: background-color 0.2s; }
+        .logout-btn:hover { background: #ffebee; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ========================================= */
+        /* MAIN WORKSPACE AREA                       */
+        /* ========================================= */
+        .main-wrapper { margin-left: var(--sidebar-width); display: flex; width: calc(100% - var(--sidebar-width)); height: 100vh; }
+
+        /* --- CLIENT SEARCH PANEL --- */
+        .search-panel { width: 340px; background-color: var(--form-bg); border-right: 1px solid var(--border-color); padding: 30px 25px; display: flex; flex-direction: column; overflow-y: visible; flex-shrink: 0; z-index: 10; }
+        .panel-title { font-size: 18px; font-weight: 700; color: var(--primary-color); margin: 0 0 20px 0; padding-bottom: 15px; border-bottom: 2px solid var(--border-color); }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-size: 13px; font-weight: 700; color: var(--secondary-color); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        input { width: 100%; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 15px; box-sizing: border-box; background-color: #fcfbfa; transition: 0.3s; font-family: inherit;}
+        input:focus { outline: none; border-color: var(--accent-color); background-color: var(--form-bg); box-shadow: 0 0 0 3px rgba(161, 104, 58, 0.15); }
+
+        /* AUTOCOMPLETE STYLES */
+        .autocomplete-wrapper { position: relative; display: flex; align-items: center; }
+        .autocomplete-wrapper input { padding-right: 35px; }
+        .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--form-bg); border: 1px solid var(--border-color); border-radius: 8px; max-height: 250px; overflow-y: auto; margin: 4px 0 0 0; padding: 0; list-style: none; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: none; }
+        .autocomplete-list li { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f5f2eb; font-size: 14.5px; color: var(--primary-color); transition: background-color 0.2s; line-height: 1.4; }
+        .autocomplete-list li:hover { background-color: #fdfaf6; }
+        .client-name-list { font-weight: 600; color: var(--accent-color); display: block; }
+        .client-phone-list { font-size: 12.5px; color: var(--secondary-color); opacity: 0.8; }
+        .loading-indicator { position: absolute; right: 12px; color: var(--accent-color); font-size: 12px; display: none; font-weight: bold; }
+
+        .client-card { background-color: #fdfaf6; border: 1px solid var(--border-color); border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 20px; margin-top: 30px; display: none; box-shadow: 0 4px 10px rgba(62, 39, 35, 0.05); animation: fadeIn 0.4s ease;}
+        .client-card h3 { margin: 0 0 10px 0; color: var(--primary-color); font-size: 18px; font-weight: 700; }
+        .client-card p { margin: 6px 0; font-size: 14px; color: var(--secondary-color); }
+        .status-badge { display: inline-block; background-color: #4CAF50; color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-bottom: 10px; letter-spacing: 0.5px;}
+
+        /* --- FORMS GRID --- */
+        .forms-area { flex: 1; padding: 40px; overflow-y: auto; background-color: var(--bg-color); z-index: 1;}
+        .area-header { margin-bottom: 40px; }
+        .area-header h1 { margin: 0; color: var(--primary-color); font-size: 28px; font-family: 'Times New Roman', Times, serif; font-style: italic;}
+        .area-header p { color: var(--secondary-color); margin-top: 8px; font-size: 15px;}
+
+        .forms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; opacity: 0.4; pointer-events: none; transition: opacity 0.4s ease; }
+        .forms-grid.active { opacity: 1; pointer-events: auto; }
+
+        .form-item { background-color: var(--form-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(62, 39, 35, 0.05); display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s, box-shadow 0.2s; }
+        .form-item:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(62, 39, 35, 0.1); border-color: var(--accent-color);}
+        
+        .form-icon { font-size: 24px; margin-bottom: 15px; color: var(--accent-color); }
+        .form-item h4 { margin: 0 0 10px 0; font-size: 17px; color: var(--primary-color); font-weight: 700; line-height: 1.3;}
+        .form-item p { margin: 0 0 25px 0; font-size: 13px; color: var(--secondary-color); line-height: 1.5; flex: 1;}
+
+        .btn-download { background-color: transparent; color: var(--accent-color); border: 2px solid var(--accent-color); padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.5px;}
+        .btn-download:hover { background-color: var(--accent-color); color: white; }
+
+        /* ========================================= */
+        /* MODAL EDITOR STYLES (EXPANDED SIZE)       */
+        /* ========================================= */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(62, 39, 35, 0.85); z-index: 1000; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(5px); animation: fadeIn 0.3s ease; }
+        
+        .modal-container { background: var(--form-bg); width: 95%; max-width: 1400px; height: 95vh; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.5); overflow: hidden; }
+        
+        .modal-header { padding: 15px 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--surface-color); flex-shrink: 0;}
+        .modal-title { font-size: 20px; font-weight: 700; color: var(--primary-color); margin: 0; display: flex; align-items: center; gap: 10px;}
+        .modal-close { background: transparent; border: none; font-size: 32px; color: var(--secondary-color); cursor: pointer; transition: 0.2s; line-height: 1; padding: 0;}
+        .modal-close:hover { color: #d32f2f; }
+        
+        .modal-body { flex: 1; padding: 0; background: #525659; display: flex; flex-direction: column; width: 100%; height: 100%; overflow: hidden; position: relative;}
+        
+        .loader-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.9); display: flex; justify-content: center; align-items: center; font-size: 18px; font-weight: bold; color: var(--accent-color); z-index: 5; flex-direction: column;}
+        
+        iframe { width: 100%; height: 100%; border: none; flex: 1; z-index: 1; position: relative;}
+
+        .modal-footer { padding: 15px 25px; border-top: 1px solid var(--border-color); background: var(--form-bg); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;}
+        .footer-note { font-size: 14px; color: var(--secondary-color); font-style: italic; }
+        .footer-actions { display: flex; gap: 15px; }
+        .btn-cancel { background: transparent; color: var(--secondary-color); border: none; font-weight: 600; cursor: pointer; padding: 10px 20px; font-size: 15px;}
+        .btn-cancel:hover { text-decoration: underline; }
+        .btn-save { background: var(--accent-color); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(161, 104, 58, 0.2); }
+        .btn-save:hover { background: var(--accent-hover); transform: translateY(-1px); }
+
+    </style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <img src="https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png?w=2128&ssl=1" alt="All Docs Consulting">
+    </div>
+    <ul class="nav-menu">
+        <li class="nav-item"><a href="index.html" class="nav-link"><span class="nav-icon">📞</span> Call Center Log</a></li>
+        <li class="nav-item"><a href="calendar.html" class="nav-link"><span class="nav-icon">📅</span> Master Calendar</a></li>
+        <li class="nav-item"><a href="forms.html" class="nav-link active"><span class="nav-icon">📄</span> Forms & Documents</a></li>
+    </ul>
+
+    <div class="sidebar-footer">
+        <div class="user-profile" id="userProfile" style="display: none;">
+            <div class="avatar-circle-small" id="topAvatar">--</div>
+            <div class="user-info">
+                <span class="user-name" id="sidebarUserName">Staff Member</span>
+                <span class="user-role" id="sidebarUserRole">Role</span>
+            </div>
+        </div>
+        <div class="logout-menu" id="logoutMenu">
+            <button class="logout-btn" id="logoutBtn">Log Out Securely</button>
+        </div>
+    </div>
+</aside>
+
+<main class="main-wrapper">
+    
+    <div class="search-panel">
+        <h2 class="panel-title">Client Lookup</h2>
+        
+        <div class="form-group">
+            <label>Client Name</label>
+            <div class="autocomplete-wrapper" id="autocompleteWrapper">
+                <input type="text" id="fullName" placeholder="Start typing name..." autocomplete="off">
+                <span class="loading-indicator" id="nameLoader">Searching...</span>
+                <ul class="autocomplete-list" id="clientList"></ul>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Phone Number</label>
+            <div class="autocomplete-wrapper" id="phoneAutocompleteWrapper">
+                <input type="tel" id="phoneNumber" placeholder="+1 (555) 000-0000" autocomplete="off">
+                <span class="loading-indicator" id="phoneLoader">Searching...</span>
+                <ul class="autocomplete-list" id="phoneList"></ul>
+            </div>
+        </div>
+
+        <div class="client-card" id="clientCard">
+            <span class="status-badge">Active Case Found</span>
+            <h3 id="displayClientName">John Doe</h3>
+            <p><strong>Phone:</strong> <span id="displayClientPhone">+1 (555) 123-4567</span></p>
+            <p><strong>Matters:</strong><br> <span id="displayClientMatters" style="font-size: 13px;">No active matters</span></p>
+            
+            <!-- НОВЫЙ БЛОК: БЫСТРАЯ ЗАМЕТКА -->
+            <div style="margin-top: 20px; padding: 15px; background: white; border: 1px solid var(--border-color); border-radius: 8px;">
+                <h4 style="margin: 0 0 10px 0; color: var(--primary-color); font-size: 14px;">📝 Быстрая заметка в CRM</h4>
+                <textarea id="note-input" placeholder="Напишите заметку..." style="width: 100%; box-sizing: border-box; height: 60px; margin-bottom: 10px; padding: 10px; font-size: 13px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; resize: vertical;"></textarea>
+                <button onclick="sendNoteToDocketwise()" style="background-color: #4CAF50; color: white; padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: bold; width: 100%; transition: background 0.2s;">
+                    Сохранить в Docketwise
+                </button>
+                <p id="note-status" style="margin-top: 10px; font-weight: bold; font-size: 12px; text-align: center; margin-bottom: 0;"></p>
+            </div>
+            
+            <p style="font-size: 12px; color: var(--accent-color); margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
+                <i>* Client successfully linked. Select a form from the right panel to auto-fill data.</i>
+            </p>
+        </div>
+    </div>
+
+    <div class="forms-area">
+        <div class="area-header">
+            <h1>Document Generator</h1>
+            <p>Search and select a client from the left panel to unlock auto-fill PDF generation.</p>
+        </div>
+
+        <div class="forms-grid" id="formsGrid">
+            
+            <div class="form-item">
+                <div><div class="form-icon">📋</div>
+                    <h4>GEN 853</h4>
+                    <p>Sworn Statement</p>
+                </div>
+                <button class="btn-download" onclick="openEditor('GEN 853')">Open & Fill PDF</button>
+            </div>
+
+            <div class="form-item">
+                <div><div class="form-icon">📋</div>
+                    <h4>MC 220</h4>
+                    <p>Authorization for Release of Information</p>
+                </div>
+                <button class="btn-download" onclick="openEditor('MC 220')">Open & Fill PDF</button>
+            </div>
+
+            <div class="form-item">
+                <div><div class="form-icon">📋</div>
+                    <h4>MC 223</h4>
+                    <p>Applicant's Supplemental Statement of Facts for Medi-Cal</p>
+                </div>
+                <button class="btn-download" onclick="openEditor('MC 223')">Open & Fill PDF</button>
+            </div>
+
+            <div class="form-item">
+                <div><div class="form-icon">🤝</div>
+                    <h4>MC 382</h4>
+                    <p>Appointment of Authorized Representative</p>
+                </div>
+                <button class="btn-download" onclick="openEditor('MC 382')">Open & Fill PDF</button>
+            </div>
+
+            <div class="form-item">
+                <div><div class="form-icon">🏢</div>
+                    <h4>MC 383</h4>
+                    <p>Authorized Rep. Standard Agreement for Organizations</p>
+                </div>
+                <button class="btn-download" onclick="openEditor('MC 383')">Open & Fill PDF</button>
+            </div>
+
+            <div class="form-item">
+                <div><div class="form-icon">💰</div>
+                    <h4>SOC 453</h4>
+                    <p>Statement of Household Expenses and Contributions (CAPI)</p>
+                </div>
+                <button class="btn-download" onclick="openEditor('SOC 453')">Open & Fill PDF</button>
+            </div>
+
+            <div class="form-item">
+                <div><div class="form-icon">⚖️</div>
+                    <h4>SOC 455</h4>
+                    <p>State Interim Assistance Reimbursement Authorization</p>
+                </div>
+                <button class="btn-download" onclick="openEditor('SOC 455')">Open & Fill PDF</button>
+            </div>
+
+            <div class="form-item">
+                <div><div class="form-icon">🔄</div>
+                    <h4>SOC 804</h4>
+                    <p>Statement of Facts for Determining Continuing Eligibility (CAPI)</p>
+                </div>
+                <button class="btn-download" onclick="openEditor('SOC 804')">Open & Fill PDF</button>
+            </div>
+
+            <div class="form-item">
+                <div><div class="form-icon">📝</div>
+                    <h4>SOC 814</h4>
+                    <p>Statement of Facts (CAPI)</p>
+                </div>
+                <button class="btn-download" onclick="openEditor('SOC 814')">Open & Fill PDF</button>
+            </div>
+
+            <div class="form-item">
+                <div><div class="form-icon">🏛️</div>
+                    <h4>SSP 14</h4>
+                    <p>Authorization for Reimbursement of Interim Assistance</p>
+                </div>
+                <button class="btn-download" onclick="openEditor('SSP 14')">Open & Fill PDF</button>
+            </div>
+
+            <div class="form-item">
+                <div><div class="form-icon">👨‍⚖️</div>
+                    <h4>DPA 19</h4>
+                    <p>Authorized Representative for Appeals/Hearings</p>
+                </div>
+                <button class="btn-download" onclick="openEditor('DPA 19')">Open & Fill PDF</button>
+            </div>
+
+            <div class="form-item">
+                <div><div class="form-icon">🏠</div>
+                    <h4>SOC 839</h4>
+                    <p>In-Home Supportive Services (IHSS) Designation of Authorized Representative</p>
+                </div>
+                <button class="btn-download" onclick="openEditor('SOC 839')">Open & Fill PDF</button>
+            </div>
+
+            <div class="form-item">
+                <div><div class="form-icon">📍</div>
+                    <h4>SOC 840</h4>
+                    <p>IHSS Provider or Recipient Change of Address and/or Telephone</p>
+                </div>
+                <button class="btn-download" onclick="openEditor('SOC 840')">Open & Fill PDF</button>
+            </div>
+
+        </div>
+    </div>
+</main>
+
+<div class="modal-overlay" id="pdfModal">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 class="modal-title"><span class="nav-icon">✍️</span> Form Editor: <span id="modalFormName">Form Name</span></h3>
+            <button class="modal-close" onclick="closeEditor()">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+            <div class="loader-overlay" id="pdfLoader">
+                ⚙️ Автоматическое заполнение данных клиента...
+            </div>
+            <iframe id="pdfIframe" src="" title="PDF Viewer"></iframe>
+        </div>
+        
+        <div class="modal-footer">
+            <div class="footer-note">Note: Type directly into the PDF. Use the browser's download/print icon inside the viewer to save your filled document.</div>
+            <div class="footer-actions">
+                <button class="btn-cancel" onclick="closeEditor()">Close</button>
+                <button class="btn-save" onclick="downloadPDF()">⬇️ Download PDF</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Глобальная переменная для хранения текущего выбранного клиента
+    let currentClient = null;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        // --- AUTHENTICATION GUARD & PROFILE SETUP ---
+        const loggedInStaff = localStorage.getItem('loggedInStaff');
+        const staffInitials = localStorage.getItem('staffInitials');
+        const staffRole = localStorage.getItem('staffRole');
+
+        if (!loggedInStaff) {
+            window.location.href = 'login.html';
+        } else {
+            document.getElementById('userProfile').style.display = 'flex';
+            document.getElementById('topAvatar').textContent = staffInitials;
+            document.getElementById('sidebarUserName').textContent = loggedInStaff;
+            document.getElementById('sidebarUserRole').textContent = staffRole || "Staff Member";
+
+            const userProfile = document.getElementById('userProfile');
+            const logoutMenu = document.getElementById('logoutMenu');
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            });
+            userProfile.addEventListener('click', () => logoutMenu.style.display = (logoutMenu.style.display === 'block') ? 'none' : 'block');
+            document.addEventListener('click', (e) => { if (!userProfile.contains(e.target) && !logoutMenu.contains(e.target)) logoutMenu.style.display = 'none'; });
+        }
+
+        // --- SMART SEARCH AUTOCOMPLETE LOGIC ---
+        const fullNameInput = document.getElementById('fullName');
+        const clientList = document.getElementById('clientList');
+        const nameLoader = document.getElementById('nameLoader');
+        
+        const phoneNumberInput = document.getElementById('phoneNumber');
+        const phoneList = document.getElementById('phoneList');
+        const phoneLoader = document.getElementById('phoneLoader');
+
+        async function fetchDocketwiseData(query) {
+            try {
+                const response = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                if (data.success && data.clients && data.clients.length > 0) return data.clients; 
+                else if (data.success && data.client) return [data.client]; 
+            } catch (error) { console.error("API Error:", error); }
+            return [];
+        }
+
+        function debounce(func, delay = 500) {
+            let timeoutId;
+            return function (...args) {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(() => { func.apply(null, args); }, delay);
+            };
+        }
+
+        function applyClientData(client, skipPhoneUpdate = false) {
+            // Сохраняем клиента в глобальную переменную для PDF и Заметок
+            currentClient = client;
+
+            fullNameInput.value = client.name;
+            if (!skipPhoneUpdate) phoneNumberInput.value = client.phone && client.phone !== "Номер не указан" ? client.phone : "";
+            
+            document.getElementById('displayClientName').innerText = client.name;
+            document.getElementById('displayClientPhone').innerText = client.phone && client.phone !== "Номер не указан" ? client.phone : "No phone";
+            
+            let mattersText = "No active matters found";
+            if (client.matters && client.matters.length > 0) {
+                mattersText = client.matters.map(m => m.title).join('<br><br>');
+            }
+            document.getElementById('displayClientMatters').innerHTML = mattersText;
+
+            // Сбрасываем статус прошлой заметки
+            document.getElementById('note-status').innerText = "";
+            document.getElementById('note-input').value = "";
+
+            document.getElementById('clientCard').style.display = 'block';
+            document.getElementById('formsGrid').classList.add('active');
+        }
+
+        const handleNameSearch = debounce(async (searchText) => {
+            if (searchText.length < 3) { clientList.style.display = 'none'; nameLoader.style.display = 'none'; return; }
+            nameLoader.style.display = 'block';
+            const results = await fetchDocketwiseData(searchText);
+            nameLoader.style.display = 'none';
+            clientList.innerHTML = '';
+            
+            if (results.length > 0) {
+                results.forEach(client => {
+                    const li = document.createElement('li'); 
+                    const displayPhone = client.phone && client.phone !== "Номер не указан" ? `📞 ${client.phone}` : 'No phone';
+                    li.innerHTML = `<span class="client-name-list">${client.name}</span><span class="client-phone-list">${displayPhone}</span>`;
+                    li.addEventListener('mousedown', function(e) { 
+                        e.preventDefault(); clientList.style.display = 'none'; applyClientData(client); 
+                    });
+                    clientList.appendChild(li);
+                });
+                clientList.style.display = 'block';
+            } else { clientList.style.display = 'none'; }
+        }, 600);
+
+        const handlePhoneSearch = debounce(async (searchDigits) => {
+            if (searchDigits.length < 5) { phoneList.style.display = 'none'; phoneLoader.style.display = 'none'; return; }
+            phoneLoader.style.display = 'block';
+            const results = await fetchDocketwiseData(searchDigits);
+            phoneLoader.style.display = 'none';
+            phoneList.innerHTML = '';
+
+            if (results.length > 0) {
+                results.forEach(client => {
+                    const li = document.createElement('li'); 
+                    const displayPhone = client.phone && client.phone !== "Номер не указан" ? client.phone : "No phone";
+                    li.innerHTML = `<span class="client-name-list">${displayPhone}</span><span class="client-phone-list">${client.name}</span>`;
+                    li.addEventListener('mousedown', function(e) { 
+                        e.preventDefault(); phoneList.style.display = 'none'; applyClientData(client, false); 
+                    });
+                    phoneList.appendChild(li);
+                });
+                phoneList.style.display = 'block';
+            } else { phoneList.style.display = 'none'; }
+        }, 600);
+
+        fullNameInput.addEventListener('input', function() { handleNameSearch(this.value.trim()); });
+        phoneNumberInput.addEventListener('input', function() { handlePhoneSearch(this.value.replace(/\D/g, '')); });
+
+        document.addEventListener('mousedown', function(e) {
+            if (!document.getElementById('autocompleteWrapper').contains(e.target)) clientList.style.display = 'none';
+            if (!document.getElementById('phoneAutocompleteWrapper').contains(e.target)) phoneList.style.display = 'none';
+        });
+    });
+
+    // ==========================================
+    // НОВАЯ ФУНКЦИЯ ДЛЯ ОТПРАВКИ ЗАМЕТОК
+    // ==========================================
+    async function sendNoteToDocketwise() {
+        const noteText = document.getElementById('note-input').value;
+        const statusMsg = document.getElementById('note-status');
+
+        if (!currentClient || !currentClient.id) {
+            statusMsg.style.color = "red";
+            statusMsg.innerText = "❌ Сначала выберите клиента!";
+            return;
+        }
+
+        if (noteText.trim() === "") {
+            statusMsg.style.color = "red";
+            statusMsg.innerText = "❌ Напишите текст заметки!";
+            return;
+        }
+
+        statusMsg.style.color = "#a1683a";
+        statusMsg.innerText = "⏳ Отправка в Docketwise...";
+
+        try {
+            // Отправляем запрос на наш серверный файл, который мы создали ранее
+            const response = await fetch('/api/create-note', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clientId: currentClient.id,
+                    content: noteText
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                statusMsg.style.color = "green";
+                statusMsg.innerText = "✅ Успешно сохранено!";
+                document.getElementById('note-input').value = ""; // Очищаем поле
+                
+                // Убираем надпись об успехе через 4 секунды
+                setTimeout(() => {
+                    statusMsg.innerText = "";
+                }, 4000);
+            } else {
+                // Если Норайр не дал прав на запись, ошибка покажется здесь
+                statusMsg.style.color = "red";
+                statusMsg.innerText = "❌ Ошибка доступа: Нет прав на запись!";
+                console.error("Docketwise Error:", result.error);
+            }
+        } catch (error) {
+            statusMsg.style.color = "red";
+            statusMsg.innerText = "❌ Ошибка соединения: " + error.message;
+        }
+    }
+
+    // ==========================================
+    // ОБЩИЙ ДВИЖОК ДЛЯ АВТОЗАПОЛНЕНИЯ PDF
+    // ==========================================
+    async function openEditor(formCode) {
+        document.getElementById('modalFormName').innerText = formCode;
+        document.getElementById('pdfModal').style.display = 'flex';
+        
+        const loader = document.getElementById('pdfLoader');
+        const iframe = document.getElementById('pdfIframe');
+        
+        loader.style.display = 'flex';
+        iframe.src = ""; 
+
+        try {
+            // Форматируем имя файла (заменяем пробелы на нижнее подчеркивание)
+            const fileName = formCode.replace(' ', '_') + '.pdf';
+            const response = await fetch(`pdf-templates/${fileName}`);
+            
+            if (!response.ok) throw new Error("Файл шаблона не найден на сервере!");
+            
+            const arrayBuffer = await response.arrayBuffer();
+            
+            // Загружаем PDF (игнорируя защиту, как мы выяснили)
+            const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+            const form = pdfDoc.getForm();
+
+            // МАППИНГ ПОЛЕЙ: Если клиент выбран, заполняем форму
+            if (currentClient) {
+                
+                // Индивидуальные настройки для формы SSP 14
+                if (formCode === 'SSP 14') {
+                    try {
+                        const nameField = form.getTextField('FullName');
+                        if (nameField) nameField.setText(currentClient.name);
+                    } catch (e) {
+                        console.warn("Поле FullName не найдено в SSP 14");
+                    }
+                }
+                
+                // Место для других форм...
+                // if (formCode === 'GEN 853') { ... }
+            }
+
+            // Превращаем заполненный PDF обратно в файл
+            const pdfBytes = await pdfDoc.save();
+            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+            const blobUrl = URL.createObjectURL(blob);
+            
+            // Показываем в iframe
+            iframe.src = blobUrl;
+            loader.style.display = 'none';
+
+        } catch (error) {
+            console.error(error);
+            loader.innerHTML = `❌ Ошибка: ${error.message}`;
+        }
+    }
+
+    function closeEditor() {
+        document.getElementById('pdfModal').style.display = 'none';
+        const iframe = document.getElementById('pdfIframe');
+        
+        // Очищаем память браузера от временного файла
+        if (iframe.src && iframe.src.startsWith('blob:')) {
+            URL.revokeObjectURL(iframe.src);
+        }
+        iframe.src = ""; 
+    }
+
+    function downloadPDF() {
+        const iframeSrc = document.getElementById('pdfIframe').src;
+        if(iframeSrc) {
+            const link = document.createElement('a');
+            link.href = iframeSrc;
+            const formName = document.getElementById('modalFormName').innerText.replace(' ', '_');
+            link.download = `${formName}_Filled.pdf`; 
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    }
+</script>
+</body>
+</html>

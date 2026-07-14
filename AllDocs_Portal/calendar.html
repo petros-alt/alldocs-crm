@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Docs Consulting - Master Calendar</title>
+    <style>
+        :root {
+            /* MODERN BROWN PALETTE */
+            --primary-color: #3e2723;     
+            --secondary-color: #5d4037;   
+            --accent-color: #a1683a;      
+            --accent-hover: #8b552b;      
+            --bg-color: #f5f2eb;          
+            --form-bg: #ffffff;           
+            --border-color: #d7ccc8;      
+            --surface-color: #faf7f2;     
+            --sidebar-width: 260px;
+            --appt-bg: #fdfaf6;
+            --info-bg: #fdfaf6; 
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            line-height: 1.6;
+            margin: 0;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ========================================= */
+        /* SIDEBAR STYLES                            */
+        /* ========================================= */
+        .sidebar { width: var(--sidebar-width); background-color: var(--primary-color); height: 100vh; position: fixed; left: 0; top: 0; display: flex; flex-direction: column; box-shadow: 4px 0 20px rgba(0,0,0,0.15); z-index: 100; color: var(--bg-color); }
+        .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-header img { width: 80%; max-width: 150px; border-radius: 8px; background: white; padding: 10px; }
+        .nav-menu { list-style: none; padding: 20px 0; margin: 0; flex: 1; }
+        .nav-item { margin-bottom: 5px; }
+        .nav-link { display: flex; align-items: center; padding: 15px 25px; color: rgba(255,255,255,0.7); text-decoration: none; font-weight: 500; font-size: 15px; transition: all 0.3s ease; border-left: 4px solid transparent; }
+        .nav-link:hover { background-color: rgba(255,255,255,0.05); color: white; }
+        .nav-link.active { background-color: rgba(255,255,255,0.1); color: white; border-left-color: var(--accent-color); font-weight: 600; }
+        .nav-icon { margin-right: 15px; font-size: 18px; }
+
+        .sidebar-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); position: relative; }
+        .user-profile { display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 10px; border-radius: 8px; transition: background 0.2s; }
+        .user-profile:hover { background-color: rgba(255,255,255,0.05); }
+        .avatar-circle-small { width: 40px; height: 40px; border-radius: 50%; background-color: var(--accent-color); color: white; display: flex; justify-content: center; align-items: center; font-size: 15px; font-weight: 700; user-select: none; }
+        .user-info { display: flex; flex-direction: column; }
+        .user-name { font-size: 14px; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+        .user-role { font-size: 12px; color: rgba(255,255,255,0.6); }
+
+        .logout-menu { display: none; position: absolute; bottom: 80px; left: 20px; right: 20px; background: var(--form-bg); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); padding: 8px; animation: fadeIn 0.2s ease; }
+        .logout-btn { background: transparent; border: none; color: #d32f2f; cursor: pointer; font-weight: 600; font-size: 14px; width: 100%; text-align: left; padding: 12px 15px; border-radius: 4px; transition: background-color 0.2s; }
+        .logout-btn:hover { background: #ffebee; }
+
+        /* ========================================= */
+        /* MAIN CONTENT AREA                         */
+        /* ========================================= */
+        .main-wrapper { margin-left: var(--sidebar-width); padding: 40px 20px; width: calc(100% - var(--sidebar-width)); box-sizing: border-box; }
+        .container { max-width: 1000px; margin: 0 auto; background: var(--form-bg); padding: 45px; border-radius: 16px; box-shadow: 0 10px 40px rgba(62, 39, 35, 0.08); border: 1px solid rgba(255, 255, 255, 0.6); }
+        .header { text-align: center; border-bottom: 2px solid var(--border-color); padding-bottom: 20px; margin-bottom: 30px; }
+        
+        /* INTERNAL TABS */
+        .tab-navigation { display: flex; background: var(--surface-color); padding: 6px; border-radius: 12px; margin-bottom: 30px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .tab-btn { flex: 1; background: transparent; border: none; padding: 12px 20px; cursor: pointer; border-radius: 8px; font-weight: 600; color: var(--secondary-color); transition: all 0.3s ease; font-size: 15px; }
+        .tab-btn.active { background-color: var(--form-bg); color: var(--primary-color); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06); }
+        .view-section { display: none; animation: fadeIn 0.4s ease; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- FORMS & INPUTS --- */
+        .section-title { color: var(--primary-color); padding-bottom: 8px; border-bottom: 2px solid var(--border-color); font-size: 18px; margin-bottom: 20px; margin-top: 35px; font-weight: 700; }
+        .section-title:first-of-type { margin-top: 0; }
+        .form-row { display: flex; margin-bottom: 22px; align-items: center; gap: 20px;}
+        .form-row.align-top { align-items: flex-start; }
+        .form-label { width: 180px; font-weight: 600; font-size: 14px; color: var(--primary-color); flex-shrink: 0; }
+        .form-input-box { flex: 1; max-width: 450px; }
+        
+        input, select { width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 15px; background-color: #fcfbfa; font-family: inherit; box-sizing: border-box; outline: none; transition: all 0.3s ease; }
+        input:focus, select:focus { border-color: var(--accent-color); background-color: var(--form-bg); box-shadow: 0 0 0 3px rgba(161, 104, 58, 0.15); }
+
+        .segmented-control { display: flex; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; background: #fcfbfa;}
+        .seg-btn { flex: 1; background: transparent; border: none; border-right: 1px solid var(--border-color); padding: 10px; font-size: 14px; font-weight: 500; color: var(--secondary-color); cursor: pointer; transition: 0.2s;}
+        .seg-btn:last-child { border-right: none; }
+        .seg-btn.active { background-color: var(--accent-color); color: white; }
+
+        .search-client-btn { background-color: var(--surface-color); color: var(--primary-color); border: 2px solid var(--border-color); border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; padding: 0 20px; transition: 0.2s; white-space: nowrap; }
+        .search-client-btn:hover:not(:disabled) { border-color: var(--accent-color); color: var(--accent-color); }
+        .search-client-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+
+        /* --- MINI CALENDAR IN FORM --- */
+        .datetime-container { display: flex; gap: 40px; }
+        .calendar-widget { width: 250px; }
+        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: 700; font-size: 16px; color: var(--primary-color);}
+        .cal-header button { background: none; border: none; font-size: 20px; color: var(--accent-color); cursor: pointer;}
+        .cal-days { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 12px; color: var(--secondary-color); margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; font-weight: 600;}
+        .cal-dates { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+        .cal-btn { padding: 8px 0; border: none; background: transparent; cursor: pointer; font-size: 14px; border-radius: 6px; color: var(--primary-color); font-weight: 500;}
+        .cal-btn:hover:not(:disabled) { background: #f0ebe1; }
+        .cal-btn.selected { background-color: var(--accent-color); color: white; font-weight: bold; box-shadow: 0 2px 8px rgba(161, 104, 58, 0.4); }
+        .cal-btn:disabled { color: #d7ccc8; cursor: not-allowed; }
+
+        .time-picker-widget { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; }
+        .time-select-group { display: flex; gap: 10px; }
+        .time-select-group select { font-size: 16px; padding: 10px; width: 75px; text-align: center; border-radius: 8px; }
+
+        /* --- BUTTONS --- */
+        .submit-btn { width: 100%; max-width: 450px; padding: 16px; background-color: var(--accent-color); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 15px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(161, 104, 58, 0.25);}
+        .submit-btn:hover:not(:disabled) { background-color: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(161, 104, 58, 0.35); }
+        .submit-btn:disabled { background-color: #d7ccc8; cursor: not-allowed; box-shadow: none; }
+        .action-container { margin-left: 200px; }
+
+        /* --- MASTER CALENDAR VIEWS --- */
+        .calendar-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; flex-wrap: wrap;}
+        .date-nav { display: flex; align-items: center; gap: 15px; font-size: 20px; font-weight: 700; color: var(--primary-color); }
+        .date-nav button { background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; padding: 5px 12px; font-size: 18px; cursor: pointer; color: var(--primary-color); transition: 0.2s;}
+        .date-nav button:hover { border-color: var(--accent-color); color: var(--accent-color); }
+        
+        .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); background: var(--border-color); gap: 1px; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;}
+        .month-header { background: var(--surface-color); text-align: center; padding: 12px 0; font-size: 13px; font-weight: 700; color: var(--primary-color); text-transform: uppercase; letter-spacing: 0.5px;}
+        .month-cell { background: #fff; min-height: 120px; padding: 8px; box-sizing: border-box; transition: background 0.2s;}
+        .month-cell:hover { background: #fdfaf6; }
+        .month-cell .date-num { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--secondary-color); }
+        .month-cell .date-num.today { background: var(--accent-color); color: white; display: inline-block; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; }
+        .mini-event { font-size: 11.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--secondary-color); margin-bottom: 4px; padding: 2px 4px; background: var(--surface-color); border-radius: 4px; border-left: 2px solid var(--accent-color);}
+
+        /* Week/Day View */
+        .week-day-grid { background: #fff; border: 1px solid var(--border-color); border-radius: 8px; display: flex; flex-direction: column; width: 100%; overflow-x: auto;}
+        .wd-header { display: flex; border-bottom: 1px solid var(--border-color); background: var(--surface-color); }
+        .wd-time-col { width: 80px; border-right: 1px solid var(--border-color); flex-shrink: 0; }
+        .wd-day-col { flex: 1; border-right: 1px solid var(--border-color); min-width: 120px; text-align: center;}
+        .wd-day-col:last-child { border-right: none; }
+        .wd-day-title { padding: 12px 5px; font-size: 13px; font-weight: 600; color: var(--secondary-color); text-transform: uppercase;}
+        .wd-day-title .num { font-size: 22px; color: var(--primary-color); display: block; font-weight: 700; margin-top: 4px;}
+        .wd-row { display: flex; min-height: 70px; border-bottom: 1px dashed #e6dfd9; }
+        .wd-time-label { width: 80px; padding: 10px 10px 0 0; font-size: 12px; font-weight: 500; color: var(--secondary-color); text-align: right; box-sizing: border-box; border-right: 1px solid var(--border-color); background: var(--surface-color);}
+        .wd-slot { flex: 1; border-right: 1px solid var(--border-color); position: relative; padding: 4px; display: flex; flex-direction: column; gap: 4px; box-sizing: border-box; background: #fff;}
+        .wd-slot:last-child { border-right: none; }
+        
+        .appt-block { background-color: var(--appt-bg); padding: 8px; font-size: 12px; border-left: 3px solid var(--accent-color); border-radius: 4px; color: var(--primary-color); box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .appt-block .name { font-weight: 700; color: var(--primary-color); margin-bottom: 3px;}
+        .appt-block .desc { color: var(--secondary-color); font-size: 11px; }
+
+        /* Agenda View */
+        .agenda-view { background: #fff; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;}
+        .agenda-header { display: flex; padding: 15px 25px; border-bottom: 1px solid var(--border-color); background: var(--surface-color); gap: 25px; font-size: 16px; font-weight: 600; color: var(--secondary-color);}
+        .agenda-header span { cursor: pointer; padding-bottom: 8px; transition: 0.2s;}
+        .agenda-header span.active { color: var(--accent-color); border-bottom: 2px solid var(--accent-color); }
+        .agenda-date-group { background: #fdfaf6; padding: 12px 25px; font-weight: 700; color: var(--primary-color); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px;}
+        .agenda-date-group::before { content: '📅'; display: inline-block; font-size: 16px;}
+        .agenda-item { display: flex; justify-content: space-between; padding: 18px 25px; border-bottom: 1px solid var(--border-color); gap: 15px; transition: background 0.2s;}
+        .agenda-item:hover { background: #fcfbfa; }
+        .agenda-item-left { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+        .agenda-name { color: var(--primary-color); font-size: 15px; font-weight: 700; cursor: pointer; }
+        .agenda-details { font-size: 13.5px; color: var(--secondary-color); }
+        .agenda-time { font-size: 15px; font-weight: 600; color: var(--accent-color); flex-shrink: 0; background: var(--surface-color); padding: 5px 10px; border-radius: 6px; align-self: flex-start;}
+
+    </style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <img src="https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png?w=2128&ssl=1" alt="All Docs Consulting">
+    </div>
+    
+    <ul class="nav-menu">
+        <li class="nav-item">
+            <a href="index.html" class="nav-link">
+                <span class="nav-icon">📞</span> Call Center Log
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="calendar.html" class="nav-link active">
+                <span class="nav-icon">📅</span> Master Calendar
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="forms.html" class="nav-link">
+                <span class="nav-icon">📄</span> Forms & Documents
+            </a>
+        </li>
+    </ul>
+
+    <div class="sidebar-footer">
+        <div class="user-profile" id="userProfile" style="display: none;">
+            <div class="avatar-circle-small" id="topAvatar">--</div>
+            <div class="user-info">
+                <span class="user-name" id="sidebarUserName">Staff Member</span>
+                <span class="user-role" id="sidebarUserRole">Role</span>
+            </div>
+        </div>
+        
+        <div class="logout-menu" id="logoutMenu">
+            <button class="logout-btn" id="logoutBtn">Log Out Securely</button>
+        </div>
+    </div>
+</aside>
+
+<main class="main-wrapper">
+    <div class="container">
+        
+        <div class="header">
+            <p style="font-family: 'Times New Roman', Times, serif; font-size: 28px; font-weight: bold; font-style: italic; margin-top: 0; margin-bottom: 0; color: var(--primary-color);">Appointment Master</p>
+        </div>
+
+        <div class="tab-navigation">
+            <button class="tab-btn active" onclick="switchAppTab('form')">New Appointment</button>
+            <button class="tab-btn" onclick="switchAppTab('calendar')">View Calendar</button>
+        </div>
+
+        <div id="formView" class="view-section active">
+            <h2 class="section-title">Schedule Details</h2>
+            
+            <div class="form-row" style="background: #fdfaf6; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); border-left: 4px solid var(--accent-color);">
+                <div class="form-label" style="width: 160px;">Lookup Client</div>
+                <div class="form-input-box" style="display: flex; gap: 10px;">
+                    <input type="text" id="searchQuery" placeholder="Search by Name or Phone in Docketwise...">
+                    <button type="button" id="btnSearchClient" class="search-client-btn" onclick="searchDocketwise()">Find</button>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-label">Customer Name</div>
+                <div class="form-input-box">
+                    <input type="text" id="clientName" placeholder="Auto-filled or enter manually">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-label">Phone Number</div>
+                <div class="form-input-box">
+                    <input type="tel" id="phoneNumber" placeholder="+1 (555) 000-0000">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-label">Reminder Type</div>
+                <div class="form-input-box">
+                    <div class="segmented-control" id="reminderType">
+                        <button class="seg-btn" onclick="setReminder('Email')">Email</button>
+                        <button class="seg-btn active" onclick="setReminder('Text')">Text (Ooma API Pending)</button>
+                        <button class="seg-btn" onclick="setReminder('Both')">Both</button>
+                        <button class="seg-btn" onclick="setReminder('None')">None</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-label">Appt. Location</div>
+                <div class="form-input-box">
+                    <select id="apptLocation">
+                        <option>All Docs Consulting</option>
+                        <option>USCIS Trustin</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-label">Service</div>
+                <div class="form-input-box">
+                    <select id="apptService">
+                        <option value="--">-- Please Select --</option>
+                        <option value="001-Initial Consultation">001 - Initial Consultation</option>
+                        <option value="04-Document Pick-up">04 - Document Pick-up</option>
+                        <option value="08-Follow-up Meeting">08 - Follow-up Meeting</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-label">Staff Member</div>
+                <div class="form-input-box">
+                    <select id="staffMember">
+                        <option value="--">--</option>
+                        <option value="Argishti S.">Argishti S.</option>
+                        <option value="Gohar A.">Gohar A.</option>
+                        <option value="Norayr Badalyan">Norayr Badalyan</option>
+                        <option value="Mariam D.">Mariam D.</option>
+                        <option value="Petros E.">Petros E.</option>
+                        <option value="Rima A.">Rima A.</option>
+                        <option value="Artak B.">Artak B.</option>
+                        <option value="Nairi H.">Nairi H.</option>
+                        <option value="Lilit A.">Lilit A.</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row align-top" style="margin-top: 35px; padding-top: 35px; border-top: 1px solid var(--border-color);">
+                <div class="form-label">Select Date & Time</div>
+                <div class="form-input-box datetime-container">
+                    
+                    <div class="calendar-widget">
+                        <div class="cal-header">
+                            <button id="fPrevM">&lt;</button>
+                            <span id="fMonthYear"></span>
+                            <button id="fNextM">&gt;</button>
+                        </div>
+                        <div class="cal-days"><div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div></div>
+                        <div class="cal-dates" id="fCalDates"></div>
+                    </div>
+                    
+                    <div class="time-picker-widget">
+                        <div class="time-select-group">
+                            <select id="timeHour">
+                                <option>01</option><option>02</option><option>03</option><option>04</option>
+                                <option>05</option><option>06</option><option>07</option><option>08</option>
+                                <option>09</option><option selected>10</option><option>11</option><option>12</option>
+                            </select>
+                            <select id="timeMinute"><option selected>00</option><option>15</option><option>30</option><option>45</option></select>
+                            <select id="timeAMPM"><option selected>AM</option><option>PM</option></select>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-label">Appt. Length</div>
+                <div class="form-input-box">
+                    <select id="apptLength">
+                        <option>15 minutes</option>
+                        <option selected>30 minutes</option>
+                        <option>1 hour</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="action-container">
+                <button id="bookBtn" class="submit-btn" disabled>Save Appointment</button>
+            </div>
+        </div>
+
+        <div id="calendarAppView" class="view-section">
+            
+            <div class="calendar-toolbar">
+                <select style="width:160px;"><option>Filter by Staff...</option></select>
+                
+                <div class="date-nav">
+                    <button onclick="changeViewDate(-1)">&lt;</button>
+                    <span id="mainCalTitle">July 2026</span>
+                    <button onclick="changeViewDate(1)">&gt;</button>
+                </div>
+
+                <select id="viewSelector" style="width:160px;" onchange="renderMainCalendar()">
+                    <option value="month">Month Grid</option>
+                    <option value="week">Weekly View</option>
+                    <option value="day">Daily View</option>
+                    <option value="agenda">Agenda List</option>
+                </select>
+            </div>
+
+            <div id="calendarContent"></div>
+
+        </div>
+
+    </div>
+</main>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        
+        // --- AUTHENTICATION GUARD & PROFILE SETUP ---
+        const loggedInStaff = localStorage.getItem('loggedInStaff');
+        const staffInitials = localStorage.getItem('staffInitials');
+        const staffRole = localStorage.getItem('staffRole');
+
+        if (!loggedInStaff) {
+            window.location.href = 'login.html';
+        } else {
+            document.getElementById('userProfile').style.display = 'flex';
+            document.getElementById('topAvatar').textContent = staffInitials;
+            document.getElementById('sidebarUserName').textContent = loggedInStaff;
+            document.getElementById('sidebarUserRole').textContent = staffRole || "Staff Member";
+
+            const staffSelect = document.getElementById('staffMember');
+            staffSelect.value = loggedInStaff;
+
+            const userProfile = document.getElementById('userProfile');
+            const logoutMenu = document.getElementById('logoutMenu');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            userProfile.addEventListener('click', () => logoutMenu.style.display = (logoutMenu.style.display === 'block') ? 'none' : 'block');
+            logoutBtn.addEventListener('click', () => { localStorage.clear(); window.location.href = 'login.html'; });
+            document.addEventListener('click', (e) => { if (!userProfile.contains(e.target) && !logoutMenu.contains(e.target)) logoutMenu.style.display = 'none'; });
+        }
+    });
+
+    // --- TAB SWITCHING ---
+    function switchAppTab(tab) {
+        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+        const btns = document.querySelectorAll('.tab-btn');
+        btns.forEach(btn => btn.classList.remove('active'));
+        
+        if(tab === 'form') {
+            document.getElementById('formView').classList.add('active');
+            btns[0].classList.add('active');
+        } else {
+            document.getElementById('calendarAppView').classList.add('active');
+            btns[1].classList.add('active');
+            renderMainCalendar();
+        }
+    }
+
+    let selectedReminder = 'Text';
+    function setReminder(type) {
+        selectedReminder = type;
+        const btns = document.getElementById('reminderType').querySelectorAll('.seg-btn');
+        btns.forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+
+    // --- DOCKETWISE SMART SEARCH LOGIC ---
+    async function searchDocketwise() {
+        const query = document.getElementById('searchQuery').value.trim();
+        const searchBtn = document.getElementById('btnSearchClient');
+        
+        if(!query) { 
+            alert("Please enter a name or phone number to search."); 
+            return; 
+        }
+
+        searchBtn.innerText = "Searching...";
+        searchBtn.disabled = true;
+
+        try {
+            // Обращение к нашему мосту Vercel
+            const response = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+            const data = await response.json();
+
+            searchBtn.innerText = "Find";
+            searchBtn.disabled = false;
+
+            if (data.success) {
+                // Вставляем данные из базы в форму
+                document.getElementById('clientName').value = data.client.name;
+                document.getElementById('phoneNumber').value = data.client.phone;
+                checkFormReady();
+            } else {
+                alert("Client not found in Docketwise: " + (data.error || "Unknown error"));
+            }
+        } catch(error) {
+            console.error(error);
+            searchBtn.innerText = "Find";
+            searchBtn.disabled = false;
+            alert("Failed to connect to the database bridge.");
+        }
+    }
+
+    // --- FORM VALIDATION ---
+    const clientNameInput = document.getElementById('clientName');
+    const phoneInput = document.getElementById('phoneNumber');
+    
+    function checkFormReady() {
+        const isNameFilled = clientNameInput.value.trim() !== '';
+        if(isNameFilled && selectedFormDate) {
+            document.getElementById('bookBtn').disabled = false;
+        } else {
+            document.getElementById('bookBtn').disabled = true;
+        }
+    }
+    clientNameInput.addEventListener('input', checkFormReady);
+
+    // --- MINI FORM CALENDAR ---
+    let formDate = new Date(); 
+    let selectedFormDate = null;
+    
+    function renderFormCal() {
+        const grid = document.getElementById('fCalDates');
+        grid.innerHTML = '';
+        const y = formDate.getFullYear(); const m = formDate.getMonth();
+        document.getElementById('fMonthYear').textContent = `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m]} ${y}`;
+        const firstDay = new Date(y, m, 1).getDay();
+        const daysInMonth = new Date(y, m + 1, 0).getDate();
+        
+        for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div'));
+        
+        for (let i = 1; i <= daysInMonth; i++) {
+            const btn = document.createElement('button'); 
+            btn.className = 'cal-btn'; 
+            btn.textContent = i;
+            const cDate = new Date(y, m, i);
+            
+            btn.onclick = (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.cal-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected'); 
+                selectedFormDate = cDate;
+                checkFormReady();
+            };
+            
+            if(selectedFormDate && cDate.getTime() === selectedFormDate.getTime()) {
+                btn.classList.add('selected');
+            }
+            grid.appendChild(btn);
+        }
+    }
+    document.getElementById('fPrevM').onclick = (e) => { e.preventDefault(); formDate.setMonth(formDate.getMonth()-1); renderFormCal(); };
+    document.getElementById('fNextM').onclick = (e) => { e.preventDefault(); formDate.setMonth(formDate.getMonth()+1); renderFormCal(); };
+    renderFormCal();
+
+    // --- SAVE TO LOCAL DATABASE (To be synced with API later) ---
+    document.getElementById('bookBtn').onclick = (e) => {
+        e.preventDefault();
+        const h = document.getElementById('timeHour').value;
+        const m = document.getElementById('timeMinute').value;
+        const ampm = document.getElementById('timeAMPM').value;
+        const clientName = clientNameInput.value.trim();
+        const clientPhone = phoneInput.value.trim();
+        const appointmentData = {
+            id: Date.now(),
+            client: clientName,
+            phone: clientPhone,
+            dateStr: selectedFormDate.toDateString(),
+            timestamp: selectedFormDate.getTime(),
+            time: `${h}:${m} ${ampm.toUpperCase()}`,
+            service: document.getElementById('apptService').value,
+            staff: document.getElementById('staffMember').value,
+            location: document.getElementById('apptLocation').value,
+            length: document.getElementById('apptLength').value
+        };
+
+        const recs = JSON.parse(localStorage.getItem('gr_db')) || [];
+        recs.push(appointmentData);
+        localStorage.setItem('gr_db', JSON.stringify(recs));
+
+        // Сброс формы после сохранения
+        document.getElementById('searchQuery').value = '';
+        clientNameInput.value = '';
+        phoneInput.value = '';
+        document.getElementById('bookBtn').disabled = true;
+        selectedFormDate = null;
+        renderFormCal();
+        
+        alert("Appointment Saved! Pending Ooma SMS integration.");
+        switchAppTab('calendar');
+    };
+
+    // --- MASTER CALENDAR VIEWS ---
+    let viewDate = new Date(); 
+    const content = document.getElementById('calendarContent');
+    const title = document.getElementById('mainCalTitle');
+
+    function getRecords() { return JSON.parse(localStorage.getItem('gr_db')) || []; }
+
+    function changeViewDate(dir) {
+        const mode = document.getElementById('viewSelector').value;
+        if(mode === 'month') viewDate.setMonth(viewDate.getMonth() + dir);
+        if(mode === 'week') viewDate.setDate(viewDate.getDate() + (dir * 7));
+        if(mode === 'day' || mode === 'agenda') viewDate.setDate(viewDate.getDate() + dir);
+        renderMainCalendar();
+    }
+
+    function renderMainCalendar() {
+        const mode = document.getElementById('viewSelector').value;
+        const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        
+        if (mode === 'month') {
+            title.textContent = `${months[viewDate.getMonth()]} ${viewDate.getFullYear()}`;
+            renderMonthView();
+        } else if (mode === 'agenda') {
+            title.textContent = `Agenda`;
+            renderAgendaView();
+        } else if (mode === 'week') {
+            const sun = new Date(viewDate);
+            sun.setDate(sun.getDate() - sun.getDay());
+            title.textContent = `${months[sun.getMonth()]} ${sun.getFullYear()}`;
+            renderWeekView(sun);
+        } else if (mode === 'day') {
+            const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+            title.textContent = `${days[viewDate.getDay()]}, ${months[viewDate.getMonth()].substr(0,3)}. ${viewDate.getDate()}, ${viewDate.getFullYear()}`;
+            renderDayView(viewDate);
+        }
+    }
+
+    function renderMonthView() {
+        const y = viewDate.getFullYear(); const m = viewDate.getMonth();
+        const firstDay = new Date(y, m, 1).getDay();
+        const daysInMonth = new Date(y, m + 1, 0).getDate();
+        const records = getRecords();
+
+        let html = '<div class="month-grid">';
+        const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        days.forEach(d => html += `<div class="month-header">${d}</div>`);
+        
+        for (let i = 0; i < firstDay; i++) html += `<div class="month-cell" style="background:var(--surface-color);"></div>`;
+        
+        const todayStr = new Date().toDateString();
+
+        for (let i = 1; i <= daysInMonth; i++) {
+            const cDateStr = new Date(y, m, i).toDateString();
+            const isToday = (cDateStr === todayStr);
+            const dayRecs = records.filter(r => r.dateStr === cDateStr);
+            
+            html += `<div class="month-cell">
+                <div class="date-num ${isToday ? 'today' : ''}">${i}</div>`;
+            
+            dayRecs.slice(0, 4).forEach(r => {
+                html += `<div class="mini-event">${r.time} ${r.client.split(' ')[0]}</div>`;
+            });
+            if(dayRecs.length > 4) html += `<div class="mini-event" style="color:var(--accent-color); border:none; text-align:center;">+${dayRecs.length - 4} more</div>`;
+            html += `</div>`;
+        }
+        html += '</div>';
+        content.innerHTML = html;
+    }
+
+    function renderAgendaView() {
+        const records = getRecords().sort((a,b) => a.timestamp - b.timestamp);
+        let html = `
+            <div class="agenda-view">
+                <div class="agenda-header"><span class="active">Upcoming Appointments</span></div>
+        `;
+        if(records.length === 0) {
+            content.innerHTML = html + '<div style="padding:30px; text-align:center; color:#8d6e63; font-style:italic;">No appointments found in the database.</div></div>'; return;
+        }
+
+        let currentGroup = '';
+        records.forEach(r => {
+            const dObj = new Date(r.timestamp);
+            const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+            const dateTitle = `${days[dObj.getDay()]}, ${dObj.getMonth()+1}/${dObj.getDate()}`;
+            
+            if(dateTitle !== currentGroup) {
+                html += `<div class="agenda-date-group">${dateTitle}</div>`;
+                currentGroup = dateTitle;
+            }
+
+            html += `
+                <div class="agenda-item">
+                    <div class="agenda-item-left">
+                        <div class="agenda-name">${r.client}</div>
+                        <div class="agenda-details">${r.service.split('-')[1] || r.service} • ${r.location} <span style="color:#aaa; margin:0 5px;">|</span> with ${r.staff}</div>
+                    </div>
+                    <div class="agenda-time">${r.time} (${r.length})</div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        content.innerHTML = html;
+    }
+
+    function buildTimeGrid(daysCount, startDate) {
+        let html = `<div class="week-day-grid"><div class="wd-header"><div class="wd-time-col"></div>`;
+        const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        
+        for(let i=0; i<daysCount; i++) {
+            const d = new Date(startDate); d.setDate(d.getDate() + i);
+            html += `<div class="wd-day-col"><div class="wd-day-title">${days[d.getDay()]}<span class="num">${d.getDate()}</span></div></div>`;
+        }
+        html += `</div>`;
+
+        const records = getRecords();
+        
+        for(let hourVal=8; hourVal<=18; hourVal++) {
+            let displayHour = hourVal > 12 ? hourVal - 12 : hourVal;
+            let displayAMPM = hourVal >= 12 ? 'PM' : 'AM';
+            let label = `${displayHour} ${displayAMPM}`; 
+
+            html += `<div class="wd-row"><div class="wd-time-label">${label}</div>`;
+            
+            for(let i=0; i<daysCount; i++) {
+                const d = new Date(startDate); d.setDate(d.getDate() + i);
+                
+                const dayRecs = records.filter(r => {
+                    if (r.dateStr !== d.toDateString()) return false;
+                    let parts = r.time.split(' ');
+                    if(parts.length < 2) return false;
+                    let rHour = parseInt(parts[0].split(':')[0], 10);
+                    let rAMPM = parts[1];
+                    
+                    if(rAMPM === 'PM' && rHour !== 12) rHour += 12;
+                    if(rAMPM === 'AM' && rHour === 12) rHour = 0;
+                    
+                    return rHour === hourVal;
+                });
+                
+                html += `<div class="wd-slot">`;
+                dayRecs.forEach(r => {
+                    html += `<div class="appt-block">
+                        <div class="name">${r.client}</div>
+                        <div class="desc">For ${r.service.split('-')[0]} with ${r.staff.split(' ')[0]}</div>
+                        <div class="desc"><strong>${r.time}</strong></div>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+            html += `</div>`;
+        }
+        html += `</div>`;
+        return html;
+    }
+
+    function renderWeekView(sunday) { content.innerHTML = buildTimeGrid(7, sunday); }
+    function renderDayView(day) { content.innerHTML = buildTimeGrid(1, day); }
+
+</script>
+</body>
+</html>
