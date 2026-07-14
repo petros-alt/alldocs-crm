@@ -14,85 +14,42 @@ export default async function handler(req, res) {
             digits = digits.substring(1);
         }
 
-        // Если в запросе нет букв и есть хотя бы 3 цифры — это 100% поиск по номеру
-        const isPhoneSearch = digits.length >= 3 && !/[a-z]/.test(rawQuery);
+        // Если есть цифры - ищем по цифрам, если нет - по тексту
+        const searchStr = digits.length > 0 ? digits : rawQuery;
+        
+        // Запрашиваем до 100 человек, чтобы никто не потерялся на 2-й странице
+        const response = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodeURIComponent(searchStr)}&per_page=100`, {
+            headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+        });
 
-        let contacts = [];
-        const MAX_PER_PAGE = 100;
+        if (!response.ok) {
+            return res.status(500).json({ success: false, error: "Docketwise API error" });
+        }
 
-        if (isPhoneSearch) {
-            // Оставляем старый хак: ищем по 4 последним цифрам, чтобы обойти форматы в Docketwise
-            const searchStr = digits.length >= 7 ? digits.slice(-4) : digits;
-            
-            // НОВАЯ ЛОГИКА: Пагинация
-            let page = 1;
-            const MAX_PAGES = 5; // Проверяем до 500 человек (5 страниц), чтобы избежать таймаута на Vercel
-            let hasMore = true;
+        const data = await response.json();
+        let contacts = Array.isArray(data) ? data : (data.contacts || []);
 
-            // Крутим цикл, пока: есть страницы, мы не превысили лимит в 5 страниц, и не нашли 12 контактов
-            while (hasMore && page <= MAX_PAGES && contacts.length < 12) {
-                const phoneRes = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${searchStr}&per_page=${MAX_PER_PAGE}&page=${page}`, {
-                    headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
-                });
-                
-                if (!phoneRes.ok) {
-                    console.error(`Docketwise API error on page ${page}: ${phoneRes.status}`);
-                    break;
-                }
-
-                const data = await phoneRes.json();
-                const potentialContacts = Array.isArray(data) ? data : (data.contacts || []);
-                
-                // ЖЕСТКИЙ ЛОКАЛЬНЫЙ ФИЛЬТР
-                const matchedContacts = potentialContacts.filter(c => {
-                    let cPhone = "";
-                    if (c.phone_numbers && c.phone_numbers.length > 0) cPhone = c.phone_numbers[0].number || c.phone_numbers[0];
-                    else if (c.phone) cPhone = c.phone;
-                    
-                    if (typeof cPhone === 'string') {
-                        const cDigits = cPhone.replace(/\D/g, '');
-                        return cDigits.includes(digits); // Ищем очищенный ввод в очищенном номере
-                    }
-                    return false;
-                });
-
-                // Добавляем найденных на этой странице клиентов в общий массив
-                contacts = [...contacts, ...matchedContacts];
-
-                // Если API вернуло меньше 100 человек, значит это последняя страница — пора останавливать цикл
-                if (potentialContacts.length < MAX_PER_PAGE) {
-                    hasMore = false;
-                }
-                
-                page++; // Переходим к следующей странице
-            }
-            
-            // Дедупликация (на случай, если API Docketwise отдает дубли при пагинации)
-            const uniqueIds = new Set();
+        // Если это поиск по ТЕЛЕФОНУ (есть цифры), применяем жесткий фильтр
+        if (digits.length > 0) {
             contacts = contacts.filter(c => {
-                if (uniqueIds.has(c.id)) return false;
-                uniqueIds.add(c.id);
-                return true;
+                let cPhone = "";
+                if (c.phone_numbers && c.phone_numbers.length > 0) cPhone = c.phone_numbers[0].number || c.phone_numbers[0];
+                else if (c.phone) cPhone = c.phone;
+                
+                if (typeof cPhone === 'string') {
+                    const cDigits = cPhone.replace(/\D/g, '');
+                    return cDigits.includes(digits);
+                }
+                return false;
             });
-
-        } else {
-            // Стандартный поиск по имени
-            const encodedQuery = encodeURIComponent(rawQuery);
-            const response = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodedQuery}&per_page=${MAX_PER_PAGE}`, {
-                headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                contacts = Array.isArray(data) ? data : (data.contacts || []);
-            }
         }
 
         if (contacts.length === 0) return res.status(404).json({ success: false, error: "No clients found" });
 
-        // Ограничиваем список до 12 совпадений для быстрой загрузки формы
-        const topMatches = contacts.slice(0, 12);
+        // Отдаем форме только первые 15 результатов для скорости
+        const topMatches = contacts.slice(0, 15);
 
-        // Вытягиваем дела (Matters)
+        // Вытягиваем дела
         const clientsData = await Promise.all(topMatches.map(async (contact) => {
             const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || contact.name || "Unknown Name";
             let phoneStr = "";
