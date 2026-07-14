@@ -9,7 +9,7 @@ export default async function handler(req, res) {
         const rawQuery = query.toLowerCase().trim();
         let digits = rawQuery.replace(/\D/g, '');
 
-        // ФИКС ДЛЯ OOMA: Отсекаем код страны 1 для американских входящих звонков
+        // 1. ФИКС ДЛЯ OOMA: Отсекаем код страны 1 для американских входящих звонков
         if (digits.length === 11 && digits.startsWith('1')) {
             digits = digits.substring(1);
         }
@@ -20,16 +20,15 @@ export default async function handler(req, res) {
         let contacts = [];
 
         if (isPhoneSearch) {
-            // ШАГ 1: Ищем точную последовательность (Идеально для Карен и слитных номеров)
+            // ШАГ 1: Бьем в лоб. Просто отправляем цифры в базу (так как они там без скобок, это сработает идеально)
             let phoneRes = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${digits}`, {
                 headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
             });
             let data = phoneRes.ok ? await phoneRes.json() : { contacts: [] };
             let potentialContacts = Array.isArray(data) ? data : (data.contacts || []);
 
-            // ШАГ 2: ЗАПАСНОЙ ПЛАН. Если ничего не нашли, а цифр введено 4 или больше,
-            // значит номер в базе сохранен со скобками. Ищем по последним 4 цифрам!
-            if (potentialContacts.length === 0 && digits.length >= 4) {
+            // ШАГ 2: СТАРЫЙ ХАК (Запасной план). Если полный номер не найден, ищем по 4 последним цифрам
+            if (potentialContacts.length === 0 && digits.length >= 7) {
                 const last4 = digits.slice(-4);
                 let fallbackRes = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${last4}`, {
                     headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
@@ -38,8 +37,7 @@ export default async function handler(req, res) {
                 potentialContacts = Array.isArray(fallbackData) ? fallbackData : (fallbackData.contacts || []);
             }
 
-            // ШАГ 3: ЖЕСТКИЙ ФИЛЬТР НА СЕРВЕРЕ
-            // Оставляем только тех клиентов, чей номер содержит введенные цифры по порядку
+            // ШАГ 3: ФИЛЬТР. Оставляем только тех клиентов, у которых номер РЕАЛЬНО содержит то, что вы ввели
             contacts = potentialContacts.filter(c => {
                 let cPhone = "";
                 if (c.phone_numbers && c.phone_numbers.length > 0) cPhone = c.phone_numbers[0].number || c.phone_numbers[0];
@@ -47,7 +45,7 @@ export default async function handler(req, res) {
                 
                 if (typeof cPhone === 'string') {
                     const cDigits = cPhone.replace(/\D/g, '');
-                    return cDigits.includes(digits) || digits.includes(cDigits);
+                    return cDigits.includes(digits);
                 }
                 return false;
             });
