@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>All Docs Consulting - CRM Portal</title>
     <style>
-        :root { --primary-color: #3e2723; --secondary-color: #5d4037; --accent-color: #a1683a; --accent-hover: #8b552b; --bg-color: #f5f2eb; --form-bg: #ffffff; --border-color: #d7ccc8; --surface-color: #faf7f2; --sidebar-width: 260px; }
+        :root { --primary-color: #3e2723; --secondary-color: #5d4037; --accent-color: #a1683a; --accent-hover: #8b552b; --bg-color: #f5f2eb; --form-bg: #ffffff; --border-color: #d7ccc8; --surface-color: #faf7f2; --sidebar-width: 260px; --appt-bg: #fdfaf6; }
         body { font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--primary-color); line-height: 1.6; margin: 0; display: flex; }
         .sidebar { width: var(--sidebar-width); background-color: var(--primary-color); height: 100vh; position: fixed; left: 0; top: 0; display: flex; flex-direction: column; box-shadow: 4px 0 20px rgba(0,0,0,0.15); z-index: 100; color: var(--bg-color); }
         .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
@@ -26,27 +26,26 @@
         .logout-menu { display: none; position: absolute; bottom: 80px; left: 20px; right: 20px; background: var(--form-bg); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); padding: 8px; animation: fadeIn 0.2s ease; }
         .logout-btn { background: transparent; border: none; color: #d32f2f; cursor: pointer; font-weight: 600; font-size: 14px; width: 100%; text-align: left; padding: 12px 15px; border-radius: 4px; transition: background-color 0.2s; }
         .logout-btn:hover { background: #ffebee; }
+        
         .main-wrapper { margin-left: var(--sidebar-width); padding: 40px 20px; width: calc(100% - var(--sidebar-width)); box-sizing: border-box; }
-        .container { max-width: 800px; margin: 0 auto; background: var(--form-bg); padding: 45px; border-radius: 16px; box-shadow: 0 10px 40px rgba(62, 39, 35, 0.08); border: 1px solid rgba(255, 255, 255, 0.6); }
+        .container { max-width: 1000px; margin: 0 auto; background: var(--form-bg); padding: 45px; border-radius: 16px; box-shadow: 0 10px 40px rgba(62, 39, 35, 0.08); border: 1px solid rgba(255, 255, 255, 0.6); }
         .header { text-align: center; border-bottom: 2px solid var(--border-color); padding-bottom: 20px; margin-bottom: 30px; }
+        
+        /* TABS */
         .tab-navigation { display: flex; background: var(--surface-color); padding: 6px; border-radius: 12px; margin-bottom: 30px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
         .tab-btn { flex: 1; background: transparent; border: none; padding: 12px 20px; cursor: pointer; border-radius: 8px; font-weight: 600; color: var(--secondary-color); transition: all 0.3s ease; font-size: 15px; }
         .tab-btn.active { background-color: var(--form-bg); color: var(--primary-color); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06); }
         .tab-content { display: none; animation: fadeIn 0.4s ease; }
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .history-table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--form-bg); border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color); }
-        .history-table th { background-color: var(--surface-color); color: var(--primary-color); text-align: left; padding: 16px; font-size: 14px; font-weight: 700; border-bottom: 1px solid var(--border-color); }
-        .history-table td { padding: 16px; border-bottom: 1px solid #f0ebe1; font-size: 14.5px; color: var(--secondary-color); vertical-align: top; transition: 0.2s; }
-        .history-table tr:last-child td { border-bottom: none; }
-        .history-table tr:hover td { background-color: #fcfbfa; }
-        .no-calls { text-align: center; color: #8d6e63; padding: 50px; font-style: italic; background: var(--surface-color); border: 1px dashed var(--border-color); border-radius: 10px; }
+
+        /* FORM ELEMENTS */
         .section-title { color: var(--primary-color); padding-bottom: 8px; border-bottom: 2px solid var(--border-color); font-size: 18px; margin-bottom: 20px; margin-top: 35px; font-weight: 700; }
         .section-title:first-of-type { margin-top: 0; }
         .form-row { display: flex; gap: 20px; margin-bottom: 15px; }
         .form-group { flex: 1; margin-bottom: 20px; }
         label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; color: var(--primary-color); }
-        input[type="text"], input[type="tel"], input[type="date"], input[type="time"], select, textarea { width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-family: inherit; background-color: #fcfbfa; transition: all 0.3s ease; font-size: 15px; outline: none;}
+        input[type="text"], input[type="tel"], input[type="date"], input[type="time"], select, textarea { width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-family: inherit; background-color: #fcfbfa; transition: all 0.3s ease; font-size: 14.5px; outline: none;}
         textarea { resize: vertical; min-height: 90px; }
         input:focus, select:focus, textarea:focus { border-color: var(--accent-color); background-color: var(--form-bg); box-shadow: 0 0 0 3px rgba(161, 104, 58, 0.15); }
         
@@ -54,92 +53,120 @@
         .radio-item { display: flex; align-items: center; font-weight: 500; color: var(--secondary-color); cursor: pointer; font-size: 14.5px; }
         .radio-item input { margin-right: 12px; cursor: pointer; accent-color: var(--accent-color); width: 16px; height: 16px; }
         
-        /* ПЛИТКИ ДЛЯ СТАТУСА КЛИЕНТА (СОВРЕМЕННЫЙ ДИЗАЙН) */
         .category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 25px; }
         @media (max-width: 700px) { .category-grid { grid-template-columns: 1fr; } }
         .category-card { cursor: pointer; display: block; margin: 0; }
         .category-card input { display: none; }
-        .category-card span { display: flex; align-items: center; justify-content: center; padding: 14px 10px; background: #fff; border: 2px solid var(--border-color); border-radius: 10px; font-size: 13.5px; font-weight: 600; color: var(--secondary-color); transition: all 0.2s ease; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.02); height: 100%; box-sizing: border-box; line-height: 1.3;}
+        .category-card span { display: flex; align-items: center; justify-content: center; padding: 14px 10px; background: #fff; border: 2px solid var(--border-color); border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--secondary-color); transition: all 0.2s ease; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.02); height: 100%; box-sizing: border-box; line-height: 1.3;}
         .category-card:hover span { border-color: var(--accent-color); background: #fdfaf6; }
         .category-card input:checked + span { background: var(--accent-color); color: white; border-color: var(--accent-color); box-shadow: 0 4px 12px rgba(161, 104, 58, 0.25); transform: translateY(-2px); }
 
         .submit-btn { background-color: var(--accent-color); color: white; border: none; padding: 18px 20px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; width: 100%; transition: all 0.3s ease; margin-top: 30px; box-shadow: 0 4px 15px rgba(161, 104, 58, 0.25); }
         .submit-btn:hover { background-color: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(161, 104, 58, 0.35); }
+        
+        .book-appt-btn { background-color: #2e7d32; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 14.5px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(46,125,50,0.2); display: flex; align-items: center; gap: 8px;}
+        .book-appt-btn:hover { background-color: #1b5e20; transform: translateY(-1px); box-shadow: 0 6px 15px rgba(46,125,50,0.3);}
+
+        .segmented-control { display: flex; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; background: #fcfbfa; width: 100%;}
+        .seg-btn { flex: 1; background: transparent; border: none; border-right: 1px solid var(--border-color); padding: 10px; font-size: 13.5px; font-weight: 600; color: var(--secondary-color); cursor: pointer; transition: 0.2s;}
+        .seg-btn:last-child { border-right: none; }
+        .seg-btn.active { background-color: #00bcd4; color: white; border-color: #00bcd4; } 
+        .seg-btn.active-lang { background-color: var(--accent-color); color: white; border-color: var(--accent-color); } 
+
         .autocomplete-wrapper { position: relative; display: flex; align-items: center; }
-        .autocomplete-wrapper input { padding-right: 35px; }
+        .autocomplete-wrapper input { padding-right: 35px; width: 100%; }
         .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--form-bg); border: 1px solid var(--border-color); border-radius: 8px; max-height: 250px; overflow-y: auto; margin: 4px 0 0 0; padding: 0; list-style: none; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: none; }
         .autocomplete-list li { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f5f2eb; font-size: 14.5px; color: var(--primary-color); transition: background-color 0.2s; line-height: 1.4; }
         .autocomplete-list li:hover { background-color: #fdfaf6; }
         .client-name-list { font-weight: 600; color: var(--accent-color); display: block; }
         .client-phone-list { font-size: 12.5px; color: var(--secondary-color); opacity: 0.8; }
-        .loading-indicator { position: absolute; right: 12px; color: var(--accent-color); font-size: 12px; display: none; font-weight: bold; }
         
-        /* КОЛОКОЛЬЧИК И МОДАЛКА */
+        /* ИСПРАВЛЕНО ПОЗИЦИОНИРОВАНИЕ ЗАГРУЗЧИКА */
+        .loading-indicator { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--accent-color); font-size: 13px; display: none; font-weight: bold; pointer-events: none; background: #fcfbfa; padding-left: 5px;}
+
+        /* NOTIFICATIONS & MODALS */
         #notificationContainer { position: fixed; top: 25px; right: 35px; z-index: 1000; }
-        #notificationBell { font-size: 24px; cursor: pointer; position: relative; background: white; padding: 12px 15px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: transform 0.2s, box-shadow 0.2s; border: 1px solid var(--border-color); }
-        #notificationBell:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
-        .badge { background: #d32f2f; color: white; border-radius: 50%; padding: 3px 7px; font-size: 11px; position: absolute; top: -5px; right: -5px; font-weight: bold; border: 2px solid white; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        #notificationBell { font-size: 24px; cursor: pointer; position: relative; background: white; padding: 12px 15px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: transform 0.2s; border: 1px solid var(--border-color); }
+        #notificationBell:hover { transform: scale(1.05); }
+        .badge { background: #d32f2f; color: white; border-radius: 50%; padding: 3px 7px; font-size: 11px; position: absolute; top: -5px; right: -5px; font-weight: bold; border: 2px solid white; display: none; }
         #notificationDropdown { display: none; position: absolute; top: 65px; right: 0; width: 360px; background: white; border-radius: 12px; box-shadow: 0 15px 40px rgba(0,0,0,0.15); border: 1px solid var(--border-color); overflow: hidden; animation: fadeIn 0.2s ease; }
         .dropdown-header { background: var(--surface-color); padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
         .dropdown-header h4 { margin: 0; color: var(--primary-color); font-size: 15px; font-weight: 700; }
         #notifList { max-height: 350px; overflow-y: auto; }
         .notif-item-modern { padding: 15px 20px; border-bottom: 1px solid #f0ebe1; cursor: pointer; transition: background 0.2s; border-left: 3px solid transparent; }
         .notif-item-modern:hover { background: #fdfaf6; border-left-color: var(--accent-color); }
-        .notif-item-modern:last-child { border-bottom: none; }
-        .notif-title { font-weight: 700; color: var(--primary-color); font-size: 14px; margin-bottom: 4px; display: flex; justify-content: space-between; }
-        .notif-title .new-tag { background: var(--accent-color); color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; text-transform: uppercase; }
-        .notif-preview { font-size: 13px; color: var(--secondary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(2px); animation: fadeIn 0.2s ease; }
-        .modal-content { background: var(--form-bg); padding: 35px; border-radius: 16px; width: 90%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); position: relative; }
-        .modal-content h3 { margin: 0 0 15px 0; color: var(--primary-color); font-size: 22px; }
-        .modal-subtitle { font-size: 13px; color: var(--secondary-color); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 8px; }
-        .modal-detail-box { background: #fdfaf6; padding: 18px; border-radius: 10px; border: 1px solid var(--border-color); border-left: 4px solid var(--accent-color); font-size: 14.5px; color: var(--primary-color); margin-bottom: 25px; line-height: 1.5; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(2px); animation: fadeIn 0.2s ease; overflow-y: auto; padding: 20px;}
+        .modal-content { background: var(--form-bg); padding: 35px; border-radius: 16px; width: 100%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); position: relative; margin: auto;}
+        .modal-content.large { max-width: 900px; }
+        .modal-close { position: absolute; top: 25px; right: 25px; font-size: 20px; cursor: pointer; color: #888; transition: 0.2s; }
+        .modal-close:hover { color: #333; transform: scale(1.1); }
+        .modal-title { margin: 0 0 25px 0; color: var(--primary-color); font-size: 24px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;}
+        
         .modal-actions { display: flex; gap: 15px; margin-top: 25px; }
         .btn-cancel { flex: 1; background: var(--surface-color); border: 1px solid var(--border-color); padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--secondary-color); transition: 0.2s; }
         .btn-cancel:hover { background: #e0d8d3; color: var(--primary-color); }
         .btn-resolve { flex: 2; background: var(--accent-color); border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 700; color: white; transition: 0.2s; box-shadow: 0 4px 10px rgba(161, 104, 58, 0.2); }
         .btn-resolve:hover { background: var(--accent-hover); transform: translateY(-2px); }
 
-        /* --- MINI CALENDAR FOR LEADS --- */
-        .datetime-container { display: flex; gap: 40px; margin-top: 15px;}
-        .calendar-widget { width: 260px; background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.05);}
-        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: 700; font-size: 16px; color: var(--primary-color);}
+        .calendar-widget { background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.03);}
+        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: 700; font-size: 15px; color: var(--primary-color);}
         .cal-header button { background: none; border: none; font-size: 18px; color: var(--secondary-color); cursor: pointer; transition: 0.2s; padding: 5px;}
         .cal-header button:hover { color: var(--accent-color); }
         .cal-days { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 12px; color: var(--secondary-color); margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; font-weight: 600;}
         .cal-dates { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-        .cal-btn { padding: 8px 0; border: none; background: transparent; cursor: pointer; font-size: 14px; border-radius: 6px; color: var(--primary-color); font-weight: 500; transition: 0.2s;}
+        .cal-btn { padding: 8px 0; border: none; background: transparent; cursor: pointer; font-size: 13.5px; border-radius: 6px; color: var(--primary-color); font-weight: 500; transition: 0.2s;}
         .cal-btn:hover:not(:disabled) { background: #f0ebe1; }
         .cal-btn.selected { background-color: var(--accent-color); color: white; font-weight: bold; box-shadow: 0 2px 8px rgba(161, 104, 58, 0.3); }
-        .cal-btn:disabled { color: #d7ccc8; cursor: not-allowed; }
+        .time-select-group { display: flex; gap: 8px; margin-top: 5px;}
+        .time-select-group select { padding: 10px; text-align: center; }
+
+        .calendar-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; flex-wrap: wrap;}
+        .date-nav { display: flex; align-items: center; gap: 15px; font-size: 20px; font-weight: 700; color: var(--primary-color); }
+        .date-nav button { background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 6px; padding: 5px 12px; font-size: 18px; cursor: pointer; color: var(--primary-color); transition: 0.2s;}
+        .date-nav button:hover { border-color: var(--accent-color); color: var(--accent-color); }
+        .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); background: var(--border-color); gap: 1px; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;}
+        .month-header { background: var(--surface-color); text-align: center; padding: 12px 0; font-size: 13px; font-weight: 700; color: var(--primary-color); text-transform: uppercase;}
+        .month-cell { background: #fff; min-height: 120px; padding: 8px; box-sizing: border-box; transition: background 0.2s;}
+        .month-cell:hover { background: #fdfaf6; }
+        .month-cell .date-num { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--secondary-color); }
+        .month-cell .date-num.today { background: var(--accent-color); color: white; display: inline-block; width: 24px; height: 24px; border-radius: 50%; text-align: center; line-height: 24px; }
+        .mini-event { font-size: 11.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--secondary-color); margin-bottom: 4px; padding: 2px 4px; background: var(--surface-color); border-radius: 4px; border-left: 2px solid var(--accent-color);}
         
-        .time-picker-widget { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 15px; }
-        .time-select-group { display: flex; gap: 10px; }
-        .time-select-group select { font-size: 16px; padding: 12px; width: 80px; text-align: center; border-radius: 8px; background: white;}
+        .agenda-view { background: #fff; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;}
+        .agenda-header { display: flex; padding: 15px 25px; border-bottom: 1px solid var(--border-color); background: var(--surface-color); gap: 25px; font-size: 16px; font-weight: 600;}
+        .agenda-header span.active { color: var(--accent-color); border-bottom: 2px solid var(--accent-color); padding-bottom: 5px;}
+        .agenda-date-group { background: #fdfaf6; padding: 12px 25px; font-weight: 700; color: var(--primary-color); border-bottom: 1px solid var(--border-color); }
+        .agenda-item { display: flex; justify-content: space-between; padding: 18px 25px; border-bottom: 1px solid var(--border-color); gap: 15px;}
+        .agenda-item:hover { background: #fcfbfa; }
+        .agenda-name { color: var(--primary-color); font-size: 15px; font-weight: 700; }
+        .agenda-details { font-size: 13.5px; color: var(--secondary-color); }
+        .agenda-time { font-size: 14px; font-weight: 600; color: var(--accent-color); background: var(--surface-color); padding: 5px 10px; border-radius: 6px; align-self: flex-start;}
+
+        .history-table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--form-bg); border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color); }
+        .history-table th { background-color: var(--surface-color); color: var(--primary-color); text-align: left; padding: 16px; font-size: 14px; font-weight: 700; border-bottom: 1px solid var(--border-color); }
+        .history-table td { padding: 16px; border-bottom: 1px solid #f0ebe1; font-size: 14.5px; color: var(--secondary-color); vertical-align: top;}
     </style>
 </head>
 <body>
 
 <div id="notificationContainer">
-    <div id="notificationBell" title="Click anywhere on the page to enable sound!">🔔<span id="notifBadge" class="badge">0</span></div>
+    <div id="notificationBell" title="Click anywhere to enable sound!">🔔<span id="notifBadge" class="badge">0</span></div>
     <div id="notificationDropdown">
         <div class="dropdown-header">
             <h4>Incoming Tasks</h4>
-            <span id="closeDropdownBtn" style="cursor: pointer; color: #888; font-size: 18px;" title="Close Menu">✖</span>
+            <span id="closeDropdownBtn" style="cursor: pointer; color: #888; font-size: 18px;">✖</span>
         </div>
-        <div id="notifList">
-            <div style="color: #888; text-align: center; padding: 30px 20px; font-size: 14px;">No new tasks to review.</div>
-        </div>
+        <div id="notifList"><div style="color: #888; text-align: center; padding: 30px 20px; font-size: 14px;">No new tasks.</div></div>
     </div>
 </div>
 
 <div id="notifModal" class="modal-overlay">
     <div class="modal-content">
         <h3 id="modalClientName">Client Name</h3>
-        <div class="modal-subtitle">Notes from Operator:</div>
-        <div id="modalMessage" class="modal-detail-box"></div>
-        <div class="modal-subtitle">Add your resolution note (Optional):</div>
+        <div style="font-size: 13px; color: var(--secondary-color); font-weight: 700; margin-bottom: 8px;">NOTES FROM OPERATOR:</div>
+        <div id="modalMessage" style="background: #fdfaf6; padding: 18px; border-radius: 10px; border: 1px solid var(--border-color); border-left: 4px solid var(--accent-color); margin-bottom: 25px; line-height: 1.5;"></div>
+        <div style="font-size: 13px; color: var(--secondary-color); font-weight: 700; margin-bottom: 8px;">ADD YOUR RESOLUTION NOTE:</div>
         <textarea id="modalStaffNote" placeholder="e.g., Called client back, question resolved."></textarea>
         <div class="modal-actions">
             <button class="btn-cancel" onclick="closeNotifModal()">Close window</button>
@@ -148,13 +175,137 @@
     </div>
 </div>
 
+<div id="apptModal" class="modal-overlay">
+    <div class="modal-content large">
+        <div class="modal-close" onclick="closeApptModal()">✖</div>
+        <h2 class="modal-title">📅 Book Appointment</h2>
+        
+        <div style="display: flex; gap: 30px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 300px;">
+                <div class="form-row">
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>Full Name</label>
+                        <input type="text" id="modalApptName" placeholder="Client Name">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 10px;">
+                        <label>Phone Number</label>
+                        <input type="text" id="modalApptPhone" placeholder="+1 (555) 000-0000">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Appt. Location</label>
+                    <select id="modalApptLocation">
+                        <option>All Docs Consulting</option>
+                        <option>Armen Shaghzo Attorney</option>
+                        <option>Capi Metro Office</option>
+                        <option>David Bagdasaryan Attorney</option>
+                        <option>Dr. Karine Gaboian</option>
+                        <option>LA Court 300</option>
+                        <option>LA Court 606</option>
+                        <option>LA Pacific</option>
+                        <option>Mercury Hospice Care</option>
+                        <option>USCIS - Chatsworth</option>
+                        <option>USCIS - San Bernardino</option>
+                        <option>USCIS - Tustin</option>
+                        <option>Vadim Yuzefpolsky attorney</option>
+                        <option>Van Nuys Court</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label>Service</label>
+                        <select id="modalApptService">
+                            <option value="001-Initial Consultation">001 - Initial Consultation</option>
+                            <option value="04-Document Pick-up">04 - Document Pick-up</option>
+                            <option value="08-Follow-up Meeting">08 - Follow-up Meeting</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label>Staff</label>
+                        <select id="modalApptStaff">
+                            <option>Argishti S.</option><option>Gohar A.</option><option>Norayr Badalyan</option>
+                            <option>Mariam D.</option><option>Petros E.</option><option>Artak B.</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label>Reminder Type</label>
+                        <div class="segmented-control" id="remTypeControl">
+                            <button class="seg-btn" onclick="setSegment('remTypeControl', this, 'Email')">Email</button>
+                            <button class="seg-btn active" onclick="setSegment('remTypeControl', this, 'Text')">Text</button>
+                            <button class="seg-btn" onclick="setSegment('remTypeControl', this, 'Both')">Both</button>
+                            <button class="seg-btn" onclick="setSegment('remTypeControl', this, 'None')">None</button>
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label>Message Language</label>
+                        <div class="segmented-control" id="langControl">
+                            <button class="seg-btn active-lang" onclick="setSegment('langControl', this, 'ENG')">ENG</button>
+                            <button class="seg-btn" onclick="setSegment('langControl', this, 'RUSS')">RUSS</button>
+                            <button class="seg-btn" onclick="setSegment('langControl', this, 'ARM')">ARM</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Message to Client (Included in SMS)</label>
+                    <textarea id="modalApptMessage" placeholder="E.g., Please bring your passport and tax documents..." style="min-height: 60px;"></textarea>
+                </div>
+            </div>
+
+            <div style="width: 280px; background: #fdfaf6; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
+                <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 15px; display: block;">Select Date & Time</label>
+                
+                <div class="calendar-widget">
+                    <div class="cal-header">
+                        <button type="button" id="aPrevM">&lt;</button>
+                        <span id="aMonthYear"></span>
+                        <button type="button" id="aNextM">&gt;</button>
+                    </div>
+                    <div class="cal-days"><div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div></div>
+                    <div class="cal-dates" id="aCalDates"></div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <label style="font-size: 13px; color: var(--secondary-color);">Time:</label>
+                    <div class="time-select-group">
+                        <select id="aTimeHour">
+                            <option>01</option><option>02</option><option>03</option><option>04</option><option>05</option><option>06</option>
+                            <option>07</option><option>08</option><option>09</option><option selected>10</option><option>11</option><option>12</option>
+                        </select>
+                        <select id="aTimeMinute"><option selected>00</option><option>15</option><option>30</option><option>45</option></select>
+                        <select id="aTimeAMPM"><option selected>AM</option><option>PM</option></select>
+                    </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <label style="font-size: 13px; color: var(--secondary-color);">Duration:</label>
+                    <select id="aDuration" style="width: 100%;">
+                        <option>15 minutes</option>
+                        <option selected>30 minutes</option>
+                        <option>1 hour</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+            <button class="btn-cancel" onclick="closeApptModal()">Cancel</button>
+            <button class="btn-resolve" onclick="saveAppointment()" id="saveApptBtn">Save Appointment & Send SMS ✉️</button>
+        </div>
+    </div>
+</div>
+
+
 <aside class="sidebar">
     <div class="sidebar-header">
         <img src="https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png?w=2128&ssl=1" alt="All Docs Consulting">
     </div>
     <ul class="nav-menu">
         <li class="nav-item"><a href="index.html" class="nav-link active"><span class="nav-icon">📞</span> Call Center Log</a></li>
-        <li class="nav-item"><a href="calendar.html" class="nav-link"><span class="nav-icon">📅</span> Master Calendar</a></li>
         <li class="nav-item"><a href="forms.html" class="nav-link"><span class="nav-icon">📄</span> Forms & Documents</a></li>
     </ul>
     <div class="sidebar-footer">
@@ -176,8 +327,9 @@
         </div>
 
         <div class="tab-navigation">
-            <button class="tab-btn active" id="btnFormTab">New Call Log</button>
-            <button class="tab-btn" id="btnHistoryTab">Internal Call History</button>
+            <button class="tab-btn active" onclick="switchMainTab('tabFormContent', this)">New Call Log</button>
+            <button class="tab-btn" onclick="switchMainTab('tabCalendarContent', this)">Master Calendar</button>
+            <button class="tab-btn" onclick="switchMainTab('tabHistoryContent', this)">Internal Call History</button>
         </div>
 
         <div id="tabFormContent" class="tab-content active">
@@ -190,27 +342,31 @@
                     <div class="form-group"><label>Time of Call:</label><input type="time" id="callTime" required></div>
                 </div>
 
-                <!-- NAME & PHONE BLOCKS TOGETHER -->
-                <div class="form-group">
-                    <label>Full Name: <span id="clientBadge" style="display: none; background: #4CAF50; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 10px; font-weight: bold;">✓ ID: <span id="displayClientId"></span></span></label>
-                    <div class="autocomplete-wrapper" id="autocompleteWrapper">
-                        <input type="text" id="fullName" placeholder="Type name to search Docketwise..." autocomplete="off" required>
-                        <span class="loading-indicator" id="nameLoader">Searching...</span>
-                        <ul class="autocomplete-list" id="clientList"></ul>
+                <div style="background: #fdfaf6; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 25px; position: relative;">
+                    <button type="button" class="book-appt-btn" style="position: absolute; top: 20px; right: 20px;" onclick="openApptModal()">
+                        📅 Book Appointment
+                    </button>
+
+                    <div class="form-group" style="max-width: 70%;">
+                        <label>Full Name: <span id="clientBadge" style="display: none; background: #4CAF50; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 10px; font-weight: bold;">✓ ID: <span id="displayClientId"></span></span></label>
+                        <div class="autocomplete-wrapper" id="autocompleteWrapper">
+                            <input type="text" id="fullName" placeholder="Type name to search Docketwise..." autocomplete="off" required>
+                            <span class="loading-indicator" id="nameLoader">Searching...</span>
+                            <ul class="autocomplete-list" id="clientList"></ul>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 0; max-width: 70%;">
+                        <label>Phone Number:</label>
+                        <div class="autocomplete-wrapper" id="phoneAutocompleteWrapper">
+                            <input type="tel" id="phoneNumber" placeholder="Enter phone number..." autocomplete="off" required>
+                            <span class="loading-indicator" id="phoneLoader">Searching...</span>
+                            <ul class="autocomplete-list" id="phoneList"></ul>
+                        </div>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Phone Number:</label>
-                    <div class="autocomplete-wrapper" id="phoneAutocompleteWrapper">
-                        <input type="tel" id="phoneNumber" placeholder="Enter phone number..." autocomplete="off" required>
-                        <span class="loading-indicator" id="phoneLoader">Searching...</span>
-                        <ul class="autocomplete-list" id="phoneList"></ul>
-                    </div>
-                </div>
-
-                <!-- CLIENT STATUS (MODERN GRID) -->
-                <div style="margin-top: 30px; margin-bottom: 30px;">
+                <div style="margin-top: 20px; margin-bottom: 30px;">
                     <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 12px; display: block; font-size: 15px;">Client Status:</label>
                     <div class="category-grid">
                         <label class="category-card">
@@ -228,114 +384,55 @@
                     </div>
                 </div>
 
-                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 30px 0;">
-
-                <!-- ============================================== -->
-                <!-- SECTION: STANDARD CALL LOGGING (EXISTING CLIENT) -->
-                <!-- ============================================== -->
-                <div id="standardCallSection">
-                    <h2 class="section-title">2. Case & Logging Details</h2>
-                    
-                    <div id="matterContainer" class="form-group" style="display: none; padding: 18px; border-radius: 8px; border-left: 4px solid var(--accent-color); margin-top: 20px;">
-                        <label>Select Matter (Active Case):</label>
-                        <select id="matterSelect"><option value="">-- Auto-detecting matters... --</option></select>
-                    </div>
-
-                    <div style="background: #fdfaf6; padding: 20px; border-left: 4px solid var(--accent-color); border-radius: 8px; margin-bottom: 20px;">
-                        <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 12px; display: block;">Call Category:</label>
-                        <div class="radio-group" style="margin-bottom: 20px;">
-                            <label class="radio-item"><input type="radio" name="noteCategory" value="01-Initial Consultation"> 01-Initial Consultation</label>
-                            <label class="radio-item"><input type="radio" name="noteCategory" value="03-Client Communication"> 03-Client Communication</label>
-                            <label class="radio-item"><input type="radio" name="noteCategory" value="04-Phone Call" checked> 04-Phone Call</label>
-                            <label class="radio-item"><input type="radio" name="noteCategory" value="05-Follow-Up Needed"> 05-Follow-Up Needed</label>
-                            <label class="radio-item"><input type="radio" name="noteCategory" value="20-Interview"> 20-Interview</label>
-                            <label class="radio-item"><input type="radio" name="noteCategory" value="General Call"> General Call</label>
-                        </div>
-
-                        <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 8px; display: block;">Call Description / Note Text:</label>
-                        <textarea id="briefDescription" placeholder="Summarize the client's inquiry..."></textarea>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Assigned To / Staff (Notify via Bell 🔔):</label>
-                            <select id="assignedStaff"></select>
-                        </div>
-                    </div>
+                <h2 class="section-title">2. Case & Logging Details</h2>
+                
+                <div id="matterContainer" class="form-group" style="display: none; padding: 18px; border-radius: 8px; border-left: 4px solid var(--accent-color); margin-top: 20px;">
+                    <label>Select Matter (Active Case):</label>
+                    <select id="matterSelect"><option value="">-- Auto-detecting matters... --</option></select>
                 </div>
 
-                <!-- ============================================== -->
-                <!-- SECTION: LEAD APPOINTMENT BOOKING (NEW CLIENT) -->
-                <!-- ============================================== -->
-                <div id="leadBookingSection" style="display: none; animation: fadeIn 0.4s ease;">
-                    <h2 class="section-title">2. Book Appointment</h2>
-                    <div style="background: #fdfaf6; padding: 25px; border-left: 4px solid #e65100; border-radius: 8px; margin-bottom: 20px;">
-                        
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label>Service</label>
-                                <select id="apptService">
-                                    <option value="001-Initial Consultation">001 - Initial Consultation</option>
-                                    <option value="04-Document Pick-up">04 - Document Pick-up</option>
-                                    <option value="08-Follow-up Meeting">08 - Follow-up Meeting</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Staff Member</label>
-                                <select id="apptStaff">
-                                    <option value="Argishti S.">Argishti S.</option>
-                                    <option value="Gohar A.">Gohar A.</option>
-                                    <option value="Norayr Badalyan">Norayr Badalyan</option>
-                                    <option value="Mariam D.">Mariam D.</option>
-                                    <option value="Petros E.">Petros E.</option>
-                                    <option value="Artak B.">Artak B.</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 8px; display: block;">Select Date & Time</label>
-                        <div class="datetime-container">
-                            <!-- Mini Calendar[cite: 4] -->
-                            <div class="calendar-widget">
-                                <div class="cal-header">
-                                    <button type="button" id="fPrevM">&lt;</button>
-                                    <span id="fMonthYear"></span>
-                                    <button type="button" id="fNextM">&gt;</button>
-                                </div>
-                                <div class="cal-days"><div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div></div>
-                                <div class="cal-dates" id="fCalDates"></div>
-                            </div>
-                            
-                            <!-- Time Picker[cite: 4] -->
-                            <div class="time-picker-widget">
-                                <label style="font-size: 13px; color: var(--secondary-color);">Time:</label>
-                                <div class="time-select-group">
-                                    <select id="timeHour">
-                                        <option>01</option><option>02</option><option>03</option><option>04</option><option>05</option><option>06</option>
-                                        <option>07</option><option>08</option><option>09</option><option selected>10</option><option>11</option><option>12</option>
-                                    </select>
-                                    <select id="timeMinute"><option selected>00</option><option>15</option><option>30</option><option>45</option></select>
-                                    <select id="timeAMPM"><option selected>AM</option><option>PM</option></select>
-                                </div>
-                                <label style="font-size: 13px; color: var(--secondary-color); margin-top:10px;">Duration:</label>
-                                <select id="apptLength" style="width: 100%;">
-                                    <option>15 minutes</option>
-                                    <option selected>30 minutes</option>
-                                    <option>1 hour</option>
-                                </select>
-                            </div>
-                        </div>
-
+                <div style="background: #fcfbfa; padding: 20px; border-left: 4px solid var(--accent-color); border-radius: 8px; margin-bottom: 20px;">
+                    <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 12px; display: block;">Call Category:</label>
+                    <div class="radio-group" style="margin-bottom: 20px;">
+                        <label class="radio-item"><input type="radio" name="noteCategory" value="01-Initial Consultation"> 01-Initial Consultation</label>
+                        <label class="radio-item"><input type="radio" name="noteCategory" value="03-Client Communication"> 03-Client Communication</label>
+                        <label class="radio-item"><input type="radio" name="noteCategory" value="04-Phone Call" checked> 04-Phone Call</label>
+                        <label class="radio-item"><input type="radio" name="noteCategory" value="05-Follow-Up Needed"> 05-Follow-Up Needed</label>
+                        <label class="radio-item"><input type="radio" name="noteCategory" value="20-Interview"> 20-Interview</label>
+                        <label class="radio-item"><input type="radio" name="noteCategory" value="General Call"> General Call</label>
                     </div>
+                    <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 8px; display: block;">Call Description / Note Text:</label>
+                    <textarea id="briefDescription" placeholder="Summarize the client's inquiry..." required></textarea>
                 </div>
 
+                <h2 class="section-title">3. Internal CRM Routing</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Assigned To / Staff (Notify via Bell 🔔):</label>
+                        <select id="assignedStaff"></select>
+                    </div>
+                </div>
                 <button type="submit" class="submit-btn" id="submitBtn">Save Call Log to Internal CRM</button>
             </form>
         </div>
 
+        <div id="tabCalendarContent" class="tab-content">
+            <div class="calendar-toolbar">
+                <select style="width:180px; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);"><option>Filter by Staff...</option></select>
+                <div class="date-nav">
+                    <button onclick="changeViewDate(-1)">&lt;</button>
+                    <span id="mainCalTitle">July 2026</span>
+                    <button onclick="changeViewDate(1)">&gt;</button>
+                </div>
+                <select id="viewSelector" style="width:160px; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);" onchange="renderMainCalendar()">
+                    <option value="month">Month Grid</option>
+                    <option value="agenda">Agenda List</option>
+                </select>
+            </div>
+            <div id="calendarContent"></div>
+        </div>
+
         <div id="tabHistoryContent" class="tab-content">
-            <h2 class="section-title" style="border:none; margin-bottom: 5px;">Internal Call History</h2>
-            <p style="font-size: 14.5px; color: var(--secondary-color); margin-bottom: 15px;">Live shared call journal for all staff members.</p>
             <input type="text" id="historySearchInput" placeholder="🔍 Search history by name, phone, or staff..." style="width: 100%; padding: 14px; margin-bottom: 20px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 14.5px; box-sizing: border-box; background-color: var(--surface-color);">
             <div id="noCallsMessage" class="no-calls">Loading internal call history...</div>
             <table class="history-table" id="historyTableContainer" style="display: none;">
@@ -349,10 +446,25 @@
 <script>
     window.currentClient = null;
     let currentActiveNotifId = null; 
+    let apptRemType = 'Text';
+    let apptLang = 'ENG';
 
-    // Mini Calendar Variables[cite: 4]
-    let formDate = new Date(); 
-    let selectedFormDate = null;
+    function setSegment(groupId, btnElement, value) {
+        if(groupId === 'remTypeControl') apptRemType = value;
+        if(groupId === 'langControl') apptLang = value;
+        const btns = document.getElementById(groupId).querySelectorAll('.seg-btn');
+        btns.forEach(btn => btn.classList.remove('active', 'active-lang'));
+        btnElement.classList.add(groupId === 'langControl' ? 'active-lang' : 'active');
+    }
+
+    function switchMainTab(tabId, btnElement) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        btnElement.classList.add('active');
+        if(tabId === 'tabHistoryContent') renderCallHistoryList();
+        if(tabId === 'tabCalendarContent') renderMainCalendar();
+    }
 
     document.addEventListener("DOMContentLoaded", function() {
         const loggedInStaff = localStorage.getItem('loggedInStaff');
@@ -361,15 +473,7 @@
 
         if (!loggedInStaff) {
             if (incomingPhone) localStorage.setItem('pendingOomaCall', incomingPhone);
-            window.location.href = 'login.html';
-            return;
-        }
-
-        const pendingCall = localStorage.getItem('pendingOomaCall');
-        if (pendingCall) {
-            incomingPhone = pendingCall;
-            localStorage.removeItem('pendingOomaCall');
-            window.history.replaceState({}, document.title, window.location.pathname + "?phone=" + incomingPhone);
+            window.location.href = 'login.html'; return;
         }
 
         document.getElementById('userProfile').style.display = 'flex';
@@ -388,20 +492,16 @@
         staffSelect.innerHTML = '<option value="">-- Do not notify anyone --</option>';
         Object.keys(staffMapping).forEach(name => {
             const option = document.createElement('option');
-            option.value = staffMapping[name]; 
-            option.textContent = name;
+            option.value = staffMapping[name]; option.textContent = name;
             staffSelect.appendChild(option);
         });
 
         const userProfile = document.getElementById('userProfile');
         const logoutMenu = document.getElementById('logoutMenu');
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            localStorage.clear(); window.location.href = 'login.html';
-        });
+        document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.clear(); window.location.href = 'login.html'; });
         userProfile.addEventListener('click', () => logoutMenu.style.display = (logoutMenu.style.display === 'block') ? 'none' : 'block');
         document.addEventListener('click', (e) => { if (!userProfile.contains(e.target) && !logoutMenu.contains(e.target)) logoutMenu.style.display = 'none'; });
 
-        // --- BELL NOTIFICATIONS ---
         const bellBtn = document.getElementById('notificationBell');
         const notifDropdown = document.getElementById('notificationDropdown');
         const notifList = document.getElementById('notifList');
@@ -415,23 +515,13 @@
         window.openNotifModal = function(id, clientName, message) {
             currentActiveNotifId = id;
             document.getElementById('modalClientName').textContent = '📞 ' + clientName;
-            let operatorInfo = "System Alert";
-            let issueText = message;
-            
+            let operatorInfo = "System Alert"; let issueText = message;
             if (message.includes("Issue:")) {
-                let parts = message.split("Issue:");
-                operatorInfo = parts[0].trim();
-                issueText = parts[1].trim();
+                let parts = message.split("Issue:"); operatorInfo = parts[0].trim(); issueText = parts[1].trim();
             }
-            document.getElementById('modalMessage').innerHTML = `
-                <div style="font-size: 12px; color: #a1683a; font-weight: bold; margin-bottom: 8px;">👤 ${operatorInfo}</div>
-                <div style="color: var(--primary-color); background: white; padding: 15px; border-radius: 8px; border: 1px solid #eaeaea; font-family: monospace; font-size: 13.5px;">
-                    ${issueText.replace(/\n/g, '<br>')}
-                </div>
-            `;
+            document.getElementById('modalMessage').innerHTML = `<div style="font-size: 12px; color: #a1683a; font-weight: bold; margin-bottom: 8px;">👤 ${operatorInfo}</div><div style="color: var(--primary-color); background: white; padding: 15px; border-radius: 8px; border: 1px solid #eaeaea; font-family: monospace; font-size: 13.5px;">${issueText.replace(/\n/g, '<br>')}</div>`;
             document.getElementById('modalStaffNote').value = ""; 
-            notifDropdown.style.display = 'none'; 
-            notifModal.style.display = 'flex';    
+            notifDropdown.style.display = 'none'; notifModal.style.display = 'flex';    
         };
 
         window.closeNotifModal = function() { notifModal.style.display = 'none'; currentActiveNotifId = null; };
@@ -443,9 +533,8 @@
             btn.textContent = "Saving..."; btn.disabled = true;
             try {
                 await fetch(`/api/get-notifications?action=read&notificationId=${currentActiveNotifId}&note=${encodeURIComponent(extraNote)}`);
-                closeNotifModal();
-                checkNotifications(); 
-                if (document.getElementById('btnHistoryTab').classList.contains('active')) renderCallHistoryList(); 
+                closeNotifModal(); checkNotifications(); 
+                if (document.getElementById('tabHistoryContent').classList.contains('active')) renderCallHistoryList(); 
             } catch (e) { alert('Server error'); } finally { btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; }
         };
 
@@ -456,23 +545,19 @@
                 const data = await res.json();
                 const badge = document.getElementById('notifBadge');
                 if (data.success && data.notifications && data.notifications.length > 0) {
-                    badge.style.display = 'block';
-                    badge.textContent = data.notifications.length;
-                    if (data.notifications.length > previousNotifCount) {
-                        bellSound.play().catch(e => console.log('Audio blocked.'));
-                    }
+                    badge.style.display = 'block'; badge.textContent = data.notifications.length;
+                    if (data.notifications.length > previousNotifCount) bellSound.play().catch(e => console.log('Audio blocked.'));
                     previousNotifCount = data.notifications.length;
                     notifList.innerHTML = '';
                     data.notifications.forEach(notif => {
-                        const div = document.createElement('div');
-                        div.className = 'notif-item-modern';
+                        const div = document.createElement('div'); div.className = 'notif-item-modern';
                         div.onclick = () => openNotifModal(notif.id, notif.client_name, notif.message);
                         div.innerHTML = `<div class="notif-title"><span>📞 ${notif.client_name}</span><span class="new-tag">New</span></div><div class="notif-preview">${notif.message}</div>`;
                         notifList.appendChild(div);
                     });
                 } else {
                     badge.style.display = 'none'; previousNotifCount = 0;
-                    notifList.innerHTML = '<div style="color: #888; text-align: center; padding: 30px 20px; font-size: 14px;">No new tasks to review.</div>';
+                    notifList.innerHTML = '<div style="color: #888; text-align: center; padding: 30px 20px; font-size: 14px;">No new tasks.</div>';
                 }
             } catch(e) {}
         }
@@ -485,80 +570,131 @@
         }
         setDateTime();
 
-        const btnFormTab = document.getElementById('btnFormTab');
-        const btnHistoryTab = document.getElementById('btnHistoryTab');
-        const tabFormContent = document.getElementById('tabFormContent');
-        const tabHistoryContent = document.getElementById('tabHistoryContent');
+        let apptDate = new Date(); 
+        let selectedApptDate = null;
+        
+        window.openApptModal = function() {
+            document.getElementById('modalApptName').value = document.getElementById('fullName').value;
+            document.getElementById('modalApptPhone').value = document.getElementById('phoneNumber').value;
+            document.getElementById('apptModal').style.display = 'flex';
+            renderApptCal();
+        }
 
-        btnFormTab.addEventListener('click', () => {
-            btnFormTab.classList.add('active'); btnHistoryTab.classList.remove('active');
-            tabFormContent.classList.add('active'); tabHistoryContent.classList.remove('active');
-        });
-        btnHistoryTab.addEventListener('click', () => {
-            btnHistoryTab.classList.add('active'); btnFormTab.classList.remove('active');
-            tabHistoryContent.classList.add('active'); tabFormContent.classList.remove('active');
-            renderCallHistoryList(); 
-        });
+        window.closeApptModal = function() { document.getElementById('apptModal').style.display = 'none'; }
 
-        // --- DYNAMIC UI TOGGLE FOR LEADS ---
-        const statusRadios = document.querySelectorAll('input[name="clientStatus"]');
-        const standardSection = document.getElementById('standardCallSection');
-        const leadSection = document.getElementById('leadBookingSection');
-        const mainSubmitBtn = document.getElementById('submitBtn');
-
-        statusRadios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.value === 'Lead') {
-                    standardSection.style.display = 'none';
-                    leadSection.style.display = 'block';
-                    mainSubmitBtn.textContent = 'Book Appointment & Save Lead';
-                    document.getElementById('briefDescription').removeAttribute('required');
-                } else {
-                    standardSection.style.display = 'block';
-                    leadSection.style.display = 'none';
-                    mainSubmitBtn.textContent = 'Save Call Log to Internal CRM';
-                    document.getElementById('briefDescription').setAttribute('required', 'true');
-                }
-            });
-        });
-
-        // --- MINI CALENDAR INITIALIZATION[cite: 4] ---
-        function renderFormCal() {
-            const grid = document.getElementById('fCalDates');
-            grid.innerHTML = '';
-            const y = formDate.getFullYear(); const m = formDate.getMonth();
-            document.getElementById('fMonthYear').textContent = `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m]} ${y}`;
-            const firstDay = new Date(y, m, 1).getDay();
-            const daysInMonth = new Date(y, m + 1, 0).getDate();
+        function renderApptCal() {
+            const grid = document.getElementById('aCalDates'); grid.innerHTML = '';
+            const y = apptDate.getFullYear(); const m = apptDate.getMonth();
+            document.getElementById('aMonthYear').textContent = `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m]} ${y}`;
+            const firstDay = new Date(y, m, 1).getDay(); const daysInMonth = new Date(y, m + 1, 0).getDate();
             
             for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div'));
-            
             for (let i = 1; i <= daysInMonth; i++) {
-                const btn = document.createElement('button'); 
-                btn.type = 'button'; // Prevet form submit
-                btn.className = 'cal-btn'; 
-                btn.textContent = i;
+                const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'cal-btn'; btn.textContent = i;
                 const cDate = new Date(y, m, i);
-                
                 btn.onclick = (e) => {
-                    e.preventDefault();
-                    document.querySelectorAll('.cal-btn').forEach(b => b.classList.remove('selected'));
-                    btn.classList.add('selected'); 
-                    selectedFormDate = cDate;
+                    e.preventDefault(); document.querySelectorAll('.cal-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected'); selectedApptDate = cDate;
                 };
-                
-                if(selectedFormDate && cDate.getTime() === selectedFormDate.getTime()) {
-                    btn.classList.add('selected');
-                }
+                if(selectedApptDate && cDate.getTime() === selectedApptDate.getTime()) btn.classList.add('selected');
                 grid.appendChild(btn);
             }
         }
-        document.getElementById('fPrevM').onclick = (e) => { e.preventDefault(); formDate.setMonth(formDate.getMonth()-1); renderFormCal(); };
-        document.getElementById('fNextM').onclick = (e) => { e.preventDefault(); formDate.setMonth(formDate.getMonth()+1); renderFormCal(); };
-        renderFormCal();
+        document.getElementById('aPrevM').onclick = (e) => { e.preventDefault(); apptDate.setMonth(apptDate.getMonth()-1); renderApptCal(); };
+        document.getElementById('aNextM').onclick = (e) => { e.preventDefault(); apptDate.setMonth(apptDate.getMonth()+1); renderApptCal(); };
 
+        window.saveAppointment = function() {
+            if (!selectedApptDate) { alert("Please select a date on the calendar."); return; }
+            const btn = document.getElementById('saveApptBtn');
+            btn.textContent = "Processing..."; btn.disabled = true;
 
-        // --- HISTORY & AUTOCOMPLETE ---
+            const h = document.getElementById('aTimeHour').value;
+            const m = document.getElementById('aTimeMinute').value;
+            const ampm = document.getElementById('aTimeAMPM').value;
+            
+            const appointmentData = {
+                id: Date.now(),
+                client: document.getElementById('modalApptName').value.trim() || "Lead",
+                phone: document.getElementById('modalApptPhone').value.trim(),
+                dateStr: selectedApptDate.toDateString(),
+                timestamp: selectedApptDate.getTime(),
+                time: `${h}:${m} ${ampm.toUpperCase()}`,
+                service: document.getElementById('modalApptService').value,
+                staff: document.getElementById('modalApptStaff').value,
+                location: document.getElementById('modalApptLocation').value,
+                length: document.getElementById('aDuration').value,
+                reminder: apptRemType,
+                language: apptLang,
+                message: document.getElementById('modalApptMessage').value
+            };
+
+            const recs = JSON.parse(localStorage.getItem('gr_db')) || [];
+            recs.push(appointmentData); localStorage.setItem('gr_db', JSON.stringify(recs));
+
+            setTimeout(() => {
+                alert(`✅ Appointment Saved & SMS Queued!\n\nA text message will be sent to ${appointmentData.phone} in ${appointmentData.language}.`);
+                closeApptModal();
+                btn.textContent = "Save Appointment & Send SMS ✉️"; btn.disabled = false;
+                switchMainTab('tabCalendarContent', document.querySelectorAll('.tab-btn')[1]);
+                document.getElementById('callForm').reset();
+                document.getElementById('hiddenClientId').value = '';
+                document.getElementById('matterContainer').style.display = 'none';
+            }, 800);
+        }
+
+        let viewDate = new Date(); 
+        window.changeViewDate = function(dir) {
+            const mode = document.getElementById('viewSelector').value;
+            if(mode === 'month') viewDate.setMonth(viewDate.getMonth() + dir);
+            if(mode === 'agenda') viewDate.setDate(viewDate.getDate() + dir);
+            renderMainCalendar();
+        }
+
+        window.renderMainCalendar = function() {
+            const content = document.getElementById('calendarContent');
+            const title = document.getElementById('mainCalTitle');
+            const mode = document.getElementById('viewSelector').value;
+            const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+            const records = JSON.parse(localStorage.getItem('gr_db')) || [];
+            
+            if (mode === 'month') {
+                title.textContent = `${months[viewDate.getMonth()]} ${viewDate.getFullYear()}`;
+                const y = viewDate.getFullYear(); const m = viewDate.getMonth();
+                const firstDay = new Date(y, m, 1).getDay(); const daysInMonth = new Date(y, m + 1, 0).getDate();
+                
+                let html = '<div class="month-grid">';
+                ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => html += `<div class="month-header">${d}</div>`);
+                for (let i = 0; i < firstDay; i++) html += `<div class="month-cell" style="background:var(--surface-color);"></div>`;
+                const todayStr = new Date().toDateString();
+
+                for (let i = 1; i <= daysInMonth; i++) {
+                    const cDateStr = new Date(y, m, i).toDateString();
+                    const isToday = (cDateStr === todayStr);
+                    const dayRecs = records.filter(r => r.dateStr === cDateStr);
+                    
+                    html += `<div class="month-cell"><div class="date-num ${isToday ? 'today' : ''}">${i}</div>`;
+                    dayRecs.slice(0, 4).forEach(r => { html += `<div class="mini-event">${r.time} ${r.client.split(' ')[0]}</div>`; });
+                    if(dayRecs.length > 4) html += `<div class="mini-event" style="color:var(--accent-color); border:none; text-align:center;">+${dayRecs.length - 4} more</div>`;
+                    html += `</div>`;
+                }
+                html += '</div>'; content.innerHTML = html;
+            } else if (mode === 'agenda') {
+                title.textContent = `Agenda List`;
+                const sorted = records.sort((a,b) => a.timestamp - b.timestamp);
+                let html = `<div class="agenda-view"><div class="agenda-header"><span class="active">Upcoming Appointments</span></div>`;
+                if(sorted.length === 0) { content.innerHTML = html + '<div style="padding:30px; text-align:center; color:#8d6e63;">No appointments found.</div></div>'; return; }
+
+                let currentGroup = '';
+                sorted.forEach(r => {
+                    const dObj = new Date(r.timestamp);
+                    const dateTitle = `${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dObj.getDay()]}, ${dObj.getMonth()+1}/${dObj.getDate()}`;
+                    if(dateTitle !== currentGroup) { html += `<div class="agenda-date-group">📅 ${dateTitle}</div>`; currentGroup = dateTitle; }
+                    html += `<div class="agenda-item"><div style="flex: 1;"><div class="agenda-name">${r.client}</div><div class="agenda-details">${r.service.split('-')[1] || r.service} • ${r.location} | with ${r.staff}</div><div class="agenda-details" style="font-size:12px; margin-top:5px; color:#888;">${r.reminder} Reminder (${r.language})</div></div><div class="agenda-time">${r.time}</div></div>`;
+                });
+                html += '</div>'; content.innerHTML = html;
+            }
+        }
+
         async function renderCallHistoryList() {
             const tbody = document.getElementById('oomaCallHistoryBody');
             const tableContainer = document.getElementById('historyTableContainer');
@@ -573,15 +709,10 @@
                         let noteHTML = '';
                         if (log.call_description) { noteHTML = `<div style="font-size: 12.5px; color: #795548; margin-top: 6px; border-left: 2px solid var(--accent-color); padding-left: 8px;">${log.call_description}</div>`; }
                         if (log.follow_up_notes) { noteHTML += `<div style="font-size: 12.5px; color: #2e7d32; margin-top: 6px; border-left: 2px solid #4CAF50; padding-left: 8px; background: #e8f5e9; padding: 5px; border-radius: 4px;"><strong>Staff Reply:</strong> ${log.follow_up_notes}</div>`; }
-                        tr.innerHTML = `<td><strong>${d.toLocaleDateString()}</strong> <br><span style="color:#8d6e63; font-size:12.5px;">${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></td>
-                            <td><div style="font-weight:600; color:var(--primary-color);">${log.client_name || 'Unknown'}</div>${noteHTML}</td>
-                            <td style="font-weight:500; color:var(--secondary-color); letter-spacing:0.5px;">📞 ${log.client_phone || 'No Phone'}</td>
-                            <td><span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold;">${log.operator_name || 'Staff'}</span></td>`;
+                        tr.innerHTML = `<td><strong>${d.toLocaleDateString()}</strong> <br><span style="color:#8d6e63; font-size:12.5px;">${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></td><td><div style="font-weight:600; color:var(--primary-color);">${log.client_name || 'Unknown'}</div>${noteHTML}</td><td style="font-weight:500; color:var(--secondary-color); letter-spacing:0.5px;">📞 ${log.client_phone || 'No Phone'}</td><td><span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold;">${log.operator_name || 'Staff'}</span></td>`;
                         tbody.appendChild(tr);
                     });
-                } else {
-                    tableContainer.style.display = 'none'; noCallsMessage.style.display = 'block'; noCallsMessage.innerText = "The internal database journal is empty.";
-                }
+                } else { tableContainer.style.display = 'none'; noCallsMessage.style.display = 'block'; noCallsMessage.innerText = "The internal database journal is empty."; }
             } catch (e) { noCallsMessage.innerText = "Database connection error."; }
         }
 
@@ -605,7 +736,7 @@
 
         function debounce(func, delay = 500) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => func(...args), delay); }; }
 
-        function applyClientData(client, skipPhone = false) {
+        function applyClientData(client) {
             window.currentClient = client; 
             document.getElementById('hiddenClientId').value = client.id || '';
             if (client.id) {
@@ -613,14 +744,11 @@
                 document.getElementById('clientBadge').style.display = 'inline-block';
             }
             document.getElementById('fullName').value = client.name;
-            if (!skipPhone) document.getElementById('phoneNumber').value = client.phone;
+            // ТЕПЕРЬ НОМЕР БУДЕТ ЗАПОЛНЯТЬСЯ ВСЕГДА!
+            document.getElementById('phoneNumber').value = client.phone || '';
             
-            // АВТОМАТИЧЕСКИ ПЕРЕКЛЮЧАЕМ НА EXISTING CLIENT, ТАК КАК НАШЛИ В БАЗЕ
             const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
-            if (existingRadio) {
-                existingRadio.checked = true;
-                existingRadio.dispatchEvent(new Event('change')); // Запускаем скрытие календаря
-            }
+            if (existingRadio) existingRadio.checked = true;
             
             const matterSelect = document.getElementById('matterSelect');
             matterSelect.innerHTML = '<option value="">-- Please select a matter --</option>';
@@ -639,26 +767,30 @@
             const list = isPhone ? document.getElementById('phoneList') : document.getElementById('clientList');
             if (query.length < 3) { list.style.display = 'none'; return; }
             const loader = isPhone ? document.getElementById('phoneLoader') : document.getElementById('nameLoader');
-            loader.style.display = 'block';
             
-            const results = await fetchDocketwiseData(query, isPhone);
-            loader.style.display = 'none'; list.innerHTML = '';
-            
-            if (results.length > 0) {
-                const closeLi = document.createElement('li');
-                closeLi.innerHTML = `<span style="color:#d32f2f; font-weight:bold; float:right; cursor:pointer; font-size:13px;">✖ Close</span><div style="clear:both;"></div>`;
-                closeLi.style.backgroundColor = "#f9f9f9"; closeLi.style.borderBottom = "2px solid #eaeaea";
-                closeLi.onmousedown = (e) => { e.preventDefault(); list.style.display = 'none'; };
-                list.appendChild(closeLi);
+            loader.style.display = 'inline-block'; // Защита от кривого отображения[cite: 1]
+            try {
+                const results = await fetchDocketwiseData(query, isPhone);
+                list.innerHTML = '';
+                
+                if (results.length > 0) {
+                    const closeLi = document.createElement('li');
+                    closeLi.innerHTML = `<span style="color:#d32f2f; font-weight:bold; float:right; cursor:pointer; font-size:13px;">✖ Close</span><div style="clear:both;"></div>`;
+                    closeLi.style.backgroundColor = "#f9f9f9"; closeLi.style.borderBottom = "2px solid #eaeaea";
+                    closeLi.onmousedown = (e) => { e.preventDefault(); list.style.display = 'none'; };
+                    list.appendChild(closeLi);
 
-                results.forEach(client => {
-                    const li = document.createElement('li'); 
-                    li.innerHTML = `<span class="client-name-list">${client.name}</span><span class="client-phone-list">${client.phone || ''}</span>`;
-                    li.onmousedown = (e) => { e.preventDefault(); list.style.display = 'none'; applyClientData(client, isPhone); };
-                    list.appendChild(li);
-                });
-                list.style.display = 'block';
-            } else { list.style.display = 'none'; }
+                    results.forEach(client => {
+                        const li = document.createElement('li'); 
+                        li.innerHTML = `<span class="client-name-list">${client.name}</span><span class="client-phone-list">${client.phone || ''}</span>`;
+                        li.onmousedown = (e) => { e.preventDefault(); list.style.display = 'none'; applyClientData(client); };
+                        list.appendChild(li);
+                    });
+                    list.style.display = 'block';
+                } else { list.style.display = 'none'; }
+            } finally {
+                loader.style.display = 'none';
+            }
         }, 500);
 
         document.getElementById('fullName').addEventListener('input', e => handleSearch(e.target.value.trim(), false));
@@ -674,78 +806,34 @@
                 let cleanedPhone = incomingPhone.replace(/[^\d+]/g, '');
                 if (cleanedPhone.length < 2) { document.getElementById('phoneNumber').value = incomingPhone; return; }
                 document.getElementById('phoneNumber').value = cleanedPhone;
-                document.getElementById('phoneLoader').style.display = 'block';
-                const clients = await fetchDocketwiseData(cleanedPhone, true);
-                document.getElementById('phoneLoader').style.display = 'none';
-                if(clients.length > 0) { applyClientData(clients[0], true); }
+                document.getElementById('phoneLoader').style.display = 'inline-block';
+                try {
+                    const clients = await fetchDocketwiseData(cleanedPhone, true);
+                    if(clients.length > 0) { applyClientData(clients[0]); }
+                } finally {
+                    document.getElementById('phoneLoader').style.display = 'none';
+                }
             }
         }
         checkIncomingCall();
 
-        // --- SUBMIT LOGIC (HANDLES BOTH CALL LOG AND LEAD BOOKING) ---
         const callForm = document.getElementById('callForm');
         callForm.addEventListener('submit', async function(event) {
             event.preventDefault();
             const submitBtn = document.getElementById('submitBtn');
-            const isLead = document.querySelector('input[name="clientStatus"]:checked')?.value === 'Lead';
+            submitBtn.disabled = true; submitBtn.textContent = 'Saving to Internal Database...';
 
-            submitBtn.disabled = true; 
-            submitBtn.textContent = 'Processing...';
+            let finalDescription = document.getElementById('briefDescription').value;
+            const checkedCategory = document.querySelector('input[name="noteCategory"]:checked');
+            const noteCategory = checkedCategory && checkedCategory.value !== 'General Call' ? checkedCategory.value : "";
+            const checkedStatus = document.querySelector('input[name="clientStatus"]:checked');
+            const statusText = checkedStatus ? `[Status: ${checkedStatus.value}]` : "";
 
-            let finalDescription = "";
-            let assignedStaffName = "";
-            let assignedStaffId = "";
+            if (noteCategory || statusText) { finalDescription = `${statusText} ${noteCategory}\n\n${finalDescription}`.trim(); }
 
-            if (isLead) {
-                // ЛОГИКА ДЛЯ СОХРАНЕНИЯ АПОЙНТМЕНТА[cite: 4]
-                if (!selectedFormDate) {
-                    alert("Please select a date on the calendar for the appointment.");
-                    submitBtn.disabled = false; submitBtn.textContent = 'Book Appointment & Save Lead'; return;
-                }
-                const h = document.getElementById('timeHour').value;
-                const m = document.getElementById('timeMinute').value;
-                const ampm = document.getElementById('timeAMPM').value;
-                const clientName = document.getElementById('fullName').value.trim() || "New Lead";
-                const clientPhone = document.getElementById('phoneNumber').value.trim();
-                const service = document.getElementById('apptService').value;
-                const apptStaff = document.getElementById('apptStaff').value;
-                
-                // Сохраняем в Master Calendar (localStorage как в оригинале)[cite: 4]
-                const appointmentData = {
-                    id: Date.now(),
-                    client: clientName,
-                    phone: clientPhone,
-                    dateStr: selectedFormDate.toDateString(),
-                    timestamp: selectedFormDate.getTime(),
-                    time: `${h}:${m} ${ampm.toUpperCase()}`,
-                    service: service,
-                    staff: apptStaff,
-                    location: "All Docs Consulting",
-                    length: document.getElementById('apptLength').value
-                };
-                const recs = JSON.parse(localStorage.getItem('gr_db')) || [];
-                recs.push(appointmentData);
-                localStorage.setItem('gr_db', JSON.stringify(recs));
-
-                // Готовим запись для общего Журнала
-                finalDescription = `[🔥 NEW LEAD APPOINTMENT]\nScheduled for: ${selectedFormDate.toLocaleDateString()} at ${h}:${m} ${ampm}\nService: ${service}\nStaff: ${apptStaff}`;
-                
-            } else {
-                // СТАНДАРТНАЯ ЛОГИКА ДЛЯ СУЩЕСТВУЮЩИХ КЛИЕНТОВ
-                let baseDesc = document.getElementById('briefDescription').value;
-                const checkedCategory = document.querySelector('input[name="noteCategory"]:checked');
-                const noteCategory = checkedCategory && checkedCategory.value !== 'General Call' ? checkedCategory.value : "";
-                const checkedStatus = document.querySelector('input[name="clientStatus"]:checked');
-                const statusText = checkedStatus ? `[Status: ${checkedStatus.value}]` : "";
-
-                if (noteCategory || statusText) {
-                    finalDescription = `${statusText} ${noteCategory}\n\n${baseDesc}`.trim(); 
-                }
-
-                const staffSelect = document.getElementById('assignedStaff');
-                assignedStaffName = staffSelect.options[staffSelect.selectedIndex]?.text || "";
-                assignedStaffId = staffSelect.value || "";
-            }
+            const staffSelect = document.getElementById('assignedStaff');
+            const assignedStaffName = staffSelect.options[staffSelect.selectedIndex]?.text || "";
+            const assignedStaffId = staffSelect.value || "";
 
             const formData = {
                 clientId: document.getElementById('hiddenClientId').value || "",
@@ -762,35 +850,17 @@
             };
 
             try {
-                const response = await fetch('/api/save-call', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
-                });
+                const response = await fetch('/api/save-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
                 const result = await response.json();
-
                 if (result.success) {
-                    alert(isLead ? "✅ Appointment Booked & Lead Saved!" : `✅ Call successfully saved! \n\n${assignedStaffName !== "-- Do not notify anyone --" && assignedStaffName !== "" ? "Staff member has been notified." : ""}`);
-                    callForm.reset();
-                    document.getElementById('hiddenClientId').value = '';
+                    alert(`✅ Call successfully saved! \n\n${assignedStaffName !== "-- Do not notify anyone --" && assignedStaffName !== "" ? "Staff member has been notified." : ""}`);
+                    callForm.reset(); document.getElementById('hiddenClientId').value = '';
                     document.getElementById('clientBadge').style.display = 'none';
                     document.getElementById('matterContainer').style.display = 'none';
-                    document.querySelector('input[name="clientStatus"][value="Existing Client"]').checked = true;
-                    standardSection.style.display = 'block';
-                    leadSection.style.display = 'none';
-                    setDateTime();
-                    selectedFormDate = null;
-                    renderFormCal();
-                    window.currentClient = null;
-                } else {
-                    alert(`❌ Error saving: ` + (result.error || ""));
-                }
-            } catch (error) {
-                alert('Network error. Failed to save.');
-            } finally {
-                submitBtn.disabled = false; 
-                submitBtn.textContent = 'Save Call Log to Internal CRM';
-            }
+                    setDateTime(); window.currentClient = null;
+                } else { alert(`❌ Error saving call: ` + (result.error || "")); }
+            } catch (error) { alert('Network error. Failed to save.'); } 
+            finally { submitBtn.disabled = false; submitBtn.textContent = 'Save Call Log to Internal CRM'; }
         });
     });
 </script>
