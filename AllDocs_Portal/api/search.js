@@ -7,19 +7,25 @@ export default async function handler(req, res) {
 
     try {
         const rawQuery = query.toLowerCase().trim();
-        const digits = rawQuery.replace(/\D/g, '');
-        const isPhoneSearch = digits.length >= 4 && /\d/.test(rawQuery);
+        let digits = rawQuery.replace(/\D/g, '');
+        
+        // Отсекаем код страны +1 или 1 для американских номеров, если номер пришел из телефонии
+        if (digits.length === 11 && digits.startsWith('1')) {
+            digits = digits.substring(1);
+        }
 
+        const isPhoneSearch = digits.length >= 3 && /\d/.test(rawQuery);
         let contacts = [];
 
         if (isPhoneSearch) {
-            // Умный поиск: сначала пытаемся искать по формату (XXX) XXX-XXXX
-            let searchStr = rawQuery;
+            // УМНЫЙ АЛГОРИТМ: Динамически форматируем введенные цифры под стандарт Docketwise
+            let searchStr = digits;
             if (digits.length >= 10) {
-                const clean10 = digits.slice(-10);
-                searchStr = `(${clean10.slice(0,3)}) ${clean10.slice(3,6)}-${clean10.slice(6,10)}`;
-            } else if (digits.length > 4) {
-                searchStr = digits.slice(-4);
+                searchStr = `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6,10)}`;
+            } else if (digits.length > 6) {
+                searchStr = `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+            } else if (digits.length > 3) {
+                searchStr = `(${digits.slice(0,3)}) ${digits.slice(3)}`;
             }
 
             let phoneRes = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodeURIComponent(searchStr)}`, {
@@ -29,18 +35,7 @@ export default async function handler(req, res) {
             let data = phoneRes.ok ? await phoneRes.json() : { contacts: [] };
             let potentialContacts = Array.isArray(data) ? data : (data.contacts || []);
 
-            // Запасной план: если ничего не нашли, ищем железно по последним 4 цифрам
-            if (potentialContacts.length === 0 && digits.length >= 4) {
-                const last4 = digits.slice(-4);
-                let fallbackRes = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${last4}`, {
-                    headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
-                });
-                let fallbackData = fallbackRes.ok ? await fallbackRes.json() : { contacts: [] };
-                potentialContacts = Array.isArray(fallbackData) ? fallbackData : (fallbackData.contacts || []);
-            }
-            
-            // Фильтруем от мусора, оставляя только точные совпадения
-            const searchTarget = digits.length >= 7 ? digits.slice(-7) : digits;
+            // Фильтруем на нашем сервере: оставляем только те контакты, где номер содержит введенные цифры строго по порядку
             contacts = potentialContacts.filter(c => {
                 let cPhone = "";
                 if (c.phone_numbers && c.phone_numbers.length > 0) cPhone = c.phone_numbers[0].number || c.phone_numbers[0];
@@ -48,7 +43,7 @@ export default async function handler(req, res) {
                 
                 if (typeof cPhone === 'string') {
                     const cDigits = cPhone.replace(/\D/g, '');
-                    return cDigits.endsWith(searchTarget) || cDigits.includes(searchTarget) || searchTarget.includes(cDigits);
+                    return cDigits.includes(digits);
                 }
                 return false;
             });
@@ -68,6 +63,7 @@ export default async function handler(req, res) {
 
         const topMatches = contacts.slice(0, 10);
 
+        // Вытягиваем дела (Matters)
         const clientsData = await Promise.all(topMatches.map(async (contact) => {
             const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || contact.name || "Unknown Name";
             let phoneStr = "";
