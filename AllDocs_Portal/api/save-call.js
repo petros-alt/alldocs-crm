@@ -2,7 +2,6 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
     
     try {
-        // Безопасное подключение
         const postgres = await import('@vercel/postgres');
         const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
         const pool = postgres.createPool({ connectionString });
@@ -25,9 +24,9 @@ export default async function handler(req, res) {
             );
         `;
 
-        // Создаем уведомление (Колокольчик)
+        // Создаем уведомление на АНГЛИЙСКОМ
         if (assignedStaffId && assignedStaffId.trim() !== "") {
-            const notificationMessage = `Оператор ${operatorName} передал вам клиента. Проблема: ${description}`;
+            const notificationMessage = `Operator ${operatorName} transferred a client to you. Issue: ${description}`;
             await pool.sql`
                 INSERT INTO crm_notifications (staff_id, client_name, message)
                 VALUES (${assignedStaffId}, ${clientName}, ${notificationMessage});
