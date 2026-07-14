@@ -1,6 +1,5 @@
 export default async function handler(req, res) {
-    // Теперь мы ловим параметр type из нашего URL
-    const { query, type } = req.query;
+    const { query } = req.query;
     const apiKey = process.env.DOCKETWISE_CLIENT_SECRET || process.env.DOCKETWISE_CLIENT_ID;
 
     if (!apiKey) return res.status(500).json({ success: false, error: "Ключ не найден" });
@@ -8,57 +7,55 @@ export default async function handler(req, res) {
 
     try {
         const rawQuery = query.toLowerCase().trim();
-        // Сервер больше не гадает! Он точно знает, что мы ищем, благодаря type
-        const isPhoneSearch = type === 'phone';
-        const MAX_PER_PAGE = 100;
+        let digits = rawQuery.replace(/\D/g, '');
+
+        // Отсекаем +1 от телефонии Ooma для правильного поиска
+        if (digits.length === 11 && digits.startsWith('1')) {
+            digits = digits.substring(1);
+        }
+
+        // Если в запросе 4 и более цифр и нет букв - это 100% телефон
+        const isPhoneSearch = digits.length >= 4 && !/[a-zа-я]/i.test(rawQuery);
 
         let contacts = [];
 
         if (isPhoneSearch) {
-            let digits = rawQuery.replace(/\D/g, '');
-            // Отсекаем +1 от телефонии Ooma
-            if (digits.length === 11 && digits.startsWith('1')) {
-                digits = digits.substring(1);
-            }
-
-            // ХАК: Ищем по 4 последним цифрам (если номер длинный), чтобы обойти скобки в Docketwise
-            const searchQuery = digits.length >= 4 ? digits.slice(-4) : digits;
-            
-            const response = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${searchQuery}&per_page=${MAX_PER_PAGE}`, {
+            // =================================================================
+            // ТОТ САМЫЙ "РАСШИРЕННЫЙ ПОИСК" ИЗ ВЧЕРАШНЕГО ДНЯ
+            // Мы НЕ используем ?search=. Мы просим базу отдать МАКСИМУМ клиентов.
+            // =================================================================
+            const response = await fetch(`https://app.docketwise.com/api/v1/contacts?per_page=500`, {
                 headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
             });
             
             if (response.ok) {
                 const data = await response.json();
-                const potentialContacts = Array.isArray(data) ? data : (data.contacts || []);
+                const allContacts = Array.isArray(data) ? data : (data.contacts || []);
                 
-                // ЖЕСТКИЙ ФИЛЬТР: Проверяем ВСЕ поля телефонов. Если совпадения нет - в мусорку!
-                contacts = potentialContacts.filter(c => {
-                    let phonesToTest = [];
-                    if (c.phone) phonesToTest.push(c.phone);
-                    if (c.mobile_number) phonesToTest.push(c.mobile_number);
-                    if (c.home_number) phonesToTest.push(c.home_number);
-                    if (c.work_number) phonesToTest.push(c.work_number);
+                // Наш сервер сам сканирует все 500 человек и ищет номер в ЛЮБОМ поле
+                contacts = allContacts.filter(c => {
+                    let phones = [];
+                    if (c.phone) phones.push(c.phone);
+                    if (c.mobile_number) phones.push(c.mobile_number);
+                    if (c.home_number) phones.push(c.home_number);
+                    if (c.work_number) phones.push(c.work_number);
                     if (Array.isArray(c.phone_numbers)) {
                         c.phone_numbers.forEach(p => {
-                            if (typeof p === 'string') phonesToTest.push(p);
-                            else if (p && p.number) phonesToTest.push(p.number);
+                            if (typeof p === 'string') phones.push(p);
+                            else if (p && p.number) phones.push(p.number);
                         });
                     }
                     
-                    return phonesToTest.some(p => {
-                        if (typeof p === 'string') {
-                            const cDigits = p.replace(/\D/g, '');
-                            return cDigits.includes(digits) || digits.includes(cDigits);
-                        }
-                        return false;
+                    return phones.some(p => {
+                        const cDigits = p.replace(/\D/g, '');
+                        return cDigits.includes(digits);
                     });
                 });
             }
         } else {
-            // Стандартный поиск по имени
+            // Стандартный поиск по имени (он работает хорошо, оставляем как есть)
             const encodedQuery = encodeURIComponent(rawQuery);
-            const response = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodedQuery}&per_page=${MAX_PER_PAGE}`, {
+            const response = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodedQuery}&per_page=100`, {
                 headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
             });
             if (response.ok) {
@@ -69,14 +66,14 @@ export default async function handler(req, res) {
 
         if (contacts.length === 0) return res.status(404).json({ success: false, error: "Клиенты не найдены" });
 
-        // Ограничиваем список до 15 совпадений
+        // Отдаем только первые 15 результатов, чтобы форма не зависала
         const topMatches = contacts.slice(0, 15);
 
-        // Вытягиваем дела (Matters)
+        // Вытягиваем дела
         const clientsData = await Promise.all(topMatches.map(async (contact) => {
             const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || contact.name || "Unknown Name";
             
-            // Находим правильный телефон для отображения
+            // Ищем красивый телефон для отображения в форме
             let phoneStr = contact.mobile_number || contact.home_number || contact.work_number || contact.phone || "";
             if (!phoneStr && Array.isArray(contact.phone_numbers) && contact.phone_numbers.length > 0) {
                 phoneStr = contact.phone_numbers[0].number || contact.phone_numbers[0] || "";
