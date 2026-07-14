@@ -83,12 +83,12 @@
         .notif-title .new-tag { background: var(--accent-color); color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; text-transform: uppercase; }
         .notif-preview { font-size: 13px; color: var(--secondary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* ВСПЛЫВАЮЩЕЕ ОКНО (МОДАЛКА) ДЛЯ ДЕТАЛЕЙ ЗАДАЧИ */
+        /* ВСПЛЫВАЮЩЕЕ ОКНО (МОДАЛКА) */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(2px); animation: fadeIn 0.2s ease; }
         .modal-content { background: var(--form-bg); padding: 35px; border-radius: 16px; width: 90%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); position: relative; }
         .modal-content h3 { margin: 0 0 15px 0; color: var(--primary-color); font-size: 22px; }
         .modal-subtitle { font-size: 13px; color: var(--secondary-color); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 8px; }
-        .modal-detail-box { background: #fdfaf6; padding: 18px; border-radius: 10px; border: 1px solid var(--border-color); border-left: 4px solid var(--accent-color); font-size: 14.5px; color: var(--primary-color); margin-bottom: 25px; line-height: 1.5; white-space: pre-wrap; }
+        .modal-detail-box { background: #fdfaf6; padding: 18px; border-radius: 10px; border: 1px solid var(--border-color); border-left: 4px solid var(--accent-color); font-size: 14.5px; color: var(--primary-color); margin-bottom: 25px; line-height: 1.5; }
         
         .modal-actions { display: flex; gap: 15px; margin-top: 25px; }
         .btn-cancel { flex: 1; background: var(--surface-color); border: 1px solid var(--border-color); padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--secondary-color); transition: 0.2s; }
@@ -99,13 +99,12 @@
 </head>
 <body>
 
-<!-- КОЛОКОЛЬЧИК И УВЕДОМЛЕНИЯ -->
 <div id="notificationContainer">
-    <div id="notificationBell">🔔<span id="notifBadge" class="badge">0</span></div>
+    <div id="notificationBell" title="Click anywhere on the page to enable sound!">🔔<span id="notifBadge" class="badge">0</span></div>
     <div id="notificationDropdown">
         <div class="dropdown-header">
             <h4>Incoming Tasks</h4>
-            <span id="closeDropdownBtn" style="cursor: pointer; color: #888; font-size: 18px;" title="Close">✖</span>
+            <span id="closeDropdownBtn" style="cursor: pointer; color: #888; font-size: 18px;" title="Close Menu">✖</span>
         </div>
         <div id="notifList">
             <div style="color: #888; text-align: center; padding: 30px 20px; font-size: 14px;">No new tasks to review.</div>
@@ -113,20 +112,21 @@
     </div>
 </div>
 
-<!-- МОДАЛЬНОЕ ОКНО ДЛЯ ЗАДАЧИ -->
 <div id="notifModal" class="modal-overlay">
     <div class="modal-content">
         <h3 id="modalClientName">Client Name</h3>
         
         <div class="modal-subtitle">Notes from Operator:</div>
-        <div id="modalMessage" class="modal-detail-box">Client details and operator message will appear here.</div>
+        <div id="modalMessage" class="modal-detail-box"></div>
         
         <div class="modal-subtitle">Add your resolution note (Optional):</div>
         <textarea id="modalStaffNote" placeholder="e.g., Called client back, question resolved."></textarea>
         
         <div class="modal-actions">
-            <button class="btn-cancel" onclick="closeNotifModal()">Close</button>
-            <button class="btn-resolve" onclick="resolveNotification()">Mark as Resolved ✓</button>
+            <!-- Кнопка Close просто закрывает окно, задача остается висеть -->
+            <button class="btn-cancel" onclick="closeNotifModal()">Close window</button>
+            <!-- Кнопка Resolve закрывает задачу навсегда и сохраняет нот -->
+            <button class="btn-resolve" onclick="resolveNotification()" id="resolveBtn">Mark as Resolved ✓</button>
         </div>
     </div>
 </div>
@@ -255,7 +255,7 @@
 
 <script>
     window.currentClient = null;
-    let currentActiveNotifId = null; // Для модального окна
+    let currentActiveNotifId = null; 
 
     document.addEventListener("DOMContentLoaded", function() {
         
@@ -320,14 +320,32 @@
             notifDropdown.style.display = 'none';
         });
 
-        // Открытие модалки с деталями
+        // Открытие и форматирование текста внутри модалки
         window.openNotifModal = function(id, clientName, message) {
             currentActiveNotifId = id;
-            document.getElementById('modalClientName').textContent = clientName;
-            document.getElementById('modalMessage').textContent = message;
-            document.getElementById('modalStaffNote').value = ""; // Очищаем поле ввода
-            notifDropdown.style.display = 'none'; // Прячем меню
-            notifModal.style.display = 'flex';    // Показываем модалку
+            document.getElementById('modalClientName').textContent = '📞 ' + clientName;
+            
+            // Разделяем технический текст от реальной проблемы клиента
+            let operatorInfo = "System Alert";
+            let issueText = message;
+            
+            if (message.includes("Issue:")) {
+                let parts = message.split("Issue:");
+                operatorInfo = parts[0].trim();
+                issueText = parts[1].trim();
+            }
+
+            // Создаем красивый HTML внутри модалки
+            document.getElementById('modalMessage').innerHTML = `
+                <div style="font-size: 12px; color: #a1683a; font-weight: bold; margin-bottom: 8px;">👤 ${operatorInfo}</div>
+                <div style="color: var(--primary-color); background: white; padding: 15px; border-radius: 8px; border: 1px solid #eaeaea; font-family: monospace; font-size: 13.5px;">
+                    ${issueText.replace(/\n/g, '<br>')}
+                </div>
+            `;
+            
+            document.getElementById('modalStaffNote').value = ""; 
+            notifDropdown.style.display = 'none'; 
+            notifModal.style.display = 'flex';    
         };
 
         window.closeNotifModal = function() {
@@ -335,28 +353,30 @@
             currentActiveNotifId = null;
         };
 
-        // Логика кнопки "Отметить как решенное"
+        // Логика закрытия задачи навсегда и сохранения текста
         window.resolveNotification = async function() {
             if (!currentActiveNotifId) return;
             const extraNote = document.getElementById('modalStaffNote').value.trim();
+            const btn = document.getElementById('resolveBtn');
+            
+            btn.textContent = "Saving...";
+            btn.disabled = true;
             
             try {
-                // Закрываем уведомление в базе (это работает уже сейчас)
-                await fetch(`/api/get-notifications?action=read&notificationId=${currentActiveNotifId}`);
+                // Отправляем ID задачи и текст ответа на сервер
+                await fetch(`/api/get-notifications?action=read&notificationId=${currentActiveNotifId}&note=${encodeURIComponent(extraNote)}`);
                 
-                // ТУТ БУДЕТ ЗАПИСЬ ДОПОЛНИТЕЛЬНОГО КОММЕНТАРИЯ В ЖУРНАЛ (Требуется доработка бэкенда)
-                if (extraNote) {
-                    console.log("Сохраняем комментарий в журнал:", extraNote);
-                    // Мы реализуем этот запрос на следующем шаге
-                }
-
                 closeNotifModal();
-                checkNotifications(); // Обновляем колокольчик
+                checkNotifications(); // Обновляем список, и задача сразу исчезнет!
+                
                 if (document.getElementById('btnHistoryTab').classList.contains('active')) {
-                    renderCallHistoryList(); // Обновляем журнал, если он открыт
+                    renderCallHistoryList(); // Перерисовываем журнал, чтобы увидеть свой нот
                 }
             } catch (e) {
                 alert('Ошибка связи с сервером');
+            } finally {
+                btn.textContent = "Mark as Resolved ✓";
+                btn.disabled = false;
             }
         };
 
@@ -371,8 +391,9 @@
                     badge.style.display = 'block';
                     badge.textContent = data.notifications.length;
 
+                    // Звук играет только если количество задач увеличилось
                     if (data.notifications.length > previousNotifCount) {
-                        bellSound.play().catch(e => console.log('Audio blocked'));
+                        bellSound.play().catch(e => console.log('Audio blocked by browser - user must click on page first.'));
                     }
                     previousNotifCount = data.notifications.length;
                     
@@ -380,7 +401,6 @@
                     data.notifications.forEach(notif => {
                         const div = document.createElement('div');
                         div.className = 'notif-item-modern';
-                        // При клике на всю строку открывается красивая модалка
                         div.onclick = () => openNotifModal(notif.id, notif.client_name, notif.message);
                         div.innerHTML = `
                             <div class="notif-title">
@@ -398,10 +418,10 @@
                 }
             } catch(e) {}
         }
-        setInterval(checkNotifications, 15000); 
+        // УСКОРИЛИ ПРОВЕРКУ ДО 3 СЕКУНД
+        setInterval(checkNotifications, 3000); 
         checkNotifications();
 
-        // --- ДАТА, ВРЕМЯ И ВКЛАДКИ ---
         function setDateTime() {
             const now = new Date();
             document.getElementById('callDate').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -424,7 +444,7 @@
             renderCallHistoryList(); 
         });
 
-        // --- ЖУРНАЛ ЗВОНКОВ ---
+        // --- ЖУРНАЛ ЗВОНКОВ С НОВЫМ КОММЕНТАРИЕМ ---
         async function renderCallHistoryList() {
             const tbody = document.getElementById('oomaCallHistoryBody');
             const tableContainer = document.getElementById('historyTableContainer');
@@ -446,6 +466,10 @@
                         let noteHTML = '';
                         if (log.call_description) {
                             noteHTML = `<div style="font-size: 12.5px; color: #795548; margin-top: 6px; border-left: 2px solid var(--accent-color); padding-left: 8px;">${log.call_description}</div>`;
+                        }
+                        // Отображаем комментарий от сотрудника, если он есть
+                        if (log.follow_up_notes) {
+                            noteHTML += `<div style="font-size: 12.5px; color: #2e7d32; margin-top: 6px; border-left: 2px solid #4CAF50; padding-left: 8px; background: #e8f5e9; padding: 5px; border-radius: 4px;"><strong>Staff Reply:</strong> ${log.follow_up_notes}</div>`;
                         }
 
                         tr.innerHTML = `
@@ -478,7 +502,6 @@
             }
         });
 
-        // --- ПОИСК КЛИЕНТА (НОВАЯ ЛОГИКА) ---
         async function fetchDocketwiseData(query, isPhone) {
             try {
                 const type = isPhone ? 'phone' : 'name';
@@ -561,7 +584,6 @@
             }
         });
 
-        // --- ПЕРЕХВАТ ВХОДЯЩЕГО ЗВОНКА ---
         async function checkIncomingCall() {
             if (incomingPhone) {
                 let cleanedPhone = incomingPhone.replace(/[^\d+]/g, '');
@@ -582,7 +604,6 @@
         }
         checkIncomingCall();
 
-        // --- СОХРАНЕНИЕ ЗВОНКА ---
         const callForm = document.getElementById('callForm');
         callForm.addEventListener('submit', async function(event) {
             event.preventDefault();
