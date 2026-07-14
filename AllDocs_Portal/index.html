@@ -276,7 +276,7 @@
         const notifDropdown = document.getElementById('notificationDropdown');
         const notifList = document.getElementById('notifList');
         let previousNotifCount = 0;
-        const bellSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // Звук уведомления
+        const bellSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         
         bellBtn.addEventListener('click', () => {
             notifDropdown.style.display = notifDropdown.style.display === 'block' ? 'none' : 'block';
@@ -297,9 +297,8 @@
                     badge.style.display = 'block';
                     badge.textContent = data.notifications.length;
 
-                    // Воспроизводим звук, если задач стало больше
                     if (data.notifications.length > previousNotifCount) {
-                        bellSound.play().catch(e => console.log('Audio blocked by browser policy'));
+                        bellSound.play().catch(e => console.log('Audio blocked'));
                     }
                     previousNotifCount = data.notifications.length;
                     
@@ -380,7 +379,6 @@
                         const tr = document.createElement('tr');
                         const d = new Date(log.created_at);
                         
-                        // Добавляем отображение заметки прямо в таблицу
                         let noteHTML = '';
                         if (log.call_description) {
                             noteHTML = `<div style="font-size: 12.5px; color: #795548; margin-top: 6px; border-left: 2px solid var(--accent-color); padding-left: 8px;">${log.call_description}</div>`;
@@ -407,7 +405,6 @@
             }
         }
 
-        // Логика фильтрации (поисковик по журналу)
         document.getElementById('historySearchInput').addEventListener('input', function() {
             const filter = this.value.toLowerCase();
             const rows = document.getElementById('oomaCallHistoryBody').getElementsByTagName('tr');
@@ -417,7 +414,7 @@
             }
         });
 
-        // --- 6. АВТОПОИСК КЛИЕНТА (ОБНОВИТСЯ В ЭТАПЕ 2) ---
+        // --- 6. АВТОПОИСК КЛИЕНТА (С КРЕСТИКОМ) ---
         async function fetchDocketwiseData(query) {
             try {
                 const res = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
@@ -452,15 +449,26 @@
         }
 
         const handleSearch = debounce(async (query, isPhone) => {
-            if (query.length < 3) return;
-            const loader = isPhone ? document.getElementById('phoneLoader') : document.getElementById('nameLoader');
             const list = isPhone ? document.getElementById('phoneList') : document.getElementById('clientList');
+            if (query.length < 3) {
+                list.style.display = 'none';
+                return;
+            }
+            const loader = isPhone ? document.getElementById('phoneLoader') : document.getElementById('nameLoader');
             loader.style.display = 'block';
             const results = await fetchDocketwiseData(query);
             loader.style.display = 'none';
             list.innerHTML = '';
             
             if (results.length > 0) {
+                // ДОБАВЛЯЕМ КНОПКУ ЗАКРЫТИЯ С КРЕСТИКОМ
+                const closeLi = document.createElement('li');
+                closeLi.innerHTML = `<span style="color:#d32f2f; font-weight:bold; float:right; cursor:pointer; font-size:13px;">✖ Close</span><div style="clear:both;"></div>`;
+                closeLi.style.backgroundColor = "#f9f9f9";
+                closeLi.style.borderBottom = "2px solid #eaeaea";
+                closeLi.onmousedown = (e) => { e.preventDefault(); list.style.display = 'none'; };
+                list.appendChild(closeLi);
+
                 results.forEach(client => {
                     const li = document.createElement('li'); 
                     li.innerHTML = `<span class="client-name-list">${client.name}</span><span class="client-phone-list">${client.phone || ''}</span>`;
@@ -468,11 +476,25 @@
                     list.appendChild(li);
                 });
                 list.style.display = 'block';
+            } else {
+                list.style.display = 'none';
             }
         }, 500);
 
         document.getElementById('fullName').addEventListener('input', e => handleSearch(e.target.value.trim(), false));
         document.getElementById('phoneNumber').addEventListener('input', e => handleSearch(e.target.value.trim(), true));
+
+        // ЗАКРЫТИЕ СПИСКА ПРИ КЛИКЕ МИМО
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#autocompleteWrapper')) {
+                const clientList = document.getElementById('clientList');
+                if (clientList) clientList.style.display = 'none';
+            }
+            if (!e.target.closest('#phoneAutocompleteWrapper')) {
+                const phoneList = document.getElementById('phoneList');
+                if (phoneList) phoneList.style.display = 'none';
+            }
+        });
 
         // --- 7. ПЕРЕХВАТ ВХОДЯЩЕГО ЗВОНКА ---
         async function checkIncomingCall() {
