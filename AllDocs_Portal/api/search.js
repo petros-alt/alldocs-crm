@@ -9,45 +9,50 @@ export default async function handler(req, res) {
         const rawQuery = query.toLowerCase().trim();
         let digits = rawQuery.replace(/\D/g, '');
 
-        // 1. ФИКС ДЛЯ OOMA: Отсекаем американскую единицу для входящих звонков
+        // ФИКС ДЛЯ OOMA: Отсекаем код страны 1 для американских входящих звонков
         if (digits.length === 11 && digits.startsWith('1')) {
             digits = digits.substring(1);
         }
 
-        // 2. Начинаем искать уже с 3 введенных цифр (как ты просил)
+        // Включаем поиск телефона, если введено 3 и более цифр
         const isPhoneSearch = digits.length >= 3;
 
         let contacts = [];
 
         if (isPhoneSearch) {
-            // ИДЕАЛЬНАЯ ПРОСТАЯ ЛОГИКА (Без блокировок от Docketwise):
-            // Если введен полный номер (10 цифр) - железно ищем по 4 последним (как в твоем старом коде)
-            // Если номер еще вводится (от 3 до 9 цифр) - ищем точную последовательность
-            let searchStr = digits.length >= 10 ? digits.slice(-4) : digits;
-
-            const phoneRes = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${searchStr}`, {
+            // ШАГ 1: Ищем точную последовательность (Идеально для Карен и слитных номеров)
+            let phoneRes = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${digits}`, {
                 headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
             });
-            
-            if (phoneRes.ok) {
-                const data = await phoneRes.json();
-                const potentialContacts = Array.isArray(data) ? data : (data.contacts || []);
-                
-                // Жесткий фильтр: оставляем только тех, чей номер реально содержит введенные цифры
-                contacts = potentialContacts.filter(c => {
-                    let cPhone = "";
-                    if (c.phone_numbers && c.phone_numbers.length > 0) cPhone = c.phone_numbers[0].number || c.phone_numbers[0];
-                    else if (c.phone) cPhone = c.phone;
-                    
-                    if (typeof cPhone === 'string') {
-                        const cDigits = cPhone.replace(/\D/g, '');
-                        return cDigits.includes(digits) || digits.includes(cDigits);
-                    }
-                    return false;
+            let data = phoneRes.ok ? await phoneRes.json() : { contacts: [] };
+            let potentialContacts = Array.isArray(data) ? data : (data.contacts || []);
+
+            // ШАГ 2: ЗАПАСНОЙ ПЛАН. Если ничего не нашли, а цифр введено 4 или больше,
+            // значит номер в базе сохранен со скобками. Ищем по последним 4 цифрам!
+            if (potentialContacts.length === 0 && digits.length >= 4) {
+                const last4 = digits.slice(-4);
+                let fallbackRes = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${last4}`, {
+                    headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
                 });
+                let fallbackData = fallbackRes.ok ? await fallbackRes.json() : { contacts: [] };
+                potentialContacts = Array.isArray(fallbackData) ? fallbackData : (fallbackData.contacts || []);
             }
+
+            // ШАГ 3: ЖЕСТКИЙ ФИЛЬТР НА СЕРВЕРЕ
+            // Оставляем только тех клиентов, чей номер содержит введенные цифры по порядку
+            contacts = potentialContacts.filter(c => {
+                let cPhone = "";
+                if (c.phone_numbers && c.phone_numbers.length > 0) cPhone = c.phone_numbers[0].number || c.phone_numbers[0];
+                else if (c.phone) cPhone = c.phone;
+                
+                if (typeof cPhone === 'string') {
+                    const cDigits = cPhone.replace(/\D/g, '');
+                    return cDigits.includes(digits) || digits.includes(cDigits);
+                }
+                return false;
+            });
         } else {
-            // Обычный поиск по имени
+            // ОБЫЧНЫЙ ПОИСК ПО ИМЕНИ
             const encodedQuery = encodeURIComponent(rawQuery);
             const response = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodedQuery}`, {
                 headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
@@ -60,7 +65,7 @@ export default async function handler(req, res) {
 
         if (contacts.length === 0) return res.status(404).json({ success: false, error: "No clients found" });
 
-        // Ограничиваем список
+        // Ограничиваем список до 12 человек
         const topMatches = contacts.slice(0, 12);
 
         // Вытягиваем дела (Matters)
