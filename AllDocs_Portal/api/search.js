@@ -9,20 +9,23 @@ export default async function handler(req, res) {
         const rawQuery = query.toLowerCase().trim();
         let digits = rawQuery.replace(/\D/g, '');
 
-        // ЕДИНСТВЕННАЯ ДОБАВКА: Фикс для определителя Ooma (отсекаем +1)
+        // Фикс для Ooma: отсекаем +1 для американских входящих звонков
         if (digits.length === 11 && digits.startsWith('1')) {
             digits = digits.substring(1);
         }
 
-        // ТВОЯ ОРИГИНАЛЬНАЯ ЛОГИКА: Хак включается ТОЛЬКО с 7 цифр
-        const isPhoneSearch = digits.length >= 7;
+        // НОВАЯ ЛОГИКА: Если в запросе нет букв и есть хотя бы 3 цифры — это 100% поиск по номеру
+        const isPhoneSearch = digits.length >= 3 && !/[a-z]/.test(rawQuery);
 
         let contacts = [];
+        // ФУНДАМЕНТАЛЬНЫЙ ФИЛЬТР: Просим Docketwise выдать до 100 человек, чтобы искать по всей базе!
+        const MAX_PER_PAGE = 100;
 
         if (isPhoneSearch) {
-            // ХАК: Ищем только по последним 4 цифрам! Docketwise их найдет мгновенно.
-            const last4 = digits.slice(-4);
-            const phoneRes = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${last4}`, {
+            // ТВОЙ СТАРЫЙ ХАК: Если ввели 7+ цифр, ищем по 4 последним. Иначе ищем точные 3-6 цифр.
+            const searchStr = digits.length >= 7 ? digits.slice(-4) : digits;
+
+            const phoneRes = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${searchStr}&per_page=${MAX_PER_PAGE}`, {
                 headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
             });
             
@@ -30,7 +33,7 @@ export default async function handler(req, res) {
                 const data = await phoneRes.json();
                 const potentialContacts = Array.isArray(data) ? data : (data.contacts || []);
                 
-                // Фильтруем на нашем сервере точное совпадение по всему номеру
+                // ЖЕСТКИЙ ЛОКАЛЬНЫЙ ФИЛЬТР: Отсекаем Александра и всех, у кого введенные цифры не в номере
                 contacts = potentialContacts.filter(c => {
                     let cPhone = "";
                     if (c.phone_numbers && c.phone_numbers.length > 0) cPhone = c.phone_numbers[0].number || c.phone_numbers[0];
@@ -38,15 +41,15 @@ export default async function handler(req, res) {
                     
                     if (typeof cPhone === 'string') {
                         const cDigits = cPhone.replace(/\D/g, '');
-                        return cDigits.includes(digits) || digits.includes(cDigits);
+                        return cDigits.includes(digits);
                     }
                     return false;
                 });
             }
         } else {
-            // Стандартный быстрый поиск. Идеально работает для коротких кусков вроде 818
+            // Стандартный поиск по имени
             const encodedQuery = encodeURIComponent(rawQuery);
-            const response = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodedQuery}`, {
+            const response = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodedQuery}&per_page=${MAX_PER_PAGE}`, {
                 headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
             });
             if (response.ok) {
@@ -57,7 +60,7 @@ export default async function handler(req, res) {
 
         if (contacts.length === 0) return res.status(404).json({ success: false, error: "No clients found" });
 
-        // Ограничиваем список до 12 совпадений
+        // Ограничиваем список до 12 совпадений для быстрой загрузки формы
         const topMatches = contacts.slice(0, 12);
 
         // Вытягиваем дела (Matters)
