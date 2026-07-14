@@ -9,58 +9,53 @@ export default async function handler(req, res) {
         const rawQuery = query.toLowerCase().trim();
         let digits = rawQuery.replace(/\D/g, '');
 
-        // Отсекаем +1 от телефонии Ooma
         if (digits.length === 11 && digits.startsWith('1')) {
             digits = digits.substring(1);
         }
 
-        // Если есть хотя бы 3 цифры и нет букв - это поиск по ТЕЛЕФОНУ
         const isPhoneSearch = digits.length >= 3 && !/[a-zа-я]/i.test(rawQuery);
-
         let contacts = [];
         const MAX_PER_PAGE = 100;
 
         if (isPhoneSearch) {
-            // ---------------------------------------------------------
-            // ЛОГИКА ТЕЛЕФОНА (ПРОСТАЯ И ПРЯМАЯ)
-            // ---------------------------------------------------------
-            
-            // Шаг 1: Ищем точные цифры в базе
-            let dwRes = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${digits}&per_page=${MAX_PER_PAGE}`, {
-                headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
-            });
-            let data = dwRes.ok ? await dwRes.json() : { contacts: [] };
-            let potentialContacts = Array.isArray(data) ? data : (data.contacts || []);
-
-            // Шаг 2: Страховка. Если ввели длинный номер, а база ничего не нашла (из-за форматов со скобками), ищем по 4 последним
-            if (potentialContacts.length === 0 && digits.length >= 7) {
-                const last4 = digits.slice(-4);
-                let fallbackRes = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${last4}&per_page=${MAX_PER_PAGE}`, {
+            // ДВОЙНОЙ УДАР ПО ТЕЛЕФОНУ: Ищем и полный ввод, и хвост (чтобы обойти любые скобки)
+            let fetchPromises = [
+                fetch(`https://app.docketwise.com/api/v1/contacts?search=${digits}&per_page=${MAX_PER_PAGE}`, {
                     headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
-                });
-                let fallbackData = fallbackRes.ok ? await fallbackRes.json() : { contacts: [] };
-                potentialContacts = Array.isArray(fallbackData) ? fallbackData : (fallbackData.contacts || []);
+                }).then(r => r.ok ? r.json() : { contacts: [] })
+            ];
+
+            if (digits.length >= 4) {
+                fetchPromises.push(
+                    fetch(`https://app.docketwise.com/api/v1/contacts?search=${digits.slice(-4)}&per_page=${MAX_PER_PAGE}`, {
+                        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+                    }).then(r => r.ok ? r.json() : { contacts: [] })
+                );
             }
 
-            // Шаг 3: Жесткий фильтр - оставляем ТОЛЬКО тех, чей номер реально содержит эти цифры
-            contacts = potentialContacts.filter(c => {
+            const results = await Promise.all(fetchPromises);
+            let potentialContacts = [];
+            results.forEach(data => {
+                potentialContacts = potentialContacts.concat(Array.isArray(data) ? data : (data.contacts || []));
+            });
+
+            // ЖЕСТКИЙ ФИЛЬТР: Оставляем только точные совпадения цифр
+            const uniqueMap = new Map();
+            potentialContacts.forEach(c => {
                 let cPhone = "";
                 if (c.phone_numbers && c.phone_numbers.length > 0) cPhone = c.phone_numbers[0].number || c.phone_numbers[0];
                 else if (c.phone) cPhone = c.phone;
                 
                 if (typeof cPhone === 'string') {
                     const cDigits = cPhone.replace(/\D/g, '');
-                    return cDigits.includes(digits);
+                    if (cDigits.includes(digits)) uniqueMap.set(c.id, c);
                 }
-                return false;
             });
+            contacts = Array.from(uniqueMap.values());
 
         } else {
-            // ---------------------------------------------------------
-            // ЛОГИКА ИМЕНИ (С ЖЕСТКИМ ФИЛЬТРОМ ОТ МУСОРА)
-            // ---------------------------------------------------------
-            const encodedQuery = encodeURIComponent(rawQuery);
-            const response = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodedQuery}&per_page=${MAX_PER_PAGE}`, {
+            // ПОИСК ПО ИМЕНИ: Умный фильтр по словам
+            const response = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodeURIComponent(rawQuery)}&per_page=${MAX_PER_PAGE}`, {
                 headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
             });
             
@@ -68,10 +63,11 @@ export default async function handler(req, res) {
                 const data = await response.json();
                 const potentialContacts = Array.isArray(data) ? data : (data.contacts || []);
                 
-                // Шаг 3: Жесткий фильтр имени. Отсекаем людей, если имя/фамилия не совпадают с запросом!
+                const queryParts = rawQuery.split(' ').filter(Boolean);
                 contacts = potentialContacts.filter(c => {
                     const fullName = `${c.first_name || ''} ${c.last_name || ''} ${c.name || ''}`.toLowerCase();
-                    return fullName.includes(rawQuery);
+                    // Клиент должен содержать ВСЕ введенные слова (Например: и "karen", и "kha")
+                    return queryParts.every(part => fullName.includes(part));
                 });
             }
         }
@@ -80,7 +76,6 @@ export default async function handler(req, res) {
 
         const topMatches = contacts.slice(0, 15);
 
-        // Подтягиваем дела (Matters)
         const clientsData = await Promise.all(topMatches.map(async (contact) => {
             const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || contact.name || "Unknown Name";
             let phoneStr = "";
@@ -105,7 +100,6 @@ export default async function handler(req, res) {
         res.status(200).json({ success: true, clients: clientsData });
 
     } catch (error) {
-        console.error("Search Error:", error);
         res.status(500).json({ success: false, error: "Server Error" });
     }
 }
