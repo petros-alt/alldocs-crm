@@ -65,27 +65,69 @@
         .client-phone-list { font-size: 12.5px; color: var(--secondary-color); opacity: 0.8; }
         .loading-indicator { position: absolute; right: 12px; color: var(--accent-color); font-size: 12px; display: none; font-weight: bold; }
         
-        /* BELL STYLES */
+        /* НОВЫЙ ДИЗАЙН КОЛОКОЛЬЧИКА И УВЕДОМЛЕНИЙ */
         #notificationContainer { position: fixed; top: 25px; right: 35px; z-index: 1000; }
-        #notificationBell { font-size: 26px; cursor: pointer; position: relative; background: white; padding: 12px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: transform 0.2s; }
-        #notificationBell:hover { transform: scale(1.05); }
-        .badge { background: #d32f2f; color: white; border-radius: 50%; padding: 2px 6px; font-size: 12px; position: absolute; top: -5px; right: -5px; font-weight: bold; border: 2px solid white; display: none; }
-        #notificationDropdown { display: none; position: absolute; top: 60px; right: 0; width: 340px; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 15px; max-height: 450px; overflow-y: auto; border: 1px solid var(--border-color); }
-        .notif-item { padding: 12px; border-bottom: 1px solid #f0ebe1; font-size: 13.5px; }
-        .notif-item:last-child { border-bottom: none; }
+        #notificationBell { font-size: 24px; cursor: pointer; position: relative; background: white; padding: 12px 15px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: transform 0.2s, box-shadow 0.2s; border: 1px solid var(--border-color); }
+        #notificationBell:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+        .badge { background: #d32f2f; color: white; border-radius: 50%; padding: 3px 7px; font-size: 11px; position: absolute; top: -5px; right: -5px; font-weight: bold; border: 2px solid white; display: none; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        
+        #notificationDropdown { display: none; position: absolute; top: 65px; right: 0; width: 360px; background: white; border-radius: 12px; box-shadow: 0 15px 40px rgba(0,0,0,0.15); border: 1px solid var(--border-color); overflow: hidden; animation: fadeIn 0.2s ease; }
+        .dropdown-header { background: var(--surface-color); padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .dropdown-header h4 { margin: 0; color: var(--primary-color); font-size: 15px; font-weight: 700; }
+        
+        #notifList { max-height: 350px; overflow-y: auto; }
+        .notif-item-modern { padding: 15px 20px; border-bottom: 1px solid #f0ebe1; cursor: pointer; transition: background 0.2s; border-left: 3px solid transparent; }
+        .notif-item-modern:hover { background: #fdfaf6; border-left-color: var(--accent-color); }
+        .notif-item-modern:last-child { border-bottom: none; }
+        .notif-title { font-weight: 700; color: var(--primary-color); font-size: 14px; margin-bottom: 4px; display: flex; justify-content: space-between; }
+        .notif-title .new-tag { background: var(--accent-color); color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; text-transform: uppercase; }
+        .notif-preview { font-size: 13px; color: var(--secondary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* ВСПЛЫВАЮЩЕЕ ОКНО (МОДАЛКА) ДЛЯ ДЕТАЛЕЙ ЗАДАЧИ */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(2px); animation: fadeIn 0.2s ease; }
+        .modal-content { background: var(--form-bg); padding: 35px; border-radius: 16px; width: 90%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); position: relative; }
+        .modal-content h3 { margin: 0 0 15px 0; color: var(--primary-color); font-size: 22px; }
+        .modal-subtitle { font-size: 13px; color: var(--secondary-color); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .modal-detail-box { background: #fdfaf6; padding: 18px; border-radius: 10px; border: 1px solid var(--border-color); border-left: 4px solid var(--accent-color); font-size: 14.5px; color: var(--primary-color); margin-bottom: 25px; line-height: 1.5; white-space: pre-wrap; }
+        
+        .modal-actions { display: flex; gap: 15px; margin-top: 25px; }
+        .btn-cancel { flex: 1; background: var(--surface-color); border: 1px solid var(--border-color); padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--secondary-color); transition: 0.2s; }
+        .btn-cancel:hover { background: #e0d8d3; color: var(--primary-color); }
+        .btn-resolve { flex: 2; background: var(--accent-color); border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 700; color: white; transition: 0.2s; box-shadow: 0 4px 10px rgba(161, 104, 58, 0.2); }
+        .btn-resolve:hover { background: var(--accent-hover); transform: translateY(-2px); }
     </style>
 </head>
 <body>
 
-<!-- КОЛОКОЛЬЧИК УВЕДОМЛЕНИЙ -->
+<!-- КОЛОКОЛЬЧИК И УВЕДОМЛЕНИЯ -->
 <div id="notificationContainer">
     <div id="notificationBell">🔔<span id="notifBadge" class="badge">0</span></div>
     <div id="notificationDropdown">
-        <h4 style="margin: 0 0 10px 0; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; color: var(--primary-color);">
-            Incoming Tasks
-            <span id="closeDropdownBtn" style="float: right; cursor: pointer; color: #888; font-size: 16px; font-weight: normal;" title="Close">✖</span>
-        </h4>
-        <div id="notifList"><div style="color: #888; text-align: center; padding: 20px;">No new tasks</div></div>
+        <div class="dropdown-header">
+            <h4>Incoming Tasks</h4>
+            <span id="closeDropdownBtn" style="cursor: pointer; color: #888; font-size: 18px;" title="Close">✖</span>
+        </div>
+        <div id="notifList">
+            <div style="color: #888; text-align: center; padding: 30px 20px; font-size: 14px;">No new tasks to review.</div>
+        </div>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО ДЛЯ ЗАДАЧИ -->
+<div id="notifModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3 id="modalClientName">Client Name</h3>
+        
+        <div class="modal-subtitle">Notes from Operator:</div>
+        <div id="modalMessage" class="modal-detail-box">Client details and operator message will appear here.</div>
+        
+        <div class="modal-subtitle">Add your resolution note (Optional):</div>
+        <textarea id="modalStaffNote" placeholder="e.g., Called client back, question resolved."></textarea>
+        
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeNotifModal()">Close</button>
+            <button class="btn-resolve" onclick="resolveNotification()">Mark as Resolved ✓</button>
+        </div>
     </div>
 </div>
 
@@ -112,7 +154,6 @@
 
 <main class="main-wrapper">
     <div class="container">
-        
         <div class="header">
             <p style="font-family: 'Times New Roman', Times, serif; font-size: 28px; font-weight: bold; font-style: italic; margin-top: 5px; margin-bottom: 0; color: var(--primary-color);">Operator Call Form</p>
         </div>
@@ -133,7 +174,6 @@
 
             <form id="callForm">
                 <input type="hidden" id="hiddenClientId" value="">
-
                 <h2 class="section-title">1. Basic Call Information</h2>
                 <div class="form-row">
                     <div class="form-group"><label>Date:</label><input type="date" id="callDate" required></div>
@@ -190,14 +230,12 @@
                 </div>
 
                 <h2 class="section-title">4. Internal CRM Logging & Routing</h2>
-                
                 <div class="form-row">
                     <div class="form-group">
                         <label>Assigned To / Staff (Notify via Bell 🔔):</label>
                         <select id="assignedStaff"></select>
                     </div>
                 </div>
-
                 <button type="submit" class="submit-btn" id="submitBtn">Save Call Log to Internal CRM</button>
             </form>
         </div>
@@ -205,10 +243,7 @@
         <div id="tabHistoryContent" class="tab-content">
             <h2 class="section-title" style="border:none; margin-bottom: 5px;">Internal Call History</h2>
             <p style="font-size: 14.5px; color: var(--secondary-color); margin-bottom: 15px;">Live shared call journal for all staff members.</p>
-            
-            <!-- СТРОКА ПОИСКА И ФИЛЬТРАЦИИ -->
             <input type="text" id="historySearchInput" placeholder="🔍 Search history by name, phone, or staff..." style="width: 100%; padding: 14px; margin-bottom: 20px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 14.5px; box-sizing: border-box; background-color: var(--surface-color);">
-
             <div id="noCallsMessage" class="no-calls">Loading internal call history...</div>
             <table class="history-table" id="historyTableContainer" style="display: none;">
                 <thead><tr><th>Date & Time</th><th>Client & Notes</th><th>Phone</th><th style="width: 100px;">Staff</th></tr></thead>
@@ -220,6 +255,7 @@
 
 <script>
     window.currentClient = null;
+    let currentActiveNotifId = null; // Для модального окна
 
     document.addEventListener("DOMContentLoaded", function() {
         
@@ -269,19 +305,60 @@
         userProfile.addEventListener('click', () => logoutMenu.style.display = (logoutMenu.style.display === 'block') ? 'none' : 'block');
         document.addEventListener('click', (e) => { if (!userProfile.contains(e.target) && !logoutMenu.contains(e.target)) logoutMenu.style.display = 'none'; });
 
+        // --- УВЕДОМЛЕНИЯ И МОДАЛЬНОЕ ОКНО ---
         const bellBtn = document.getElementById('notificationBell');
         const notifDropdown = document.getElementById('notificationDropdown');
         const notifList = document.getElementById('notifList');
+        const notifModal = document.getElementById('notifModal');
         let previousNotifCount = 0;
         const bellSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         
         bellBtn.addEventListener('click', () => {
             notifDropdown.style.display = notifDropdown.style.display === 'block' ? 'none' : 'block';
         });
-
         document.getElementById('closeDropdownBtn').addEventListener('click', () => {
             notifDropdown.style.display = 'none';
         });
+
+        // Открытие модалки с деталями
+        window.openNotifModal = function(id, clientName, message) {
+            currentActiveNotifId = id;
+            document.getElementById('modalClientName').textContent = clientName;
+            document.getElementById('modalMessage').textContent = message;
+            document.getElementById('modalStaffNote').value = ""; // Очищаем поле ввода
+            notifDropdown.style.display = 'none'; // Прячем меню
+            notifModal.style.display = 'flex';    // Показываем модалку
+        };
+
+        window.closeNotifModal = function() {
+            notifModal.style.display = 'none';
+            currentActiveNotifId = null;
+        };
+
+        // Логика кнопки "Отметить как решенное"
+        window.resolveNotification = async function() {
+            if (!currentActiveNotifId) return;
+            const extraNote = document.getElementById('modalStaffNote').value.trim();
+            
+            try {
+                // Закрываем уведомление в базе (это работает уже сейчас)
+                await fetch(`/api/get-notifications?action=read&notificationId=${currentActiveNotifId}`);
+                
+                // ТУТ БУДЕТ ЗАПИСЬ ДОПОЛНИТЕЛЬНОГО КОММЕНТАРИЯ В ЖУРНАЛ (Требуется доработка бэкенда)
+                if (extraNote) {
+                    console.log("Сохраняем комментарий в журнал:", extraNote);
+                    // Мы реализуем этот запрос на следующем шаге
+                }
+
+                closeNotifModal();
+                checkNotifications(); // Обновляем колокольчик
+                if (document.getElementById('btnHistoryTab').classList.contains('active')) {
+                    renderCallHistoryList(); // Обновляем журнал, если он открыт
+                }
+            } catch (e) {
+                alert('Ошибка связи с сервером');
+            }
+        };
 
         async function checkNotifications() {
             if (!myStaffId) return; 
@@ -302,38 +379,29 @@
                     notifList.innerHTML = '';
                     data.notifications.forEach(notif => {
                         const div = document.createElement('div');
-                        div.className = 'notif-item';
+                        div.className = 'notif-item-modern';
+                        // При клике на всю строку открывается красивая модалка
+                        div.onclick = () => openNotifModal(notif.id, notif.client_name, notif.message);
                         div.innerHTML = `
-                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 5px;">
-                                <strong style="color: var(--accent-color); font-size: 14px; cursor: pointer;" onclick="const el = this.parentElement.nextElementSibling; el.style.display = el.style.display === 'none' ? 'block' : 'none'">
-                                    Client: ${notif.client_name} <br><span style="font-size: 11px; color: #888;">(Click to expand details)</span>
-                                </strong>
-                                <span style="cursor: pointer; color: #d32f2f; font-weight: bold; font-size: 16px; margin-left: 10px; padding: 0 5px;" onclick="markAsRead(${notif.id})" title="Mark as done / Close">✖</span>
+                            <div class="notif-title">
+                                <span>📞 ${notif.client_name}</span>
+                                <span class="new-tag">New</span>
                             </div>
-                            <div style="display: none; color: var(--secondary-color); font-size: 13.5px; background: #fdfaf6; padding: 10px; border-radius: 6px; border-left: 3px solid var(--accent-color); margin-top: 8px; line-height: 1.4;">
-                                ${notif.message}
-                            </div>
+                            <div class="notif-preview">${notif.message}</div>
                         `;
                         notifList.appendChild(div);
                     });
                 } else {
                     badge.style.display = 'none';
                     previousNotifCount = 0;
-                    notifList.innerHTML = '<div style="color: #888; text-align: center; padding: 20px;">No new tasks</div>';
+                    notifList.innerHTML = '<div style="color: #888; text-align: center; padding: 30px 20px; font-size: 14px;">No new tasks to review.</div>';
                 }
             } catch(e) {}
         }
-
-        window.markAsRead = async function(notifId) {
-            try {
-                await fetch(`/api/get-notifications?action=read&notificationId=${notifId}`);
-                checkNotifications(); 
-            } catch (e) { alert('Error closing notification'); }
-        }
-
         setInterval(checkNotifications, 15000); 
         checkNotifications();
 
+        // --- ДАТА, ВРЕМЯ И ВКЛАДКИ ---
         function setDateTime() {
             const now = new Date();
             document.getElementById('callDate').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -356,6 +424,7 @@
             renderCallHistoryList(); 
         });
 
+        // --- ЖУРНАЛ ЗВОНКОВ ---
         async function renderCallHistoryList() {
             const tbody = document.getElementById('oomaCallHistoryBody');
             const tableContainer = document.getElementById('historyTableContainer');
@@ -409,12 +478,9 @@
             }
         });
 
-        // -------------------------------------------------------------
-        // ОБНОВЛЕННАЯ ЛОГИКА: ПЕРЕДАЕМ TYPE (phone ИЛИ name) НА СЕРВЕР
-        // -------------------------------------------------------------
+        // --- ПОИСК КЛИЕНТА (НОВАЯ ЛОГИКА) ---
         async function fetchDocketwiseData(query, isPhone) {
             try {
-                // Сервер будет точно знать, что именно мы сейчас ищем
                 const type = isPhone ? 'phone' : 'name';
                 const res = await fetch(`/api/search?query=${encodeURIComponent(query)}&type=${type}`);
                 const data = await res.json();
@@ -456,7 +522,6 @@
             const loader = isPhone ? document.getElementById('phoneLoader') : document.getElementById('nameLoader');
             loader.style.display = 'block';
             
-            // ВАЖНО: Передаем флаг isPhone в функцию запроса
             const results = await fetchDocketwiseData(query, isPhone);
             
             loader.style.display = 'none';
@@ -482,9 +547,7 @@
             }
         }, 500);
 
-        // Обработчики ввода: сайт точно понимает, какое поле мы заполняем
         document.getElementById('fullName').addEventListener('input', e => handleSearch(e.target.value.trim(), false));
-        // Для телефона убираем все буквы и передаем флаг true
         document.getElementById('phoneNumber').addEventListener('input', e => handleSearch(e.target.value.replace(/\D/g, ''), true));
 
         document.addEventListener('click', (e) => {
@@ -498,6 +561,7 @@
             }
         });
 
+        // --- ПЕРЕХВАТ ВХОДЯЩЕГО ЗВОНКА ---
         async function checkIncomingCall() {
             if (incomingPhone) {
                 let cleanedPhone = incomingPhone.replace(/[^\d+]/g, '');
@@ -508,7 +572,6 @@
                 document.getElementById('phoneNumber').value = cleanedPhone;
                 document.getElementById('phoneLoader').style.display = 'block';
                 
-                // Передаем true, так как это звонок (поиск по телефону)
                 const clients = await fetchDocketwiseData(cleanedPhone, true);
                 document.getElementById('phoneLoader').style.display = 'none';
 
@@ -519,6 +582,7 @@
         }
         checkIncomingCall();
 
+        // --- СОХРАНЕНИЕ ЗВОНКА ---
         const callForm = document.getElementById('callForm');
         callForm.addEventListener('submit', async function(event) {
             event.preventDefault();
