@@ -9,57 +9,69 @@ export default async function handler(req, res) {
         const rawQuery = query.toLowerCase().trim();
         let digits = rawQuery.replace(/\D/g, '');
 
-        // 1. ФИКС ДЛЯ OOMA: Отсекаем код страны 1 для входящих звонков
+        // ФИКС ДЛЯ OOMA: Отсекаем код страны +1
         if (digits.length === 11 && digits.startsWith('1')) {
             digits = digits.substring(1);
         }
 
         const isPhoneSearch = digits.length >= 3;
         let contacts = [];
+        
+        // ФУНДАМЕНТАЛЬНОЕ РЕШЕНИЕ: Заставляем Docketwise отдавать максимум данных
+        const MAX_PER_PAGE = 100; 
 
         if (isPhoneSearch) {
-            let potentialContacts = [];
+            let fetchPromises = [];
 
-            // ПОПЫТКА 1: Прямой поиск по всем введенным цифрам. 
-            // Идеально находит Артура (8184780991) и частичные вводы (8184)
-            const res1 = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${digits}`, {
-                headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
-            });
-            if (res1.ok) {
-                const data1 = await res1.json();
-                potentialContacts = Array.isArray(data1) ? data1 : (data1.contacts || []);
-            }
-
-            // ПОПЫТКА 2 (Запасная): Твой старый хак. 
-            // Если юзер ввел длинный номер, а база ничего не нашла (значит номер со скобками)
-            if (potentialContacts.length === 0 && digits.length >= 7) {
-                const last4 = digits.slice(-4);
-                const res2 = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${last4}`, {
+            // 1. Ищем по точным цифрам
+            fetchPromises.push(
+                fetch(`https://app.docketwise.com/api/v1/contacts?search=${digits}&per_page=${MAX_PER_PAGE}`, {
                     headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
-                });
-                if (res2.ok) {
-                    const data2 = await res2.json();
-                    potentialContacts = Array.isArray(data2) ? data2 : (data2.contacts || []);
-                }
+                }).then(r => r.ok ? r.json() : { contacts: [] })
+            );
+
+            // 2. ОДНОВРЕМЕННО ищем по последним 4 цифрам (Пробиваем любые кривые форматы)
+            if (digits.length >= 4) {
+                const last4 = digits.slice(-4);
+                fetchPromises.push(
+                    fetch(`https://app.docketwise.com/api/v1/contacts?search=${last4}&per_page=${MAX_PER_PAGE}`, {
+                        headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+                    }).then(r => r.ok ? r.json() : { contacts: [] })
+                );
             }
 
-            // ЖЕСТКИЙ ФИЛЬТР: Оставляем только тех, кто реально содержит эти цифры
-            contacts = potentialContacts.filter(c => {
+            const results = await Promise.all(fetchPromises);
+            
+            // Сваливаем всех найденных людей в одну гигантскую кучу
+            let potentialContacts = [];
+            results.forEach(data => {
+                const arr = Array.isArray(data) ? data : (data.contacts || []);
+                potentialContacts = potentialContacts.concat(arr);
+            });
+
+            // ЖЕСТКИЙ ФИЛЬТР И УДАЛЕНИЕ ДУБЛИКАТОВ
+            const uniqueMap = new Map();
+            
+            potentialContacts.forEach(c => {
                 let cPhone = "";
                 if (c.phone_numbers && c.phone_numbers.length > 0) cPhone = c.phone_numbers[0].number || c.phone_numbers[0];
                 else if (c.phone) cPhone = c.phone;
                 
                 if (typeof cPhone === 'string') {
                     const cDigits = cPhone.replace(/\D/g, '');
-                    return cDigits.includes(digits);
+                    // Если телефон содержит то, что мы ввели - оставляем
+                    if (cDigits.includes(digits)) {
+                        uniqueMap.set(c.id, c);
+                    }
                 }
-                return false;
             });
+            
+            contacts = Array.from(uniqueMap.values());
 
         } else {
-            // Поиск по имени
+            // ПОИСК ПО ИМЕНИ (тоже с максимальной выдачей)
             const encodedQuery = encodeURIComponent(rawQuery);
-            const response = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodedQuery}`, {
+            const response = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodedQuery}&per_page=${MAX_PER_PAGE}`, {
                 headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
             });
             if (response.ok) {
@@ -70,23 +82,25 @@ export default async function handler(req, res) {
 
         if (contacts.length === 0) return res.status(404).json({ success: false, error: "No clients found" });
 
+        // Ограничиваем выдачу для формы до 15 человек
         const topMatches = contacts.slice(0, 15);
 
+        // Вытягиваем дела
         const clientsData = await Promise.all(topMatches.map(async (contact) => {
-            const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || contact.name || "Unknown";
+            const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || contact.name || "Unknown Name";
             let phoneStr = "";
             if (contact.phone_numbers && contact.phone_numbers.length > 0) phoneStr = contact.phone_numbers[0].number || contact.phone_numbers[0];
             else if (contact.phone) phoneStr = contact.phone;
 
             let mattersArray = [];
             try {
-                const mRes = await fetch(`https://app.docketwise.com/api/v1/matters?client_id=${contact.id}`, {
+                const mattersRes = await fetch(`https://app.docketwise.com/api/v1/matters?client_id=${contact.id}`, {
                     headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
                 });
-                if (mRes.ok) {
-                    const mData = await mRes.json();
-                    const mList = Array.isArray(mData) ? mData : (mData.matters || []);
-                    mattersArray = mList.map(m => ({ id: m.id, title: m.title || `Matter #${m.id}` }));
+                if (mattersRes.ok) {
+                    const mattersData = await mattersRes.json();
+                    const mattersList = Array.isArray(mattersData) ? mattersData : (mattersData.matters || []);
+                    mattersArray = mattersList.map(m => ({ id: m.id, title: m.title || m.description || `Matter #${m.id}` }));
                 }
             } catch (e) {}
 
