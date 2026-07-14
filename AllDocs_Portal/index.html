@@ -35,16 +35,11 @@
         .tab-content { display: none; animation: fadeIn 0.4s ease; }
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .search-container { margin-bottom: 20px; }
-        .search-input { width: 100%; padding: 14px 18px; border: 2px solid var(--border-color); border-radius: 10px; font-size: 15px; box-sizing: border-box; background-color: var(--surface-color); transition: all 0.3s ease; }
-        .search-input:focus { outline: none; border-color: var(--accent-color); background-color: var(--form-bg); box-shadow: 0 0 0 4px rgba(161, 104, 58, 0.1); }
         .history-table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--form-bg); border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color); }
         .history-table th { background-color: var(--surface-color); color: var(--primary-color); text-align: left; padding: 16px; font-size: 14px; font-weight: 700; border-bottom: 1px solid var(--border-color); }
-        .history-table td { padding: 16px; border-bottom: 1px solid #f0ebe1; font-size: 14.5px; color: var(--secondary-color); vertical-align: middle; transition: 0.2s; }
+        .history-table td { padding: 16px; border-bottom: 1px solid #f0ebe1; font-size: 14.5px; color: var(--secondary-color); vertical-align: top; transition: 0.2s; }
         .history-table tr:last-child td { border-bottom: none; }
         .history-table tr:hover td { background-color: #fcfbfa; }
-        .load-btn { background-color: var(--secondary-color); color: white; border: none; padding: 8px 16px; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
-        .load-btn:hover { background-color: var(--primary-color); transform: translateY(-1px); }
         .no-calls { text-align: center; color: #8d6e63; padding: 50px; font-style: italic; background: var(--surface-color); border: 1px dashed var(--border-color); border-radius: 10px; }
         .instructions { background-color: #fdfaf6; border-left: 4px solid var(--accent-color); padding: 18px; margin-bottom: 30px; border-radius: 0 8px 8px 0; font-size: 14.5px; color: var(--secondary-color); }
         .instructions ul { margin: 10px 0 0 0; padding-left: 20px; }
@@ -75,11 +70,9 @@
         #notificationBell { font-size: 26px; cursor: pointer; position: relative; background: white; padding: 12px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: transform 0.2s; }
         #notificationBell:hover { transform: scale(1.05); }
         .badge { background: #d32f2f; color: white; border-radius: 50%; padding: 2px 6px; font-size: 12px; position: absolute; top: -5px; right: -5px; font-weight: bold; border: 2px solid white; display: none; }
-        #notificationDropdown { display: none; position: absolute; top: 60px; right: 0; width: 320px; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 15px; max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); }
+        #notificationDropdown { display: none; position: absolute; top: 60px; right: 0; width: 340px; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); padding: 15px; max-height: 450px; overflow-y: auto; border: 1px solid var(--border-color); }
         .notif-item { padding: 12px; border-bottom: 1px solid #f0ebe1; font-size: 13.5px; }
         .notif-item:last-child { border-bottom: none; }
-        .notif-btn { margin-top: 8px; background: #4CAF50; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.2s; }
-        .notif-btn:hover { background: #388E3C; }
     </style>
 </head>
 <body>
@@ -88,8 +81,11 @@
 <div id="notificationContainer">
     <div id="notificationBell">🔔<span id="notifBadge" class="badge">0</span></div>
     <div id="notificationDropdown">
-        <h4 style="margin: 0 0 10px 0; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; color: var(--primary-color);">Входящие задачи от оператора</h4>
-        <div id="notifList"><div style="color: #888; text-align: center; padding: 20px;">Нет новых уведомлений</div></div>
+        <h4 style="margin: 0 0 10px 0; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; color: var(--primary-color);">
+            Incoming Tasks
+            <span id="closeDropdownBtn" style="float: right; cursor: pointer; color: #888; font-size: 16px; font-weight: normal;" title="Close">✖</span>
+        </h4>
+        <div id="notifList"><div style="color: #888; text-align: center; padding: 20px;">No new tasks</div></div>
     </div>
 </div>
 
@@ -130,8 +126,8 @@
             <div class="instructions">
                 <strong>Operator Instructions:</strong>
                 <ul>
-                    <li>Calls are saved directly to our <strong>Internal CRM Database</strong>, keeping Docketwise clean.</li>
-                    <li>Select a staff member below if you need to notify them about this call. They will receive an alert in the bell 🔔.</li>
+                    <li>Calls are saved directly to our <strong>Internal CRM Database</strong>.</li>
+                    <li>Select a staff member below if you need to notify them. They will receive an audio alert 🔔.</li>
                 </ul>
             </div>
 
@@ -156,7 +152,7 @@
                 <div class="form-group">
                     <label>Phone Number:</label>
                     <div class="autocomplete-wrapper" id="phoneAutocompleteWrapper">
-                        <input type="tel" id="phoneNumber" placeholder="+1 (555) 000-0000" autocomplete="off" required>
+                        <input type="tel" id="phoneNumber" placeholder="Enter phone number..." autocomplete="off" required>
                         <span class="loading-indicator" id="phoneLoader">Searching...</span>
                         <ul class="autocomplete-list" id="phoneList"></ul>
                     </div>
@@ -197,7 +193,7 @@
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Assigned To / Staff (Внутреннее Уведомление 🔔):</label>
+                        <label>Assigned To / Staff (Notify via Bell 🔔):</label>
                         <select id="assignedStaff"></select>
                     </div>
                 </div>
@@ -208,10 +204,14 @@
 
         <div id="tabHistoryContent" class="tab-content">
             <h2 class="section-title" style="border:none; margin-bottom: 5px;">Internal Call History</h2>
-            <p style="font-size: 14.5px; color: var(--secondary-color); margin-bottom: 20px;">Live shared call journal for all staff members.</p>
+            <p style="font-size: 14.5px; color: var(--secondary-color); margin-bottom: 15px;">Live shared call journal for all staff members.</p>
+            
+            <!-- СТРОКА ПОИСКА И ФИЛЬТРАЦИИ -->
+            <input type="text" id="historySearchInput" placeholder="🔍 Search history by name, phone, or staff..." style="width: 100%; padding: 14px; margin-bottom: 20px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 14.5px; box-sizing: border-box; background-color: var(--surface-color);">
+
             <div id="noCallsMessage" class="no-calls">Loading internal call history...</div>
             <table class="history-table" id="historyTableContainer" style="display: none;">
-                <thead><tr><th>Date & Time</th><th>Client Name</th><th>Phone Number</th><th style="width: 120px;">Staff</th></tr></thead>
+                <thead><tr><th>Date & Time</th><th>Client & Notes</th><th>Phone</th><th style="width: 100px;">Staff</th></tr></thead>
                 <tbody id="oomaCallHistoryBody"></tbody>
             </table>
         </div>
@@ -223,26 +223,21 @@
 
     document.addEventListener("DOMContentLoaded", function() {
         
-        // --- 1. ПРОВЕРКА ВХОДА И ЗАЩИТА OOMA ЗВОНКОВ ---
+        // --- 1. ПРОВЕРКА ВХОДА ---
         const loggedInStaff = localStorage.getItem('loggedInStaff');
         const urlParams = new URLSearchParams(window.location.search);
         let incomingPhone = urlParams.get('phone');
 
-        // Если не залогинен - запоминаем номер и выкидываем на логин!
         if (!loggedInStaff) {
-            if (incomingPhone) {
-                localStorage.setItem('pendingOomaCall', incomingPhone);
-            }
+            if (incomingPhone) localStorage.setItem('pendingOomaCall', incomingPhone);
             window.location.href = 'login.html';
-            return; // Скрипт дальше не идет!
+            return;
         }
 
-        // Если только что вошли и был пропущенный звонок Ooma - восстанавливаем!
         const pendingCall = localStorage.getItem('pendingOomaCall');
         if (pendingCall) {
             incomingPhone = pendingCall;
             localStorage.removeItem('pendingOomaCall');
-            // Меняем URL без перезагрузки, чтобы форма подхватила его ниже
             window.history.replaceState({}, document.title, window.location.pathname + "?phone=" + incomingPhone);
         }
 
@@ -252,7 +247,6 @@
         document.getElementById('sidebarUserName').textContent = loggedInStaff;
         document.getElementById('sidebarUserRole').textContent = localStorage.getItem('staffRole');
         
-        // Маппинг имен для системы
         const staffMapping = {
             "Norayr Badalyan": "332487", "Petros Eghiazaryan": "418892", "Petros E.": "418892",
             "Mariam Djaradjian": "339159", "Mariam D.": "339159", "Artak Badalyan": "332810", "Artak B.": "332810",
@@ -260,9 +254,8 @@
         };
         const myStaffId = staffMapping[loggedInStaff] || "";
 
-        // Наполняем выпадающий список
         const staffSelect = document.getElementById('assignedStaff');
-        staffSelect.innerHTML = '<option value="">-- Не уведомлять никого --</option>';
+        staffSelect.innerHTML = '<option value="">-- Do not notify anyone --</option>';
         Object.keys(staffMapping).forEach(name => {
             const option = document.createElement('option');
             option.value = staffMapping[name]; 
@@ -278,17 +271,23 @@
         userProfile.addEventListener('click', () => logoutMenu.style.display = (logoutMenu.style.display === 'block') ? 'none' : 'block');
         document.addEventListener('click', (e) => { if (!userProfile.contains(e.target) && !logoutMenu.contains(e.target)) logoutMenu.style.display = 'none'; });
 
-        // --- 3. ИНТЕРАКТИВНЫЙ КОЛОКОЛЬЧИК (УВЕДОМЛЕНИЯ) ---
+        // --- 3. ИНТЕРАКТИВНЫЙ КОЛОКОЛЬЧИК (С АУДИО И НОВЫМ UI) ---
         const bellBtn = document.getElementById('notificationBell');
         const notifDropdown = document.getElementById('notificationDropdown');
         const notifList = document.getElementById('notifList');
+        let previousNotifCount = 0;
+        const bellSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // Звук уведомления
         
         bellBtn.addEventListener('click', () => {
             notifDropdown.style.display = notifDropdown.style.display === 'block' ? 'none' : 'block';
         });
 
+        document.getElementById('closeDropdownBtn').addEventListener('click', () => {
+            notifDropdown.style.display = 'none';
+        });
+
         async function checkNotifications() {
-            if (!myStaffId) return; // Если у сотрудника нет ID, ему не придут уведомления
+            if (!myStaffId) return; 
             try {
                 const res = await fetch(`/api/get-notifications?staffId=${myStaffId}`);
                 const data = await res.json();
@@ -297,33 +296,46 @@
                 if (data.success && data.notifications && data.notifications.length > 0) {
                     badge.style.display = 'block';
                     badge.textContent = data.notifications.length;
+
+                    // Воспроизводим звук, если задач стало больше
+                    if (data.notifications.length > previousNotifCount) {
+                        bellSound.play().catch(e => console.log('Audio blocked by browser policy'));
+                    }
+                    previousNotifCount = data.notifications.length;
                     
                     notifList.innerHTML = '';
                     data.notifications.forEach(notif => {
                         const div = document.createElement('div');
                         div.className = 'notif-item';
                         div.innerHTML = `
-                            <strong style="color: var(--accent-color);">Клиент:</strong> ${notif.client_name}<br>
-                            <span style="color: var(--secondary-color);">${notif.message}</span>
-                            <button class="notif-btn" onclick="markAsRead(${notif.id})">Отметить как выполненное ✓</button>
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 5px;">
+                                <strong style="color: var(--accent-color); font-size: 14px; cursor: pointer;" onclick="const el = this.parentElement.nextElementSibling; el.style.display = el.style.display === 'none' ? 'block' : 'none'">
+                                    Client: ${notif.client_name} <br><span style="font-size: 11px; color: #888;">(Click to expand details)</span>
+                                </strong>
+                                <span style="cursor: pointer; color: #d32f2f; font-weight: bold; font-size: 16px; margin-left: 10px; padding: 0 5px;" onclick="markAsRead(${notif.id})" title="Mark as done / Close">✖</span>
+                            </div>
+                            <div style="display: none; color: var(--secondary-color); font-size: 13.5px; background: #fdfaf6; padding: 10px; border-radius: 6px; border-left: 3px solid var(--accent-color); margin-top: 8px; line-height: 1.4;">
+                                ${notif.message}
+                            </div>
                         `;
                         notifList.appendChild(div);
                     });
                 } else {
                     badge.style.display = 'none';
-                    notifList.innerHTML = '<div style="color: #888; text-align: center; padding: 20px;">Нет новых задач</div>';
+                    previousNotifCount = 0;
+                    notifList.innerHTML = '<div style="color: #888; text-align: center; padding: 20px;">No new tasks</div>';
                 }
-            } catch(e) { console.log("Ошибка загрузки уведомлений"); }
+            } catch(e) {}
         }
 
         window.markAsRead = async function(notifId) {
             try {
                 await fetch(`/api/get-notifications?action=read&notificationId=${notifId}`);
-                checkNotifications(); // Обновляем список сразу
-            } catch (e) { alert('Ошибка при закрытии уведомления'); }
+                checkNotifications(); 
+            } catch (e) { alert('Error closing notification'); }
         }
 
-        setInterval(checkNotifications, 15000); // Проверять каждые 15 сек
+        setInterval(checkNotifications, 15000); 
         checkNotifications();
 
         // --- 4. ДАТА, ВРЕМЯ И ВКЛАДКИ ---
@@ -349,7 +361,7 @@
             renderCallHistoryList(); 
         });
 
-        // --- 5. ЗАГРУЗКА ОБЩЕЙ ИСТОРИИ ИЗ БАЗЫ ---
+        // --- 5. ЖУРНАЛ И ПОИСК ПО ЖУРНАЛУ ---
         async function renderCallHistoryList() {
             const tbody = document.getElementById('oomaCallHistoryBody');
             const tableContainer = document.getElementById('historyTableContainer');
@@ -367,9 +379,19 @@
                     result.logs.forEach(log => {
                         const tr = document.createElement('tr');
                         const d = new Date(log.created_at);
+                        
+                        // Добавляем отображение заметки прямо в таблицу
+                        let noteHTML = '';
+                        if (log.call_description) {
+                            noteHTML = `<div style="font-size: 12.5px; color: #795548; margin-top: 6px; border-left: 2px solid var(--accent-color); padding-left: 8px;">${log.call_description}</div>`;
+                        }
+
                         tr.innerHTML = `
-                            <td><strong>${d.toLocaleDateString()}</strong> <span style="color:#8d6e63; font-size:12.5px; margin-left:8px;">${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></td>
-                            <td style="font-weight:600; color:var(--primary-color);">${log.client_name || 'Unknown'}</td>
+                            <td><strong>${d.toLocaleDateString()}</strong> <br><span style="color:#8d6e63; font-size:12.5px;">${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></td>
+                            <td>
+                                <div style="font-weight:600; color:var(--primary-color);">${log.client_name || 'Unknown'}</div>
+                                ${noteHTML}
+                            </td>
                             <td style="font-weight:500; color:var(--secondary-color); letter-spacing:0.5px;">📞 ${log.client_phone || 'No Phone'}</td>
                             <td><span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold;">${log.operator_name || 'Staff'}</span></td>
                         `;
@@ -381,11 +403,21 @@
                     noCallsMessage.innerText = "The internal database journal is empty.";
                 }
             } catch (e) {
-                noCallsMessage.innerText = "Убедитесь, что вы создали переменную POSTGRES_URL в Vercel.";
+                noCallsMessage.innerText = "Database connection error.";
             }
         }
 
-        // --- 6. АВТОПОИСК КЛИЕНТА ---
+        // Логика фильтрации (поисковик по журналу)
+        document.getElementById('historySearchInput').addEventListener('input', function() {
+            const filter = this.value.toLowerCase();
+            const rows = document.getElementById('oomaCallHistoryBody').getElementsByTagName('tr');
+            for (let i = 0; i < rows.length; i++) {
+                const rowText = rows[i].innerText.toLowerCase();
+                rows[i].style.display = rowText.includes(filter) ? '' : 'none';
+            }
+        });
+
+        // --- 6. АВТОПОИСК КЛИЕНТА (ОБНОВИТСЯ В ЭТАПЕ 2) ---
         async function fetchDocketwiseData(query) {
             try {
                 const res = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
@@ -405,8 +437,6 @@
             }
             document.getElementById('fullName').value = client.name;
             if (!skipPhone) document.getElementById('phoneNumber').value = client.phone;
-            
-            document.querySelector('input[name="clientStatus"][value="Returning/Existing Client"]').checked = true;
             
             const matterSelect = document.getElementById('matterSelect');
             matterSelect.innerHTML = '<option value="">-- Please select a matter --</option>';
@@ -442,9 +472,9 @@
         }, 500);
 
         document.getElementById('fullName').addEventListener('input', e => handleSearch(e.target.value.trim(), false));
-        document.getElementById('phoneNumber').addEventListener('input', e => handleSearch(e.target.value.replace(/\D/g, ''), true));
+        document.getElementById('phoneNumber').addEventListener('input', e => handleSearch(e.target.value.trim(), true));
 
-        // --- 7. ПЕРЕХВАТ ВХОДЯЩЕГО ЗВОНКА (OOMA) ---
+        // --- 7. ПЕРЕХВАТ ВХОДЯЩЕГО ЗВОНКА ---
         async function checkIncomingCall() {
             if (incomingPhone) {
                 let cleanedPhone = incomingPhone.replace(/[^\d+]/g, '');
@@ -460,12 +490,9 @@
 
                 if(clients.length > 0) {
                     applyClientData(clients[0], true); 
-                } else {
-                    document.querySelector('input[name="clientStatus"][value="New Client"]').checked = true;
                 }
             }
         }
-        // Запускаем перехват, так как мы точно залогинены
         checkIncomingCall();
 
         // --- 8. СОХРАНЕНИЕ ВО ВНУТРЕННЮЮ БАЗУ ---
@@ -481,7 +508,7 @@
             const noteCategory = document.getElementById('noteCategory').value;
 
             if (noteCategory) {
-                finalDescription = `[${noteCategory}] Inbound Mobile Call\n\n${finalDescription}`;
+                finalDescription = `[${noteCategory}]\n${finalDescription}`;
             }
 
             const staffSelect = document.getElementById('assignedStaff');
@@ -512,7 +539,7 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    alert(`✅ Звонок успешно сохранен! \n\n${assignedStaffName !== "-- Не уведомлять никого --" ? "Сотрудник получит уведомление." : ""}`);
+                    alert(`✅ Call successfully saved! \n\n${assignedStaffName !== "-- Do not notify anyone --" ? "Staff member has been notified." : ""}`);
                     callForm.reset();
                     document.getElementById('hiddenClientId').value = '';
                     document.getElementById('clientBadge').style.display = 'none';
@@ -520,10 +547,10 @@
                     setDateTime();
                     window.currentClient = null;
                 } else {
-                    alert(`❌ Ошибка. Вы создали POSTGRES_URL в Vercel? ` + (result.error || ""));
+                    alert(`❌ Error saving call: ` + (result.error || ""));
                 }
             } catch (error) {
-                alert('Сетевая ошибка. Настройте базу данных в Vercel.');
+                alert('Network error. Failed to save.');
             } finally {
                 submitBtn.disabled = false; 
                 submitBtn.textContent = 'Save Call Log to Internal CRM';
