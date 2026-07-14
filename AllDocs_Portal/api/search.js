@@ -9,64 +9,57 @@ export default async function handler(req, res) {
         const rawQuery = query.toLowerCase().trim();
         let digits = rawQuery.replace(/\D/g, '');
 
-        // ФИКС ДЛЯ OOMA: Отсекаем код страны 1 для американских входящих звонков
+        // 1. ФИКС ДЛЯ OOMA: Отсекаем код страны 1 для американских входящих звонков
         if (digits.length === 11 && digits.startsWith('1')) {
             digits = digits.substring(1);
         }
 
-        // НАЧИНАЕМ ПОИСК С 3-Й ЦИФРЫ (как ты и просил)
+        // 2. Начинаем искать уже с 3 введенных цифр
         const isPhoneSearch = digits.length >= 3;
 
         let contacts = [];
 
         if (isPhoneSearch) {
-            // АГРЕССИВНАЯ СЕТЬ DOCKETWISE
-            // Делаем сразу 3 запроса, чтобы вытащить клиента, как бы криво ни был записан его номер
-            let queriesToTry = new Set();
-            queriesToTry.add(digits); // Ищем то, что ввели (сработает для 9433000050)
-            if (digits.length >= 3) queriesToTry.add(digits.slice(0, 3)); // Ищем по префиксу
-            if (digits.length >= 4) queriesToTry.add(digits.slice(-4)); // Ищем по хвосту
-
-            // Запускаем все запросы одновременно (работает мгновенно)
-            const fetchPromises = Array.from(queriesToTry).map(q => 
-                fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodeURIComponent(q)}`, {
-                    headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
-                }).then(res => res.ok ? res.json() : { contacts: [] })
-            );
-
-            const results = await Promise.all(fetchPromises);
-            
-            // Сливаем всех найденных людей в одну кучу
-            let potentialContacts = [];
-            results.forEach(data => {
-                const arr = Array.isArray(data) ? data : (data.contacts || []);
-                potentialContacts = potentialContacts.concat(arr);
+            // ПОПЫТКА 1: Ищем точные цифры (идеально для слитных номеров как у Карен)
+            let phoneRes = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${digits}`, {
+                headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
             });
+            let data = phoneRes.ok ? await phoneRes.json() : { contacts: [] };
+            let potentialContacts = Array.isArray(data) ? data : (data.contacts || []);
 
-            // ЖЕСТКИЙ ФИЛЬТР (СУЖЕНИЕ КРУГА)
-            const uniqueMap = new Map();
-            
-            potentialContacts.forEach(c => {
+            // ПОПЫТКА 2 (Запасной план): Если Docketwise запутался в скобках
+            if (potentialContacts.length === 0) {
+                let fallbackSearch = "";
+                if (digits.length >= 7) {
+                    // Для длинных номеров ищем по последним 4 цифрам (они всегда без пробелов)
+                    fallbackSearch = digits.slice(-4);
+                } else {
+                    // Для коротких номеров ищем по первым 3 цифрам (код города)
+                    fallbackSearch = digits.slice(0, 3);
+                }
+
+                let fallbackRes = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${fallbackSearch}`, {
+                    headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+                });
+                let fallbackData = fallbackRes.ok ? await fallbackRes.json() : { contacts: [] };
+                potentialContacts = Array.isArray(fallbackData) ? fallbackData : (fallbackData.contacts || []);
+            }
+
+            // ЖЕСТКИЙ ФИЛЬТР: Оставляем только тех, у кого есть ВСЕ введенные цифры подряд
+            contacts = potentialContacts.filter(c => {
                 let cPhone = "";
                 if (c.phone_numbers && c.phone_numbers.length > 0) cPhone = c.phone_numbers[0].number || c.phone_numbers[0];
                 else if (c.phone) cPhone = c.phone;
                 
                 if (typeof cPhone === 'string') {
-                    let cDigits = cPhone.replace(/\D/g, '');
-                    // Убираем единицу из базы Docketwise, если кто-то сохранил номер через +1
-                    if (cDigits.length === 11 && cDigits.startsWith('1')) cDigits = cDigits.substring(1);
-                    
-                    // Если в номере есть точная последовательность введенных цифр - оставляем клиента
-                    if (cDigits.includes(digits) || digits.includes(cDigits)) {
-                        uniqueMap.set(c.id, c);
-                    }
+                    const cDigits = cPhone.replace(/\D/g, '');
+                    return cDigits.includes(digits) || digits.includes(cDigits);
                 }
+                return false;
             });
-            
-            contacts = Array.from(uniqueMap.values());
 
         } else {
-            // СТАНДАРТНЫЙ ПОИСК ПО ИМЕНИ
+            // ОБЫЧНЫЙ ПОИСК ПО ИМЕНИ
             const encodedQuery = encodeURIComponent(rawQuery);
             const response = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodedQuery}`, {
                 headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
@@ -79,10 +72,9 @@ export default async function handler(req, res) {
 
         if (contacts.length === 0) return res.status(404).json({ success: false, error: "No clients found" });
 
-        // Ограничиваем список
         const topMatches = contacts.slice(0, 12);
 
-        // Вытягиваем дела (Matters)
+        // Вытягиваем дела
         const clientsData = await Promise.all(topMatches.map(async (contact) => {
             const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || contact.name || "Unknown Name";
             let phoneStr = "";
