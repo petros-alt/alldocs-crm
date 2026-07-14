@@ -1,12 +1,18 @@
-import { createPool } from '@vercel/postgres';
-
 export default async function handler(req, res) {
-    // Умный поиск ссылки на базу
-    const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
-    if (!connectionString) return res.status(500).json({ error: "База данных не найдена в Vercel" });
-
-    const pool = createPool({ connectionString });
     try {
+        // Подключаем библиотеку ВНУТРИ функции, чтобы сервер не падал при старте
+        const postgres = await import('@vercel/postgres');
+        
+        const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+        if (!connectionString) {
+            return res.status(500).json({ 
+                success: false, 
+                error: "В Vercel отсутствуют переменные базы данных (POSTGRES_URL)." 
+            });
+        }
+
+        const pool = postgres.createPool({ connectionString });
+        
         await pool.sql`
             CREATE TABLE IF NOT EXISTS call_logs (
                 id SERIAL PRIMARY KEY,
@@ -36,8 +42,13 @@ export default async function handler(req, res) {
             );
         `;
 
-        return res.status(200).json({ success: true, message: "База успешно настроена!" });
+        return res.status(200).json({ success: true, message: "✅ База успешно настроена! Таблицы созданы." });
     } catch (error) {
-        return res.status(500).json({ success: false, error: error.message });
+        // Эта часть перехватит любую поломку и выведет её прямо на белый экран!
+        return res.status(500).json({ 
+            success: false, 
+            CRASH_REASON: error.message,
+            INSTRUCTIONS: "Пожалуйста, скопируйте этот текст и отправьте его мне."
+        });
     }
 }
