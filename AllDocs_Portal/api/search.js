@@ -2,44 +2,73 @@ export default async function handler(req, res) {
     const { query } = req.query;
     const apiKey = process.env.DOCKETWISE_CLIENT_SECRET || process.env.DOCKETWISE_CLIENT_ID;
 
-    if (!apiKey) return res.status(500).json({ success: false, error: "Vercel: Missing API Key" });
-    if (!query) return res.status(400).json({ success: false, error: "Vercel: Empty query" });
+    if (!apiKey) return res.status(500).json({ success: false, error: "Missing API Key" });
+    if (!query) return res.status(400).json({ success: false, error: "Empty query" });
 
     try {
         const rawQuery = query.toLowerCase().trim();
         let digits = rawQuery.replace(/\D/g, '');
 
-        // Отсекаем +1 от телефонии Ooma для входящих звонков
+        // 1. ФИКС ДЛЯ OOMA: Отсекаем код страны +1 для входящих звонков
         if (digits.length === 11 && digits.startsWith('1')) {
             digits = digits.substring(1);
         }
 
-        // Если есть цифры - ищем по цифрам. Если текст - ищем по тексту.
-        const searchTarget = digits.length > 0 ? digits : encodeURIComponent(rawQuery);
+        const isPhoneSearch = digits.length >= 3;
+        let contacts = [];
 
-        // ПРЯМОЙ ЗАПРОС: без хаков, отдаем всё прямо в базу Docketwise
-        const dwResponse = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${searchTarget}`, {
-            headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
-        });
+        if (isPhoneSearch) {
+            // 2. ХИТРОСТЬ: 
+            // Если цифр мало (3-6) - ищем как есть. 
+            // Если цифр много (7+) - используем твой старый рабочий ХАК и ищем по 4 последним!
+            let searchStr = digits;
+            if (digits.length >= 7) {
+                searchStr = digits.slice(-4);
+            }
 
-        if (!dwResponse.ok) {
-            return res.status(500).json({ success: false, error: `Docketwise Error: ${dwResponse.status}` });
+            const dwResponse = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${searchStr}`, {
+                headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+            });
+
+            if (dwResponse.ok) {
+                const data = await dwResponse.json();
+                const potentialContacts = Array.isArray(data) ? data : (data.contacts || []);
+
+                // 3. ЖЕСТКИЙ ЛОКАЛЬНЫЙ ФИЛЬТР: 
+                // Оставляем ТОЛЬКО тех, у кого в телефоне реально есть введенные тобой цифры. 
+                // Никаких совпадений по адресу или ID!
+                contacts = potentialContacts.filter(c => {
+                    let cPhone = "";
+                    if (c.phone_numbers && c.phone_numbers.length > 0) cPhone = c.phone_numbers[0].number || c.phone_numbers[0];
+                    else if (c.phone) cPhone = c.phone;
+
+                    if (typeof cPhone === 'string') {
+                        const cDigits = cPhone.replace(/\D/g, '');
+                        return cDigits.includes(digits);
+                    }
+                    return false;
+                });
+            }
+        } else {
+            // Поиск по имени
+            const encodedQuery = encodeURIComponent(rawQuery);
+            const dwResponse = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodedQuery}`, {
+                headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+            });
+            if (dwResponse.ok) {
+                const data = await dwResponse.json();
+                contacts = Array.isArray(data) ? data : (data.contacts || []);
+            }
         }
 
-        const data = await dwResponse.json();
-        let contacts = Array.isArray(data) ? data : (data.contacts || []);
+        if (contacts.length === 0) return res.status(404).json({ success: false, error: "No clients found" });
 
-        if (contacts.length === 0) {
-            return res.status(404).json({ success: false, error: "Docketwise: No clients found" });
-        }
-
-        // Ограничиваем выдачу, чтобы форма не зависла, если найдено 100 человек с кодом 818
+        // Ограничиваем выдачу 15 клиентами
         const topMatches = contacts.slice(0, 15);
 
         // Вытягиваем дела
         const clientsData = await Promise.all(topMatches.map(async (contact) => {
             const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || contact.name || "Unknown";
-            
             let phoneStr = "";
             if (contact.phone_numbers && contact.phone_numbers.length > 0) phoneStr = contact.phone_numbers[0].number || contact.phone_numbers[0];
             else if (contact.phone) phoneStr = contact.phone;
@@ -63,6 +92,6 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error("Search Error:", error);
-        res.status(500).json({ success: false, error: "Vercel: Server Crash" });
+        res.status(500).json({ success: false, error: "Server Error" });
     }
 }
