@@ -403,8 +403,17 @@
                         <textarea id="briefDescription" placeholder="Summarize the client's inquiry..." required></textarea>
                     </div>
 
-                    <h2 class="section-title">3. Internal CRM Routing</h2>
-                    <div class="form-row">
+                   <h2 class="section-title">3. Internal CRM Routing</h2>
+                    
+                    <!-- НОВАЯ ГАЛОЧКА: RESOLVED BY OPERATOR -->
+                    <div style="margin-bottom: 15px; padding: 10px; background: #e8f5e9; border-radius: 8px; border-left: 4px solid #2e7d32;">
+                        <label style="display: flex; align-items: center; cursor: pointer; color: #2e7d32; font-weight: 700; font-size: 15px; margin: 0;">
+                            <input type="checkbox" id="resolvedByOpCheckbox" style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer; accent-color: #2e7d32;">
+                            ✅ Resolved by Operator (Не переводить на сотрудника)
+                        </label>
+                    </div>
+
+                    <div class="form-row" id="staffSelectionRow">
                         <div class="form-group">
                             <label>Assigned To / Staff (Notify via Bell 🔔):</label>
                             <select id="assignedStaff"></select>
@@ -798,8 +807,22 @@
             }
         });
 
-        // --- ЛОГИКА ОТКРЫТИЯ КАЛЕНДАРЯ И 3-го ЛИЦА ---
-        const statusRadios = document.querySelectorAll('input[name="clientStatus"]');
+       // --- ЛОГИКА RESOLVED BY OPERATOR ---
+        const resolvedCheckbox = document.getElementById('resolvedByOpCheckbox');
+        const staffRow = document.getElementById('staffSelectionRow');
+        const briefDesc = document.getElementById('briefDescription');
+
+        if (resolvedCheckbox) {
+            resolvedCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    staffRow.style.display = 'none'; // Прячем выбор сотрудника
+                    briefDesc.removeAttribute('required'); // Делаем заметку необязательной
+                } else {
+                    staffRow.style.display = 'flex'; // Показываем обратно
+                    briefDesc.setAttribute('required', 'true'); // Снова делаем обязательной
+                }
+            });
+        }
         statusRadios.forEach(radio => {
             radio.addEventListener('change', function(e) {
                 if (this.value === 'Lead') {
@@ -1027,8 +1050,18 @@
             }
 
             const staffSelect = document.getElementById('assignedStaff');
-            const assignedStaffName = staffSelect.options[staffSelect.selectedIndex]?.text || "";
-            const assignedStaffId = staffSelect.value || "";
+            const resolvedCheckbox = document.getElementById('resolvedByOpCheckbox');
+            
+            let assignedStaffName = "";
+            let assignedStaffId = "";
+
+            // Если галочка нажата, пишем "Resolved by Operator", иначе берем сотрудника из списка
+            if (resolvedCheckbox && resolvedCheckbox.checked) {
+                assignedStaffName = "Resolved by Operator";
+            } else {
+                assignedStaffName = staffSelect.options[staffSelect.selectedIndex]?.text || "";
+                assignedStaffId = staffSelect.value || "";
+            }
 
             const formData = {
                 clientId: document.getElementById('hiddenClientId').value || "",
