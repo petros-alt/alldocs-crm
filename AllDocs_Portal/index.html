@@ -150,6 +150,7 @@
 </head>
 <body>
 
+<!-- NOTIFICATIONS -->
 <div id="notificationContainer">
     <div id="notificationBell" title="Click anywhere to enable sound!">🔔<span id="notifBadge" class="badge">0</span></div>
     <div id="notificationDropdown">
@@ -175,6 +176,7 @@
     </div>
 </div>
 
+<!-- BIG APPOINTMENT MODAL -->
 <div id="apptModal" class="modal-overlay">
     <div class="modal-content large">
         <div class="modal-close" onclick="closeApptModal()">✖</div>
@@ -192,27 +194,12 @@
                         <input type="text" id="modalApptPhone" placeholder="+1 (555) 000-0000">
                     </div>
                 </div>
-
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label>Appt. Location</label>
                     <select id="modalApptLocation">
-                        <option>All Docs Consulting</option>
-                        <option>Armen Shaghzo Attorney</option>
-                        <option>Capi Metro Office</option>
-                        <option>David Bagdasaryan Attorney</option>
-                        <option>Dr. Karine Gaboian</option>
-                        <option>LA Court 300</option>
-                        <option>LA Court 606</option>
-                        <option>LA Pacific</option>
-                        <option>Mercury Hospice Care</option>
-                        <option>USCIS - Chatsworth</option>
-                        <option>USCIS - San Bernardino</option>
-                        <option>USCIS - Tustin</option>
-                        <option>Vadim Yuzefpolsky attorney</option>
-                        <option>Van Nuys Court</option>
+                        <option>All Docs Consulting</option><option>Armen Shaghzo Attorney</option><option>Capi Metro Office</option><option>David Bagdasaryan Attorney</option><option>Dr. Karine Gaboian</option><option>LA Court 300</option><option>LA Court 606</option><option>LA Pacific</option><option>Mercury Hospice Care</option><option>USCIS - Chatsworth</option><option>USCIS - San Bernardino</option><option>USCIS - Tustin</option><option>Vadim Yuzefpolsky attorney</option><option>Van Nuys Court</option>
                     </select>
                 </div>
-
                 <div class="form-row">
                     <div class="form-group" style="margin-bottom: 15px;">
                         <label>Service</label>
@@ -230,79 +217,62 @@
                         </select>
                     </div>
                 </div>
-
                 <div class="form-row">
                     <div class="form-group" style="margin-bottom: 15px;">
                         <label>Reminder Type</label>
                         <div class="segmented-control" id="remTypeControl">
-                            <button class="seg-btn" onclick="setSegment('remTypeControl', this, 'Email')">Email</button>
-                            <button class="seg-btn active" onclick="setSegment('remTypeControl', this, 'Text')">Text</button>
-                            <button class="seg-btn" onclick="setSegment('remTypeControl', this, 'Both')">Both</button>
-                            <button class="seg-btn" onclick="setSegment('remTypeControl', this, 'None')">None</button>
+                            <button type="button" class="seg-btn" onclick="setSegment('remTypeControl', this, 'Email')">Email</button>
+                            <button type="button" class="seg-btn active" onclick="setSegment('remTypeControl', this, 'Text')">Text</button>
+                            <button type="button" class="seg-btn" onclick="setSegment('remTypeControl', this, 'Both')">Both</button>
+                            <button type="button" class="seg-btn" onclick="setSegment('remTypeControl', this, 'None')">None</button>
                         </div>
                     </div>
                     <div class="form-group" style="margin-bottom: 15px;">
                         <label>Message Language</label>
                         <div class="segmented-control" id="langControl">
-                            <button class="seg-btn active-lang" onclick="setSegment('langControl', this, 'ENG')">ENG</button>
-                            <button class="seg-btn" onclick="setSegment('langControl', this, 'RUSS')">RUSS</button>
-                            <button class="seg-btn" onclick="setSegment('langControl', this, 'ARM')">ARM</button>
+                            <button type="button" class="seg-btn active-lang" onclick="setSegment('langControl', this, 'ENG')">ENG</button>
+                            <button type="button" class="seg-btn" onclick="setSegment('langControl', this, 'RUSS')">RUSS</button>
+                            <button type="button" class="seg-btn" onclick="setSegment('langControl', this, 'ARM')">ARM</button>
                         </div>
                     </div>
                 </div>
-
                 <div class="form-group" style="margin-bottom: 0;">
                     <label>Message to Client (Included in SMS)</label>
                     <textarea id="modalApptMessage" placeholder="E.g., Please bring your passport and tax documents..." style="min-height: 60px;"></textarea>
                 </div>
             </div>
-
             <div style="width: 280px; background: #fdfaf6; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
                 <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 15px; display: block;">Select Date & Time</label>
-                
                 <div class="calendar-widget">
                     <div class="cal-header">
-                        <button type="button" id="aPrevM">&lt;</button>
-                        <span id="aMonthYear"></span>
-                        <button type="button" id="aNextM">&gt;</button>
+                        <button type="button" id="aPrevM">&lt;</button><span id="aMonthYear"></span><button type="button" id="aNextM">&gt;</button>
                     </div>
                     <div class="cal-days"><div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div></div>
                     <div class="cal-dates" id="aCalDates"></div>
                 </div>
-                
                 <div style="margin-top: 20px;">
                     <label style="font-size: 13px; color: var(--secondary-color);">Time:</label>
                     <div class="time-select-group">
-                        <select id="aTimeHour">
-                            <option>01</option><option>02</option><option>03</option><option>04</option><option>05</option><option>06</option>
-                            <option>07</option><option>08</option><option>09</option><option selected>10</option><option>11</option><option>12</option>
-                        </select>
+                        <select id="aTimeHour"><option>01</option><option>02</option><option>03</option><option>04</option><option>05</option><option>06</option><option>07</option><option>08</option><option>09</option><option selected>10</option><option>11</option><option>12</option></select>
                         <select id="aTimeMinute"><option selected>00</option><option>15</option><option>30</option><option>45</option></select>
                         <select id="aTimeAMPM"><option selected>AM</option><option>PM</option></select>
                     </div>
                 </div>
                 <div style="margin-top: 15px;">
                     <label style="font-size: 13px; color: var(--secondary-color);">Duration:</label>
-                    <select id="aDuration" style="width: 100%;">
-                        <option>15 minutes</option>
-                        <option selected>30 minutes</option>
-                        <option>1 hour</option>
-                    </select>
+                    <select id="aDuration" style="width: 100%;"><option>15 minutes</option><option selected>30 minutes</option><option>1 hour</option></select>
                 </div>
             </div>
         </div>
-
         <div class="modal-actions" style="margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 20px;">
-            <button class="btn-cancel" onclick="closeApptModal()">Cancel</button>
-            <button class="btn-resolve" onclick="saveAppointment()" id="saveApptBtn">Save Appointment & Send SMS ✉️</button>
+            <button type="button" class="btn-cancel" onclick="closeApptModal()">Cancel</button>
+            <button type="button" class="btn-resolve" onclick="saveAppointment()" id="saveApptBtn">Save Appointment & Send SMS ✉️</button>
         </div>
     </div>
 </div>
 
 <aside class="sidebar">
-    <div class="sidebar-header">
-        <img src="https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png?w=2128&ssl=1" alt="All Docs Consulting">
-    </div>
+    <div class="sidebar-header"><img src="https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png?w=2128&ssl=1" alt="All Docs Consulting"></div>
     <ul class="nav-menu">
         <li class="nav-item"><a href="index.html" class="nav-link active"><span class="nav-icon">📞</span> Call Center Log</a></li>
         <li class="nav-item"><a href="forms.html" class="nav-link"><span class="nav-icon">📄</span> Forms & Documents</a></li>
@@ -310,10 +280,7 @@
     <div class="sidebar-footer">
         <div class="user-profile" id="userProfile" style="display: none;">
             <div class="avatar-circle-small" id="topAvatar">--</div>
-            <div class="user-info">
-                <span class="user-name" id="sidebarUserName">Staff Member</span>
-                <span class="user-role" id="sidebarUserRole">Role</span>
-            </div>
+            <div class="user-info"><span class="user-name" id="sidebarUserName">Staff Member</span><span class="user-role" id="sidebarUserRole">Role</span></div>
         </div>
         <div class="logout-menu" id="logoutMenu"><button class="logout-btn" id="logoutBtn">Log Out Securely</button></div>
     </div>
@@ -342,14 +309,13 @@
                 </div>
 
                 <div style="background: #fdfaf6; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 25px; position: relative;">
-                    <button type="button" class="book-appt-btn" style="position: absolute; top: 20px; right: 20px;" onclick="openApptModal()">
-                        📅 Book Appointment
-                    </button>
+                    <!-- КНОПКА ОТКРЫТИЯ КАЛЕНДАРЯ -->
+                    <button type="button" class="book-appt-btn" style="position: absolute; top: 20px; right: 20px;" onclick="openApptModal()">📅 Book Appointment</button>
 
                     <div class="form-group" style="max-width: 70%;">
                         <label>Full Name: <span id="clientBadge" style="display: none; background: #4CAF50; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 10px; font-weight: bold;">✓ ID: <span id="displayClientId"></span></span></label>
                         <div class="autocomplete-wrapper" id="autocompleteWrapper">
-                            <input type="text" id="fullName" placeholder="Type name to search Docketwise..." autocomplete="off" required>
+                            <input type="text" id="fullName" placeholder="Type name to search Docketwise..." autocomplete="off">
                             <span class="loading-indicator" id="nameLoader">Searching...</span>
                             <ul class="autocomplete-list" id="clientList"></ul>
                         </div>
@@ -383,7 +349,7 @@
                     </div>
                 </div>
 
-                <!-- SECTION: STANDARD CALL LOGGING (EXISTING CLIENT) -->
+                <!-- STANDARD CALL LOGGING -->
                 <div id="standardCallSection">
                     <h2 class="section-title">2. Case & Logging Details</h2>
                     
@@ -465,8 +431,6 @@
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         btnElement.classList.add('active');
-        
-        // Тот самый ВАЖНЫЙ ИСПРАВЛЕННЫЙ ВЫЗОВ ГЛОБАЛЬНОЙ ФУНКЦИИ
         if(tabId === 'tabHistoryContent') window.renderCallHistoryList();
         if(tabId === 'tabCalendarContent') window.renderMainCalendar();
     }
@@ -575,6 +539,7 @@
         }
         setDateTime();
 
+        // --- МОДАЛКА КАЛЕНДАРЯ ---
         let apptDate = new Date(); 
         let selectedApptDate = null;
         
@@ -585,7 +550,17 @@
             renderApptCal();
         }
 
-        window.closeApptModal = function() { document.getElementById('apptModal').style.display = 'none'; }
+        window.closeApptModal = function() { 
+            document.getElementById('apptModal').style.display = 'none'; 
+            
+            // Если мы отменили всплывающее окно будучи на Лиде, возвращаем форму в Existing
+            const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
+            const leadRadio = document.querySelector('input[name="clientStatus"][value="Lead"]');
+            if (existingRadio && leadRadio && leadRadio.checked) {
+                existingRadio.checked = true;
+                // Не вызываем dispatchEvent, чтобы снова не запустился обработчик, просто меняем визуал
+            }
+        }
 
         function renderApptCal() {
             const grid = document.getElementById('aCalDates'); grid.innerHTML = '';
@@ -598,7 +573,7 @@
                 const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'cal-btn'; btn.textContent = i;
                 const cDate = new Date(y, m, i);
                 btn.onclick = (e) => {
-                    e.preventDefault(); document.querySelectorAll('.cal-btn').forEach(b => b.classList.remove('selected'));
+                    e.preventDefault(); document.querySelectorAll('#aCalDates .cal-btn').forEach(b => b.classList.remove('selected'));
                     btn.classList.add('selected'); selectedApptDate = cDate;
                 };
                 if(selectedApptDate && cDate.getTime() === selectedApptDate.getTime()) btn.classList.add('selected');
@@ -617,15 +592,21 @@
             const m = document.getElementById('aTimeMinute').value;
             const ampm = document.getElementById('aTimeAMPM').value;
             
+            // Определяем, Лид это или нет
+            const isLead = document.querySelector('input[name="clientStatus"]:checked')?.value === 'Lead';
+            const clientName = document.getElementById('modalApptName').value.trim() || (isLead ? "New Lead" : "Unknown Client");
+            const service = document.getElementById('modalApptService').value;
+            const apptStaff = document.getElementById('modalApptStaff').value;
+
             const appointmentData = {
                 id: Date.now(),
-                client: document.getElementById('modalApptName').value.trim() || "Lead",
+                client: clientName,
                 phone: document.getElementById('modalApptPhone').value.trim(),
                 dateStr: selectedApptDate.toDateString(),
                 timestamp: selectedApptDate.getTime(),
                 time: `${h}:${m} ${ampm.toUpperCase()}`,
-                service: document.getElementById('modalApptService').value,
-                staff: document.getElementById('modalApptStaff').value,
+                service: service,
+                staff: apptStaff,
                 location: document.getElementById('modalApptLocation').value,
                 length: document.getElementById('aDuration').value,
                 reminder: apptRemType,
@@ -636,15 +617,46 @@
             const recs = JSON.parse(localStorage.getItem('gr_db')) || [];
             recs.push(appointmentData); localStorage.setItem('gr_db', JSON.stringify(recs));
 
-            setTimeout(() => {
-                alert(`✅ Appointment Saved & SMS Queued!\n\nA text message will be sent to ${appointmentData.phone} in ${appointmentData.language}.`);
-                closeApptModal();
-                btn.textContent = "Save Appointment & Send SMS ✉️"; btn.disabled = false;
-                switchMainTab('tabCalendarContent', document.querySelectorAll('.tab-btn')[1]);
-                document.getElementById('callForm').reset();
-                document.getElementById('hiddenClientId').value = '';
-                document.getElementById('matterContainer').style.display = 'none';
-            }, 800);
+            // Формируем текст для общего CRM Журнала (History)
+            let finalDescription = isLead 
+                ? `[🔥 NEW LEAD APPOINTMENT]\nScheduled: ${selectedApptDate.toLocaleDateString()} at ${h}:${m} ${ampm}\nService: ${service}\nStaff: ${apptStaff}`
+                : `[APPOINTMENT BOOKED]\nScheduled: ${selectedApptDate.toLocaleDateString()} at ${h}:${m} ${ampm}\nService: ${service}\nStaff: ${apptStaff}`;
+
+            const formData = {
+                clientId: document.getElementById('hiddenClientId').value || "",
+                clientName: clientName,
+                clientPhone: appointmentData.phone,
+                matterTitle: "",
+                program: "", 
+                description: finalDescription,
+                operatorName: loggedInStaff || "Unknown Operator",
+                assignedStaffName: apptStaff,
+                assignedStaffId: "", // В будущих версиях можно привязать ID
+                followUpNotes: "",
+                status: "Resolved"
+            };
+
+            // Сохраняем в CRM
+            fetch('/api/save-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alert(`✅ Appointment Saved & SMS Queued!\n\nA text message will be sent to ${appointmentData.phone} in ${appointmentData.language}.`);
+                        closeApptModal();
+                        btn.textContent = "Save Appointment & Send SMS ✉️"; btn.disabled = false;
+                        switchMainTab('tabCalendarContent', document.querySelectorAll('.tab-btn')[1]);
+                        document.getElementById('callForm').reset();
+                        document.getElementById('hiddenClientId').value = '';
+                        document.getElementById('matterContainer').style.display = 'none';
+                        document.querySelector('input[name="clientStatus"][value="Existing Client"]').checked = true;
+                    } else {
+                        alert(`❌ Error saving: ` + (result.error || ""));
+                        btn.textContent = "Save Appointment & Send SMS ✉️"; btn.disabled = false;
+                    }
+                }).catch(error => {
+                    alert('Network error. Failed to save to CRM.');
+                    btn.textContent = "Save Appointment & Send SMS ✉️"; btn.disabled = false;
+                });
         }
 
         let viewDate = new Date(); 
@@ -655,7 +667,6 @@
             window.renderMainCalendar();
         }
 
-        // --- GLOBAL CALENDAR FUNCTION ---
         window.renderMainCalendar = function() {
             const content = document.getElementById('calendarContent');
             const title = document.getElementById('mainCalTitle');
@@ -701,7 +712,6 @@
             }
         }
 
-        // --- GLOBAL HISTORY FUNCTION ---
         window.renderCallHistoryList = async function() {
             const tbody = document.getElementById('oomaCallHistoryBody');
             const tableContainer = document.getElementById('historyTableContainer');
@@ -732,19 +742,13 @@
             }
         });
 
+        // ЛОГИКА ОТКРЫТИЯ КАЛЕНДАРЯ ПРИ НАЖАТИИ НА ЛИД
         const statusRadios = document.querySelectorAll('input[name="clientStatus"]');
-        const standardSection = document.getElementById('standardCallSection');
-        const mainSubmitBtn = document.getElementById('submitBtn');
-
         statusRadios.forEach(radio => {
-            radio.addEventListener('change', function() {
+            radio.addEventListener('click', function(e) {
                 if (this.value === 'Lead') {
-                    standardSection.style.display = 'none';
-                    mainSubmitBtn.style.display = 'none';
-                } else {
-                    standardSection.style.display = 'block';
-                    mainSubmitBtn.style.display = 'block';
-                    mainSubmitBtn.textContent = 'Save Call Log to Internal CRM';
+                    // Открываем модалку календаря, поля скопируются из формы
+                    openApptModal();
                 }
             });
         });
@@ -773,7 +777,6 @@
             const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
             if (existingRadio) {
                 existingRadio.checked = true;
-                existingRadio.dispatchEvent(new Event('change'));
             }
             
             const matterSelect = document.getElementById('matterSelect');
@@ -827,6 +830,7 @@
             if (!e.target.closest('#phoneAutocompleteWrapper')) { const phoneList = document.getElementById('phoneList'); if (phoneList) phoneList.style.display = 'none'; }
         });
 
+        // ТОЛЬКО ДЛЯ АВТОМАТИКИ (Docketwise)
         async function checkIncomingCall() {
             if (incomingPhone) {
                 let cleanedPhone = incomingPhone.replace(/[^\d+]/g, '');
@@ -840,13 +844,8 @@
                     const clients = await fetchDocketwiseData(cleanedPhone, true);
                     if(clients && clients.length > 0) { 
                         applyClientData(clients[0]); 
-                    } else {
-                        const leadRadio = document.querySelector('input[name="clientStatus"][value="Lead"]');
-                        if (leadRadio) {
-                            leadRadio.checked = true;
-                            leadRadio.dispatchEvent(new Event('change'));
-                        }
                     }
+                    // Если не нашли — ничего не делаем. Ждем решения оператора.
                 } catch(error) {
                     console.error("Caller ID Error:", error);
                 } finally {
