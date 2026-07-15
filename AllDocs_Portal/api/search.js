@@ -25,7 +25,6 @@ export default async function handler(req, res) {
             // ==========================================
             const fetchPromises = [];
             
-            // 10 страниц по 500 человек = 5000 контактов
             for (let page = 1; page <= 10; page++) {
                 fetchPromises.push(
                     fetch(`https://app.docketwise.com/api/v1/contacts?per_page=500&page=${page}`, {
@@ -34,7 +33,6 @@ export default async function handler(req, res) {
                 );
             }
 
-            // Ждем, пока все 10 страниц загрузятся ОДНОВРЕМЕННО (около 0.5 сек на сервере)
             const results = await Promise.all(fetchPromises);
             
             let allContacts = [];
@@ -42,7 +40,6 @@ export default async function handler(req, res) {
                 allContacts = allContacts.concat(Array.isArray(data) ? data : (data.contacts || []));
             });
 
-            // Наш сервер сам ищет номер среди всех 5000 человек
             contacts = allContacts.filter(c => {
                 let phones = [];
                 if (c.phone) phones.push(c.phone);
@@ -64,7 +61,7 @@ export default async function handler(req, res) {
 
         } else {
             // ==========================================
-            // ПОИСК ПО ИМЕНИ (Оставляем как было)
+            // ПОИСК ПО ИМЕНИ
             // ==========================================
             const encodedQuery = encodeURIComponent(rawQuery);
             const response = await fetch(`https://app.docketwise.com/api/v1/contacts?search=${encodedQuery}&per_page=100`, {
@@ -78,14 +75,12 @@ export default async function handler(req, res) {
 
         if (contacts.length === 0) return res.status(404).json({ success: false, error: "Клиенты не найдены" });
 
-        // Ограничиваем список до 15 совпадений
         const topMatches = contacts.slice(0, 15);
 
         // Вытягиваем дела
         const clientsData = await Promise.all(topMatches.map(async (contact) => {
             const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || contact.name || "Unknown Name";
             
-            // Находим правильный телефон для отображения
             let phoneStr = contact.mobile_number || contact.home_number || contact.work_number || contact.phone || "";
             if (!phoneStr && Array.isArray(contact.phone_numbers) && contact.phone_numbers.length > 0) {
                 phoneStr = contact.phone_numbers[0].number || contact.phone_numbers[0] || "";
@@ -93,21 +88,44 @@ export default async function handler(req, res) {
 
             let mattersArray = [];
             try {
-                const mattersRes = await fetch(`https://app.docketwise.com/api/v1/matters?client_id=${contact.id}`, {
+                // Скачиваем ПОЛНЫЙ профиль клиента, чтобы получить и Дела, и Заметки
+                const fullRes = await fetch(`https://app.docketwise.com/api/v1/contacts/${contact.id}`, {
                     headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
                 });
                 
-                // --- ЗДЕСЬ ДОБАВЛЕН КОД ДЛЯ ПОЛУЧЕНИЯ ИМЕНИ СОТРУДНИКА ---
-                if (mattersRes.ok) {
-                    const mattersData = await mattersRes.json();
-                    const mattersList = Array.isArray(mattersData) ? mattersData : (mattersData.matters || []);
+                if (fullRes.ok) {
+                    const fullData = await fullRes.json();
+                    const dataObj = fullData.data || fullData; 
+                    const mattersList = dataObj.matters || [];
+                    const notesList = dataObj.notes || [];
                     
                     mattersArray = mattersList.map(m => {
                         let staffName = "";
-                        // Проверяем разные варианты, как Docketwise может отдавать имя
-                        if (m.assignee_name) staffName = m.assignee_name;
-                        else if (m.assignee && m.assignee.name) staffName = m.assignee.name;
-                        else if (m.user && m.user.name) staffName = m.user.name;
+
+                        // ШАГ 1: Пытаемся взять сотрудника напрямую из Дела (Matter), как на твоем скриншоте
+                        if (m.assignee_names) {
+                            staffName = m.assignee_names.replace(/@/g, '').split(',')[0].trim();
+                        } else if (m.assignee && m.assignee.name) {
+                            staffName = m.assignee.name;
+                        } else if (m.attorney_name) {
+                            staffName = m.attorney_name;
+                        } else if (Array.isArray(m.assignees) && m.assignees.length > 0) {
+                            staffName = m.assignees[0].name || m.assignees[0].first_name || "";
+                        }
+
+                        // ШАГ 2: Если Дело пустое, используем резервный поиск по Заметкам (Notes)
+                        if (!staffName) {
+                            const matterNotes = notesList.filter(n => n.matter_id === m.id);
+                            for (const note of matterNotes) {
+                                if (note.assignee_names) {
+                                    staffName = note.assignee_names.replace(/@/g, '').split(',')[0].trim();
+                                    break;
+                                } else if (note.created_by_name) {
+                                    staffName = note.created_by_name.trim();
+                                    break;
+                                }
+                            }
+                        }
 
                         return { 
                             id: m.id, 
@@ -116,8 +134,9 @@ export default async function handler(req, res) {
                         };
                     });
                 }
-                // ---------------------------------------------------------
-            } catch (e) {}
+            } catch (e) {
+                console.error("Ошибка при получении профиля клиента:", e);
+            }
 
             return { id: contact.id, name: fullName, phone: phoneStr, matters: mattersArray };
         }));
