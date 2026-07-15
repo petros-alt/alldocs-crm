@@ -60,6 +60,9 @@
         .category-card span { display: flex; align-items: center; justify-content: center; padding: 14px 10px; background: #fff; border: 2px solid var(--border-color); border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--secondary-color); transition: all 0.2s ease; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.02); height: 100%; box-sizing: border-box; line-height: 1.3;}
         .category-card:hover span { border-color: var(--accent-color); background: #fdfaf6; }
         .category-card input:checked + span { background: var(--accent-color); color: white; border-color: var(--accent-color); box-shadow: 0 4px 12px rgba(161, 104, 58, 0.25); transform: translateY(-2px); }
+        
+        /* Disabled state for Lead card */
+        .category-card.disabled span { background: #f5f2eb; color: #bcaaa4; border-color: #e0e0e0; cursor: not-allowed; box-shadow: none; transform: none; }
 
         .submit-btn { background-color: var(--accent-color); color: white; border: none; padding: 18px 20px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; width: 100%; transition: all 0.3s ease; margin-top: 30px; box-shadow: 0 4px 15px rgba(161, 104, 58, 0.25); }
         .submit-btn:hover:not(:disabled) { background-color: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(161, 104, 58, 0.35); }
@@ -180,7 +183,7 @@
 <div id="apptModal" class="modal-overlay">
     <div class="modal-content large">
         <div class="modal-close" onclick="closeApptModal()">✖</div>
-        <h2 class="modal-title">📅 Book Appointment</h2>
+        <h2 class="modal-title" id="apptModalTitle">📅 Book Appointment</h2>
         
         <div style="display: flex; gap: 30px; flex-wrap: wrap;">
             <div style="flex: 1; min-width: 300px;">
@@ -318,7 +321,7 @@
                 </div>
 
                 <div style="background: #fdfaf6; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 25px; position: relative;">
-                    <!-- КНОПКА ОТКРЫТИЯ КАЛЕНДАРЯ -->
+                    <!-- КНОПКА ОТКРЫТИЯ КАЛЕНДАРЯ ДЛЯ ДЕЙСТВУЮЩЕГО КЛИЕНТА -->
                     <button type="button" class="book-appt-btn" style="position: absolute; top: 20px; right: 20px;" onclick="openApptModal()">📅 Book Appointment</button>
 
                     <div class="form-group" style="max-width: 70%;">
@@ -343,7 +346,8 @@
                 <div style="margin-top: 20px; margin-bottom: 30px;">
                     <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 12px; display: block; font-size: 15px;">Client Status:</label>
                     <div class="category-grid">
-                        <label class="category-card">
+                        <!-- КАРТОЧКА LEAD С ЗАЩИТОЙ -->
+                        <label class="category-card" id="leadCardWrapper">
                             <input type="radio" name="clientStatus" value="Lead">
                             <span>🔥 Lead (New Appointment)</span>
                         </label>
@@ -440,7 +444,6 @@
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         btnElement.classList.add('active');
-        
         if(tabId === 'tabHistoryContent') window.renderCallHistoryList();
         if(tabId === 'tabCalendarContent') window.renderMainCalendar();
     }
@@ -450,7 +453,6 @@
         let incomingPhone = urlParams.get('phone');
         const loggedInStaff = localStorage.getItem('loggedInStaff');
 
-        // --- УДАЛЯЕМ ТЕЛЕФОН ИЗ АДРЕСНОЙ СТРОКИ БРАУЗЕРА ---
         if (window.location.search.includes('phone=')) {
             window.history.replaceState({}, document.title, window.location.pathname);
         }
@@ -567,13 +569,24 @@
         window.openApptModal = function() {
             document.getElementById('modalApptName').value = document.getElementById('fullName').value;
             document.getElementById('modalApptPhone').value = document.getElementById('phoneNumber').value;
+            
+            // Динамический заголовок модалки
+            const isLead = document.querySelector('input[name="clientStatus"]:checked')?.value === 'Lead';
+            const titleEl = document.getElementById('apptModalTitle');
+            if (isLead) {
+                titleEl.innerHTML = '🔥 Book New Lead';
+            } else {
+                titleEl.innerHTML = '📅 Book Appointment (Existing Client)';
+            }
+            
             document.getElementById('apptModal').style.display = 'flex';
             renderApptCal();
         }
 
         window.closeApptModal = function() { 
             document.getElementById('apptModal').style.display = 'none'; 
-            // Защита: Если закрыли окно без сохранения на Лиде, возвращаем в Existing
+            
+            // Если закрыли модалку без сохранения, возвращаем Лида на Existing Client
             const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
             const leadRadio = document.querySelector('input[name="clientStatus"][value="Lead"]');
             if (existingRadio && leadRadio && leadRadio.checked) {
@@ -629,7 +642,8 @@
                 length: document.getElementById('aDuration').value,
                 reminder: apptRemType,
                 language: apptLang,
-                message: document.getElementById('modalApptMessage').value
+                message: document.getElementById('modalApptMessage').value,
+                isLead: isLead // СОХРАНЯЕМ МЕТКУ ЛИДА ДЛЯ КАЛЕНДАРЯ
             };
 
             const recs = JSON.parse(localStorage.getItem('gr_db')) || [];
@@ -662,7 +676,6 @@
                         btn.textContent = "Save Appointment & Send SMS ✉️"; btn.disabled = false;
                         switchMainTab('tabCalendarContent', document.querySelectorAll('.tab-btn')[1]);
                         
-                        // Очистка формы
                         clearClientData();
                         document.getElementById('fullName').value = '';
                         document.getElementById('phoneNumber').value = '';
@@ -709,7 +722,12 @@
                     const dayRecs = records.filter(r => r.dateStr === cDateStr);
                     
                     html += `<div class="month-cell"><div class="date-num ${isToday ? 'today' : ''}">${i}</div>`;
-                    dayRecs.slice(0, 4).forEach(r => { html += `<div class="mini-event">${r.time} ${r.client.split(' ')[0]}</div>`; });
+                    dayRecs.slice(0, 4).forEach(r => { 
+                        // ВИЗУАЛИЗАЦИЯ ЛИДА В КАЛЕНДАРЕ НА МЕСЯЦ
+                        let leadStyle = r.isLead ? 'border-left-color: #e65100; background-color: #fff3e0;' : '';
+                        let leadIcon = r.isLead ? '🔥 ' : '';
+                        html += `<div class="mini-event" style="${leadStyle}">${r.time} ${leadIcon}${r.client.split(' ')[0]}</div>`; 
+                    });
                     if(dayRecs.length > 4) html += `<div class="mini-event" style="color:var(--accent-color); border:none; text-align:center;">+${dayRecs.length - 4} more</div>`;
                     html += `</div>`;
                 }
@@ -725,7 +743,11 @@
                     const dObj = new Date(r.timestamp);
                     const dateTitle = `${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dObj.getDay()]}, ${dObj.getMonth()+1}/${dObj.getDate()}`;
                     if(dateTitle !== currentGroup) { html += `<div class="agenda-date-group">📅 ${dateTitle}</div>`; currentGroup = dateTitle; }
-                    html += `<div class="agenda-item"><div style="flex: 1;"><div class="agenda-name">${r.client}</div><div class="agenda-details">${r.service.split('-')[1] || r.service} • ${r.location} | with ${r.staff}</div><div class="agenda-details" style="font-size:12px; margin-top:5px; color:#888;">${r.reminder} Reminder (${r.language})</div></div><div class="agenda-time">${r.time}</div></div>`;
+                    
+                    // ВИЗУАЛИЗАЦИЯ ЛИДА В СПИСКЕ AGENDA
+                    let leadBadge = r.isLead ? '<span style="background: #e65100; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; vertical-align: middle; font-weight: bold; letter-spacing: 0.5px;">🔥 LEAD</span>' : '';
+
+                    html += `<div class="agenda-item"><div style="flex: 1;"><div class="agenda-name">${r.client}${leadBadge}</div><div class="agenda-details">${r.service.split('-')[1] || r.service} • ${r.location} | with ${r.staff}</div><div class="agenda-details" style="font-size:12px; margin-top:5px; color:#888;">${r.reminder} Reminder (${r.language})</div></div><div class="agenda-time">${r.time}</div></div>`;
                 });
                 html += '</div>'; content.innerHTML = html;
             }
@@ -761,11 +783,17 @@
             }
         });
 
-        // ЛОГИКА ОТКРЫТИЯ КАЛЕНДАРЯ ПРИ НАЖАТИИ НА ЛИД
+        // --- ЛОГИКА ОТКРЫТИЯ КАЛЕНДАРЯ ПРИ НАЖАТИИ НА ЛИД (С ЗАЩИТОЙ) ---
         const statusRadios = document.querySelectorAll('input[name="clientStatus"]');
         statusRadios.forEach(radio => {
             radio.addEventListener('click', function(e) {
                 if (this.value === 'Lead') {
+                    // ЕСЛИ КЛИЕНТ ЕСТЬ В БАЗЕ — ЗАПРЕЩАЕМ ДЕЛАТЬ ЕГО ЛИДОМ!
+                    if (window.currentClient) {
+                        e.preventDefault();
+                        alert("❌ This client is already in the database. You cannot mark them as a New Lead.\n\nPlease use the green 'Book Appointment' button to schedule their meeting.");
+                        return;
+                    }
                     openApptModal();
                 }
             });
@@ -779,6 +807,13 @@
             document.getElementById('clientBadge').style.display = 'none';
             document.getElementById('matterSelect').innerHTML = '<option value="">-- Auto-detecting matters... --</option>';
             document.getElementById('matterContainer').style.display = 'none';
+
+            // Включаем обратно кнопку Lead, если она была заблокирована
+            const leadCard = document.getElementById('leadCardWrapper');
+            if (leadCard) {
+                leadCard.classList.remove('disabled');
+                leadCard.querySelector('input').disabled = false;
+            }
         }
 
         async function fetchDocketwiseData(query, isPhone) {
@@ -802,6 +837,13 @@
             document.getElementById('fullName').value = client.name;
             document.getElementById('phoneNumber').value = client.phone || '';
             
+            // ОТКЛЮЧАЕМ КНОПКУ ЛИД ДЛЯ ДЕЙСТВУЮЩЕГО КЛИЕНТА (Визуально и физически)
+            const leadCard = document.getElementById('leadCardWrapper');
+            if (leadCard) {
+                leadCard.classList.add('disabled');
+                leadCard.querySelector('input').disabled = true;
+            }
+
             const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
             if (existingRadio) { existingRadio.checked = true; }
             
@@ -848,7 +890,6 @@
             }
         }, 500);
 
-        // Добавлена очистка при пустом вводе
         document.getElementById('fullName').addEventListener('input', e => {
             const val = e.target.value.trim();
             if (val === '') clearClientData();
@@ -865,7 +906,6 @@
             if (!e.target.closest('#phoneAutocompleteWrapper')) { const phoneList = document.getElementById('phoneList'); if (phoneList) phoneList.style.display = 'none'; }
         });
 
-        // ТОЛЬКО ДЛЯ АВТОМАТИКИ (Docketwise)
         async function checkIncomingCall() {
             if (incomingPhone) {
                 let cleanedPhone = incomingPhone.replace(/[^\d+]/g, '');
@@ -927,7 +967,6 @@
                 if (result.success) {
                     alert(`✅ Call successfully saved! \n\n${assignedStaffName !== "-- Do not notify anyone --" && assignedStaffName !== "" ? "Staff member has been notified." : ""}`);
                     
-                    // Полная очистка
                     clearClientData();
                     document.getElementById('fullName').value = '';
                     document.getElementById('phoneNumber').value = '';
