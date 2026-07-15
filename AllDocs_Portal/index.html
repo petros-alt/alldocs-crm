@@ -364,7 +364,7 @@
                 <div id="unrecognizedCallerSection" style="display: none; background: #fff3e0; padding: 20px; border-left: 4px solid #ff9800; border-radius: 8px; margin-bottom: 25px;">
                     <label style="color: #e65100; font-weight: 700; margin-bottom: 12px; display: block;">Third-Party Caller Details (Optional):</label>
                     <div class="form-row" style="margin-bottom: 0;">
-                        <!-- НОВОЕ ПОЛЕ: ТЕЛЕФОН ЗВОНЯЩЕГО -->
+                        <!-- ПОЛЕ: ТЕЛЕФОН ЗВОНЯЩЕГО -->
                         <div class="form-group" style="margin-bottom: 0;">
                             <label style="font-size: 13px;">Caller Phone</label>
                             <input type="tel" id="callerPhone" placeholder="Incoming number...">
@@ -404,7 +404,16 @@
                     </div>
 
                     <h2 class="section-title">3. Internal CRM Routing</h2>
-                    <div class="form-row">
+                    
+                    <!-- НОВАЯ ГАЛОЧКА: RESOLVED BY OPERATOR -->
+                    <div style="margin-bottom: 15px; padding: 12px; background: #e8f5e9; border-radius: 8px; border-left: 4px solid #2e7d32;">
+                        <label style="display: flex; align-items: center; cursor: pointer; color: #2e7d32; font-weight: 700; font-size: 14.5px; margin: 0;">
+                            <input type="checkbox" id="resolvedByOpCheckbox" style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer; accent-color: #2e7d32;">
+                            ✅ Resolved by Operator (No staff routing needed)
+                        </label>
+                    </div>
+
+                    <div class="form-row" id="staffSelectionRow">
                         <div class="form-group">
                             <label>Assigned To / Staff (Notify via Bell 🔔):</label>
                             <select id="assignedStaff"></select>
@@ -472,6 +481,7 @@
         let incomingPhone = urlParams.get('phone');
         const loggedInStaff = localStorage.getItem('loggedInStaff');
 
+        // СТИРАЕМ НОМЕР ИЗ URL ЧТОБЫ ПРИ F5 ОН НЕ ЛОВИЛСЯ ЗАНОВО
         if (window.location.search.includes('phone=')) {
             window.history.replaceState({}, document.title, window.location.pathname);
         }
@@ -798,6 +808,23 @@
             }
         });
 
+        // --- ЛОГИКА RESOLVED BY OPERATOR ---
+        const resolvedCheckbox = document.getElementById('resolvedByOpCheckbox');
+        const staffRow = document.getElementById('staffSelectionRow');
+        const briefDesc = document.getElementById('briefDescription');
+
+        if (resolvedCheckbox) {
+            resolvedCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    staffRow.style.display = 'none'; // Прячем выбор сотрудника
+                    briefDesc.removeAttribute('required'); // Делаем заметку необязательной
+                } else {
+                    staffRow.style.display = 'flex'; // Показываем обратно
+                    briefDesc.setAttribute('required', 'true'); // Снова делаем обязательной
+                }
+            });
+        }
+
         // --- ЛОГИКА ОТКРЫТИЯ КАЛЕНДАРЯ И 3-го ЛИЦА ---
         const statusRadios = document.querySelectorAll('input[name="clientStatus"]');
         statusRadios.forEach(radio => {
@@ -820,7 +847,6 @@
                     const callerPhoneInput = document.getElementById('callerPhone');
                     if (mainPhone && !callerPhoneInput.value) {
                         callerPhoneInput.value = mainPhone;
-                        // Очищаем главное поле телефона, чтобы оператор мог искать реального клиента
                         document.getElementById('phoneNumber').value = '';
                     }
                 } else {
@@ -841,6 +867,10 @@
             document.getElementById('callerPhone').value = '';
             document.getElementById('callerRelation').value = '';
             document.getElementById('unrecognizedCallerSection').style.display = 'none';
+            
+            if(resolvedCheckbox) resolvedCheckbox.checked = false;
+            if(staffRow) staffRow.style.display = 'flex';
+            if(briefDesc) briefDesc.setAttribute('required', 'true');
 
             const leadCard = document.getElementById('leadCardWrapper');
             if (leadCard) {
@@ -1027,8 +1057,17 @@
             }
 
             const staffSelect = document.getElementById('assignedStaff');
-            const assignedStaffName = staffSelect.options[staffSelect.selectedIndex]?.text || "";
-            const assignedStaffId = staffSelect.value || "";
+            const resolvedOpCheckbox = document.getElementById('resolvedByOpCheckbox');
+            
+            let assignedStaffName = "";
+            let assignedStaffId = "";
+
+            if (resolvedOpCheckbox && resolvedOpCheckbox.checked) {
+                assignedStaffName = "Resolved by Operator";
+            } else {
+                assignedStaffName = staffSelect.options[staffSelect.selectedIndex]?.text || "";
+                assignedStaffId = staffSelect.value || "";
+            }
 
             const formData = {
                 clientId: document.getElementById('hiddenClientId').value || "",
@@ -1048,7 +1087,7 @@
                 const response = await fetch('/api/save-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
                 const result = await response.json();
                 if (result.success) {
-                    alert(`✅ Call successfully saved! \n\n${assignedStaffName !== "-- Do not notify anyone --" && assignedStaffName !== "" ? "Staff member has been notified." : ""}`);
+                    alert(`✅ Call successfully saved! \n\n${assignedStaffName !== "-- Do not notify anyone --" && assignedStaffName !== "" && assignedStaffName !== "Resolved by Operator" ? "Staff member has been notified." : ""}`);
                     
                     clearClientData();
                     document.getElementById('fullName').value = '';
