@@ -88,28 +88,41 @@ export default async function handler(req, res) {
 
             let mattersArray = [];
             try {
-                // Скачиваем профиль клиента для получения Дел
-                const fullRes = await fetch(`https://app.docketwise.com/api/v1/contacts/${contact.id}`, {
+                // 1. Получаем базовый список дел клиента
+                const mattersRes = await fetch(`https://app.docketwise.com/api/v1/matters?client_id=${contact.id}`, {
                     headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
                 });
                 
-                if (fullRes.ok) {
-                    const fullData = await fullRes.json();
-                    const dataObj = fullData.data || fullData; 
-                    const mattersList = dataObj.matters || [];
+                if (mattersRes.ok) {
+                    const mattersData = await mattersRes.json();
+                    const mattersList = Array.isArray(mattersData) ? mattersData : (mattersData.matters || []);
                     
-                    mattersArray = mattersList.map(m => {
+                    // 2. Для каждого дела делаем мгновенный микро-запрос в его ПОЛНУЮ карточку
+                    mattersArray = await Promise.all(mattersList.map(async (m) => {
                         let staffName = "";
-
-                        // БЕРЕМ ИНФОРМАЦИЮ ТОЛЬКО ИЗ САМОГО ДЕЛА (MATTER)
-                        if (m.assignee_names) {
-                            staffName = m.assignee_names.replace(/@/g, '').split(',')[0].trim();
-                        } else if (m.assignee && m.assignee.name) {
-                            staffName = m.assignee.name;
-                        } else if (m.attorney_name) {
-                            staffName = m.attorney_name;
-                        } else if (Array.isArray(m.assignees) && m.assignees.length > 0) {
-                            staffName = m.assignees[0].name || m.assignees[0].first_name || "";
+                        
+                        try {
+                            const singleMatterRes = await fetch(`https://app.docketwise.com/api/v1/matters/${m.id}`, {
+                                headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
+                            });
+                            
+                            if (singleMatterRes.ok) {
+                                const singleData = await singleMatterRes.json();
+                                // API может отдавать ответ внутри ключа data, matter или просто объектом
+                                const fullMatter = singleData.data || singleData.matter || singleData;
+                                
+                                // Вытаскиваем официальных сотрудников из карточки дела (как на скриншоте)
+                                if (fullMatter.assignee_names) {
+                                    staffName = fullMatter.assignee_names.replace(/@/g, '').trim();
+                                } else if (Array.isArray(fullMatter.assignees) && fullMatter.assignees.length > 0) {
+                                    // Если сотрудников несколько, склеиваем их через запятую
+                                    staffName = fullMatter.assignees.map(a => a.name || a.first_name || "").filter(Boolean).join(", ");
+                                } else if (fullMatter.attorney_name) {
+                                    staffName = fullMatter.attorney_name;
+                                }
+                            }
+                        } catch (err) {
+                            console.error(`Не удалось загрузить дело ${m.id}:`, err);
                         }
 
                         return { 
@@ -117,7 +130,7 @@ export default async function handler(req, res) {
                             title: m.title || m.description || `Дело #${m.id}`,
                             assignee_name: staffName 
                         };
-                    });
+                    }));
                 }
             } catch (e) {
                 console.error("Ошибка при получении профиля клиента:", e);
