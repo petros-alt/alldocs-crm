@@ -96,13 +96,15 @@ export default async function handler(req, res) {
                 const mattersRes = await fetch(`https://app.docketwise.com/api/v1/matters?client_id=${contact.id}`, {
                     headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
                 });
+                
+                // --- ЗДЕСЬ ДОБАВЛЕН КОД ДЛЯ ПОЛУЧЕНИЯ ИМЕНИ СОТРУДНИКА ---
                 if (mattersRes.ok) {
                     const mattersData = await mattersRes.json();
                     const mattersList = Array.isArray(mattersData) ? mattersData : (mattersData.matters || []);
                     
                     mattersArray = mattersList.map(m => {
-                        // Пытаемся аккуратно достать имя сотрудника из ответа Docketwise
                         let staffName = "";
+                        // Проверяем разные варианты, как Docketwise может отдавать имя
                         if (m.assignee_name) staffName = m.assignee_name;
                         else if (m.assignee && m.assignee.name) staffName = m.assignee.name;
                         else if (m.user && m.user.name) staffName = m.user.name;
@@ -114,6 +116,7 @@ export default async function handler(req, res) {
                         };
                     });
                 }
+                // ---------------------------------------------------------
             } catch (e) {}
 
             return { id: contact.id, name: fullName, phone: phoneStr, matters: mattersArray };
