@@ -99,7 +99,20 @@ export default async function handler(req, res) {
                 if (mattersRes.ok) {
                     const mattersData = await mattersRes.json();
                     const mattersList = Array.isArray(mattersData) ? mattersData : (mattersData.matters || []);
-                    mattersArray = mattersList.map(m => ({ id: m.id, title: m.title || m.description || `Дело #${m.id}` }));
+                    
+                    mattersArray = mattersList.map(m => {
+                        // Пытаемся аккуратно достать имя сотрудника из ответа Docketwise
+                        let staffName = "";
+                        if (m.assignee_name) staffName = m.assignee_name;
+                        else if (m.assignee && m.assignee.name) staffName = m.assignee.name;
+                        else if (m.user && m.user.name) staffName = m.user.name;
+
+                        return { 
+                            id: m.id, 
+                            title: m.title || m.description || `Дело #${m.id}`,
+                            assignee_name: staffName 
+                        };
+                    });
                 }
             } catch (e) {}
 
