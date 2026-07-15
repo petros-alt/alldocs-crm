@@ -61,7 +61,6 @@
         .category-card:hover span { border-color: var(--accent-color); background: #fdfaf6; }
         .category-card input:checked + span { background: var(--accent-color); color: white; border-color: var(--accent-color); box-shadow: 0 4px 12px rgba(161, 104, 58, 0.25); transform: translateY(-2px); }
         
-        /* Disabled state for Lead card */
         .category-card.disabled span { background: #f5f2eb; color: #bcaaa4; border-color: #e0e0e0; cursor: not-allowed; box-shadow: none; transform: none; }
 
         .submit-btn { background-color: var(--accent-color); color: white; border: none; padding: 18px 20px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; width: 100%; transition: all 0.3s ease; margin-top: 30px; box-shadow: 0 4px 15px rgba(161, 104, 58, 0.25); }
@@ -343,10 +342,9 @@
                     </div>
                 </div>
 
-                <div style="margin-top: 20px; margin-bottom: 30px;">
+                <div style="margin-top: 20px; margin-bottom: 15px;">
                     <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 12px; display: block; font-size: 15px;">Client Status:</label>
                     <div class="category-grid">
-                        <!-- КАРТОЧКА LEAD С ЗАЩИТОЙ -->
                         <label class="category-card" id="leadCardWrapper">
                             <input type="radio" name="clientStatus" value="Lead">
                             <span>🔥 Lead (New Appointment)</span>
@@ -359,6 +357,21 @@
                             <input type="radio" name="clientStatus" value="Unrecognized Number (Existing Client)">
                             <span>❓ Unrecognized Number<br>(Existing Client)</span>
                         </label>
+                    </div>
+                </div>
+
+                <!-- БЛОК ДЛЯ 3-го ЛИЦА (Неизвестный номер) -->
+                <div id="unrecognizedCallerSection" style="display: none; background: #fff3e0; padding: 20px; border-left: 4px solid #ff9800; border-radius: 8px; margin-bottom: 25px;">
+                    <label style="color: #e65100; font-weight: 700; margin-bottom: 12px; display: block;">Third-Party Caller Details (Optional):</label>
+                    <div class="form-row" style="margin-bottom: 0;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="font-size: 13px;">Caller Name (Who is speaking?)</label>
+                            <input type="text" id="callerName" placeholder="e.g. Aram">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="font-size: 13px;">Relationship to Client</label>
+                            <input type="text" id="callerRelation" placeholder="e.g. Son, Translator">
+                        </div>
                     </div>
                 </div>
 
@@ -444,6 +457,7 @@
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         btnElement.classList.add('active');
+        
         if(tabId === 'tabHistoryContent') window.renderCallHistoryList();
         if(tabId === 'tabCalendarContent') window.renderMainCalendar();
     }
@@ -570,7 +584,6 @@
             document.getElementById('modalApptName').value = document.getElementById('fullName').value;
             document.getElementById('modalApptPhone').value = document.getElementById('phoneNumber').value;
             
-            // Динамический заголовок модалки
             const isLead = document.querySelector('input[name="clientStatus"]:checked')?.value === 'Lead';
             const titleEl = document.getElementById('apptModalTitle');
             if (isLead) {
@@ -585,12 +598,11 @@
 
         window.closeApptModal = function() { 
             document.getElementById('apptModal').style.display = 'none'; 
-            
-            // Если закрыли модалку без сохранения, возвращаем Лида на Existing Client
             const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
             const leadRadio = document.querySelector('input[name="clientStatus"][value="Lead"]');
             if (existingRadio && leadRadio && leadRadio.checked) {
                 existingRadio.checked = true;
+                document.getElementById('unrecognizedCallerSection').style.display = 'none';
             }
         }
 
@@ -643,7 +655,7 @@
                 reminder: apptRemType,
                 language: apptLang,
                 message: document.getElementById('modalApptMessage').value,
-                isLead: isLead // СОХРАНЯЕМ МЕТКУ ЛИДА ДЛЯ КАЛЕНДАРЯ
+                isLead: isLead 
             };
 
             const recs = JSON.parse(localStorage.getItem('gr_db')) || [];
@@ -723,7 +735,6 @@
                     
                     html += `<div class="month-cell"><div class="date-num ${isToday ? 'today' : ''}">${i}</div>`;
                     dayRecs.slice(0, 4).forEach(r => { 
-                        // ВИЗУАЛИЗАЦИЯ ЛИДА В КАЛЕНДАРЕ НА МЕСЯЦ
                         let leadStyle = r.isLead ? 'border-left-color: #e65100; background-color: #fff3e0;' : '';
                         let leadIcon = r.isLead ? '🔥 ' : '';
                         html += `<div class="mini-event" style="${leadStyle}">${r.time} ${leadIcon}${r.client.split(' ')[0]}</div>`; 
@@ -744,7 +755,6 @@
                     const dateTitle = `${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dObj.getDay()]}, ${dObj.getMonth()+1}/${dObj.getDate()}`;
                     if(dateTitle !== currentGroup) { html += `<div class="agenda-date-group">📅 ${dateTitle}</div>`; currentGroup = dateTitle; }
                     
-                    // ВИЗУАЛИЗАЦИЯ ЛИДА В СПИСКЕ AGENDA
                     let leadBadge = r.isLead ? '<span style="background: #e65100; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; vertical-align: middle; font-weight: bold; letter-spacing: 0.5px;">🔥 LEAD</span>' : '';
 
                     html += `<div class="agenda-item"><div style="flex: 1;"><div class="agenda-name">${r.client}${leadBadge}</div><div class="agenda-details">${r.service.split('-')[1] || r.service} • ${r.location} | with ${r.staff}</div><div class="agenda-details" style="font-size:12px; margin-top:5px; color:#888;">${r.reminder} Reminder (${r.language})</div></div><div class="agenda-time">${r.time}</div></div>`;
@@ -783,23 +793,29 @@
             }
         });
 
-        // --- ЛОГИКА ОТКРЫТИЯ КАЛЕНДАРЯ ПРИ НАЖАТИИ НА ЛИД (С ЗАЩИТОЙ) ---
+        // --- ЛОГИКА ОТКРЫТИЯ КАЛЕНДАРЯ И 3-го ЛИЦА ---
         const statusRadios = document.querySelectorAll('input[name="clientStatus"]');
         statusRadios.forEach(radio => {
-            radio.addEventListener('click', function(e) {
+            radio.addEventListener('change', function(e) {
                 if (this.value === 'Lead') {
-                    // ЕСЛИ КЛИЕНТ ЕСТЬ В БАЗЕ — ЗАПРЕЩАЕМ ДЕЛАТЬ ЕГО ЛИДОМ!
+                    document.getElementById('unrecognizedCallerSection').style.display = 'none';
                     if (window.currentClient) {
                         e.preventDefault();
                         alert("❌ This client is already in the database. You cannot mark them as a New Lead.\n\nPlease use the green 'Book Appointment' button to schedule their meeting.");
+                        const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
+                        if (existingRadio) existingRadio.checked = true;
                         return;
                     }
                     openApptModal();
+                } else if (this.value === 'Unrecognized Number (Existing Client)') {
+                    document.getElementById('unrecognizedCallerSection').style.display = 'block';
+                } else {
+                    document.getElementById('unrecognizedCallerSection').style.display = 'none';
                 }
             });
         });
 
-        // --- ФУНКЦИЯ ОЧИСТКИ ПОЛЕЙ (Сброс ID и Matter) ---
+        // --- ФУНКЦИЯ ОЧИСТКИ ПОЛЕЙ ---
         function clearClientData() {
             window.currentClient = null;
             document.getElementById('hiddenClientId').value = '';
@@ -807,8 +823,10 @@
             document.getElementById('clientBadge').style.display = 'none';
             document.getElementById('matterSelect').innerHTML = '<option value="">-- Auto-detecting matters... --</option>';
             document.getElementById('matterContainer').style.display = 'none';
+            document.getElementById('callerName').value = '';
+            document.getElementById('callerRelation').value = '';
+            document.getElementById('unrecognizedCallerSection').style.display = 'none';
 
-            // Включаем обратно кнопку Lead, если она была заблокирована
             const leadCard = document.getElementById('leadCardWrapper');
             if (leadCard) {
                 leadCard.classList.remove('disabled');
@@ -835,17 +853,23 @@
                 document.getElementById('clientBadge').style.display = 'inline-block';
             }
             document.getElementById('fullName').value = client.name;
-            document.getElementById('phoneNumber').value = client.phone || '';
             
-            // ОТКЛЮЧАЕМ КНОПКУ ЛИД ДЛЯ ДЕЙСТВУЮЩЕГО КЛИЕНТА (Визуально и физически)
+            if (document.getElementById('phoneNumber').value === '') {
+                document.getElementById('phoneNumber').value = client.phone || '';
+            }
+
             const leadCard = document.getElementById('leadCardWrapper');
             if (leadCard) {
                 leadCard.classList.add('disabled');
                 leadCard.querySelector('input').disabled = true;
             }
-
-            const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
-            if (existingRadio) { existingRadio.checked = true; }
+            
+            // Если статус уже стоит Unrecognized - не сбиваем его
+            const currentStatus = document.querySelector('input[name="clientStatus"]:checked')?.value;
+            if (currentStatus !== 'Unrecognized Number (Existing Client)') {
+                const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
+                if (existingRadio) { existingRadio.checked = true; }
+            }
             
             const matterSelect = document.getElementById('matterSelect');
             matterSelect.innerHTML = '<option value="">-- Please select a matter --</option>';
@@ -919,6 +943,27 @@
                     const clients = await fetchDocketwiseData(cleanedPhone, true);
                     if(clients && clients.length > 0) { 
                         applyClientData(clients[0]); 
+                    } else {
+                        // ПРОВЕРКА УМНОЙ ПАМЯТИ (Linked Numbers)
+                        const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
+                        if (linkedNumbers[cleanedPhone]) {
+                            const linkInfo = linkedNumbers[cleanedPhone];
+                            
+                            // Подтягиваем дело Петроса (клиента)
+                            if (linkInfo.clientData) {
+                                applyClientData(linkInfo.clientData);
+                            }
+                            
+                            // Переключаем статус и заполняем поля 3-го лица
+                            const unrecRadio = document.querySelector('input[name="clientStatus"][value="Unrecognized Number (Existing Client)"]');
+                            if (unrecRadio) {
+                                unrecRadio.checked = true;
+                                document.getElementById('unrecognizedCallerSection').style.display = 'block';
+                                document.getElementById('callerName').value = linkInfo.callerName;
+                                document.getElementById('callerRelation').value = linkInfo.relation;
+                            }
+                            console.log("Recognized a 3rd party caller from memory!");
+                        }
                     }
                 } catch(error) {
                     console.error("Caller ID Error:", error);
@@ -939,9 +984,33 @@
             const checkedCategory = document.querySelector('input[name="noteCategory"]:checked');
             const noteCategory = checkedCategory && checkedCategory.value !== 'General Call' ? checkedCategory.value : "";
             const checkedStatus = document.querySelector('input[name="clientStatus"]:checked');
+            
+            const isUnrecognized = checkedStatus?.value === 'Unrecognized Number (Existing Client)';
+            
+            let callerInfoBlock = "";
+            if (isUnrecognized) {
+                const cName = document.getElementById('callerName').value.trim() || "Unknown Caller";
+                const cRel = document.getElementById('callerRelation').value.trim() || "Unknown Relation";
+                callerInfoBlock = `[🗣️ CALLER: ${cName} (${cRel})]`;
+                
+                // СОХРАНЯЕМ В УМНУЮ ПАМЯТЬ
+                const currentPhone = document.getElementById('phoneNumber').value.replace(/[^\d+]/g, '');
+                if (currentPhone && window.currentClient) {
+                    const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
+                    linkedNumbers[currentPhone] = {
+                        callerName: cName,
+                        relation: cRel,
+                        clientData: window.currentClient
+                    };
+                    localStorage.setItem('linked_numbers', JSON.stringify(linkedNumbers));
+                }
+            }
+
             const statusText = checkedStatus ? `[Status: ${checkedStatus.value}]` : "";
 
-            if (noteCategory || statusText) { finalDescription = `${statusText} ${noteCategory}\n\n${finalDescription}`.trim(); }
+            if (noteCategory || statusText || callerInfoBlock) { 
+                finalDescription = `${statusText} ${callerInfoBlock} ${noteCategory}\n\n${finalDescription}`.trim(); 
+            }
 
             const staffSelect = document.getElementById('assignedStaff');
             const assignedStaffName = staffSelect.options[staffSelect.selectedIndex]?.text || "";
