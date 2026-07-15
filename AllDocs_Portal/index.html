@@ -364,6 +364,11 @@
                 <div id="unrecognizedCallerSection" style="display: none; background: #fff3e0; padding: 20px; border-left: 4px solid #ff9800; border-radius: 8px; margin-bottom: 25px;">
                     <label style="color: #e65100; font-weight: 700; margin-bottom: 12px; display: block;">Third-Party Caller Details (Optional):</label>
                     <div class="form-row" style="margin-bottom: 0;">
+                        <!-- НОВОЕ ПОЛЕ: ТЕЛЕФОН ЗВОНЯЩЕГО -->
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label style="font-size: 13px;">Caller Phone</label>
+                            <input type="tel" id="callerPhone" placeholder="Incoming number...">
+                        </div>
                         <div class="form-group" style="margin-bottom: 0;">
                             <label style="font-size: 13px;">Caller Name (Who is speaking?)</label>
                             <input type="text" id="callerName" placeholder="e.g. Aram">
@@ -809,6 +814,15 @@
                     openApptModal();
                 } else if (this.value === 'Unrecognized Number (Existing Client)') {
                     document.getElementById('unrecognizedCallerSection').style.display = 'block';
+                    
+                    // ПЕРЕНОСИМ НОМЕР ИЗ ГЛАВНОГО ПОЛЯ В CALLER PHONE
+                    const mainPhone = document.getElementById('phoneNumber').value;
+                    const callerPhoneInput = document.getElementById('callerPhone');
+                    if (mainPhone && !callerPhoneInput.value) {
+                        callerPhoneInput.value = mainPhone;
+                        // Очищаем главное поле телефона, чтобы оператор мог искать реального клиента
+                        document.getElementById('phoneNumber').value = '';
+                    }
                 } else {
                     document.getElementById('unrecognizedCallerSection').style.display = 'none';
                 }
@@ -824,6 +838,7 @@
             document.getElementById('matterSelect').innerHTML = '<option value="">-- Auto-detecting matters... --</option>';
             document.getElementById('matterContainer').style.display = 'none';
             document.getElementById('callerName').value = '';
+            document.getElementById('callerPhone').value = '';
             document.getElementById('callerRelation').value = '';
             document.getElementById('unrecognizedCallerSection').style.display = 'none';
 
@@ -854,9 +869,8 @@
             }
             document.getElementById('fullName').value = client.name;
             
-            if (document.getElementById('phoneNumber').value === '') {
-                document.getElementById('phoneNumber').value = client.phone || '';
-            }
+            // Если статус 3-го лица, официальный телефон пишется в главном поле
+            document.getElementById('phoneNumber').value = client.phone || '';
 
             const leadCard = document.getElementById('leadCardWrapper');
             if (leadCard) {
@@ -864,7 +878,6 @@
                 leadCard.querySelector('input').disabled = true;
             }
             
-            // Если статус уже стоит Unrecognized - не сбиваем его
             const currentStatus = document.querySelector('input[name="clientStatus"]:checked')?.value;
             if (currentStatus !== 'Unrecognized Number (Existing Client)') {
                 const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
@@ -934,8 +947,30 @@
             if (incomingPhone) {
                 let cleanedPhone = incomingPhone.replace(/[^\d+]/g, '');
                 if (cleanedPhone.length < 2) { document.getElementById('phoneNumber').value = incomingPhone; return; }
-                document.getElementById('phoneNumber').value = cleanedPhone;
                 
+                // ПРОВЕРКА УМНОЙ ПАМЯТИ (Linked Numbers)
+                const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
+                if (linkedNumbers[cleanedPhone]) {
+                    const linkInfo = linkedNumbers[cleanedPhone];
+                    
+                    document.getElementById('phoneNumber').value = cleanedPhone;
+                    
+                    const unrecRadio = document.querySelector('input[name="clientStatus"][value="Unrecognized Number (Existing Client)"]');
+                    if (unrecRadio) {
+                        unrecRadio.checked = true;
+                        document.getElementById('unrecognizedCallerSection').style.display = 'block';
+                        document.getElementById('callerPhone').value = cleanedPhone;
+                        document.getElementById('callerName').value = linkInfo.callerName;
+                        document.getElementById('callerRelation').value = linkInfo.relation;
+                    }
+                    
+                    if (linkInfo.clientData) {
+                        applyClientData(linkInfo.clientData);
+                    }
+                    return; 
+                }
+
+                document.getElementById('phoneNumber').value = cleanedPhone;
                 const loader = document.getElementById('phoneLoader');
                 if (loader) loader.style.display = 'inline-block';
                 
@@ -943,27 +978,6 @@
                     const clients = await fetchDocketwiseData(cleanedPhone, true);
                     if(clients && clients.length > 0) { 
                         applyClientData(clients[0]); 
-                    } else {
-                        // ПРОВЕРКА УМНОЙ ПАМЯТИ (Linked Numbers)
-                        const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
-                        if (linkedNumbers[cleanedPhone]) {
-                            const linkInfo = linkedNumbers[cleanedPhone];
-                            
-                            // Подтягиваем дело Петроса (клиента)
-                            if (linkInfo.clientData) {
-                                applyClientData(linkInfo.clientData);
-                            }
-                            
-                            // Переключаем статус и заполняем поля 3-го лица
-                            const unrecRadio = document.querySelector('input[name="clientStatus"][value="Unrecognized Number (Existing Client)"]');
-                            if (unrecRadio) {
-                                unrecRadio.checked = true;
-                                document.getElementById('unrecognizedCallerSection').style.display = 'block';
-                                document.getElementById('callerName').value = linkInfo.callerName;
-                                document.getElementById('callerRelation').value = linkInfo.relation;
-                            }
-                            console.log("Recognized a 3rd party caller from memory!");
-                        }
                     }
                 } catch(error) {
                     console.error("Caller ID Error:", error);
@@ -989,15 +1003,15 @@
             
             let callerInfoBlock = "";
             if (isUnrecognized) {
+                const cPhone = document.getElementById('callerPhone').value.replace(/[^\d+]/g, '');
                 const cName = document.getElementById('callerName').value.trim() || "Unknown Caller";
                 const cRel = document.getElementById('callerRelation').value.trim() || "Unknown Relation";
-                callerInfoBlock = `[🗣️ CALLER: ${cName} (${cRel})]`;
+                callerInfoBlock = `[🗣️ CALLER: ${cName} (${cRel}) | Phone: ${cPhone}]`;
                 
                 // СОХРАНЯЕМ В УМНУЮ ПАМЯТЬ
-                const currentPhone = document.getElementById('phoneNumber').value.replace(/[^\d+]/g, '');
-                if (currentPhone && window.currentClient) {
+                if (cPhone && window.currentClient) {
                     const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
-                    linkedNumbers[currentPhone] = {
+                    linkedNumbers[cPhone] = {
                         callerName: cName,
                         relation: cRel,
                         clientData: window.currentClient
