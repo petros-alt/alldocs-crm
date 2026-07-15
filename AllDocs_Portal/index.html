@@ -194,12 +194,14 @@
                         <input type="text" id="modalApptPhone" placeholder="+1 (555) 000-0000">
                     </div>
                 </div>
+
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label>Appt. Location</label>
                     <select id="modalApptLocation">
                         <option>All Docs Consulting</option><option>Armen Shaghzo Attorney</option><option>Capi Metro Office</option><option>David Bagdasaryan Attorney</option><option>Dr. Karine Gaboian</option><option>LA Court 300</option><option>LA Court 606</option><option>LA Pacific</option><option>Mercury Hospice Care</option><option>USCIS - Chatsworth</option><option>USCIS - San Bernardino</option><option>USCIS - Tustin</option><option>Vadim Yuzefpolsky attorney</option><option>Van Nuys Court</option>
                     </select>
                 </div>
+
                 <div class="form-row">
                     <div class="form-group" style="margin-bottom: 15px;">
                         <label>Service</label>
@@ -217,6 +219,7 @@
                         </select>
                     </div>
                 </div>
+
                 <div class="form-row">
                     <div class="form-group" style="margin-bottom: 15px;">
                         <label>Reminder Type</label>
@@ -236,13 +239,16 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="form-group" style="margin-bottom: 0;">
                     <label>Message to Client (Included in SMS)</label>
                     <textarea id="modalApptMessage" placeholder="E.g., Please bring your passport and tax documents..." style="min-height: 60px;"></textarea>
                 </div>
             </div>
+
             <div style="width: 280px; background: #fdfaf6; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
                 <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 15px; display: block;">Select Date & Time</label>
+                
                 <div class="calendar-widget">
                     <div class="cal-header">
                         <button type="button" id="aPrevM">&lt;</button><span id="aMonthYear"></span><button type="button" id="aNextM">&gt;</button>
@@ -250,6 +256,7 @@
                     <div class="cal-days"><div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div></div>
                     <div class="cal-dates" id="aCalDates"></div>
                 </div>
+                
                 <div style="margin-top: 20px;">
                     <label style="font-size: 13px; color: var(--secondary-color);">Time:</label>
                     <div class="time-select-group">
@@ -264,12 +271,14 @@
                 </div>
             </div>
         </div>
+
         <div class="modal-actions" style="margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 20px;">
             <button type="button" class="btn-cancel" onclick="closeApptModal()">Cancel</button>
             <button type="button" class="btn-resolve" onclick="saveAppointment()" id="saveApptBtn">Save Appointment & Send SMS ✉️</button>
         </div>
     </div>
 </div>
+
 
 <aside class="sidebar">
     <div class="sidebar-header"><img src="https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png?w=2128&ssl=1" alt="All Docs Consulting"></div>
@@ -431,18 +440,30 @@
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         btnElement.classList.add('active');
+        
         if(tabId === 'tabHistoryContent') window.renderCallHistoryList();
         if(tabId === 'tabCalendarContent') window.renderMainCalendar();
     }
 
     document.addEventListener("DOMContentLoaded", function() {
-        const loggedInStaff = localStorage.getItem('loggedInStaff');
         const urlParams = new URLSearchParams(window.location.search);
         let incomingPhone = urlParams.get('phone');
+        const loggedInStaff = localStorage.getItem('loggedInStaff');
+
+        // --- УДАЛЯЕМ ТЕЛЕФОН ИЗ АДРЕСНОЙ СТРОКИ БРАУЗЕРА ---
+        if (window.location.search.includes('phone=')) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
 
         if (!loggedInStaff) {
             if (incomingPhone) localStorage.setItem('pendingOomaCall', incomingPhone);
             window.location.href = 'login.html'; return;
+        }
+
+        const pendingCall = localStorage.getItem('pendingOomaCall');
+        if (pendingCall) {
+            incomingPhone = pendingCall;
+            localStorage.removeItem('pendingOomaCall');
         }
 
         document.getElementById('userProfile').style.display = 'flex';
@@ -552,13 +573,11 @@
 
         window.closeApptModal = function() { 
             document.getElementById('apptModal').style.display = 'none'; 
-            
-            // Если мы отменили всплывающее окно будучи на Лиде, возвращаем форму в Existing
+            // Защита: Если закрыли окно без сохранения на Лиде, возвращаем в Existing
             const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
             const leadRadio = document.querySelector('input[name="clientStatus"][value="Lead"]');
             if (existingRadio && leadRadio && leadRadio.checked) {
                 existingRadio.checked = true;
-                // Не вызываем dispatchEvent, чтобы снова не запустился обработчик, просто меняем визуал
             }
         }
 
@@ -592,7 +611,6 @@
             const m = document.getElementById('aTimeMinute').value;
             const ampm = document.getElementById('aTimeAMPM').value;
             
-            // Определяем, Лид это или нет
             const isLead = document.querySelector('input[name="clientStatus"]:checked')?.value === 'Lead';
             const clientName = document.getElementById('modalApptName').value.trim() || (isLead ? "New Lead" : "Unknown Client");
             const service = document.getElementById('modalApptService').value;
@@ -617,7 +635,6 @@
             const recs = JSON.parse(localStorage.getItem('gr_db')) || [];
             recs.push(appointmentData); localStorage.setItem('gr_db', JSON.stringify(recs));
 
-            // Формируем текст для общего CRM Журнала (History)
             let finalDescription = isLead 
                 ? `[🔥 NEW LEAD APPOINTMENT]\nScheduled: ${selectedApptDate.toLocaleDateString()} at ${h}:${m} ${ampm}\nService: ${service}\nStaff: ${apptStaff}`
                 : `[APPOINTMENT BOOKED]\nScheduled: ${selectedApptDate.toLocaleDateString()} at ${h}:${m} ${ampm}\nService: ${service}\nStaff: ${apptStaff}`;
@@ -631,12 +648,11 @@
                 description: finalDescription,
                 operatorName: loggedInStaff || "Unknown Operator",
                 assignedStaffName: apptStaff,
-                assignedStaffId: "", // В будущих версиях можно привязать ID
+                assignedStaffId: "",
                 followUpNotes: "",
                 status: "Resolved"
             };
 
-            // Сохраняем в CRM
             fetch('/api/save-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) })
                 .then(response => response.json())
                 .then(result => {
@@ -645,9 +661,12 @@
                         closeApptModal();
                         btn.textContent = "Save Appointment & Send SMS ✉️"; btn.disabled = false;
                         switchMainTab('tabCalendarContent', document.querySelectorAll('.tab-btn')[1]);
+                        
+                        // Очистка формы
+                        clearClientData();
+                        document.getElementById('fullName').value = '';
+                        document.getElementById('phoneNumber').value = '';
                         document.getElementById('callForm').reset();
-                        document.getElementById('hiddenClientId').value = '';
-                        document.getElementById('matterContainer').style.display = 'none';
                         document.querySelector('input[name="clientStatus"][value="Existing Client"]').checked = true;
                     } else {
                         alert(`❌ Error saving: ` + (result.error || ""));
@@ -747,11 +766,20 @@
         statusRadios.forEach(radio => {
             radio.addEventListener('click', function(e) {
                 if (this.value === 'Lead') {
-                    // Открываем модалку календаря, поля скопируются из формы
                     openApptModal();
                 }
             });
         });
+
+        // --- ФУНКЦИЯ ОЧИСТКИ ПОЛЕЙ (Сброс ID и Matter) ---
+        function clearClientData() {
+            window.currentClient = null;
+            document.getElementById('hiddenClientId').value = '';
+            document.getElementById('displayClientId').textContent = '';
+            document.getElementById('clientBadge').style.display = 'none';
+            document.getElementById('matterSelect').innerHTML = '<option value="">-- Auto-detecting matters... --</option>';
+            document.getElementById('matterContainer').style.display = 'none';
+        }
 
         async function fetchDocketwiseData(query, isPhone) {
             try {
@@ -775,9 +803,7 @@
             document.getElementById('phoneNumber').value = client.phone || '';
             
             const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
-            if (existingRadio) {
-                existingRadio.checked = true;
-            }
+            if (existingRadio) { existingRadio.checked = true; }
             
             const matterSelect = document.getElementById('matterSelect');
             matterSelect.innerHTML = '<option value="">-- Please select a matter --</option>';
@@ -822,8 +848,17 @@
             }
         }, 500);
 
-        document.getElementById('fullName').addEventListener('input', e => handleSearch(e.target.value.trim(), false));
-        document.getElementById('phoneNumber').addEventListener('input', e => handleSearch(e.target.value.replace(/\D/g, ''), true));
+        // Добавлена очистка при пустом вводе
+        document.getElementById('fullName').addEventListener('input', e => {
+            const val = e.target.value.trim();
+            if (val === '') clearClientData();
+            handleSearch(val, false);
+        });
+        document.getElementById('phoneNumber').addEventListener('input', e => {
+            const val = e.target.value.replace(/\D/g, '');
+            if (val === '') clearClientData();
+            handleSearch(val, true);
+        });
 
         document.addEventListener('click', (e) => {
             if (!e.target.closest('#autocompleteWrapper')) { const clientList = document.getElementById('clientList'); if (clientList) clientList.style.display = 'none'; }
@@ -845,7 +880,6 @@
                     if(clients && clients.length > 0) { 
                         applyClientData(clients[0]); 
                     }
-                    // Если не нашли — ничего не делаем. Ждем решения оператора.
                 } catch(error) {
                     console.error("Caller ID Error:", error);
                 } finally {
@@ -892,10 +926,14 @@
                 const result = await response.json();
                 if (result.success) {
                     alert(`✅ Call successfully saved! \n\n${assignedStaffName !== "-- Do not notify anyone --" && assignedStaffName !== "" ? "Staff member has been notified." : ""}`);
-                    callForm.reset(); document.getElementById('hiddenClientId').value = '';
-                    document.getElementById('clientBadge').style.display = 'none';
-                    document.getElementById('matterContainer').style.display = 'none';
-                    setDateTime(); window.currentClient = null;
+                    
+                    // Полная очистка
+                    clearClientData();
+                    document.getElementById('fullName').value = '';
+                    document.getElementById('phoneNumber').value = '';
+                    callForm.reset(); 
+                    document.querySelector('input[name="clientStatus"][value="Existing Client"]').checked = true;
+                    setDateTime(); 
                 } else { alert(`❌ Error saving call: ` + (result.error || "")); }
             } catch (error) { alert('Network error. Failed to save.'); } 
             finally { submitBtn.disabled = false; submitBtn.textContent = 'Save Call Log to Internal CRM'; }
