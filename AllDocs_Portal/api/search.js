@@ -12,7 +12,9 @@ export default async function handler(req, res) {
         339159: "Mariam Djaradjian",
         332810: "Artak Badalyan",
         341318: "Rima Avetisyan",
-        397654: "Gohar Aloyan"
+        397654: "Gohar Aloyan",
+        379998: "Nairi Hovhannisyan",
+        445336: "Argishti Shahbazyan"
     };
 
     try {
