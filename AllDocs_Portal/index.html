@@ -387,6 +387,11 @@
                     <div id="matterContainer" class="form-group" style="display: none; padding: 18px; border-radius: 8px; border-left: 4px solid var(--accent-color); margin-top: 20px;">
                         <label>Select Matter (Active Case):</label>
                         <select id="matterSelect"><option value="">-- Auto-detecting matters... --</option></select>
+                        
+                        <!-- БЛОК ДЛЯ ИМЕНИ СОТРУДНИКА -->
+                        <div id="matterAssigneeText" style="display: none; margin-top: 10px; font-size: 14px; color: #2e7d32; font-weight: 600; background: #e8f5e9; padding: 8px 12px; border-radius: 6px;">
+                            👤 Staff Assigned: <span id="assigneeNameSpan"></span>
+                        </div>
                     </div>
 
                     <div style="background: #fcfbfa; padding: 20px; border-left: 4px solid var(--accent-color); border-radius: 8px; margin-bottom: 20px;">
@@ -868,6 +873,10 @@
             document.getElementById('callerRelation').value = '';
             document.getElementById('unrecognizedCallerSection').style.display = 'none';
             
+            // Прячем поле с именем сотрудника при очистке
+            const assigneeTextDiv = document.getElementById('matterAssigneeText');
+            if (assigneeTextDiv) assigneeTextDiv.style.display = 'none';
+            
             if(resolvedCheckbox) resolvedCheckbox.checked = false;
             if(staffRow) staffRow.style.display = 'flex';
             if(briefDesc) briefDesc.setAttribute('required', 'true');
@@ -915,26 +924,51 @@
             }
             
             const matterSelect = document.getElementById('matterSelect');
-            matterSelect.innerHTML = '<option value="">-- Please select a matter --</option>';
-          if (client.matters && client.matters.length > 0) {
+            const assigneeTextDiv = document.getElementById('matterAssigneeText');
+            const assigneeSpan = document.getElementById('assigneeNameSpan');
+            
+            matterSelect.innerHTML = '<option value="" data-assignee="">-- Please select a matter --</option>';
+            
+            if (client.matters && client.matters.length > 0) {
                 client.matters.forEach(m => {
                     const opt = document.createElement('option');
                     opt.value = m.id; 
+                    opt.textContent = m.title; // В списке только чистое название!
                     
-                    // Форма проверяет, передал ли бэкенд имя сотрудника 
+                    // Прячем имя сотрудника внутрь элемента как данные
                     const staffName = m.assignee_name || m.assignee || m.staff || m.user || ""; 
-                    
-                    if (staffName) {
-                        opt.textContent = `${m.title} (👤 Assigned: ${staffName})`;
-                    } else {
-                        opt.textContent = m.title;
-                    }
+                    opt.setAttribute('data-assignee', staffName);
                     
                     matterSelect.appendChild(opt);
                 });
                 matterSelect.selectedIndex = 1;
+                
+                // Сразу показываем сотрудника для первого выбранного дела
+                const firstSelectedOpt = matterSelect.options[1];
+                const initialAssignee = firstSelectedOpt ? firstSelectedOpt.getAttribute('data-assignee') : "";
+                if (initialAssignee) {
+                    assigneeTextDiv.style.display = 'block';
+                    assigneeSpan.textContent = initialAssignee;
+                } else {
+                    assigneeTextDiv.style.display = 'none';
+                }
+            } else {
+                assigneeTextDiv.style.display = 'none';
             }
+            
             document.getElementById('matterContainer').style.display = 'block';
+
+            // Слушаем, когда оператор меняет дело в списке, и меняем имя внизу
+            matterSelect.onchange = function() {
+                const selectedOpt = this.options[this.selectedIndex];
+                const assignedTo = selectedOpt ? selectedOpt.getAttribute('data-assignee') : "";
+                if (assignedTo) {
+                    assigneeTextDiv.style.display = 'block';
+                    assigneeSpan.textContent = assignedTo;
+                } else {
+                    assigneeTextDiv.style.display = 'none';
+                }
+            };
         }
 
         const handleSearch = debounce(async (query, isPhone) => {
