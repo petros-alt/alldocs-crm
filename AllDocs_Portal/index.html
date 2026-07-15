@@ -916,10 +916,20 @@
             
             const matterSelect = document.getElementById('matterSelect');
             matterSelect.innerHTML = '<option value="">-- Please select a matter --</option>';
-            if (client.matters && client.matters.length > 0) {
+          if (client.matters && client.matters.length > 0) {
                 client.matters.forEach(m => {
                     const opt = document.createElement('option');
-                    opt.value = m.id; opt.textContent = m.title;
+                    opt.value = m.id; 
+                    
+                    // Форма проверяет, передал ли бэкенд имя сотрудника 
+                    const staffName = m.assignee_name || m.assignee || m.staff || m.user || ""; 
+                    
+                    if (staffName) {
+                        opt.textContent = `${m.title} (👤 Assigned: ${staffName})`;
+                    } else {
+                        opt.textContent = m.title;
+                    }
+                    
                     matterSelect.appendChild(opt);
                 });
                 matterSelect.selectedIndex = 1;
