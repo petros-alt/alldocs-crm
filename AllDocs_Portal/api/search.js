@@ -88,7 +88,7 @@ export default async function handler(req, res) {
 
             let mattersArray = [];
             try {
-                // Скачиваем ПОЛНЫЙ профиль клиента, чтобы получить и Дела, и Заметки
+                // Скачиваем профиль клиента для получения Дел
                 const fullRes = await fetch(`https://app.docketwise.com/api/v1/contacts/${contact.id}`, {
                     headers: { 'Authorization': `Bearer ${apiKey}`, 'Accept': 'application/json' }
                 });
@@ -97,12 +97,11 @@ export default async function handler(req, res) {
                     const fullData = await fullRes.json();
                     const dataObj = fullData.data || fullData; 
                     const mattersList = dataObj.matters || [];
-                    const notesList = dataObj.notes || [];
                     
                     mattersArray = mattersList.map(m => {
                         let staffName = "";
 
-                        // ШАГ 1: Пытаемся взять сотрудника напрямую из Дела (Matter), как на твоем скриншоте
+                        // БЕРЕМ ИНФОРМАЦИЮ ТОЛЬКО ИЗ САМОГО ДЕЛА (MATTER)
                         if (m.assignee_names) {
                             staffName = m.assignee_names.replace(/@/g, '').split(',')[0].trim();
                         } else if (m.assignee && m.assignee.name) {
@@ -111,20 +110,6 @@ export default async function handler(req, res) {
                             staffName = m.attorney_name;
                         } else if (Array.isArray(m.assignees) && m.assignees.length > 0) {
                             staffName = m.assignees[0].name || m.assignees[0].first_name || "";
-                        }
-
-                        // ШАГ 2: Если Дело пустое, используем резервный поиск по Заметкам (Notes)
-                        if (!staffName) {
-                            const matterNotes = notesList.filter(n => n.matter_id === m.id);
-                            for (const note of matterNotes) {
-                                if (note.assignee_names) {
-                                    staffName = note.assignee_names.replace(/@/g, '').split(',')[0].trim();
-                                    break;
-                                } else if (note.created_by_name) {
-                                    staffName = note.created_by_name.trim();
-                                    break;
-                                }
-                            }
                         }
 
                         return { 
