@@ -51,13 +51,24 @@
         
         .category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 25px; }
         @media (max-width: 700px) { .category-grid { grid-template-columns: 1fr; } }
+        
+        /* СТИЛЬНЫЕ ЦВЕТНЫЕ КАРТОЧКИ СТАТУСОВ */
         .category-card { cursor: pointer; display: block; margin: 0; }
         .category-card input { display: none; }
-        .category-card span { display: flex; align-items: center; justify-content: center; padding: 14px 10px; background: #fff; border: 2px solid var(--border-color); border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--secondary-color); transition: all 0.2s ease; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.02); height: 100%; box-sizing: border-box; line-height: 1.3;}
-        .category-card:hover span { border-color: var(--accent-color); background: #fdfaf6; }
-        .category-card input:checked + span { background: var(--accent-color); color: white; border-color: var(--accent-color); box-shadow: 0 4px 12px rgba(161, 104, 58, 0.25); transform: translateY(-2px); }
+        .category-card span { 
+            display: flex; align-items: center; justify-content: center; padding: 14px 10px; background: #fff; 
+            border: 1px solid var(--border-color); border-left: 5px solid var(--border-color); 
+            border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--secondary-color); 
+            transition: all 0.2s ease; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.02); height: 100%; box-sizing: border-box; line-height: 1.3;
+        }
+        .category-card:hover span { background: #fdfaf6; }
         
-        .category-card.disabled span { background: #f5f2eb; color: #bcaaa4; border-color: #e0e0e0; cursor: not-allowed; box-shadow: none; transform: none; }
+        #card-lead input:checked + span { border-left-color: #d32f2f; background: #fff0f0; color: #b71c1c; border-top-color: #ffcdd2; border-right-color: #ffcdd2; border-bottom-color: #ffcdd2; box-shadow: 0 4px 12px rgba(211, 47, 47, 0.15); transform: translateY(-2px); }
+        #card-existing input:checked + span { border-left-color: #5d4037; background: #f5f2eb; color: #3e2723; border-top-color: #d7ccc8; border-right-color: #d7ccc8; border-bottom-color: #d7ccc8; box-shadow: 0 4px 12px rgba(93, 64, 55, 0.15); transform: translateY(-2px); }
+        #card-unrecognized input:checked + span { border-left-color: #f57c00; background: #fff3e0; color: #e65100; border-top-color: #ffe0b2; border-right-color: #ffe0b2; border-bottom-color: #ffe0b2; box-shadow: 0 4px 12px rgba(245, 124, 0, 0.15); transform: translateY(-2px); }
+        #card-general input:checked + span { border-left-color: #1976d2; background: #e3f2fd; color: #0d47a1; border-top-color: #bbdefb; border-right-color: #bbdefb; border-bottom-color: #bbdefb; box-shadow: 0 4px 12px rgba(25, 118, 210, 0.15); transform: translateY(-2px); }
+        
+        .category-card.disabled span { background: #f5f2eb; color: #bcaaa4; border-left-color: #e0e0e0; border-color: #e0e0e0; cursor: not-allowed; box-shadow: none; transform: none; }
 
         .submit-btn { background-color: var(--accent-color); color: white; border: none; padding: 18px 20px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; width: 100%; transition: all 0.3s ease; margin-top: 30px; box-shadow: 0 4px 15px rgba(161, 104, 58, 0.25); }
         .submit-btn:hover:not(:disabled) { background-color: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(161, 104, 58, 0.35); }
@@ -200,7 +211,10 @@
         </div>
         <div style="display:flex; justify-content: space-between; font-size: 13.5px; color: #888; font-weight: 500;">
             <div>🕒 <span id="jmDate"></span></div>
-            <div>👤 Operator: <span id="jmOperator" style="color:var(--primary-color);"></span></div>
+            <div style="text-align: right;">
+                <div>👤 Assigned To: <strong id="jmAssigned" style="color:var(--primary-color);"></strong></div>
+                <div style="font-size: 11px; margin-top: 3px;">Logged by: <span id="jmOperator"></span></div>
+            </div>
         </div>
     </div>
 </div>
@@ -366,48 +380,55 @@
                             <ul class="autocomplete-list" id="phoneList"></ul>
                         </div>
                     </div>
+
+                    <!-- ИНФО-БЛОК ДЛЯ РОДСТВЕННИКОВ (Вариант В) -->
+                    <div id="linkedContactsPanel" style="display:none; margin-top: 15px; background: #e8f5e9; border-left: 4px solid #2e7d32; padding: 12px; border-radius: 8px;">
+                        <div style="font-size: 12px; font-weight: bold; color: #2e7d32; margin-bottom: 5px;">🔗 LINKED CONTACTS:</div>
+                        <div id="linkedContactsList" style="font-size: 13.5px; color: #1b5e20;"></div>
+                    </div>
                 </div>
 
                 <div style="margin-top: 20px; margin-bottom: 15px;">
                     <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 12px; display: block; font-size: 15px;">Client Status:</label>
-                    <div class="category-grid" style="grid-template-columns: repeat(4, 1fr);">
-                        <label class="category-card" id="leadCardWrapper">
+                    <div class="category-grid">
+                        <label class="category-card" id="card-lead">
                             <input type="radio" name="clientStatus" value="Lead">
                             <span>🔥 Lead (New Appt)</span>
                         </label>
-                        <label class="category-card">
+                        <label class="category-card" id="card-existing">
                             <input type="radio" name="clientStatus" value="Existing Client" checked>
                             <span>👤 Existing Client</span>
                         </label>
-                        <label class="category-card">
+                        <label class="category-card" id="card-unrecognized">
                             <input type="radio" name="clientStatus" value="Unrecognized Number (Existing Client)">
                             <span>⚠️ Unrecognized<br>(Existing Client)</span>
                         </label>
-                        <label class="category-card">
+                        <label class="category-card" id="card-general">
                             <input type="radio" name="clientStatus" value="General Inquiry">
                             <span>ℹ️ General Inquiry<br>/ Other</span>
                         </label>
                     </div>
                 </div>
 
-                <!-- БЛОК ДЛЯ 3-го ЛИЦА (Неизвестный номер) -->
+                <!-- БЛОК ДЛЯ 3-го ЛИЦА (Неизвестный номер) с ДИНАМИЧЕСКИМ ДОБАВЛЕНИЕМ -->
                 <div id="unrecognizedCallerSection" style="display: none; background: #fff3e0; padding: 20px; border-left: 4px solid #ff9800; border-radius: 8px; margin-bottom: 25px;">
                     <label style="color: #e65100; font-weight: 700; margin-bottom: 12px; display: block;">Third-Party Caller Details (Optional):</label>
-                    <div class="form-row" style="margin-bottom: 0;">
-                        <!-- ПОЛЕ: ТЕЛЕФОН ЗВОНЯЩЕГО -->
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label style="font-size: 13px;">Caller Phone</label>
-                            <input type="tel" id="callerPhone" placeholder="Incoming number...">
-                        </div>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label style="font-size: 13px;">Caller Name (Who is speaking?)</label>
-                            <input type="text" id="callerName" placeholder="e.g. Aram">
-                        </div>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label style="font-size: 13px;">Relationship to Client</label>
-                            <input type="text" id="callerRelation" placeholder="e.g. Son, Translator">
+                    
+                    <div id="callerRowsContainer">
+                        <div class="form-row caller-row" style="margin-bottom: 10px;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <input type="tel" class="dyn-caller-phone" placeholder="Caller Phone...">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <input type="text" class="dyn-caller-name" placeholder="Name (e.g. Aram)">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <input type="text" class="dyn-caller-relation" placeholder="Relation (e.g. Son)">
+                            </div>
                         </div>
                     </div>
+                    
+                    <button type="button" onclick="addCallerRow()" style="background: transparent; border: 1px dashed #ff9800; color: #e65100; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; margin-top: 5px;">+ Add another contact</button>
                 </div>
 
                 <!-- БЛОК ДЛЯ GENERAL INQUIRY (Просто информация) -->
@@ -486,7 +507,7 @@
             <input type="text" id="historySearchInput" placeholder="🔍 Search history by name, phone, or staff..." style="width: 100%; padding: 14px; margin-bottom: 20px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 14.5px; box-sizing: border-box; background-color: var(--surface-color);">
             <div id="noCallsMessage" class="no-calls">Loading internal call history...</div>
             <table class="history-table" id="historyTableContainer" style="display: none;">
-                <thead><tr><th>Date & Time</th><th>Client & Notes</th><th>Phone</th><th style="width: 100px;">Staff</th></tr></thead>
+                <thead><tr><th>Date & Time</th><th>Client & Notes</th><th>Phone</th><th style="width: 130px;">Assigned To</th></tr></thead>
                 <tbody id="oomaCallHistoryBody"></tbody>
             </table>
         </div>
@@ -517,12 +538,27 @@
         if(tabId === 'tabCalendarContent') window.renderMainCalendar();
     }
 
-    // НОВЫЕ ФУНКЦИИ ДЛЯ ЖУРНАЛА
-    window.openJournalModal = function(client, phone, date, op, st, color, notes, reply) {
+    // НОВЫЕ ФУНКЦИИ ДЛЯ ЖУРНАЛА И ДИНАМИЧЕСКИХ СТРОК
+    window.addCallerRow = function() {
+        const container = document.getElementById('callerRowsContainer');
+        const row = document.createElement('div');
+        row.className = 'form-row caller-row';
+        row.style.marginBottom = '10px';
+        row.innerHTML = `
+            <div class="form-group" style="margin-bottom: 0;"><input type="tel" class="dyn-caller-phone" placeholder="Caller Phone..."></div>
+            <div class="form-group" style="margin-bottom: 0;"><input type="text" class="dyn-caller-name" placeholder="Name"></div>
+            <div class="form-group" style="margin-bottom: 0;"><input type="text" class="dyn-caller-relation" placeholder="Relation"></div>
+            <div style="display:flex; align-items:center;"><button type="button" onclick="this.parentElement.parentElement.remove()" style="background:none; border:none; color:red; cursor:pointer; font-size:16px;">✖</button></div>
+        `;
+        container.appendChild(row);
+    };
+
+    window.openJournalModal = function(client, phone, date, op, st, color, notes, reply, assigned) {
         document.getElementById('jmClient').textContent = client || 'Unknown';
         document.getElementById('jmPhone').textContent = phone ? '📞 ' + phone : 'No Phone';
         document.getElementById('jmDate').textContent = date;
         document.getElementById('jmOperator').textContent = op;
+        document.getElementById('jmAssigned').textContent = assigned;
         document.getElementById('jmBadge').innerHTML = `<span class="badge-status" style="background-color: ${color}; font-size: 13px; padding: 6px 12px;">${st}</span>`;
         document.getElementById('jmNotes').textContent = notes || 'No notes provided by operator.';
         
@@ -546,21 +582,17 @@
         const noCallsMessage = document.getElementById('noCallsMessage');
         
         try {
-            // 🟢 ЗАПРАШИВАЕМ РЕАЛЬНЫЕ ДАННЫЕ ИЗ БАЗЫ VERCEL
-            const response = await fetch('/api/get-journal');
+            const response = await fetch('/api/get-journal'); 
             const result = await response.json();
             
             if (result.success && result.logs && result.logs.length > 0) {
-                tbody.innerHTML = ''; 
-                tableContainer.style.display = 'table'; 
-                noCallsMessage.style.display = 'none';
+                tbody.innerHTML = ''; tableContainer.style.display = 'table'; noCallsMessage.style.display = 'none';
                 
                 result.logs.forEach(log => {
                     const d = new Date(log.created_at);
                     let rawDesc = log.call_description || '';
                     let cleanDesc = rawDesc;
-                    let st = "General Call"; 
-                    let badgeColor = '#757575';
+                    let st = "General Call"; let badgeColor = '#757575';
                     
                     // Умный поиск статуса
                     const statusMatch = rawDesc.match(/(?:\[Status:\s*|Status:\s*)(.*?)(?:\]|\n| \||$)/i);
@@ -575,40 +607,40 @@
                         cleanDesc = cleanDesc.replace(/\[APPOINTMENT BOOKED\]/i, '').trim(); 
                     }
 
-                    // Цвета бейджей
+                    // Цвета бейджей (Unrecognized проверяется ПЕРЕД Existing)
                     if(st.includes('Lead')) badgeColor = '#d32f2f';
-                    else if(st.includes('Existing')) badgeColor = '#2e7d32';
                     else if(st.includes('Unrecognized')) badgeColor = '#f57c00';
+                    else if(st.includes('Existing')) badgeColor = '#2e7d32';
                     else if(st.includes('General')) badgeColor = '#1976d2';
 
-                    // Очистка старых категорий из текста (чтобы журнал был чистым)
+                    // Очистка старых категорий из текста
                     cleanDesc = cleanDesc.replace(/(01-Initial Consultation|03-Client Communication|04-Phone Call|05-Follow-Up Needed|20-Interview|General Call)/ig, '').replace(/^\]?\s*/, '').trim();
 
                     let snippet = cleanDesc.length > 55 ? cleanDesc.substring(0, 55) + '...' : cleanDesc;
+
+                    // Логика отображения Staff
+                    let displayStaff = log.assigned_staff_name || log.assignedStaffName || log.operator_name || 'Staff';
+                    if (displayStaff === "Resolved by Operator" || displayStaff === "-- Do not notify anyone --") {
+                        displayStaff = `✅ Resolved (${log.operator_name})`;
+                    }
 
                     const tr = document.createElement('tr'); 
                     tr.className = 'journal-row';
                     
                     // Кликабельность строки
-                    tr.onclick = () => openJournalModal(log.client_name, log.client_phone, d.toLocaleString(), log.operator_name, st, badgeColor, cleanDesc, log.follow_up_notes);
+                    tr.onclick = () => openJournalModal(log.client_name, log.client_phone, d.toLocaleString(), log.operator_name, st, badgeColor, cleanDesc, log.follow_up_notes, displayStaff);
                     
                     tr.innerHTML = `
                         <td><strong>${d.toLocaleDateString()}</strong> <br><span style="color:#888; font-size:12px;">${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></td>
                         <td><div style="font-weight:600; color:var(--primary-color); font-size: 15px;">${log.client_name || 'Unknown'} <span class="badge-status" style="background-color:${badgeColor}; margin-left:8px; font-size: 10px;">${st}</span></div>
                         <div style="font-size: 13px; color: #666; margin-top: 6px;">${snippet}</div></td>
                         <td style="font-weight:500; color:var(--secondary-color); font-size: 14.5px;">📞 ${log.client_phone || '--'}</td>
-                        <td><span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold;">${log.operator_name || 'Staff'}</span></td>
+                        <td><span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold;">${displayStaff}</span></td>
                     `;
                     tbody.appendChild(tr);
                 });
-            } else { 
-                tableContainer.style.display = 'none'; 
-                noCallsMessage.style.display = 'block'; 
-                noCallsMessage.innerText = "The internal database journal is empty."; 
-            }
-        } catch (e) { 
-            noCallsMessage.innerText = "Database connection error."; 
-        }
+            } else { tableContainer.style.display = 'none'; noCallsMessage.style.display = 'block'; noCallsMessage.innerText = "The internal database journal is empty."; }
+        } catch (e) { noCallsMessage.innerText = "Database connection error."; }
     }
 
     document.addEventListener("DOMContentLoaded", function() {
@@ -942,11 +974,14 @@
         statusRadios.forEach(radio => {
             radio.addEventListener('change', function(e) {
                 const mainPhoneInput = document.getElementById('phoneNumber');
-                const unrecPhoneInput = document.getElementById('callerPhone');
                 const genPhoneInput = document.getElementById('genCallerPhone');
                 
+                // Берем телефон из первого добавленного родственника (если он есть)
+                const firstRow = document.querySelector('.caller-row');
+                const unrecPhoneInput = firstRow ? firstRow.querySelector('.dyn-caller-phone') : null;
+                
                 // 1. Сохраняем текущий номер, где бы он сейчас ни находился
-                let currentPhone = mainPhoneInput.value || unrecPhoneInput.value || genPhoneInput.value || '';
+                let currentPhone = mainPhoneInput.value || (unrecPhoneInput ? unrecPhoneInput.value : '') || genPhoneInput.value || '';
 
                 // 2. Скрываем все доп. блоки и возвращаем required
                 document.getElementById('unrecognizedCallerSection').style.display = 'none';
@@ -969,31 +1004,43 @@
                         document.querySelector('input[name="clientStatus"][value="Existing Client"]').dispatchEvent(new Event('change'));
                         return;
                     }
-                    mainPhoneInput.value = currentPhone; // Возвращаем номер в главную
-                    unrecPhoneInput.value = '';
+                    mainPhoneInput.value = currentPhone; 
+                    if(unrecPhoneInput) unrecPhoneInput.value = '';
                     genPhoneInput.value = '';
                     openApptModal();
                     
                 } else if (this.value === 'Existing Client') {
-                    mainPhoneInput.value = currentPhone; // Возвращаем номер в главную
-                    unrecPhoneInput.value = '';
+                    if (window.currentClient && window.currentClient.phone) {
+                        mainPhoneInput.value = window.currentClient.phone;
+                    } else {
+                        mainPhoneInput.value = currentPhone; 
+                    }
+                    if(unrecPhoneInput) unrecPhoneInput.value = '';
                     genPhoneInput.value = '';
                     
                 } else if (this.value === 'Unrecognized Number (Existing Client)') {
                     document.getElementById('unrecognizedCallerSection').style.display = 'block';
                     mainPhoneInput.removeAttribute('required');
-                    unrecPhoneInput.value = currentPhone; // Переносим в Unrecognized
-                    mainPhoneInput.value = '';
+                    
+                    if(unrecPhoneInput) unrecPhoneInput.value = currentPhone; // Переносим в первый блок родственника
                     genPhoneInput.value = '';
+                    
+                    // ВОТ ОН УМНЫЙ ПЕРЕНОС: Возвращаем номер клиента наверх, если он есть
+                    if (window.currentClient && window.currentClient.phone) {
+                        mainPhoneInput.value = window.currentClient.phone;
+                    } else {
+                        mainPhoneInput.value = '';
+                    }
                     
                 } else if (this.value === 'General Inquiry') {
                     document.getElementById('generalInquirySection').style.display = 'block';
                     document.getElementById('matterContainer').style.display = 'none'; 
                     document.getElementById('briefDescription').removeAttribute('required'); 
                     mainPhoneInput.removeAttribute('required');
+                    
                     genPhoneInput.value = currentPhone; // Переносим в General
                     mainPhoneInput.value = '';
-                    unrecPhoneInput.value = '';
+                    if(unrecPhoneInput) unrecPhoneInput.value = '';
                 }
             });
         });
@@ -1006,9 +1053,18 @@
             document.getElementById('clientBadge').style.display = 'none';
             document.getElementById('matterSelect').innerHTML = '<option value="">-- Auto-detecting matters... --</option>';
             document.getElementById('matterContainer').style.display = 'none';
-            document.getElementById('callerName').value = '';
-            document.getElementById('callerPhone').value = '';
-            document.getElementById('callerRelation').value = '';
+            document.getElementById('linkedContactsPanel').style.display = 'none';
+            
+            // Очищаем динамические ряды родственников
+            const callerRows = document.getElementById('callerRowsContainer');
+            callerRows.innerHTML = `
+                <div class="form-row caller-row" style="margin-bottom: 10px;">
+                    <div class="form-group" style="margin-bottom: 0;"><input type="tel" class="dyn-caller-phone" placeholder="Caller Phone..."></div>
+                    <div class="form-group" style="margin-bottom: 0;"><input type="text" class="dyn-caller-name" placeholder="Name (e.g. Aram)"></div>
+                    <div class="form-group" style="margin-bottom: 0;"><input type="text" class="dyn-caller-relation" placeholder="Relation (e.g. Son)"></div>
+                </div>
+            `;
+            
             document.getElementById('unrecognizedCallerSection').style.display = 'none';
             
             const assigneeTextDiv = document.getElementById('matterAssigneeText');
@@ -1044,8 +1100,27 @@
                 document.getElementById('clientBadge').style.display = 'inline-block';
             }
             document.getElementById('fullName').value = client.name;
-            
             document.getElementById('phoneNumber').value = client.phone || '';
+
+            // --- ПРОВЕРЯЕМ РОДСТВЕННИКОВ ДЛЯ ИНФО-ПАНЕЛИ ---
+            const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
+            const panel = document.getElementById('linkedContactsPanel');
+            const listContainer = document.getElementById('linkedContactsList');
+            let foundLinks = [];
+            
+            for (let phone in linkedNumbers) {
+                if (linkedNumbers[phone].clientData && linkedNumbers[phone].clientData.id === client.id) {
+                    foundLinks.push(`👤 ${linkedNumbers[phone].callerName} (${linkedNumbers[phone].relation}) — 📞 ${phone}`);
+                }
+            }
+            
+            if (foundLinks.length > 0) {
+                listContainer.innerHTML = foundLinks.join('<br>');
+                panel.style.display = 'block';
+            } else {
+                panel.style.display = 'none';
+            }
+            // ------------------------------------------------
 
             const leadCard = document.getElementById('leadCardWrapper');
             if (leadCard) {
@@ -1109,7 +1184,26 @@
             
             loader.style.display = 'inline-block'; 
             try {
-                const results = await fetchDocketwiseData(query, isPhone);
+                let results = await fetchDocketwiseData(query, isPhone);
+                
+                // --- ДОБАВЛЯЕМ ПОИСК ПО РОДСТВЕННИКАМ ПРИ РУЧНОМ ВВОДЕ ---
+                if (isPhone && query.length >= 7) {
+                    const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
+                    for (let phone in linkedNumbers) {
+                        if (phone.includes(query)) {
+                            // Добавляем родственника в результаты поиска
+                            results.unshift({
+                                isLinkedMatch: true,
+                                callerPhone: phone,
+                                callerName: linkedNumbers[phone].callerName,
+                                relation: linkedNumbers[phone].relation,
+                                clientData: linkedNumbers[phone].clientData
+                            });
+                        }
+                    }
+                }
+                // --------------------------------------------------------
+
                 list.innerHTML = '';
                 
                 if (results.length > 0) {
@@ -1121,8 +1215,33 @@
 
                     results.forEach(client => {
                         const li = document.createElement('li'); 
-                        li.innerHTML = `<span class="client-name-list">${client.name}</span><span class="client-phone-list">${client.phone || ''}</span>`;
-                        li.onmousedown = (e) => { e.preventDefault(); list.style.display = 'none'; applyClientData(client); };
+                        
+                        // Если это найденный родственник:
+                        if (client.isLinkedMatch) {
+                            li.innerHTML = `<span class="client-name-list">${client.clientData.name} <span style="font-size:11px; color:#ff9800;">(via ${client.callerName} - ${client.relation})</span></span><span class="client-phone-list">${client.callerPhone}</span>`;
+                            li.onmousedown = (e) => { 
+                                e.preventDefault(); list.style.display = 'none'; 
+                                
+                                // Автоматически переключаем на Unrecognized и заполняем данные
+                                const unrecRadio = document.querySelector('input[name="clientStatus"][value="Unrecognized Number (Existing Client)"]');
+                                if (unrecRadio) unrecRadio.checked = true;
+                                
+                                applyClientData(client.clientData);
+                                
+                                document.getElementById('unrecognizedCallerSection').style.display = 'block';
+                                const firstRow = document.querySelector('.caller-row');
+                                if (firstRow) {
+                                    firstRow.querySelector('.dyn-caller-phone').value = client.callerPhone;
+                                    firstRow.querySelector('.dyn-caller-name').value = client.callerName;
+                                    firstRow.querySelector('.dyn-caller-relation').value = client.relation;
+                                }
+                            };
+                        } else {
+                            // Обычный клиент
+                            li.innerHTML = `<span class="client-name-list">${client.name}</span><span class="client-phone-list">${client.phone || ''}</span>`;
+                            li.onmousedown = (e) => { e.preventDefault(); list.style.display = 'none'; applyClientData(client); };
+                        }
+                        
                         list.appendChild(li);
                     });
                     list.style.display = 'block';
@@ -1162,9 +1281,13 @@
                     if (unrecRadio) {
                         unrecRadio.checked = true;
                         document.getElementById('unrecognizedCallerSection').style.display = 'block';
-                        document.getElementById('callerPhone').value = cleanedPhone;
-                        document.getElementById('callerName').value = linkInfo.callerName;
-                        document.getElementById('callerRelation').value = linkInfo.relation;
+                        
+                        const firstRow = document.querySelector('.caller-row');
+                        if (firstRow) {
+                            firstRow.querySelector('.dyn-caller-phone').value = cleanedPhone;
+                            firstRow.querySelector('.dyn-caller-name').value = linkInfo.callerName;
+                            firstRow.querySelector('.dyn-caller-relation').value = linkInfo.relation;
+                        }
                     }
                     
                     if (linkInfo.clientData) {
@@ -1210,15 +1333,28 @@
                 finalClientName = document.getElementById('genCallerName').value.trim() || "General Caller";
                 finalClientPhone = document.getElementById('genCallerPhone').value.trim() || "";
             } else if (isUnrecognized) {
-                const cPhone = document.getElementById('callerPhone').value.replace(/[^\d+]/g, '');
-                const cName = document.getElementById('callerName').value.trim() || "Unknown Caller";
-                const cRel = document.getElementById('callerRelation').value.trim() || "Unknown Relation";
-                callerInfoBlock = `[🗣️ CALLER: ${cName} (${cRel}) | Phone: ${cPhone}]`;
+                // СБИРАЕМ ДАННЫЕ СО ВСЕХ СТРОК РОДСТВЕННИКОВ
+                let callerBlocks = [];
+                const rows = document.querySelectorAll('.caller-row');
                 
-                if (cPhone && window.currentClient) {
-                    const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
-                    linkedNumbers[cPhone] = { callerName: cName, relation: cRel, clientData: window.currentClient };
-                    localStorage.setItem('linked_numbers', JSON.stringify(linkedNumbers));
+                rows.forEach(row => {
+                    const cPhone = row.querySelector('.dyn-caller-phone').value.replace(/[^\d+]/g, '');
+                    const cName = row.querySelector('.dyn-caller-name').value.trim() || "Unknown Caller";
+                    const cRel = row.querySelector('.dyn-caller-relation').value.trim() || "Unknown Relation";
+                    
+                    if (cPhone) {
+                        callerBlocks.push(`[🗣️ CALLER: ${cName} (${cRel}) | Phone: ${cPhone}]`);
+                        
+                        if (window.currentClient) {
+                            const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
+                            linkedNumbers[cPhone] = { callerName: cName, relation: cRel, clientData: window.currentClient };
+                            localStorage.setItem('linked_numbers', JSON.stringify(linkedNumbers));
+                        }
+                    }
+                });
+                
+                if (callerBlocks.length > 0) {
+                    callerInfoBlock = callerBlocks.join('\n');
                 }
             }
 
