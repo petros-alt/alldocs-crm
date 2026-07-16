@@ -539,7 +539,6 @@
             btnElement.closest('.caller-row').remove();
             window.updateLinkedContactsPanel();
             
-            // Если удалили последнего, возвращаем одну пустую строку
             const container = document.getElementById('callerRowsContainer');
             if (container.children.length === 0) {
                 window.addCallerRow('', '', '', false);
@@ -548,7 +547,11 @@
     };
 
     window.updateLinkedContactsPanel = function() {
-        if(!window.currentClient) return;
+        if(!window.currentClient || !window.currentClient.id) {
+            document.getElementById('linkedContactsPanel').style.display = 'none';
+            return;
+        }
+        
         const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
         const panel = document.getElementById('linkedContactsPanel');
         const listContainer = document.getElementById('linkedContactsList');
@@ -572,16 +575,15 @@
 
     window.renderCallerRows = function(prefillPhone = '') {
         const container = document.getElementById('callerRowsContainer');
-        container.innerHTML = ''; // Полностью очищаем контейнер перед перерисовкой
+        container.innerHTML = ''; 
         
         let foundExisting = false;
         let phonesRendered = new Set();
 
-        if (window.currentClient && window.currentClient.id) {
+        if (window.currentClient && window.currentClient.id != null) {
             const clientIdStr = String(window.currentClient.id);
             const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
             
-            // Сначала выводим всех СОХРАНЕННЫХ родственников для этого ID
             for (let phone in linkedNumbers) {
                 if (linkedNumbers[phone].clientData && String(linkedNumbers[phone].clientData.id) === clientIdStr) {
                     let info = linkedNumbers[phone];
@@ -595,12 +597,10 @@
             }
         }
 
-        // Если пришел НОВЫЙ неизвестный номер, добавляем для него пустую строку внизу
         let cleanPrefill = String(prefillPhone).replace(/[^\d+]/g, '');
         if (cleanPrefill && !phonesRendered.has(cleanPrefill)) {
             window.addCallerRow(cleanPrefill, '', '', false);
         } else if (!foundExisting && container.innerHTML === '') {
-            // Если вообще никого нет, даем одну пустую строку
             window.addCallerRow('', '', '', false);
         }
     };
@@ -611,28 +611,37 @@
         row.className = 'form-row caller-row';
         row.style.marginBottom = '10px';
         
-        let deleteAction = `this.parentElement.parentElement.remove()`;
-        let deleteTitle = `Remove empty row`;
-        
-        if (isExisting && phone) {
-            deleteAction = `window.removeLinkedContact('${phone}', this)`;
-            deleteTitle = `Unlink this saved contact`;
-        }
+        let deleteTitle = isExisting && phone ? 'Unlink this saved contact' : 'Remove empty row';
 
+        // ИСПОЛЬЗУЕМ БЕЗОПАСНЫЙ DOM ASSIGNMENT (чтобы скобки и кавычки не ломали код)
         row.innerHTML = `
             <div class="form-group" style="margin-bottom: 0;">
-                <input type="tel" class="dyn-caller-phone" placeholder="Caller Phone..." value="${phone}">
+                <input type="tel" class="dyn-caller-phone" placeholder="Caller Phone...">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <input type="text" class="dyn-caller-name" placeholder="Name (e.g. Aram)" value="${name}">
+                <input type="text" class="dyn-caller-name" placeholder="Name (e.g. Aram)">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <input type="text" class="dyn-caller-relation" placeholder="Relation (e.g. Son)" value="${relation}">
+                <input type="text" class="dyn-caller-relation" placeholder="Relation (e.g. Son)">
             </div>
             <div style="display:flex; align-items:center;">
-                <button type="button" onclick="${deleteAction}" style="background:none; border:none; color:#d32f2f; cursor:pointer; font-size:18px; padding: 0 5px;" title="${deleteTitle}">✖</button>
+                <button type="button" class="del-row-btn" style="background:none; border:none; color:#d32f2f; cursor:pointer; font-size:18px; padding: 0 5px;" title="${deleteTitle}">✖</button>
             </div>
         `;
+        
+        row.querySelector('.dyn-caller-phone').value = phone;
+        row.querySelector('.dyn-caller-name').value = name;
+        row.querySelector('.dyn-caller-relation').value = relation;
+        
+        row.querySelector('.del-row-btn').onclick = function() {
+            if (isExisting && phone) {
+                window.removeLinkedContact(phone, this);
+            } else {
+                row.remove();
+                if (container.children.length === 0) window.addCallerRow('', '', '', false);
+            }
+        };
+
         container.appendChild(row);
     };
 
@@ -1100,15 +1109,6 @@
                     document.getElementById('unrecognizedCallerSection').style.display = 'block';
                     mainPhoneInput.removeAttribute('required');
                     
-                    // ЕСЛИ У КЛИЕНТА ЕСТЬ ОФИЦИАЛЬНЫЙ НОМЕР — ВОЗВРАЩАЕМ ЕГО НАВЕРХ
-                    if (window.currentClient && window.currentClient.phone) {
-                        mainPhoneInput.value = window.currentClient.phone;
-                    } else {
-                        mainPhoneInput.value = '';
-                    }
-
-                    // ПРОРИСОВЫВАЕМ ВСЕХ РОДСТВЕННИКОВ ДЛЯ ЭТОГО КЛИЕНТА
-                    // Если currentPhone не совпадает с номером клиента (значит звонит кто-то новый), передаем его как prefill
                     let prefill = "";
                     if (window.currentClient && currentPhone !== window.currentClient.phone) {
                         prefill = currentPhone;
@@ -1118,6 +1118,12 @@
                     
                     window.renderCallerRows(prefill);
                     genPhoneInput.value = '';
+                    
+                    if (window.currentClient && window.currentClient.phone) {
+                        mainPhoneInput.value = window.currentClient.phone;
+                    } else {
+                        mainPhoneInput.value = '';
+                    }
                     
                 } else if (this.value === 'General Inquiry') {
                     document.getElementById('generalInquirySection').style.display = 'block';
@@ -1140,7 +1146,6 @@
             document.getElementById('matterContainer').style.display = 'none';
             document.getElementById('linkedContactsPanel').style.display = 'none';
             
-            // Сброс динамических строк
             window.renderCallerRows();
             
             document.getElementById('unrecognizedCallerSection').style.display = 'none';
@@ -1189,15 +1194,11 @@
                 leadCard.querySelector('input').disabled = true;
             }
             
-            // Проверяем текущий статус
             const currentStatus = document.querySelector('input[name="clientStatus"]:checked')?.value;
-            
             if (currentStatus === 'Unrecognized Number (Existing Client)') {
-                // Если мы УЖЕ в статусе Unrecognized, просто обновляем список родственников
-                window.renderCallerRows(document.getElementById('phoneNumber').value);
+                window.renderCallerRows();
                 if (client.phone) document.getElementById('phoneNumber').value = client.phone;
             } else {
-                // Иначе переключаем на Existing Client
                 const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
                 if (existingRadio) { existingRadio.checked = true; }
             }
@@ -1252,15 +1253,12 @@
             
             loader.style.display = 'inline-block'; 
             try {
-                // 1. Ищем в Docketwise
                 let results = await fetchDocketwiseData(query, isPhone);
                 
-                // 2. Ищем по родственникам
                 if (isPhone && query.length >= 7) {
                     const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
                     for (let phone in linkedNumbers) {
                         if (phone.includes(query)) {
-                            // Проверяем, нет ли уже этого клиента в результатах, чтобы не дублировать
                             const alreadyExists = results.some(r => String(r.id) === String(linkedNumbers[phone].clientData.id));
                             if (!alreadyExists) {
                                 results.unshift({
@@ -1302,7 +1300,6 @@
                                     document.getElementById('briefDescription').setAttribute('required', 'true');
                                     document.getElementById('phoneNumber').removeAttribute('required');
                                     
-                                    // Отрисовываем родственников
                                     window.renderCallerRows(client.callerPhone);
                                 }
                             };
