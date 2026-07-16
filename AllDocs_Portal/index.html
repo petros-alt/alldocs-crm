@@ -418,7 +418,7 @@
                         <!-- Динамические строки добавляются сюда через JavaScript -->
                     </div>
                     
-                    <button type="button" onclick="addCallerRow()" style="background: transparent; border: 1px dashed #ff9800; color: #e65100; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; margin-top: 5px;">+ Add another contact</button>
+                    <button type="button" onclick="window.addCallerRow('', '', '', false)" style="background: transparent; border: 1px dashed #ff9800; color: #e65100; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; margin-top: 5px;">+ Add another contact</button>
                 </div>
 
                 <!-- БЛОК ДЛЯ GENERAL INQUIRY (Просто информация) -->
@@ -529,8 +529,6 @@
     }
 
     // НОВЫЕ ФУНКЦИИ ДЛЯ ЖУРНАЛА И ДИНАМИЧЕСКИХ СТРОК РОДСТВЕННИКОВ
-    
-    // Удаление привязанного контакта из памяти
     window.removeLinkedContact = function(phone, btnElement) {
         if(confirm('Are you sure you want to completely unlink this contact from the client?')) {
             let linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
@@ -543,7 +541,6 @@
         }
     };
 
-    // Обновление зеленой панели
     window.updateLinkedContactsPanel = function() {
         if(!window.currentClient) return;
         const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
@@ -565,7 +562,6 @@
         }
     };
 
-    // Отрисовка всех сохраненных родственников при выборе Unrecognized
     window.renderCallerRows = function(prefillPhone = '') {
         const container = document.getElementById('callerRowsContainer');
         container.innerHTML = ''; // Очищаем контейнер
@@ -578,14 +574,16 @@
             for (let phone in linkedNumbers) {
                 if (linkedNumbers[phone].clientData && linkedNumbers[phone].clientData.id === window.currentClient.id) {
                     let info = linkedNumbers[phone];
-                    window.addCallerRow(phone, info.callerName, info.relation, true);
+                    let dispName = info.callerName === "Unknown Caller" ? "" : info.callerName;
+                    let dispRel = info.relation === "Unknown Relation" ? "" : info.relation;
+                    window.addCallerRow(phone, dispName, dispRel, true);
                     phonesRendered.add(phone);
                     foundExisting = true;
                 }
             }
         }
 
-        // Если есть новый неизвестный номер (которого еще нет в списке), добавляем для него пустую строку
+        // Если есть новый неизвестный номер (и его еще нет в списке), добавляем пустую строку для него
         if (prefillPhone && !phonesRendered.has(prefillPhone)) {
             window.addCallerRow(prefillPhone, '', '', false);
         } else if (!foundExisting && container.innerHTML === '') {
@@ -594,7 +592,6 @@
         }
     };
 
-    // Добавление новой (или существующей) строки
     window.addCallerRow = function(phone = '', name = '', relation = '', isExisting = false) {
         const container = document.getElementById('callerRowsContainer');
         const row = document.createElement('div');
@@ -604,7 +601,7 @@
         let deleteAction = `this.parentElement.parentElement.remove()`;
         let deleteTitle = `Remove row`;
         if (isExisting && phone) {
-            deleteAction = `removeLinkedContact('${phone}', this)`;
+            deleteAction = `window.removeLinkedContact('${phone}', this)`;
             deleteTitle = `Unlink this saved contact`;
         }
 
@@ -646,7 +643,7 @@
         const noCallsMessage = document.getElementById('noCallsMessage');
         
         try {
-            // 🟢 ЗАПРАШИВАЕМ РЕАЛЬНЫЕ ДАННЫЕ ИЗ БАЗЫ VERCEL
+            // ЗАПРАШИВАЕМ РЕАЛЬНЫЕ ДАННЫЕ ИЗ БАЗЫ VERCEL
             const response = await fetch('/api/get-journal');
             const result = await response.json();
             
@@ -681,7 +678,7 @@
                     else if(st.includes('Existing')) badgeColor = '#2e7d32';
                     else if(st.includes('General')) badgeColor = '#1976d2';
 
-                    // Очистка старых категорий из текста (чтобы журнал был чистым)
+                    // Очистка старых категорий из текста
                     cleanDesc = cleanDesc.replace(/(01-Initial Consultation|03-Client Communication|04-Phone Call|05-Follow-Up Needed|20-Interview|General Call)/ig, '').replace(/^\]?\s*/, '').trim();
 
                     let snippet = cleanDesc.length > 55 ? cleanDesc.substring(0, 55) + '...' : cleanDesc;
@@ -1054,7 +1051,7 @@
                 const firstRow = document.querySelector('.caller-row');
                 const unrecPhoneInput = firstRow ? firstRow.querySelector('.dyn-caller-phone') : null;
                 
-                // 1. Сохраняем текущий номер, где бы он сейчас ни находился
+                // 1. Сохраняем текущий номер
                 let currentPhone = mainPhoneInput.value || (unrecPhoneInput ? unrecPhoneInput.value : '') || genPhoneInput.value || '';
 
                 // 2. Скрываем все доп. блоки и возвращаем required
@@ -1096,7 +1093,8 @@
                     document.getElementById('unrecognizedCallerSection').style.display = 'block';
                     mainPhoneInput.removeAttribute('required');
                     
-                    window.renderCallerRows(currentPhone); // ОТРИСОВЫВАЕТ ВСЕХ РОДСТВЕННИКОВ
+                    // ОТРИСОВЫВАЕМ ВСЕХ СОХРАНЕННЫХ РОДСТВЕННИКОВ
+                    window.renderCallerRows(currentPhone);
                     
                     genPhoneInput.value = '';
                     if (window.currentClient && window.currentClient.phone) {
@@ -1111,7 +1109,7 @@
                     document.getElementById('briefDescription').removeAttribute('required'); 
                     mainPhoneInput.removeAttribute('required');
                     
-                    genPhoneInput.value = currentPhone; // Переносим в General
+                    genPhoneInput.value = currentPhone; 
                     mainPhoneInput.value = '';
                     if(unrecPhoneInput) unrecPhoneInput.value = '';
                 }
@@ -1282,6 +1280,7 @@
                                     document.getElementById('briefDescription').setAttribute('required', 'true');
                                     document.getElementById('phoneNumber').removeAttribute('required');
                                     
+                                    // Отрисовываем всех родственников, подставляя найденный
                                     window.renderCallerRows(client.callerPhone);
                                 }
                             };
