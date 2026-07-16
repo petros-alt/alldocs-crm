@@ -581,11 +581,10 @@
             const clientIdStr = String(window.currentClient.id);
             const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
             
-            // Сначала выводим всех СОХРАНЕННЫХ родственников
+            // Сначала выводим всех СОХРАНЕННЫХ родственников для этого ID
             for (let phone in linkedNumbers) {
                 if (linkedNumbers[phone].clientData && String(linkedNumbers[phone].clientData.id) === clientIdStr) {
                     let info = linkedNumbers[phone];
-                    // Если оператор сохранял пустое имя, оставляем поле визуально пустым
                     let dispName = (info.callerName === "Unknown Caller") ? "" : info.callerName;
                     let dispRel = (info.relation === "Unknown Relation") ? "" : info.relation;
                     
@@ -1064,10 +1063,7 @@
                 const mainPhoneInput = document.getElementById('phoneNumber');
                 const genPhoneInput = document.getElementById('genCallerPhone');
                 
-                const firstRow = document.querySelector('.caller-row');
-                const unrecPhoneInput = firstRow ? firstRow.querySelector('.dyn-caller-phone') : null;
-                
-                let currentPhone = mainPhoneInput.value || (unrecPhoneInput ? unrecPhoneInput.value : '') || genPhoneInput.value || '';
+                let currentPhone = mainPhoneInput.value;
 
                 document.getElementById('unrecognizedCallerSection').style.display = 'none';
                 document.getElementById('generalInquirySection').style.display = 'none';
@@ -1088,33 +1084,40 @@
                         document.querySelector('input[name="clientStatus"][value="Existing Client"]').dispatchEvent(new Event('change'));
                         return;
                     }
-                    mainPhoneInput.value = currentPhone; 
-                    if(unrecPhoneInput) unrecPhoneInput.value = '';
+                    if(genPhoneInput.value) { mainPhoneInput.value = genPhoneInput.value; }
                     genPhoneInput.value = '';
                     openApptModal();
                     
                 } else if (this.value === 'Existing Client') {
                     if (window.currentClient && window.currentClient.phone) {
                         mainPhoneInput.value = window.currentClient.phone;
-                    } else {
-                        mainPhoneInput.value = currentPhone; 
+                    } else if (genPhoneInput.value) {
+                        mainPhoneInput.value = genPhoneInput.value; 
                     }
-                    if(unrecPhoneInput) unrecPhoneInput.value = '';
                     genPhoneInput.value = '';
                     
                 } else if (this.value === 'Unrecognized Number (Existing Client)') {
                     document.getElementById('unrecognizedCallerSection').style.display = 'block';
                     mainPhoneInput.removeAttribute('required');
                     
-                    // ОТРИСОВЫВАЕМ ВСЕХ РОДСТВЕННИКОВ
-                    window.renderCallerRows(currentPhone);
-                    
-                    genPhoneInput.value = '';
+                    // ЕСЛИ У КЛИЕНТА ЕСТЬ ОФИЦИАЛЬНЫЙ НОМЕР — ВОЗВРАЩАЕМ ЕГО НАВЕРХ
                     if (window.currentClient && window.currentClient.phone) {
                         mainPhoneInput.value = window.currentClient.phone;
                     } else {
                         mainPhoneInput.value = '';
                     }
+
+                    // ПРОРИСОВЫВАЕМ ВСЕХ РОДСТВЕННИКОВ ДЛЯ ЭТОГО КЛИЕНТА
+                    // Если currentPhone не совпадает с номером клиента (значит звонит кто-то новый), передаем его как prefill
+                    let prefill = "";
+                    if (window.currentClient && currentPhone !== window.currentClient.phone) {
+                        prefill = currentPhone;
+                    } else if (!window.currentClient) {
+                        prefill = currentPhone;
+                    }
+                    
+                    window.renderCallerRows(prefill);
+                    genPhoneInput.value = '';
                     
                 } else if (this.value === 'General Inquiry') {
                     document.getElementById('generalInquirySection').style.display = 'block';
@@ -1122,9 +1125,8 @@
                     document.getElementById('briefDescription').removeAttribute('required'); 
                     mainPhoneInput.removeAttribute('required');
                     
-                    genPhoneInput.value = currentPhone; 
+                    if(mainPhoneInput.value) { genPhoneInput.value = mainPhoneInput.value; }
                     mainPhoneInput.value = '';
-                    if(unrecPhoneInput) unrecPhoneInput.value = '';
                 }
             });
         });
@@ -1138,6 +1140,7 @@
             document.getElementById('matterContainer').style.display = 'none';
             document.getElementById('linkedContactsPanel').style.display = 'none';
             
+            // Сброс динамических строк
             window.renderCallerRows();
             
             document.getElementById('unrecognizedCallerSection').style.display = 'none';
@@ -1186,8 +1189,15 @@
                 leadCard.querySelector('input').disabled = true;
             }
             
+            // Проверяем текущий статус
             const currentStatus = document.querySelector('input[name="clientStatus"]:checked')?.value;
-            if (currentStatus !== 'Unrecognized Number (Existing Client)') {
+            
+            if (currentStatus === 'Unrecognized Number (Existing Client)') {
+                // Если мы УЖЕ в статусе Unrecognized, просто обновляем список родственников
+                window.renderCallerRows(document.getElementById('phoneNumber').value);
+                if (client.phone) document.getElementById('phoneNumber').value = client.phone;
+            } else {
+                // Иначе переключаем на Existing Client
                 const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
                 if (existingRadio) { existingRadio.checked = true; }
             }
@@ -1242,20 +1252,25 @@
             
             loader.style.display = 'inline-block'; 
             try {
+                // 1. Ищем в Docketwise
                 let results = await fetchDocketwiseData(query, isPhone);
                 
-                // ПОИСК ПО РОДСТВЕННИКАМ ПРИ РУЧНОМ ВВОДЕ
+                // 2. Ищем по родственникам
                 if (isPhone && query.length >= 7) {
                     const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
                     for (let phone in linkedNumbers) {
                         if (phone.includes(query)) {
-                            results.unshift({
-                                isLinkedMatch: true,
-                                callerPhone: phone,
-                                callerName: linkedNumbers[phone].callerName,
-                                relation: linkedNumbers[phone].relation,
-                                clientData: linkedNumbers[phone].clientData
-                            });
+                            // Проверяем, нет ли уже этого клиента в результатах, чтобы не дублировать
+                            const alreadyExists = results.some(r => String(r.id) === String(linkedNumbers[phone].clientData.id));
+                            if (!alreadyExists) {
+                                results.unshift({
+                                    isLinkedMatch: true,
+                                    callerPhone: phone,
+                                    callerName: linkedNumbers[phone].callerName,
+                                    relation: linkedNumbers[phone].relation,
+                                    clientData: linkedNumbers[phone].clientData
+                                });
+                            }
                         }
                     }
                 }
@@ -1282,9 +1297,13 @@
                                 const unrecRadio = document.querySelector('input[name="clientStatus"][value="Unrecognized Number (Existing Client)"]');
                                 if (unrecRadio) {
                                     unrecRadio.checked = true;
-                                    document.getElementById('phoneNumber').value = client.callerPhone;
-                                    // ПРИНУДИТЕЛЬНО ВЫЗЫВАЕМ СОБЫТИЕ CHANGE, ЧТОБЫ ОТРИСОВАТЬ ВСЕХ
-                                    unrecRadio.dispatchEvent(new Event('change'));
+                                    document.getElementById('unrecognizedCallerSection').style.display = 'block';
+                                    document.getElementById('generalInquirySection').style.display = 'none';
+                                    document.getElementById('briefDescription').setAttribute('required', 'true');
+                                    document.getElementById('phoneNumber').removeAttribute('required');
+                                    
+                                    // Отрисовываем родственников
+                                    window.renderCallerRows(client.callerPhone);
                                 }
                             };
                         } else {
@@ -1328,7 +1347,7 @@
                 if (loader) loader.style.display = 'inline-block';
                 
                 try {
-                    // СНАЧАЛА проверяем Docketwise (является ли это главным номером клиента)
+                    // СНАЧАЛА проверяем Docketwise
                     const clients = await fetchDocketwiseData(cleanedPhone, true);
                     if (clients && clients.length > 0) { 
                         applyClientData(clients[0]); 
@@ -1344,7 +1363,7 @@
                     console.error("Caller ID Error:", error);
                 }
                 
-                // ЕСЛИ в Docketwise не нашли — проверяем нашу локальную базу родственников
+                // ЕСЛИ в Docketwise не нашли — проверяем родственников
                 const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
                 if (linkedNumbers[cleanedPhone]) {
                     const linkInfo = linkedNumbers[cleanedPhone];
@@ -1356,8 +1375,9 @@
                     const unrecRadio = document.querySelector('input[name="clientStatus"][value="Unrecognized Number (Existing Client)"]');
                     if (unrecRadio) {
                         unrecRadio.checked = true;
-                        // ЭТО СОБЫТИЕ АВТОМАТИЧЕСКИ ОТРИСУЕТ РОДСТВЕННИКОВ ЧЕРЕЗ СЛУШАТЕЛЬ CHANGE
-                        unrecRadio.dispatchEvent(new Event('change'));
+                        document.getElementById('unrecognizedCallerSection').style.display = 'block';
+                        document.getElementById('phoneNumber').removeAttribute('required');
+                        window.renderCallerRows(cleanedPhone);
                     }
                     
                     if (loader) loader.style.display = 'none';
@@ -1470,7 +1490,7 @@
             finally { submitBtn.disabled = false; submitBtn.textContent = 'Save Call Log to Internal CRM'; }
         });
 
-        // Инициализируем пустую строку при первой загрузке
+        // Initialize first empty row on load
         window.renderCallerRows();
     });
 </script>
