@@ -289,7 +289,7 @@
                 </div>
             </div>
 
-            <div style="width: 280px; background: #fdfaf6; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 0;">
+            <div style="width: 280px; background: #fdfaf6; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
                 <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 15px; display: block;">Select Date & Time</label>
                 
                 <div class="calendar-widget">
@@ -528,7 +528,7 @@
         if(tabId === 'tabCalendarContent') window.renderMainCalendar();
     }
 
-    // НОВЫЕ ФУНКЦИИ ДЛЯ ЖУРНАЛА И ДИНАМИЧЕСКИХ СТРОК РОДСТВЕННИКОВ
+    // --- НОВЫЕ ФУНКЦИИ ДЛЯ ЖУРНАЛА И ДИНАМИЧЕСКИХ СТРОК РОДСТВЕННИКОВ ---
     window.removeLinkedContact = function(phone, btnElement) {
         if(confirm('Are you sure you want to completely unlink this contact from the client?')) {
             let linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
@@ -566,20 +566,23 @@
 
     window.renderCallerRows = function(prefillPhone = '') {
         const container = document.getElementById('callerRowsContainer');
-        container.innerHTML = ''; // Очищаем контейнер
+        container.innerHTML = ''; // Полностью очищаем контейнер перед перерисовкой
         
         let foundExisting = false;
         let phonesRendered = new Set();
 
-        if (window.currentClient) {
+        if (window.currentClient && window.currentClient.id) {
             const clientIdStr = String(window.currentClient.id);
             const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
             
+            // Сначала выводим всех СОХРАНЕННЫХ родственников
             for (let phone in linkedNumbers) {
                 if (linkedNumbers[phone].clientData && String(linkedNumbers[phone].clientData.id) === clientIdStr) {
                     let info = linkedNumbers[phone];
-                    let dispName = info.callerName === "Unknown Caller" ? "" : info.callerName;
-                    let dispRel = info.relation === "Unknown Relation" ? "" : info.relation;
+                    // Если оператор сохранял пустое имя, оставляем поле визуально пустым
+                    let dispName = (info.callerName === "Unknown Caller") ? "" : info.callerName;
+                    let dispRel = (info.relation === "Unknown Relation") ? "" : info.relation;
+                    
                     window.addCallerRow(phone, dispName, dispRel, true);
                     phonesRendered.add(phone);
                     foundExisting = true;
@@ -587,11 +590,12 @@
             }
         }
 
-        prefillPhone = prefillPhone.replace(/[^\d+]/g, '');
-
-        if (prefillPhone && !phonesRendered.has(prefillPhone)) {
-            window.addCallerRow(prefillPhone, '', '', false);
+        // Если пришел НОВЫЙ неизвестный номер, добавляем для него пустую строку внизу
+        let cleanPrefill = String(prefillPhone).replace(/[^\d+]/g, '');
+        if (cleanPrefill && !phonesRendered.has(cleanPrefill)) {
+            window.addCallerRow(cleanPrefill, '', '', false);
         } else if (!foundExisting && container.innerHTML === '') {
+            // Если вообще никого нет, даем одну пустую строку
             window.addCallerRow('', '', '', false);
         }
     };
@@ -671,7 +675,6 @@
                     let st = "General Call"; 
                     let badgeColor = '#757575';
                     
-                    // Умный поиск статуса
                     const statusMatch = rawDesc.match(/(?:\[Status:\s*|Status:\s*)(.*?)(?:\]|\n| \||$)/i);
                     if (statusMatch) { 
                         st = statusMatch[1].trim(); 
@@ -684,18 +687,15 @@
                         cleanDesc = cleanDesc.replace(/\[APPOINTMENT BOOKED\]/i, '').trim(); 
                     }
 
-                    // Цвета бейджей (Unrecognized проверяется ПЕРЕД Existing)
                     if(st.includes('Lead')) badgeColor = '#d32f2f';
                     else if(st.includes('Unrecognized')) badgeColor = '#f57c00';
                     else if(st.includes('Existing')) badgeColor = '#2e7d32';
                     else if(st.includes('General')) badgeColor = '#1976d2';
 
-                    // Очистка старых категорий из текста (чтобы журнал был чистым)
                     cleanDesc = cleanDesc.replace(/(01-Initial Consultation|03-Client Communication|04-Phone Call|05-Follow-Up Needed|20-Interview|General Call)/ig, '').replace(/^\]?\s*/, '').trim();
 
                     let snippet = cleanDesc.length > 55 ? cleanDesc.substring(0, 55) + '...' : cleanDesc;
 
-                    // Логика отображения Staff
                     let displayStaff = log.assigned_staff_name || log.assignedStaffName || log.operator_name || 'Staff';
                     if (displayStaff === "Resolved by Operator" || displayStaff === "-- Do not notify anyone --") {
                         displayStaff = `✅ Resolved (${log.operator_name})`;
@@ -704,7 +704,6 @@
                     const tr = document.createElement('tr'); 
                     tr.className = 'journal-row';
                     
-                    // Кликабельность строки
                     tr.onclick = () => openJournalModal(log.client_name, log.client_phone, d.toLocaleString(), log.operator_name, st, badgeColor, cleanDesc, log.follow_up_notes, displayStaff);
                     
                     tr.innerHTML = `
@@ -1062,16 +1061,13 @@
                 const firstRow = document.querySelector('.caller-row');
                 const unrecPhoneInput = firstRow ? firstRow.querySelector('.dyn-caller-phone') : null;
                 
-                // 1. Сохраняем текущий номер
                 let currentPhone = mainPhoneInput.value || (unrecPhoneInput ? unrecPhoneInput.value : '') || genPhoneInput.value || '';
 
-                // 2. Скрываем все доп. блоки и возвращаем required
                 document.getElementById('unrecognizedCallerSection').style.display = 'none';
                 document.getElementById('generalInquirySection').style.display = 'none';
                 document.getElementById('briefDescription').setAttribute('required', 'true');
                 mainPhoneInput.setAttribute('required', 'true');
                 
-                // Если у клиента есть дела, показываем их
                 if (window.currentClient && window.currentClient.matters && window.currentClient.matters.length > 0) {
                     document.getElementById('matterContainer').style.display = 'block';
                 } else {
@@ -1104,9 +1100,13 @@
                     document.getElementById('unrecognizedCallerSection').style.display = 'block';
                     mainPhoneInput.removeAttribute('required');
                     
+                    // 1. Отрисовываем всех сохраненных + добавляем новый
                     window.renderCallerRows(currentPhone);
                     
+                    // 2. Очищаем генеральный поиск
                     genPhoneInput.value = '';
+                    
+                    // 3. Возвращаем оригинальный телефон клиента в верхнее поле (если он есть в базе)
                     if (window.currentClient && window.currentClient.phone) {
                         mainPhoneInput.value = window.currentClient.phone;
                     } else {
@@ -1126,7 +1126,6 @@
             });
         });
 
-        // --- ФУНКЦИЯ ОЧИСТКИ ПОЛЕЙ ---
         function clearClientData() {
             window.currentClient = null;
             document.getElementById('hiddenClientId').value = '';
@@ -1258,7 +1257,6 @@
                         }
                     }
                 }
-                // --------------------------------------------------------
 
                 list.innerHTML = '';
                 
@@ -1289,6 +1287,7 @@
                                     document.getElementById('briefDescription').setAttribute('required', 'true');
                                     document.getElementById('phoneNumber').removeAttribute('required');
                                     
+                                    // Отрисовываем всех родственников, подставляя найденный
                                     window.renderCallerRows(client.callerPhone);
                                 }
                             };
@@ -1383,6 +1382,7 @@
                 finalClientName = document.getElementById('genCallerName').value.trim() || "General Caller";
                 finalClientPhone = document.getElementById('genCallerPhone').value.trim() || "";
             } else if (isUnrecognized) {
+                // СБИРАЕМ ДАННЫЕ СО ВСЕХ СТРОК РОДСТВЕННИКОВ
                 let callerBlocks = [];
                 const rows = document.querySelectorAll('.caller-row');
                 
