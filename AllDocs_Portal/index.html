@@ -289,7 +289,7 @@
                 </div>
             </div>
 
-            <div style="width: 280px; background: #fdfaf6; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color);">
+            <div style="width: 280px; background: #fdfaf6; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 0;">
                 <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 15px; display: block;">Select Date & Time</label>
                 
                 <div class="calendar-widget">
@@ -538,6 +538,12 @@
             }
             btnElement.closest('.caller-row').remove();
             window.updateLinkedContactsPanel();
+            
+            // Если удалили последнего, возвращаем одну пустую строку
+            const container = document.getElementById('callerRowsContainer');
+            if (container.children.length === 0) {
+                window.addCallerRow('', '', '', false);
+            }
         }
     };
 
@@ -1100,13 +1106,10 @@
                     document.getElementById('unrecognizedCallerSection').style.display = 'block';
                     mainPhoneInput.removeAttribute('required');
                     
-                    // 1. Отрисовываем всех сохраненных + добавляем новый
+                    // ОТРИСОВЫВАЕМ ВСЕХ РОДСТВЕННИКОВ
                     window.renderCallerRows(currentPhone);
                     
-                    // 2. Очищаем генеральный поиск
                     genPhoneInput.value = '';
-                    
-                    // 3. Возвращаем оригинальный телефон клиента в верхнее поле (если он есть в базе)
                     if (window.currentClient && window.currentClient.phone) {
                         mainPhoneInput.value = window.currentClient.phone;
                     } else {
@@ -1135,7 +1138,6 @@
             document.getElementById('matterContainer').style.display = 'none';
             document.getElementById('linkedContactsPanel').style.display = 'none';
             
-            // Сброс динамических строк
             window.renderCallerRows();
             
             document.getElementById('unrecognizedCallerSection').style.display = 'none';
@@ -1242,7 +1244,7 @@
             try {
                 let results = await fetchDocketwiseData(query, isPhone);
                 
-                // --- ДОБАВЛЯЕМ ПОИСК ПО РОДСТВЕННИКАМ ПРИ РУЧНОМ ВВОДЕ ---
+                // ПОИСК ПО РОДСТВЕННИКАМ ПРИ РУЧНОМ ВВОДЕ
                 if (isPhone && query.length >= 7) {
                     const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
                     for (let phone in linkedNumbers) {
@@ -1270,7 +1272,6 @@
                     results.forEach(client => {
                         const li = document.createElement('li'); 
                         
-                        // Если это найденный родственник:
                         if (client.isLinkedMatch) {
                             li.innerHTML = `<span class="client-name-list">${client.clientData.name} <span style="font-size:11px; color:#ff9800;">(via ${client.callerName} - ${client.relation})</span></span><span class="client-phone-list">${client.callerPhone}</span>`;
                             li.onmousedown = (e) => { 
@@ -1281,14 +1282,9 @@
                                 const unrecRadio = document.querySelector('input[name="clientStatus"][value="Unrecognized Number (Existing Client)"]');
                                 if (unrecRadio) {
                                     unrecRadio.checked = true;
-                                    document.getElementById('phoneNumber').value = client.clientData.phone || '';
-                                    document.getElementById('unrecognizedCallerSection').style.display = 'block';
-                                    document.getElementById('generalInquirySection').style.display = 'none';
-                                    document.getElementById('briefDescription').setAttribute('required', 'true');
-                                    document.getElementById('phoneNumber').removeAttribute('required');
-                                    
-                                    // Отрисовываем всех родственников, подставляя найденный
-                                    window.renderCallerRows(client.callerPhone);
+                                    document.getElementById('phoneNumber').value = client.callerPhone;
+                                    // ПРИНУДИТЕЛЬНО ВЫЗЫВАЕМ СОБЫТИЕ CHANGE, ЧТОБЫ ОТРИСОВАТЬ ВСЕХ
+                                    unrecRadio.dispatchEvent(new Event('change'));
                                 }
                             };
                         } else {
@@ -1327,36 +1323,48 @@
                 let cleanedPhone = incomingPhone.replace(/[^\d+]/g, '');
                 if (cleanedPhone.length < 2) { document.getElementById('phoneNumber').value = incomingPhone; return; }
                 
-                const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
-                if (linkedNumbers[cleanedPhone]) {
-                    const linkInfo = linkedNumbers[cleanedPhone];
-                    document.getElementById('phoneNumber').value = cleanedPhone;
-                    
-                    const unrecRadio = document.querySelector('input[name="clientStatus"][value="Unrecognized Number (Existing Client)"]');
-                    if (unrecRadio) {
-                        unrecRadio.checked = true;
-                        document.getElementById('unrecognizedCallerSection').style.display = 'block';
-                        document.getElementById('phoneNumber').removeAttribute('required');
-                        
-                        if (linkInfo.clientData) applyClientData(linkInfo.clientData);
-                        window.renderCallerRows(cleanedPhone);
-                    }
-                    
-                    return; 
-                }
-
                 document.getElementById('phoneNumber').value = cleanedPhone;
                 const loader = document.getElementById('phoneLoader');
                 if (loader) loader.style.display = 'inline-block';
                 
                 try {
+                    // СНАЧАЛА проверяем Docketwise (является ли это главным номером клиента)
                     const clients = await fetchDocketwiseData(cleanedPhone, true);
-                    if(clients && clients.length > 0) { applyClientData(clients[0]); }
+                    if (clients && clients.length > 0) { 
+                        applyClientData(clients[0]); 
+                        const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
+                        if (existingRadio) {
+                            existingRadio.checked = true;
+                            existingRadio.dispatchEvent(new Event('change'));
+                        }
+                        if (loader) loader.style.display = 'none';
+                        return;
+                    }
                 } catch(error) {
                     console.error("Caller ID Error:", error);
-                } finally {
-                    if (loader) loader.style.display = 'none';
                 }
+                
+                // ЕСЛИ в Docketwise не нашли — проверяем нашу локальную базу родственников
+                const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
+                if (linkedNumbers[cleanedPhone]) {
+                    const linkInfo = linkedNumbers[cleanedPhone];
+                    
+                    if (linkInfo.clientData) {
+                        applyClientData(linkInfo.clientData);
+                    }
+                    
+                    const unrecRadio = document.querySelector('input[name="clientStatus"][value="Unrecognized Number (Existing Client)"]');
+                    if (unrecRadio) {
+                        unrecRadio.checked = true;
+                        // ЭТО СОБЫТИЕ АВТОМАТИЧЕСКИ ОТРИСУЕТ РОДСТВЕННИКОВ ЧЕРЕЗ СЛУШАТЕЛЬ CHANGE
+                        unrecRadio.dispatchEvent(new Event('change'));
+                    }
+                    
+                    if (loader) loader.style.display = 'none';
+                    return; 
+                }
+
+                if (loader) loader.style.display = 'none';
             }
         }
         checkIncomingCall();
@@ -1382,7 +1390,6 @@
                 finalClientName = document.getElementById('genCallerName').value.trim() || "General Caller";
                 finalClientPhone = document.getElementById('genCallerPhone').value.trim() || "";
             } else if (isUnrecognized) {
-                // СБИРАЕМ ДАННЫЕ СО ВСЕХ СТРОК РОДСТВЕННИКОВ
                 let callerBlocks = [];
                 const rows = document.querySelectorAll('.caller-row');
                 
@@ -1463,7 +1470,7 @@
             finally { submitBtn.disabled = false; submitBtn.textContent = 'Save Call Log to Internal CRM'; }
         });
 
-        // Initialize first empty row on load
+        // Инициализируем пустую строку при первой загрузке
         window.renderCallerRows();
     });
 </script>
