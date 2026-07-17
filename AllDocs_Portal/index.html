@@ -381,9 +381,9 @@
                         </div>
                     </div>
 
-                    <!-- ИНФО-БЛОК ДЛЯ РОДСТВЕННИКОВ - ТЕПЕРЬ С КНОПКАМИ УДАЛЕНИЯ ВНУТРИ -->
+                    <!-- ИНФО-БЛОК ДЛЯ РОДСТВЕННИКОВ (С КРЕСТИКАМИ) -->
                     <div id="linkedContactsPanel" style="display:none; margin-top: 15px; background: #e8f5e9; border-left: 4px solid #2e7d32; padding: 12px; border-radius: 8px;">
-                        <div style="font-size: 12px; font-weight: bold; color: #2e7d32; margin-bottom: 5px;">🔗 LINKED CONTACTS:</div>
+                        <div style="font-size: 12px; font-weight: bold; color: #2e7d32; margin-bottom: 8px;">🔗 LINKED CONTACTS (Delete here):</div>
                         <div id="linkedContactsList" style="font-size: 13.5px; color: #1b5e20;"></div>
                     </div>
                 </div>
@@ -412,7 +412,7 @@
 
                 <!-- БЛОК ДЛЯ 3-го ЛИЦА (Неизвестный номер) с ДИНАМИЧЕСКИМ ДОБАВЛЕНИЕМ -->
                 <div id="unrecognizedCallerSection" style="display: none; background: #fff3e0; padding: 20px; border-left: 4px solid #ff9800; border-radius: 8px; margin-bottom: 25px;">
-                    <label style="color: #e65100; font-weight: 700; margin-bottom: 12px; display: block;">Third-Party Caller Details (Optional):</label>
+                    <label style="color: #e65100; font-weight: 700; margin-bottom: 12px; display: block;">Third-Party Caller Details (For this Call):</label>
                     
                     <div id="callerRowsContainer">
                         <!-- Динамические строки добавляются сюда через JavaScript -->
@@ -614,18 +614,22 @@
         
         row.innerHTML = `
             <div class="form-group" style="margin-bottom: 0;">
-                <input type="tel" class="dyn-caller-phone" placeholder="Caller Phone..." value="${phone}">
+                <input type="tel" class="dyn-caller-phone" placeholder="Caller Phone...">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <input type="text" class="dyn-caller-name" placeholder="Name (e.g. Aram)" value="${name}">
+                <input type="text" class="dyn-caller-name" placeholder="Name (e.g. Aram)">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <input type="text" class="dyn-caller-relation" placeholder="Relation (e.g. Son)" value="${relation}">
+                <input type="text" class="dyn-caller-relation" placeholder="Relation (e.g. Son)">
             </div>
             <div style="display:flex; align-items:center;">
                 <button type="button" class="del-row-btn" style="background:none; border:none; color:#d32f2f; cursor:pointer; font-size:18px; padding: 0 5px;" title="Remove this row">✖</button>
             </div>
         `;
+        
+        row.querySelector('.dyn-caller-phone').value = phone;
+        row.querySelector('.dyn-caller-name').value = name;
+        row.querySelector('.dyn-caller-relation').value = relation;
         
         row.querySelector('.del-row-btn').onclick = function() {
             row.remove();
@@ -730,8 +734,7 @@
     }
 
     document.addEventListener("DOMContentLoaded", function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        let incomingPhone = urlParams.get('phone');
+        let incomingPhone = new URLSearchParams(window.location.search).get('phone');
         const loggedInStaff = localStorage.getItem('loggedInStaff');
 
         if (window.location.search.includes('phone=')) {
@@ -747,6 +750,15 @@
         if (pendingCall) {
             incomingPhone = pendingCall;
             localStorage.removeItem('pendingOomaCall');
+        }
+
+        // --- НОВОЕ: ПЕРЕДАЕМ ЗВОНОК НА СЕРВЕР ДЛЯ НОРАЙРА ---
+        if (incomingPhone) {
+            fetch('/api/active-call', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: incomingPhone })
+            }).catch(e => console.log("Broadcasting error", e));
         }
 
         document.getElementById('userProfile').style.display = 'flex';
@@ -1104,18 +1116,16 @@
                     document.getElementById('unrecognizedCallerSection').style.display = 'block';
                     mainPhoneInput.removeAttribute('required');
                     
-                    // ОТРИСОВЫВАЕМ ПУСТУЮ ИЛИ ПРЕДЗАПОЛНЕННУЮ ФОРМУ ДЛЯ НОВОГО РОДСТВЕННИКА
+                    // ОТРИСОВЫВАЕМ ПУСТУЮ ИЛИ ПРЕДЗАПОЛНЕННУЮ ФОРМУ ДЛЯ ТЕКУЩЕГО ЗВОНКА
                     let prefillName = "";
                     let prefillRel = "";
                     
-                    // Если оператор выбрал родственника из поиска, заполняем оранжевый блок им
                     if (window._tempLinkedData) {
                         currentPhone = window._tempLinkedData.phone;
                         prefillName = window._tempLinkedData.name;
                         prefillRel = window._tempLinkedData.relation;
-                        window._tempLinkedData = null; // Очищаем временную переменную
+                        window._tempLinkedData = null;
                     } else if (window.currentClient && currentPhone === window.currentClient.phone) {
-                        // Если в поиске был официальный номер клиента, то в оранжевом блоке даем пустую строку
                         currentPhone = "";
                     }
 
@@ -1190,7 +1200,6 @@
             document.getElementById('fullName').value = client.name;
             document.getElementById('phoneNumber').value = client.phone || '';
 
-            // Обновляем зеленую панель со ВСЕМИ сохраненными родственниками
             window.updateLinkedContactsPanel();
 
             const leadCard = document.getElementById('leadCardWrapper');
@@ -1201,7 +1210,6 @@
             
             const currentStatus = document.querySelector('input[name="clientStatus"]:checked')?.value;
             if (currentStatus === 'Unrecognized Number (Existing Client)') {
-                // Если статус УЖЕ стоит, мы просто отрисовываем оранжевый блок
                 let fillPhone = "", fillName = "", fillRel = "";
                 if (window._tempLinkedData) {
                     fillPhone = window._tempLinkedData.phone;
@@ -1306,7 +1314,6 @@
                             li.onmousedown = (e) => { 
                                 e.preventDefault(); list.style.display = 'none'; 
                                 
-                                // Передаем данные найденного родственника, чтобы они заполнились в оранжевом блоке
                                 window._tempLinkedData = {
                                     phone: client.callerPhone,
                                     name: client.callerName === "Unknown Caller" ? "" : client.callerName,
@@ -1404,6 +1411,29 @@
             }
         }
         checkIncomingCall();
+        
+        // --- НОВОЕ: РАДАР ДЛЯ НОРАЙРА ---
+        let lastRadarPhone = incomingPhone || "";
+        if (loggedInStaff === "Norayr Badalyan") {
+            setInterval(async () => {
+                try {
+                    const res = await fetch('/api/active-call');
+                    const data = await res.json();
+                    if (data.success && data.phone && data.phone !== lastRadarPhone) {
+                        lastRadarPhone = data.phone;
+                        incomingPhone = data.phone; 
+                        
+                        clearClientData(); 
+                        document.getElementById('fullName').value = '';
+                        document.getElementById('genCallerName').value = '';
+                        document.getElementById('genCallerPhone').value = '';
+                        document.querySelector('input[name="clientStatus"][value="Existing Client"]').checked = true;
+                        
+                        checkIncomingCall();
+                    }
+                } catch (e) {}
+            }, 2000); 
+        }
       
         const callForm = document.getElementById('callForm');
         callForm.addEventListener('submit', async function(event) {
