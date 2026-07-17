@@ -1221,7 +1221,7 @@
                             list.innerHTML = '';
                             
                             const infoLi = document.createElement('li');
-                            infoLi.innerHTML = `<span style="color:#e65100; font-weight:bold; font-size:13px;">⚠️ Найдено несколько клиентов (${clients.length})</span><span style="color:#d32f2f; font-weight:bold; float:right; cursor:pointer; font-size:13px;">✖ Close</span><div style="clear:both;"></div>`;
+                            infoLi.innerHTML = `<span style="color:#e65100; font-weight:bold; font-size:13px;">⚠️ Multiple clients found (${clients.length})</span><span style="color:#d32f2f; font-weight:bold; float:right; cursor:pointer; font-size:13px;">✖ Close</span><div style="clear:both;"></div>`;
                             infoLi.style.backgroundColor = "#fff3e0"; infoLi.style.borderBottom = "2px solid #ffe0b2";
                             infoLi.onmousedown = (e) => { e.preventDefault(); list.style.display = 'none'; document.getElementById('fullName').placeholder = "Type name to search Docketwise..."; };
                             list.appendChild(infoLi);
