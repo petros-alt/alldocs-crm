@@ -528,9 +528,6 @@
         if(tabId === 'tabCalendarContent') window.renderMainCalendar();
     }
 
-    // --- НОВЫЕ ФУНКЦИИ ДЛЯ ЖУРНАЛА И РОДСТВЕННИКОВ ---
-
-    // Функция обновления ЗЕЛЕНОЙ панели (с крестиками для удаления)
     window.updateLinkedContactsPanel = function() {
         const panel = document.getElementById('linkedContactsPanel');
         const listContainer = document.getElementById('linkedContactsList');
@@ -573,15 +570,13 @@
                 delBtn.style.fontSize = '14px';
                 delBtn.title = 'Delete this contact';
                 
-                // Удаление прямо из зеленой панели
                 delBtn.onclick = function() {
                     if(confirm('Are you sure you want to completely unlink this contact from the client?')) {
                         let ln = JSON.parse(localStorage.getItem('linked_numbers')) || {};
                         delete ln[phone];
                         localStorage.setItem('linked_numbers', JSON.stringify(ln));
-                        window.updateLinkedContactsPanel(); // обновляем зеленую
+                        window.updateLinkedContactsPanel();
                         
-                        // Если открыта оранжевая панель, очищаем её, чтобы не было путаницы
                         const container = document.getElementById('callerRowsContainer');
                         container.innerHTML = '';
                         window.addCallerRow('', '', '');
@@ -597,11 +592,9 @@
         panel.style.display = count > 0 ? 'block' : 'none';
     };
 
-    // Оранжевая панель теперь ТОЛЬКО для добавления контактов к ТЕКУЩЕМУ звонку
     window.renderCallerRows = function(prefillPhone = '', prefillName = '', prefillRel = '') {
         const container = document.getElementById('callerRowsContainer');
-        container.innerHTML = ''; // Всегда даем чистый лист
-        
+        container.innerHTML = ''; 
         let cleanPrefill = String(prefillPhone).replace(/[^\d+]/g, '');
         window.addCallerRow(cleanPrefill, prefillName, prefillRel);
     };
@@ -614,22 +607,18 @@
         
         row.innerHTML = `
             <div class="form-group" style="margin-bottom: 0;">
-                <input type="tel" class="dyn-caller-phone" placeholder="Caller Phone...">
+                <input type="tel" class="dyn-caller-phone" placeholder="Caller Phone..." value="${phone}">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <input type="text" class="dyn-caller-name" placeholder="Name (e.g. Aram)">
+                <input type="text" class="dyn-caller-name" placeholder="Name (e.g. Aram)" value="${name}">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <input type="text" class="dyn-caller-relation" placeholder="Relation (e.g. Son)">
+                <input type="text" class="dyn-caller-relation" placeholder="Relation (e.g. Son)" value="${relation}">
             </div>
             <div style="display:flex; align-items:center;">
                 <button type="button" class="del-row-btn" style="background:none; border:none; color:#d32f2f; cursor:pointer; font-size:18px; padding: 0 5px;" title="Remove this row">✖</button>
             </div>
         `;
-        
-        row.querySelector('.dyn-caller-phone').value = phone;
-        row.querySelector('.dyn-caller-name').value = name;
-        row.querySelector('.dyn-caller-relation').value = relation;
         
         row.querySelector('.del-row-btn').onclick = function() {
             row.remove();
@@ -750,15 +739,6 @@
         if (pendingCall) {
             incomingPhone = pendingCall;
             localStorage.removeItem('pendingOomaCall');
-        }
-
-        // --- РАДАР (ПЕРЕДАТЧИК): ОТПРАВЛЯЕМ ЗВОНОК НА СЕРВЕР ---
-        if (incomingPhone && loggedInStaff !== "Norayr Badalyan") {
-            fetch('/api/active-call', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone: incomingPhone })
-            }).catch(e => console.log("Broadcasting error", e));
         }
 
         document.getElementById('userProfile').style.display = 'flex';
@@ -1364,6 +1344,18 @@
                 if (cleanedPhone.length < 2) { document.getElementById('phoneNumber').value = incomingPhone; return; }
                 
                 document.getElementById('phoneNumber').value = cleanedPhone;
+
+                // --- ПЕРЕДАТЧИК: Отправляем звонок на сервер (с задержкой для надежности) ---
+                if (loggedInStaff !== "Norayr Badalyan") {
+                    setTimeout(() => {
+                        fetch('/api/active-call', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ phone: cleanedPhone })
+                        }).catch(e => console.log("Broadcast err:", e));
+                    }, 800); // 800мс задержка, чтобы браузер успел "проснуться" после команды от Ooma
+                }
+
                 const loader = document.getElementById('phoneLoader');
                 if (loader) loader.style.display = 'inline-block';
                 
@@ -1413,12 +1405,11 @@
         
         checkIncomingCall();
 
-       // --- НОВОЕ: РАДАР ДЛЯ НОРАЙРА ---
+        // --- НОВОЕ: РАДАР ДЛЯ НОРАЙРА ---
         let lastRadarPhone = incomingPhone || "";
         if (loggedInStaff === "Norayr Badalyan") {
             setInterval(async () => {
                 try {
-                    // Взламываем кэш браузера, добавляя уникальное время в конец ссылки, и запрещаем кэширование
                     const res = await fetch('/api/active-call?t=' + new Date().getTime(), { cache: 'no-store' });
                     if (!res.ok) return;
                     const data = await res.json();
@@ -1447,6 +1438,8 @@
                 }
             }, 2000); 
         }
+      
+        const callForm = document.getElementById('callForm');
         callForm.addEventListener('submit', async function(event) {
             event.preventDefault();
             
