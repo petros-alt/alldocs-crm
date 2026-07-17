@@ -8,7 +8,7 @@ export default async function handler(req, res) {
 
         const { 
             clientId, clientName, clientPhone, matterTitle, 
-            program, description, operatorName, assignedStaffName, 
+            program, description, operatorName, operatorId, assignedStaffName, 
             assignedStaffId, followUpNotes, status 
         } = req.body;
 
@@ -24,12 +24,12 @@ export default async function handler(req, res) {
             );
         `;
 
-        // Создаем уведомление на АНГЛИЙСКОМ
+        // Создаем уведомление и ЗАПОМИНАЕМ ОТПРАВИТЕЛЯ (sender_id)
         if (assignedStaffId && assignedStaffId.trim() !== "") {
             const notificationMessage = `Operator ${operatorName} transferred a client to you. Issue: ${description}`;
             await pool.sql`
-                INSERT INTO crm_notifications (staff_id, client_name, message)
-                VALUES (${assignedStaffId}, ${clientName}, ${notificationMessage});
+                INSERT INTO crm_notifications (staff_id, client_name, message, sender_id)
+                VALUES (${assignedStaffId}, ${clientName}, ${notificationMessage}, ${operatorId || ''});
             `;
         }
 
