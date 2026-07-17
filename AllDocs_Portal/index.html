@@ -381,7 +381,7 @@
                         </div>
                     </div>
 
-                    <!-- ИНФО-БЛОК ДЛЯ РОДСТВЕННИКОВ -->
+                    <!-- ИНФО-БЛОК ДЛЯ РОДСТВЕННИКОВ - ТЕПЕРЬ С КНОПКАМИ УДАЛЕНИЯ ВНУТРИ -->
                     <div id="linkedContactsPanel" style="display:none; margin-top: 15px; background: #e8f5e9; border-left: 4px solid #2e7d32; padding: 12px; border-radius: 8px;">
                         <div style="font-size: 12px; font-weight: bold; color: #2e7d32; margin-bottom: 5px;">🔗 LINKED CONTACTS:</div>
                         <div id="linkedContactsList" style="font-size: 13.5px; color: #1b5e20;"></div>
@@ -418,7 +418,7 @@
                         <!-- Динамические строки добавляются сюда через JavaScript -->
                     </div>
                     
-                    <button type="button" onclick="window.addCallerRow('', '', '', false)" style="background: transparent; border: 1px dashed #ff9800; color: #e65100; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; margin-top: 5px;">+ Add another contact</button>
+                    <button type="button" onclick="window.addCallerRow('', '', '')" style="background: transparent; border: 1px dashed #ff9800; color: #e65100; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; transition: 0.2s; margin-top: 5px;">+ Add another contact</button>
                 </div>
 
                 <!-- БЛОК ДЛЯ GENERAL INQUIRY (Просто информация) -->
@@ -528,118 +528,108 @@
         if(tabId === 'tabCalendarContent') window.renderMainCalendar();
     }
 
-    // --- НОВЫЕ ФУНКЦИИ ДЛЯ ЖУРНАЛА И ДИНАМИЧЕСКИХ СТРОК РОДСТВЕННИКОВ ---
-    window.removeLinkedContact = function(phone, btnElement) {
-        if(confirm('Are you sure you want to completely unlink this contact from the client?')) {
-            let linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
-            if(linkedNumbers[phone]) {
-                delete linkedNumbers[phone];
-                localStorage.setItem('linked_numbers', JSON.stringify(linkedNumbers));
-            }
-            btnElement.closest('.caller-row').remove();
-            window.updateLinkedContactsPanel();
-            
-            const container = document.getElementById('callerRowsContainer');
-            if (container.children.length === 0) {
-                window.addCallerRow('', '', '', false);
-            }
-        }
-    };
+    // --- НОВЫЕ ФУНКЦИИ ДЛЯ ЖУРНАЛА И РОДСТВЕННИКОВ ---
 
+    // Функция обновления ЗЕЛЕНОЙ панели (с крестиками для удаления)
     window.updateLinkedContactsPanel = function() {
+        const panel = document.getElementById('linkedContactsPanel');
+        const listContainer = document.getElementById('linkedContactsList');
+        listContainer.innerHTML = '';
+        
         if(!window.currentClient || !window.currentClient.id) {
-            document.getElementById('linkedContactsPanel').style.display = 'none';
+            panel.style.display = 'none';
             return;
         }
         
         const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
-        const panel = document.getElementById('linkedContactsPanel');
-        const listContainer = document.getElementById('linkedContactsList');
-        let foundLinks = [];
-        
+        let count = 0;
         const clientIdStr = String(window.currentClient.id);
         
         for (let phone in linkedNumbers) {
             if (linkedNumbers[phone].clientData && String(linkedNumbers[phone].clientData.id) === clientIdStr) {
-                foundLinks.push(`👤 ${linkedNumbers[phone].callerName} (${linkedNumbers[phone].relation}) — 📞 ${phone}`);
+                count++;
+                const itemDiv = document.createElement('div');
+                itemDiv.style.display = 'flex';
+                itemDiv.style.justifyContent = 'space-between';
+                itemDiv.style.alignItems = 'center';
+                itemDiv.style.marginBottom = '6px';
+                itemDiv.style.paddingBottom = '6px';
+                itemDiv.style.borderBottom = '1px dashed #c8e6c9';
+
+                let dispName = linkedNumbers[phone].callerName;
+                if(dispName === "Unknown Caller") dispName = "Unknown";
+                let dispRel = linkedNumbers[phone].relation;
+                if(dispRel === "Unknown Relation") dispRel = "Unknown";
+
+                const textSpan = document.createElement('span');
+                textSpan.innerHTML = `👤 <strong>${dispName}</strong> (${dispRel}) <span style="color:#888; margin:0 8px;">|</span> 📞 ${phone}`;
+
+                const delBtn = document.createElement('button');
+                delBtn.innerHTML = '✖';
+                delBtn.style.background = 'none';
+                delBtn.style.border = 'none';
+                delBtn.style.color = '#d32f2f';
+                delBtn.style.cursor = 'pointer';
+                delBtn.style.fontSize = '14px';
+                delBtn.title = 'Delete this contact';
+                
+                // Удаление прямо из зеленой панели
+                delBtn.onclick = function() {
+                    if(confirm('Are you sure you want to completely unlink this contact from the client?')) {
+                        let ln = JSON.parse(localStorage.getItem('linked_numbers')) || {};
+                        delete ln[phone];
+                        localStorage.setItem('linked_numbers', JSON.stringify(ln));
+                        window.updateLinkedContactsPanel(); // обновляем зеленую
+                        
+                        // Если открыта оранжевая панель, очищаем её, чтобы не было путаницы
+                        const container = document.getElementById('callerRowsContainer');
+                        container.innerHTML = '';
+                        window.addCallerRow('', '', '');
+                    }
+                };
+
+                itemDiv.appendChild(textSpan);
+                itemDiv.appendChild(delBtn);
+                listContainer.appendChild(itemDiv);
             }
         }
         
-        if (foundLinks.length > 0) {
-            listContainer.innerHTML = foundLinks.join('<br>');
-            panel.style.display = 'block';
-        } else {
-            panel.style.display = 'none';
-        }
+        panel.style.display = count > 0 ? 'block' : 'none';
     };
 
-    window.renderCallerRows = function(prefillPhone = '') {
+    // Оранжевая панель теперь ТОЛЬКО для добавления контактов к ТЕКУЩЕМУ звонку
+    window.renderCallerRows = function(prefillPhone = '', prefillName = '', prefillRel = '') {
         const container = document.getElementById('callerRowsContainer');
-        container.innerHTML = ''; 
+        container.innerHTML = ''; // Всегда даем чистый лист
         
-        let foundExisting = false;
-        let phonesRendered = new Set();
-
-        if (window.currentClient && window.currentClient.id != null) {
-            const clientIdStr = String(window.currentClient.id);
-            const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
-            
-            for (let phone in linkedNumbers) {
-                if (linkedNumbers[phone].clientData && String(linkedNumbers[phone].clientData.id) === clientIdStr) {
-                    let info = linkedNumbers[phone];
-                    let dispName = (info.callerName === "Unknown Caller") ? "" : info.callerName;
-                    let dispRel = (info.relation === "Unknown Relation") ? "" : info.relation;
-                    
-                    window.addCallerRow(phone, dispName, dispRel, true);
-                    phonesRendered.add(phone);
-                    foundExisting = true;
-                }
-            }
-        }
-
         let cleanPrefill = String(prefillPhone).replace(/[^\d+]/g, '');
-        if (cleanPrefill && !phonesRendered.has(cleanPrefill)) {
-            window.addCallerRow(cleanPrefill, '', '', false);
-        } else if (!foundExisting && container.innerHTML === '') {
-            window.addCallerRow('', '', '', false);
-        }
+        window.addCallerRow(cleanPrefill, prefillName, prefillRel);
     };
 
-    window.addCallerRow = function(phone = '', name = '', relation = '', isExisting = false) {
+    window.addCallerRow = function(phone = '', name = '', relation = '') {
         const container = document.getElementById('callerRowsContainer');
         const row = document.createElement('div');
         row.className = 'form-row caller-row';
         row.style.marginBottom = '10px';
         
-        let deleteTitle = isExisting && phone ? 'Unlink this saved contact' : 'Remove empty row';
-
-        // ИСПОЛЬЗУЕМ БЕЗОПАСНЫЙ DOM ASSIGNMENT (чтобы скобки и кавычки не ломали код)
         row.innerHTML = `
             <div class="form-group" style="margin-bottom: 0;">
-                <input type="tel" class="dyn-caller-phone" placeholder="Caller Phone...">
+                <input type="tel" class="dyn-caller-phone" placeholder="Caller Phone..." value="${phone}">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <input type="text" class="dyn-caller-name" placeholder="Name (e.g. Aram)">
+                <input type="text" class="dyn-caller-name" placeholder="Name (e.g. Aram)" value="${name}">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <input type="text" class="dyn-caller-relation" placeholder="Relation (e.g. Son)">
+                <input type="text" class="dyn-caller-relation" placeholder="Relation (e.g. Son)" value="${relation}">
             </div>
             <div style="display:flex; align-items:center;">
-                <button type="button" class="del-row-btn" style="background:none; border:none; color:#d32f2f; cursor:pointer; font-size:18px; padding: 0 5px;" title="${deleteTitle}">✖</button>
+                <button type="button" class="del-row-btn" style="background:none; border:none; color:#d32f2f; cursor:pointer; font-size:18px; padding: 0 5px;" title="Remove this row">✖</button>
             </div>
         `;
         
-        row.querySelector('.dyn-caller-phone').value = phone;
-        row.querySelector('.dyn-caller-name').value = name;
-        row.querySelector('.dyn-caller-relation').value = relation;
-        
         row.querySelector('.del-row-btn').onclick = function() {
-            if (isExisting && phone) {
-                window.removeLinkedContact(phone, this);
-            } else {
-                row.remove();
-                if (container.children.length === 0) window.addCallerRow('', '', '', false);
-            }
+            row.remove();
+            if (container.children.length === 0) window.addCallerRow('', '', '');
         };
 
         container.appendChild(row);
@@ -1072,7 +1062,10 @@
                 const mainPhoneInput = document.getElementById('phoneNumber');
                 const genPhoneInput = document.getElementById('genCallerPhone');
                 
-                let currentPhone = mainPhoneInput.value;
+                const firstRow = document.querySelector('.caller-row');
+                const unrecPhoneInput = firstRow ? firstRow.querySelector('.dyn-caller-phone') : null;
+                
+                let currentPhone = mainPhoneInput.value || (unrecPhoneInput ? unrecPhoneInput.value : '') || genPhoneInput.value || '';
 
                 document.getElementById('unrecognizedCallerSection').style.display = 'none';
                 document.getElementById('generalInquirySection').style.display = 'none';
@@ -1093,32 +1086,42 @@
                         document.querySelector('input[name="clientStatus"][value="Existing Client"]').dispatchEvent(new Event('change'));
                         return;
                     }
-                    if(genPhoneInput.value) { mainPhoneInput.value = genPhoneInput.value; }
+                    mainPhoneInput.value = currentPhone; 
+                    if(unrecPhoneInput) unrecPhoneInput.value = '';
                     genPhoneInput.value = '';
                     openApptModal();
                     
                 } else if (this.value === 'Existing Client') {
                     if (window.currentClient && window.currentClient.phone) {
                         mainPhoneInput.value = window.currentClient.phone;
-                    } else if (genPhoneInput.value) {
-                        mainPhoneInput.value = genPhoneInput.value; 
+                    } else {
+                        mainPhoneInput.value = currentPhone; 
                     }
+                    if(unrecPhoneInput) unrecPhoneInput.value = '';
                     genPhoneInput.value = '';
                     
                 } else if (this.value === 'Unrecognized Number (Existing Client)') {
                     document.getElementById('unrecognizedCallerSection').style.display = 'block';
                     mainPhoneInput.removeAttribute('required');
                     
-                    let prefill = "";
-                    if (window.currentClient && currentPhone !== window.currentClient.phone) {
-                        prefill = currentPhone;
-                    } else if (!window.currentClient) {
-                        prefill = currentPhone;
+                    // ОТРИСОВЫВАЕМ ПУСТУЮ ИЛИ ПРЕДЗАПОЛНЕННУЮ ФОРМУ ДЛЯ НОВОГО РОДСТВЕННИКА
+                    let prefillName = "";
+                    let prefillRel = "";
+                    
+                    // Если оператор выбрал родственника из поиска, заполняем оранжевый блок им
+                    if (window._tempLinkedData) {
+                        currentPhone = window._tempLinkedData.phone;
+                        prefillName = window._tempLinkedData.name;
+                        prefillRel = window._tempLinkedData.relation;
+                        window._tempLinkedData = null; // Очищаем временную переменную
+                    } else if (window.currentClient && currentPhone === window.currentClient.phone) {
+                        // Если в поиске был официальный номер клиента, то в оранжевом блоке даем пустую строку
+                        currentPhone = "";
                     }
+
+                    window.renderCallerRows(currentPhone, prefillName, prefillRel);
                     
-                    window.renderCallerRows(prefill);
                     genPhoneInput.value = '';
-                    
                     if (window.currentClient && window.currentClient.phone) {
                         mainPhoneInput.value = window.currentClient.phone;
                     } else {
@@ -1131,14 +1134,16 @@
                     document.getElementById('briefDescription').removeAttribute('required'); 
                     mainPhoneInput.removeAttribute('required');
                     
-                    if(mainPhoneInput.value) { genPhoneInput.value = mainPhoneInput.value; }
+                    genPhoneInput.value = currentPhone; 
                     mainPhoneInput.value = '';
+                    if(unrecPhoneInput) unrecPhoneInput.value = '';
                 }
             });
         });
 
         function clearClientData() {
             window.currentClient = null;
+            window._tempLinkedData = null;
             document.getElementById('hiddenClientId').value = '';
             document.getElementById('displayClientId').textContent = '';
             document.getElementById('clientBadge').style.display = 'none';
@@ -1185,7 +1190,7 @@
             document.getElementById('fullName').value = client.name;
             document.getElementById('phoneNumber').value = client.phone || '';
 
-            // Обновляем панель родственников
+            // Обновляем зеленую панель со ВСЕМИ сохраненными родственниками
             window.updateLinkedContactsPanel();
 
             const leadCard = document.getElementById('leadCardWrapper');
@@ -1196,7 +1201,15 @@
             
             const currentStatus = document.querySelector('input[name="clientStatus"]:checked')?.value;
             if (currentStatus === 'Unrecognized Number (Existing Client)') {
-                window.renderCallerRows();
+                // Если статус УЖЕ стоит, мы просто отрисовываем оранжевый блок
+                let fillPhone = "", fillName = "", fillRel = "";
+                if (window._tempLinkedData) {
+                    fillPhone = window._tempLinkedData.phone;
+                    fillName = window._tempLinkedData.name;
+                    fillRel = window._tempLinkedData.relation;
+                    window._tempLinkedData = null;
+                }
+                window.renderCallerRows(fillPhone, fillName, fillRel);
                 if (client.phone) document.getElementById('phoneNumber').value = client.phone;
             } else {
                 const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
@@ -1286,25 +1299,29 @@
                         const li = document.createElement('li'); 
                         
                         if (client.isLinkedMatch) {
-                            li.innerHTML = `<span class="client-name-list">${client.clientData.name} <span style="font-size:11px; color:#ff9800;">(via ${client.callerName} - ${client.relation})</span></span><span class="client-phone-list">${client.callerPhone}</span>`;
+                            let dispName = client.callerName === "Unknown Caller" ? "Unknown" : client.callerName;
+                            let dispRel = client.relation === "Unknown Relation" ? "Unknown" : client.relation;
+
+                            li.innerHTML = `<span class="client-name-list">${client.clientData.name} <span style="font-size:11px; color:#ff9800;">(via ${dispName} - ${dispRel})</span></span><span class="client-phone-list">${client.callerPhone}</span>`;
                             li.onmousedown = (e) => { 
                                 e.preventDefault(); list.style.display = 'none'; 
+                                
+                                // Передаем данные найденного родственника, чтобы они заполнились в оранжевом блоке
+                                window._tempLinkedData = {
+                                    phone: client.callerPhone,
+                                    name: client.callerName === "Unknown Caller" ? "" : client.callerName,
+                                    relation: client.relation === "Unknown Relation" ? "" : client.relation
+                                };
                                 
                                 applyClientData(client.clientData);
                                 
                                 const unrecRadio = document.querySelector('input[name="clientStatus"][value="Unrecognized Number (Existing Client)"]');
                                 if (unrecRadio) {
                                     unrecRadio.checked = true;
-                                    document.getElementById('unrecognizedCallerSection').style.display = 'block';
-                                    document.getElementById('generalInquirySection').style.display = 'none';
-                                    document.getElementById('briefDescription').setAttribute('required', 'true');
-                                    document.getElementById('phoneNumber').removeAttribute('required');
-                                    
-                                    window.renderCallerRows(client.callerPhone);
+                                    unrecRadio.dispatchEvent(new Event('change'));
                                 }
                             };
                         } else {
-                            // Обычный клиент
                             li.innerHTML = `<span class="client-name-list">${client.name}</span><span class="client-phone-list">${client.phone || ''}</span>`;
                             li.onmousedown = (e) => { e.preventDefault(); list.style.display = 'none'; applyClientData(client); };
                         }
@@ -1344,7 +1361,6 @@
                 if (loader) loader.style.display = 'inline-block';
                 
                 try {
-                    // СНАЧАЛА проверяем Docketwise
                     const clients = await fetchDocketwiseData(cleanedPhone, true);
                     if (clients && clients.length > 0) { 
                         applyClientData(clients[0]); 
@@ -1360,11 +1376,16 @@
                     console.error("Caller ID Error:", error);
                 }
                 
-                // ЕСЛИ в Docketwise не нашли — проверяем родственников
                 const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
                 if (linkedNumbers[cleanedPhone]) {
                     const linkInfo = linkedNumbers[cleanedPhone];
                     
+                    window._tempLinkedData = {
+                        phone: cleanedPhone,
+                        name: linkInfo.callerName === "Unknown Caller" ? "" : linkInfo.callerName,
+                        relation: linkInfo.relation === "Unknown Relation" ? "" : linkInfo.relation
+                    };
+
                     if (linkInfo.clientData) {
                         applyClientData(linkInfo.clientData);
                     }
@@ -1372,9 +1393,7 @@
                     const unrecRadio = document.querySelector('input[name="clientStatus"][value="Unrecognized Number (Existing Client)"]');
                     if (unrecRadio) {
                         unrecRadio.checked = true;
-                        document.getElementById('unrecognizedCallerSection').style.display = 'block';
-                        document.getElementById('phoneNumber').removeAttribute('required');
-                        window.renderCallerRows(cleanedPhone);
+                        unrecRadio.dispatchEvent(new Event('change'));
                     }
                     
                     if (loader) loader.style.display = 'none';
@@ -1487,7 +1506,6 @@
             finally { submitBtn.disabled = false; submitBtn.textContent = 'Save Call Log to Internal CRM'; }
         });
 
-        // Initialize first empty row on load
         window.renderCallerRows();
     });
 </script>
