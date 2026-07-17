@@ -1,4 +1,9 @@
 export default async function handler(req, res) {
+    // 🚨 ЖЕСТКО ОТКЛЮЧАЕМ КЭШИРОВАНИЕ VERCEL 🚨
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     try {
         const postgres = await import('@vercel/postgres');
         const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
