@@ -842,9 +842,18 @@
         document.getElementById('sidebarUserName').textContent = loggedInStaff;
         document.getElementById('sidebarUserRole').textContent = localStorage.getItem('staffRole');
         
+        // ВОТ ОНО - ИСПРАВЛЕНИЕ ДЛЯ КОЛОКОЛЬЧИКОВ!
+        // Теперь система понимает как длинные имена (новые), так и короткие (старые),
+        // поэтому Риме больше не нужно перезаходить в аккаунт, всё починится само!
         const staffMapping = {
-            "Norayr Badalyan": "332487", "Petros Eghiazaryan": "418892", "Mariam Djaradjian": "339159", "Artak Badalyan": "332810", 
-            "Argishti Shahbazian": "1005", "Gohar Aloyan": "1001", "Rima Avetisyan": "1007", "Lilit Avetisyan": "1009"
+            "Norayr Badalyan": "332487", 
+            "Petros Eghiazaryan": "418892", "Petros E.": "418892",
+            "Mariam Djaradjian": "339159", "Mariam D.": "339159",
+            "Artak Badalyan": "332810", "Artak B.": "332810",
+            "Argishti Shahbazian": "1005", "Argishti S.": "1005",
+            "Gohar Aloyan": "1001", "Gohar A.": "1001",
+            "Rima Avetisyan": "1007", "Rima A.": "1007",
+            "Lilit Avetisyan": "1009", "Lilit A.": "1009"
         };
         const myStaffId = staffMapping[loggedInStaff] || "";
 
