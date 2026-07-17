@@ -1413,14 +1413,16 @@
         
         checkIncomingCall();
 
-        // --- НОВОЕ: РАДАР ДЛЯ НОРАЙРА ---
+       // --- НОВОЕ: РАДАР ДЛЯ НОРАЙРА ---
         let lastRadarPhone = incomingPhone || "";
         if (loggedInStaff === "Norayr Badalyan") {
             setInterval(async () => {
                 try {
-                    const res = await fetch('/api/active-call');
+                    // Взламываем кэш браузера, добавляя уникальное время в конец ссылки, и запрещаем кэширование
+                    const res = await fetch('/api/active-call?t=' + new Date().getTime(), { cache: 'no-store' });
                     if (!res.ok) return;
                     const data = await res.json();
+                    
                     if (data.success && data.phone && data.phone !== lastRadarPhone) {
                         lastRadarPhone = data.phone;
                         incomingPhone = data.phone; 
@@ -1440,11 +1442,11 @@
                         
                         checkIncomingCall();
                     }
-                } catch (e) {}
+                } catch (e) {
+                    console.error("Radar error:", e);
+                }
             }, 2000); 
         }
-      
-        const callForm = document.getElementById('callForm');
         callForm.addEventListener('submit', async function(event) {
             event.preventDefault();
             
