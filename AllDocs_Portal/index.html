@@ -573,17 +573,27 @@
 
         <div id="tabCalendarContent" class="tab-content" style="padding: 0;">
             <div class="calendar-toolbar">
-                <select id="staffFilter" onchange="renderMainCalendar()">
-                    <option value="All Staff">All Staff</option>
-                    <option value="Mariam Djaradjian">Mariam Djaradjian</option>
-                    <option value="Artak Badalyan">Artak Badalyan</option>
-                    <option value="Gohar Aloyan">Gohar Aloyan</option>
-                    <option value="Argishti Shahbazian">Argishti Shahbazian</option>
-                    <option value="Lilit Avetisyan">Lilit Avetisyan</option>
-                    <option value="Norayr Badalyan">Norayr Badalyan</option>
-                    <option value="Petros Eghiazaryan">Petros Eghiazaryan</option>
-                    <option value="Rima Avetisyan">Rima Avetisyan</option>
-                </select>
+                <div style="display: flex; gap: 10px;">
+                    <select id="staffFilter" onchange="renderMainCalendar()">
+                        <option value="All Staff">All Staff</option>
+                        <option value="Mariam Djaradjian">Mariam Djaradjian</option>
+                        <option value="Artak Badalyan">Artak Badalyan</option>
+                        <option value="Gohar Aloyan">Gohar Aloyan</option>
+                        <option value="Argishti Shahbazian">Argishti Shahbazian</option>
+                        <option value="Lilit Avetisyan">Lilit Avetisyan</option>
+                        <option value="Norayr Badalyan">Norayr Badalyan</option>
+                        <option value="Petros Eghiazaryan">Petros Eghiazaryan</option>
+                        <option value="Rima Avetisyan">Rima Avetisyan</option>
+                    </select>
+
+                    <select id="statusFilter" onchange="renderMainCalendar()" style="padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; outline: none; background: white; color: var(--primary-color); font-weight: 500;">
+                        <option value="All Statuses">All Statuses</option>
+                        <option value="Lead">🔥 Lead (New Appt)</option>
+                        <option value="Existing Client">👤 Existing Client</option>
+                        <option value="Unrecognized Number (Existing Client)">⚠️ Unrecognized</option>
+                        <option value="General Inquiry">ℹ️ General Inquiry</option>
+                    </select>
+                </div>
 
                 <div class="date-nav">
                     <button onclick="changeViewDate(-1)">&lt;</button>
@@ -842,9 +852,6 @@
         document.getElementById('sidebarUserName').textContent = loggedInStaff;
         document.getElementById('sidebarUserRole').textContent = localStorage.getItem('staffRole');
         
-        // ВОТ ОНО - ИСПРАВЛЕНИЕ ДЛЯ КОЛОКОЛЬЧИКОВ!
-        // Теперь система понимает как длинные имена (новые), так и короткие (старые),
-        // поэтому Риме больше не нужно перезаходить в аккаунт, всё починится само!
         const staffMapping = {
             "Norayr Badalyan": "332487", 
             "Petros Eghiazaryan": "418892", "Petros E.": "418892",
@@ -1037,7 +1044,8 @@
             const m = document.getElementById('aTimeMinute').value;
             const ampm = document.getElementById('aTimeAMPM').value;
             
-            const isLead = document.querySelector('input[name="clientStatus"]:checked')?.value === 'Lead';
+            const currentStatus = document.querySelector('input[name="clientStatus"]:checked')?.value || 'Existing Client';
+            const isLead = currentStatus === 'Lead';
             const clientName = document.getElementById('modalApptName').value.trim() || (isLead ? "New Lead" : "Unknown Client");
             
             const rawService = document.getElementById('modalApptService').value;
@@ -1058,7 +1066,8 @@
                 reminder: apptRemType,
                 language: apptLang,
                 message: document.getElementById('modalApptMessage').value,
-                isLead: isLead 
+                isLead: isLead,
+                clientStatus: currentStatus
             };
 
             const recs = JSON.parse(localStorage.getItem('gr_db')) || [];
@@ -1162,8 +1171,17 @@
             title.textContent = `${months[m]} ${y}`;
 
             let records = JSON.parse(localStorage.getItem('gr_db')) || [];
+            
             const staffF = document.getElementById('staffFilter').value;
             if(staffF !== 'All Staff') { records = records.filter(r => r.staff === staffF); }
+
+            const statusF = document.getElementById('statusFilter').value;
+            if(statusF !== 'All Statuses') { 
+                records = records.filter(r => {
+                    const recStatus = r.clientStatus || (r.isLead ? 'Lead' : 'Existing Client');
+                    return recStatus === statusF;
+                }); 
+            }
 
             if (view === 'agenda') {
                 let html = ''; let currentDate = '';
