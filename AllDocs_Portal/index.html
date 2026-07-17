@@ -510,6 +510,38 @@
     let apptRemType = 'Text';
     let apptLang = 'ENG';
 
+    // === НОВЫЕ ФУНКЦИИ СИНХРОНИЗАЦИИ РОДСТВЕННИКОВ В ОБЛАКЕ ===
+    window.loadSharedContacts = async function() {
+        try {
+            const res = await fetch('/api/contacts?t=' + new Date().getTime(), { cache: 'no-store' });
+            const data = await res.json();
+            if (data.success && data.data) {
+                let cloudData = data.data || {};
+                let localData = JSON.parse(localStorage.getItem('linked_numbers')) || {};
+                
+                // Умное объединение: сохраняем твоих старых родственников и добавляем новых из облака
+                let mergedData = Object.assign({}, cloudData, localData);
+                localStorage.setItem('linked_numbers', JSON.stringify(mergedData));
+                
+                // Если у тебя на компьютере были контакты, которых еще нет в облаке - сразу отправляем их туда
+                if (Object.keys(localData).length > 0 && JSON.stringify(localData) !== JSON.stringify(cloudData)) {
+                    window.saveSharedContacts(mergedData);
+                }
+            }
+        } catch (e) { console.log("Contacts sync error:", e); }
+    }
+
+    window.saveSharedContacts = async function(newObj) {
+        localStorage.setItem('linked_numbers', JSON.stringify(newObj));
+        try {
+            await fetch('/api/contacts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ linked_numbers: newObj })
+            });
+        } catch (e) { console.log(e); }
+    }
+
     function setSegment(groupId, btnElement, value) {
         if(groupId === 'remTypeControl') apptRemType = value;
         if(groupId === 'langControl') apptLang = value;
@@ -574,7 +606,7 @@
                     if(confirm('Are you sure you want to completely unlink this contact from the client?')) {
                         let ln = JSON.parse(localStorage.getItem('linked_numbers')) || {};
                         delete ln[phone];
-                        localStorage.setItem('linked_numbers', JSON.stringify(ln));
+                        window.saveSharedContacts(ln); // Сохраняем удаление в ОБЛАКО
                         window.updateLinkedContactsPanel();
                         
                         const container = document.getElementById('callerRowsContainer');
@@ -722,7 +754,10 @@
         }
     }
 
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", async function() {
+        // СКАЧИВАЕМ РОДСТВЕННИКОВ ПРИ ЗАГРУЗКЕ
+        await window.loadSharedContacts();
+
         let incomingPhone = new URLSearchParams(window.location.search).get('phone');
         const loggedInStaff = localStorage.getItem('loggedInStaff');
 
@@ -1047,7 +1082,6 @@
             });
         }
 
-        // --- ЛОГИКА ОТКРЫТИЯ КАЛЕНДАРЯ И ПЕРЕНОСА НОМЕРОВ ТЕЛЕФОНА ---
         const statusRadios = document.querySelectorAll('input[name="clientStatus"]');
         statusRadios.forEach(radio => {
             radio.addEventListener('change', function(e) {
@@ -1099,12 +1133,11 @@
                     let prefillName = "";
                     let prefillRel = "";
                     
-                    // Заполняем оранжевый блок данными текущего звонящего
                     if (window._tempLinkedData) {
                         currentPhone = window._tempLinkedData.phone;
                         prefillName = window._tempLinkedData.name;
                         prefillRel = window._tempLinkedData.relation;
-                        window._tempLinkedData = null; // Очищаем временную переменную
+                        window._tempLinkedData = null; 
                     } else if (window.currentClient && currentPhone === window.currentClient.phone) {
                         currentPhone = "";
                     }
@@ -1339,13 +1372,16 @@
         });
 
         async function checkIncomingCall() {
+            // Скачиваем самых свежих родственников перед поиском
+            await window.loadSharedContacts();
+            
             if (incomingPhone) {
                 let cleanedPhone = incomingPhone.replace(/[^\d+]/g, '');
                 if (cleanedPhone.length < 2) { document.getElementById('phoneNumber').value = incomingPhone; return; }
                 
                 document.getElementById('phoneNumber').value = cleanedPhone;
 
-                // --- ПЕРЕДАТЧИК: Отправляем звонок на сервер (с задержкой для надежности) ---
+                // --- ПЕРЕДАТЧИК (Только если это НЕ Норайр) ---
                 if (loggedInStaff !== "Norayr Badalyan") {
                     setTimeout(() => {
                         fetch('/api/active-call', {
@@ -1353,7 +1389,7 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ phone: cleanedPhone })
                         }).catch(e => console.log("Broadcast err:", e));
-                    }, 800); // 800мс задержка, чтобы браузер успел "проснуться" после команды от Ooma
+                    }, 800); 
                 }
 
                 const loader = document.getElementById('phoneLoader');
@@ -1405,40 +1441,30 @@
         
         checkIncomingCall();
 
-        // --- НОВОЕ: РАДАР ДЛЯ НОРАЙРА ---
+       // --- НОВОЕ: РАДАР ДЛЯ НОРАЙРА (С ОТКРЫТИЕМ НОВОЙ ВКЛАДКИ) ---
         let lastRadarPhone = incomingPhone || "";
         if (loggedInStaff === "Norayr Badalyan") {
             setInterval(async () => {
                 try {
+                    // Фоновая синхронизация родственников
+                    await window.loadSharedContacts();
+                    
                     const res = await fetch('/api/active-call?t=' + new Date().getTime(), { cache: 'no-store' });
                     if (!res.ok) return;
                     const data = await res.json();
                     
                     if (data.success && data.phone && data.phone !== lastRadarPhone) {
                         lastRadarPhone = data.phone;
-                        incomingPhone = data.phone; 
                         
-                        clearClientData(); 
-                        document.getElementById('fullName').value = '';
-                        document.getElementById('phoneNumber').value = '';
-                        document.getElementById('genCallerName').value = '';
-                        document.getElementById('genCallerPhone').value = '';
-                        
-                        const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
-                        if (existingRadio) {
-                            existingRadio.checked = true;
-                            document.getElementById('unrecognizedCallerSection').style.display = 'none';
-                            document.getElementById('generalInquirySection').style.display = 'none';
-                        }
-                        
-                        checkIncomingCall();
+                        // 🚨 ОТКРЫВАЕМ НОВУЮ ВКЛАДКУ (ВАЖНО РАЗРЕШИТЬ POP-UPs В БРАУЗЕРЕ!)
+                        window.open(window.location.origin + window.location.pathname + '?phone=' + data.phone, '_blank');
                     }
                 } catch (e) {
                     console.error("Radar error:", e);
                 }
             }, 2000); 
         }
-      
+        
         const callForm = document.getElementById('callForm');
         callForm.addEventListener('submit', async function(event) {
             event.preventDefault();
@@ -1474,7 +1500,9 @@
                         if (window.currentClient) {
                             const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
                             linkedNumbers[cPhone] = { callerName: cName, relation: cRel, clientData: window.currentClient };
-                            localStorage.setItem('linked_numbers', JSON.stringify(linkedNumbers));
+                            
+                            // Сохраняем НОВОГО родственника В ОБЛАКО
+                            window.saveSharedContacts(linkedNumbers);
                         }
                     }
                 });
