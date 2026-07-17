@@ -460,12 +460,13 @@
                     <!-- НОВАЯ КНОПКА ТРАНСФЕРА В КОРИЧНЕВОМ СТИЛЕ -->
                     <button type="button" id="transferCallBtn" style="background-color: var(--accent-color); color: white; border: none; padding: 12px 18px; font-size: 14.5px; font-weight: 700; border-radius: 8px; cursor: pointer; transition: 0.2s; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(161, 104, 58, 0.2);">🔀 Transfer Call to Staff</button>
 
-                    <!-- ПАНЕЛЬ ВЫБОРА ТРАНСФЕРА -->
+                    <!-- ПАНЕЛЬ ВЫБОРА ТРАНСФЕРА (БЕЗ КНОПКИ ПОДТВЕРЖДЕНИЯ) -->
                     <div id="transferPanel" style="display: none; background: #fdfaf6; padding: 15px; border-left: 4px solid var(--accent-color); border-radius: 8px; margin-bottom: 15px; animation: fadeIn 0.2s ease;">
-                        <label style="color: var(--primary-color); font-weight: bold; margin-bottom: 10px; display: block;">Select Staff Member:</label>
+                        <label style="color: var(--primary-color); font-weight: bold; margin-bottom: 10px; display: block;">Select Staff Member to Transfer To:</label>
                         <div style="display: flex; gap: 10px;">
-                            <select id="transferStaffSelect" style="flex: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; outline: none;"></select>
-                            <button type="button" onclick="confirmTransfer()" style="background: var(--accent-color); color: white; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer;">Confirm Transfer</button>
+                            <select id="transferStaffSelect" style="flex: 1; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; outline: none; font-weight: 600; color: var(--primary-color);">
+                                <!-- Опции заполняются скриптом -->
+                            </select>
                             <button type="button" onclick="document.getElementById('transferPanel').style.display='none'" style="background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); padding: 10px 15px; font-weight: bold; border-radius: 6px; cursor: pointer;">Cancel</button>
                         </div>
                     </div>
@@ -532,11 +533,9 @@
                 let cloudData = data.data || {};
                 let localData = JSON.parse(localStorage.getItem('linked_numbers')) || {};
                 
-                // Умное объединение: сохраняем твоих старых родственников и добавляем новых из облака
                 let mergedData = Object.assign({}, cloudData, localData);
                 localStorage.setItem('linked_numbers', JSON.stringify(mergedData));
                 
-                // Если у тебя на компьютере были контакты, которых еще нет в облаке - сразу отправляем их туда
                 if (Object.keys(localData).length > 0 && JSON.stringify(localData) !== JSON.stringify(cloudData)) {
                     window.saveSharedContacts(mergedData);
                 }
@@ -553,32 +552,6 @@
                 body: JSON.stringify({ linked_numbers: newObj })
             });
         } catch (e) { console.log(e); }
-    }
-
-    // === ФУНКЦИЯ ДЛЯ КНОПКИ ТРАНСФЕРА ===
-    window.confirmTransfer = function() {
-        const staffName = document.getElementById('transferStaffSelect').value;
-        const descArea = document.getElementById('briefDescription');
-        
-        // Убраны квадратные скобки по просьбе
-        const transferText = `Call Transferred to: ${staffName}`;
-        
-        if (descArea.value.trim() !== "") {
-            descArea.value = descArea.value + "\n\n" + transferText;
-        } else {
-            descArea.value = transferText;
-        }
-        
-        document.getElementById('transferPanel').style.display = 'none';
-        
-        // Автоматически выбираем этого сотрудника в выпадающем списке колокольчика
-        const assignedStaffSelect = document.getElementById('assignedStaff');
-        for (let i = 0; i < assignedStaffSelect.options.length; i++) {
-            if (assignedStaffSelect.options[i].text === staffName) {
-                assignedStaffSelect.selectedIndex = i;
-                break;
-            }
-        }
     }
 
     document.getElementById('transferCallBtn').addEventListener('click', () => {
@@ -649,7 +622,7 @@
                     if(confirm('Are you sure you want to completely unlink this contact from the client?')) {
                         let ln = JSON.parse(localStorage.getItem('linked_numbers')) || {};
                         delete ln[phone];
-                        window.saveSharedContacts(ln); // Сохраняем удаление в ОБЛАКО
+                        window.saveSharedContacts(ln); 
                         window.updateLinkedContactsPanel();
                         
                         const container = document.getElementById('callerRowsContainer');
@@ -798,7 +771,6 @@
     }
 
     document.addEventListener("DOMContentLoaded", async function() {
-        // СКАЧИВАЕМ РОДСТВЕННИКОВ ПРИ ЗАГРУЗКЕ
         await window.loadSharedContacts();
 
         let incomingPhone = new URLSearchParams(window.location.search).get('phone');
@@ -824,7 +796,6 @@
         document.getElementById('sidebarUserName').textContent = loggedInStaff;
         document.getElementById('sidebarUserRole').textContent = localStorage.getItem('staffRole');
         
-        // ОБНОВЛЕННЫЙ СПИСОК СОТРУДНИКОВ (БЕЗ НАИРИ, С ПОЛНЫМИ ФАМИЛИЯМИ)
         const staffMapping = {
             "Norayr Badalyan": "332487", 
             "Petros Eghiazaryan": "418892", 
@@ -841,6 +812,7 @@
         const transferSelect = document.getElementById('transferStaffSelect');
         
         staffSelect.innerHTML = '<option value="">-- Do not notify anyone --</option>';
+        transferSelect.innerHTML = '<option value="">-- Click to select staff --</option>';
         
         const displayStaffNames = [
             "Argishti Shahbazian", "Artak Badalyan", "Gohar Aloyan", 
@@ -848,7 +820,6 @@
             "Petros Eghiazaryan", "Rima Avetisyan"
         ];
 
-        // Заполняем оба списка: для уведомлений и для трансфера
         displayStaffNames.forEach(name => {
             const option = document.createElement('option');
             option.value = staffMapping[name] || name; 
@@ -859,6 +830,32 @@
             transOpt.value = name; 
             transOpt.textContent = name;
             transferSelect.appendChild(transOpt);
+        });
+
+        // === АВТОМАТИЧЕСКИЙ ТРАНСФЕР ПРИ ВЫБОРЕ ИМЕНИ ===
+        transferSelect.addEventListener('change', function() {
+            const staffName = this.value;
+            if (!staffName) return; 
+
+            const descArea = document.getElementById('briefDescription');
+            const transferText = `Call Transferred to: ${staffName}`;
+            
+            if (descArea.value.trim() !== "") {
+                descArea.value = descArea.value + "\n\n" + transferText;
+            } else {
+                descArea.value = transferText;
+            }
+            
+            document.getElementById('transferPanel').style.display = 'none';
+            
+            for (let i = 0; i < staffSelect.options.length; i++) {
+                if (staffSelect.options[i].text === staffName) {
+                    staffSelect.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            this.value = ""; 
         });
 
         const userProfile = document.getElementById('userProfile');
