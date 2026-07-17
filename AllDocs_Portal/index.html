@@ -381,7 +381,7 @@
                         </div>
                     </div>
 
-                    <!-- ИНФО-БЛОК ДЛЯ РОДСТВЕННИКОВ (С КРЕСТИКАМИ) -->
+                    <!-- ИНФО-БЛОК ДЛЯ РОДСТВЕННИКОВ - ТЕПЕРЬ С КНОПКАМИ УДАЛЕНИЯ ВНУТРИ -->
                     <div id="linkedContactsPanel" style="display:none; margin-top: 15px; background: #e8f5e9; border-left: 4px solid #2e7d32; padding: 12px; border-radius: 8px;">
                         <div style="font-size: 12px; font-weight: bold; color: #2e7d32; margin-bottom: 8px;">🔗 LINKED CONTACTS (Delete here):</div>
                         <div id="linkedContactsList" style="font-size: 13.5px; color: #1b5e20;"></div>
@@ -752,8 +752,8 @@
             localStorage.removeItem('pendingOomaCall');
         }
 
-        // --- НОВОЕ: ПЕРЕДАЕМ ЗВОНОК НА СЕРВЕР ДЛЯ НОРАЙРА ---
-        if (incomingPhone) {
+        // --- РАДАР (ПЕРЕДАТЧИК): ОТПРАВЛЯЕМ ЗВОНОК НА СЕРВЕР ---
+        if (incomingPhone && loggedInStaff !== "Norayr Badalyan") {
             fetch('/api/active-call', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1116,15 +1116,15 @@
                     document.getElementById('unrecognizedCallerSection').style.display = 'block';
                     mainPhoneInput.removeAttribute('required');
                     
-                    // ОТРИСОВЫВАЕМ ПУСТУЮ ИЛИ ПРЕДЗАПОЛНЕННУЮ ФОРМУ ДЛЯ ТЕКУЩЕГО ЗВОНКА
                     let prefillName = "";
                     let prefillRel = "";
                     
+                    // Заполняем оранжевый блок данными текущего звонящего
                     if (window._tempLinkedData) {
                         currentPhone = window._tempLinkedData.phone;
                         prefillName = window._tempLinkedData.name;
                         prefillRel = window._tempLinkedData.relation;
-                        window._tempLinkedData = null;
+                        window._tempLinkedData = null; // Очищаем временную переменную
                     } else if (window.currentClient && currentPhone === window.currentClient.phone) {
                         currentPhone = "";
                     }
@@ -1410,14 +1410,16 @@
                 if (loader) loader.style.display = 'none';
             }
         }
-        checkIncomingCall();
         
+        checkIncomingCall();
+
         // --- НОВОЕ: РАДАР ДЛЯ НОРАЙРА ---
         let lastRadarPhone = incomingPhone || "";
         if (loggedInStaff === "Norayr Badalyan") {
             setInterval(async () => {
                 try {
                     const res = await fetch('/api/active-call');
+                    if (!res.ok) return;
                     const data = await res.json();
                     if (data.success && data.phone && data.phone !== lastRadarPhone) {
                         lastRadarPhone = data.phone;
@@ -1425,9 +1427,16 @@
                         
                         clearClientData(); 
                         document.getElementById('fullName').value = '';
+                        document.getElementById('phoneNumber').value = '';
                         document.getElementById('genCallerName').value = '';
                         document.getElementById('genCallerPhone').value = '';
-                        document.querySelector('input[name="clientStatus"][value="Existing Client"]').checked = true;
+                        
+                        const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
+                        if (existingRadio) {
+                            existingRadio.checked = true;
+                            document.getElementById('unrecognizedCallerSection').style.display = 'none';
+                            document.getElementById('generalInquirySection').style.display = 'none';
+                        }
                         
                         checkIncomingCall();
                     }
