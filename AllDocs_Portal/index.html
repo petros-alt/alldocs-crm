@@ -890,17 +890,23 @@
     if (descArea.value.trim() !== "") { descArea.value = descArea.value + "\n\n" + transferText; } else { descArea.value = transferText; }
     document.getElementById('transferPanel').style.display = 'none';
     
-    // МЫ УБРАЛИ АВТОМАТИЧЕСКОЕ НАЗНАЧЕНИЕ ЗАДАЧИ,
-    // ВМЕСТО ЭТОГО СИСТЕМА САМА СТАВИТ ГАЛОЧКУ "Resolved by Operator":
+    // ВОЗВРАЩАЕМ АВТОМАТИЧЕСКОЕ НАЗНАЧЕНИЕ СОТРУДНИКА (Чтобы был колокольчик и статус Pending)
+    for (let i = 0; i < staffSelect.options.length; i++) { 
+        if (staffSelect.options[i].text === staffName) { 
+            staffSelect.selectedIndex = i; 
+            break; 
+        } 
+    }
+    
+    // На всякий случай снимаем галочку "Resolved", если оператор случайно её нажал
     const resolvedOpCheckbox = document.getElementById('resolvedByOpCheckbox');
-    if (resolvedOpCheckbox) {
-        resolvedOpCheckbox.checked = true;
+    if (resolvedOpCheckbox && resolvedOpCheckbox.checked) {
+        resolvedOpCheckbox.checked = false;
         resolvedOpCheckbox.dispatchEvent(new Event('change'));
     }
 
     this.value = ""; 
 });
-
         const userProfile = document.getElementById('userProfile'); const logoutMenu = document.getElementById('logoutMenu');
         document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.clear(); window.location.href = 'login.html'; });
         userProfile.addEventListener('click', () => logoutMenu.style.display = (logoutMenu.style.display === 'block') ? 'none' : 'block');
