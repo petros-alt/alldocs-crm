@@ -885,13 +885,21 @@
         });
 
         transferSelect.addEventListener('change', function() {
-            const staffName = this.value; if (!staffName) return; 
-            const descArea = document.getElementById('briefDescription'); const transferText = `Call Transferred to: ${staffName}`;
-            if (descArea.value.trim() !== "") { descArea.value = descArea.value + "\n\n" + transferText; } else { descArea.value = transferText; }
-            document.getElementById('transferPanel').style.display = 'none';
-            for (let i = 0; i < staffSelect.options.length; i++) { if (staffSelect.options[i].text === staffName) { staffSelect.selectedIndex = i; break; } }
-            this.value = ""; 
-        });
+    const staffName = this.value; if (!staffName) return; 
+    const descArea = document.getElementById('briefDescription'); const transferText = `Call Transferred to: ${staffName}`;
+    if (descArea.value.trim() !== "") { descArea.value = descArea.value + "\n\n" + transferText; } else { descArea.value = transferText; }
+    document.getElementById('transferPanel').style.display = 'none';
+    
+    // МЫ УБРАЛИ АВТОМАТИЧЕСКОЕ НАЗНАЧЕНИЕ ЗАДАЧИ,
+    // ВМЕСТО ЭТОГО СИСТЕМА САМА СТАВИТ ГАЛОЧКУ "Resolved by Operator":
+    const resolvedOpCheckbox = document.getElementById('resolvedByOpCheckbox');
+    if (resolvedOpCheckbox) {
+        resolvedOpCheckbox.checked = true;
+        resolvedOpCheckbox.dispatchEvent(new Event('change'));
+    }
+
+    this.value = ""; 
+});
 
         const userProfile = document.getElementById('userProfile'); const logoutMenu = document.getElementById('logoutMenu');
         document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.clear(); window.location.href = 'login.html'; });
