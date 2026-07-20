@@ -19,20 +19,21 @@ export default async function handler(req, res) {
                 const cName = notifRes.rows[0].client_name;
                 const senderId = notifRes.rows[0].sender_id;
 
-                // 3. Сохраняем ответ в Журнал
-                if (note && note.trim() !== '') {
-                    await pool.sql`
-                        UPDATE call_logs
-                        SET follow_up_notes = ${note}
-                        WHERE client_name = ${cName}
-                        AND id IN (SELECT id FROM call_logs WHERE client_name = ${cName} ORDER BY created_at DESC LIMIT 1);
-                    `;
-                }
+                // === ЛОГИКА АВТОЗАГЛУШКИ ===
+                // Если текст есть - берем его. Если пусто - ставим системное сообщение.
+                const finalNote = (note && note.trim() !== '') ? note.trim() : 'Task closed without comments';
+
+                // 3. Сохраняем ответ в Журнал (ТЕПЕРЬ СОХРАНЯЕТСЯ ВСЕГДА)
+                await pool.sql`
+                    UPDATE call_logs
+                    SET follow_up_notes = ${finalNote}
+                    WHERE client_name = ${cName}
+                    AND id IN (SELECT id FROM call_logs WHERE client_name = ${cName} ORDER BY created_at DESC LIMIT 1);
+                `;
 
                 // 4. ПИНГ-ПОНГ: Отправляем ответное уведомление изначальному Оператору!
                 if (senderId && senderId.trim() !== '') {
-                    const replyNote = note ? note : "No additional notes.";
-                    const pingMessage = `✅ Issue Resolved for client ${cName}.\nResolution: ${replyNote}`;
+                    const pingMessage = `✅ Issue Resolved for client ${cName}.\nResolution: ${finalNote}`;
                     
                     await pool.sql`
                         INSERT INTO crm_notifications (staff_id, client_name, message, sender_id)
