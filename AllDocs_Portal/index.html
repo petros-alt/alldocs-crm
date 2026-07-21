@@ -958,8 +958,29 @@
                 if (data.success && data.notifications && data.notifications.length > 0) {
                     badge.style.display = 'block'; badge.textContent = data.notifications.length;
                     
-                    if (data.notifications.length > previousNotifCount) bellSound.play().catch(e => console.log('Audio blocked.'));
-                    
+                    // === ЛОГИКА АВТОМАТИЧЕСКОГО ОТКРЫТИЯ НОВОЙ ВКЛАДКИ (КАК В РАДАРЕ) ===
+                    if (data.notifications.length > previousNotifCount) {
+                        bellSound.play().catch(e => console.log('Audio blocked.'));
+                        
+                        const newestNotif = data.notifications[0];
+                        if (newestNotif) {
+                            // 1. Открываем окно с задачей в текущей вкладке
+                            openNotifModal(newestNotif.id, newestNotif.client_name, newestNotif.message);
+                            
+                            // 2. Защита от бесконечного открытия окон
+                            const popupKey = 'popup_opened_' + newestNotif.id;
+                            if (!localStorage.getItem(popupKey)) {
+                                localStorage.setItem(popupKey, 'true'); // Запоминаем, что для этой задачи вкладка уже открывалась
+                                
+                                // 3. ОТКРЫВАЕМ НОВУЮ ВКЛАДКУ (Выводит браузер на передний план!)
+                                // Если в базе есть номер телефона, он тоже подтянется в форму
+                                const phoneParam = newestNotif.client_phone ? '?phone=' + newestNotif.client_phone : '';
+                                window.open(window.location.origin + window.location.pathname + phoneParam, '_blank');
+                            }
+                        }
+                    }
+                    // ====================================================================
+
                     previousNotifCount = data.notifications.length; notifList.innerHTML = '';
                     data.notifications.forEach(notif => {
                         const div = document.createElement('div'); div.className = 'notif-item-modern';
