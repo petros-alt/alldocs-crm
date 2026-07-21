@@ -96,12 +96,19 @@
         #notificationBell { font-size: 24px; cursor: pointer; position: relative; background: white; padding: 12px 15px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: transform 0.2s; border: 1px solid var(--border-color); }
         #notificationBell:hover { transform: scale(1.05); }
         .badge { background: #d32f2f; color: white; border-radius: 50%; padding: 3px 7px; font-size: 11px; position: absolute; top: -5px; right: -5px; font-weight: bold; border: 2px solid white; display: none; }
-        #notificationDropdown { display: none; position: absolute; top: 65px; right: 0; width: 360px; background: white; border-radius: 12px; box-shadow: 0 15px 40px rgba(0,0,0,0.15); border: 1px solid var(--border-color); overflow: hidden; animation: fadeIn 0.2s ease; }
+        #notificationDropdown { display: none; position: absolute; top: 65px; right: 0; width: 380px; background: white; border-radius: 12px; box-shadow: 0 15px 40px rgba(0,0,0,0.15); border: 1px solid var(--border-color); overflow: hidden; animation: fadeIn 0.2s ease; }
         .dropdown-header { background: var(--surface-color); padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-        .dropdown-header h4 { margin: 0; color: var(--primary-color); font-size: 15px; font-weight: 700; }
-        #notifList { max-height: 350px; overflow-y: auto; }
-        .notif-item-modern { padding: 15px 20px; border-bottom: 1px solid #f0ebe1; cursor: pointer; transition: background 0.2s; border-left: 3px solid transparent; }
+        .dropdown-header h4 { margin: 0; color: var(--primary-color); font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        #notifList { max-height: 380px; overflow-y: auto; background: #fafafa; }
+        
+        /* НОВЫЙ ДИЗАЙН КАРТОЧЕК В КОЛОКОЛЬЧИКЕ */
+        .notif-item-modern { padding: 16px 20px; border-bottom: 1px solid #f0ebe1; cursor: pointer; transition: all 0.2s ease; border-left: 4px solid transparent; background: #fff; }
         .notif-item-modern:hover { background: #fdfaf6; border-left-color: var(--accent-color); }
+        .notif-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: var(--primary-color); font-size: 14.5px; }
+        .notif-title span:first-child { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%; }
+        .new-tag { background: #e65100; color: white; font-size: 10px; padding: 3px 8px; border-radius: 12px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; box-shadow: 0 2px 5px rgba(230, 81, 0, 0.2); }
+        .notif-preview { font-size: 13px; color: var(--secondary-color); line-height: 1.5; background: #fcfbfa; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
+        .notif-time { font-size: 11px; color: #999; margin-top: 8px; text-align: right; font-weight: 600; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(2px); animation: fadeIn 0.2s ease; overflow-y: auto; padding: 20px; box-sizing: border-box;}
         .modal-content { background: var(--form-bg); padding: 35px; border-radius: 16px; width: 100%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); position: relative; margin: auto;}
@@ -189,12 +196,18 @@
 
 <div id="notifModal" class="modal-overlay">
     <div class="modal-content">
-        <h3 id="modalClientName">Client Name</h3>
-        <div style="font-size: 13px; color: var(--secondary-color); font-weight: 700; margin-bottom: 8px;">NOTES FROM OPERATOR:</div>
-        <div id="modalMessage" style="background: #fdfaf6; padding: 18px; border-radius: 10px; border: 1px solid var(--border-color); border-left: 4px solid var(--accent-color); margin-bottom: 25px; line-height: 1.5;"></div>
-        <div style="font-size: 13px; color: var(--secondary-color); font-weight: 700; margin-bottom: 8px;">ADD YOUR RESOLUTION NOTE:</div>
-        <textarea id="modalStaffNote" placeholder="e.g., Called client back, question resolved."></textarea>
-        <div class="modal-actions" style="margin-top: 15px; border: none; padding: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;">
+            <h3 id="modalClientName" style="margin: 0; color: var(--primary-color); font-size: 22px;">Client Name</h3>
+            <div id="modalNotifTime" style="font-size: 12px; color: #888; background: var(--surface-color); padding: 5px 10px; border-radius: 6px; font-weight: bold; border: 1px solid var(--border-color);"></div>
+        </div>
+        
+        <div style="font-size: 12px; color: var(--secondary-color); font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">💬 Transfer / Message Details:</div>
+        <div id="modalMessage" style="background: #fdfaf6; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); border-left: 5px solid var(--accent-color); margin-bottom: 25px; line-height: 1.6; font-size: 14.5px; color: var(--primary-color);"></div>
+        
+        <div style="font-size: 12px; color: #2e7d32; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">✍️ Add your resolution note:</div>
+        <textarea id="modalStaffNote" placeholder="e.g., Called client back, question resolved..." style="border: 2px solid #c8e6c9; background: #f1f8e9; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);"></textarea>
+        
+        <div class="modal-actions" style="margin-top: 20px; border: none; padding: 0;">
             <button class="btn-cancel" onclick="closeNotifModal()">Close window</button>
             <button class="btn-resolve" onclick="resolveNotification()" id="resolveBtn">Mark as Resolved ✓</button>
         </div>
@@ -650,14 +663,17 @@
         ENG: `All Docs Consulting\n\nHello {name},\nyou have an appointment\nwith {staff}\n\nStart Time\n{date}\n{time}\n\nAppointments Length {duration}\n\nAddress\n{address}\n\nService\n{service}\n\nFor questions call:\n
 
 (747) 204-2404
+
 \n\nSTOP=opt-out.`,
         RUSS: `All Docs Consulting\n\nПривет {name} ,\nу тебя назначена встреча\nс {staff}\n\nДата начала\n{date}\n{time}\n\nпродолжительность\nвстречи {duration}\n\nАдрес\n{address}\n\nУслуга\n{service}\n\nПо вопросам звоните:\n
 
 (747) 204-2404
+
 \n\nSTOP=opt-out.`,
         ARM: `All Docs Consulting\n\nԲարև {name},\nԴուք ունեք հանդիպում\n{staff} -ի հետ\n\nՍկիզբ\n{date}\n{time}\n\nՏևողությունը {duration}\n\nՀասցե\n{address}\n\nԾառայություն\n{service}\n\nՀարցերի դեպքում զանգահարեք՝\n
 
 (747) 204-2404
+
 \n\nSTOP=opt-out.`
     };
 
@@ -928,27 +944,56 @@
         bellBtn.addEventListener('click', () => { notifDropdown.style.display = notifDropdown.style.display === 'block' ? 'none' : 'block'; });
         document.getElementById('closeDropdownBtn').addEventListener('click', () => { notifDropdown.style.display = 'none'; });
 
-        window.openNotifModal = function(id, clientName, message) {
-            currentActiveNotifId = id; document.getElementById('modalClientName').textContent = '📞 ' + clientName;
-            let operatorInfo = "System Alert"; let issueText = message;
-            if (message.includes("Issue:")) { let parts = message.split("Issue:"); operatorInfo = parts[0].trim(); issueText = parts[1].trim(); }
-            document.getElementById('modalMessage').innerHTML = `<div style="font-size: 12px; color: #a1683a; font-weight: bold; margin-bottom: 8px;">👤 ${operatorInfo}</div><div style="color: var(--primary-color); background: white; padding: 15px; border-radius: 8px; border: 1px solid #eaeaea; font-family: monospace; font-size: 13.5px;">${issueText.replace(/\n/g, '<br>')}</div>`;
-            document.getElementById('modalStaffNote').value = ""; notifDropdown.style.display = 'none'; notifModal.style.display = 'flex';    
+       window.openNotifModal = function(id, clientName, message, createdAt) {
+            currentActiveNotifId = id; 
+            document.getElementById('modalClientName').textContent = '📞 ' + clientName;
+            
+            // Устанавливаем точное время получения задачи
+            let timeText = createdAt ? new Date(createdAt).toLocaleString([], {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit'}) : new Date().toLocaleString([], {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit'});
+            document.getElementById('modalNotifTime').textContent = '🕒 ' + timeText;
+
+            let operatorInfo = "System Alert"; 
+            let issueText = message;
+            
+            // Умный парсинг сообщения
+            if (message.includes("transferred a client to you")) {
+                let parts = message.split("\n");
+                operatorInfo = parts[0].trim();
+                issueText = parts.slice(1).join("<br>").trim();
+            } else if (message.includes("Issue:")) { 
+                let parts = message.split("Issue:"); 
+                operatorInfo = parts[0].trim(); 
+                issueText = parts[1].trim().replace(/\n/g, '<br>'); 
+            } else {
+                issueText = message.replace(/\n/g, '<br>');
+            }
+
+            document.getElementById('modalMessage').innerHTML = `
+                <div style="font-size: 13.5px; color: var(--accent-color); font-weight: 800; margin-bottom: 12px; border-bottom: 1px dashed #d7ccc8; padding-bottom: 8px;">
+                    👤 ${operatorInfo}
+                </div>
+                <div style="font-size: 15px;">${issueText}</div>
+            `;
+            document.getElementById('modalStaffNote').value = ""; 
+            notifDropdown.style.display = 'none'; 
+            notifModal.style.display = 'flex';    
         };
 
         window.closeNotifModal = function() { notifModal.style.display = 'none'; currentActiveNotifId = null; };
 
-     window.resolveNotification = async function() {
+        window.resolveNotification = async function() {
             if (!currentActiveNotifId) return;
             
-            // 1. Меняем const на let
             let extraNote = document.getElementById('modalStaffNote').value.trim();
-            
-            // 2. ДОБАВЛЯЕМ ВОТ ЭТУ ПРОВЕРКУ:
             if (extraNote === "") {
                 extraNote = "Task closed without comments";
             }
             
+            // === АВТОМАТИЧЕСКИЙ ШТАМП ВРЕМЕНИ ЗАКРЫТИЯ ===
+            const resolvedTime = new Date().toLocaleString([], {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit'});
+            extraNote = extraNote + `\n\n[✅ Resolved at: ${resolvedTime}]`;
+            // =============================================
+
             const btn = document.getElementById('resolveBtn');
             btn.textContent = "Saving..."; btn.disabled = true;
             try {
@@ -966,7 +1011,7 @@
                 if (data.success && data.notifications && data.notifications.length > 0) {
                     badge.style.display = 'block'; badge.textContent = data.notifications.length;
                     
-                    // === ЛОГИКА АВТОМАТИЧЕСКОГО ОТКРЫТИЯ ФОРМЫ (КАК ПРИ ЗВОНКЕ) ===
+                    // === ЛОГИКА АВТОМАТИЧЕСКОГО ОТКРЫТИЯ НОВОЙ ВКЛАДКИ ===
                     if (data.notifications.length > previousNotifCount) {
                         bellSound.play().catch(e => console.log('Audio blocked.'));
                         
@@ -978,14 +1023,14 @@
                             if (!localStorage.getItem(popupKey)) {
                                 localStorage.setItem(popupKey, 'true');
                                 
-                                // 1. Формируем ссылку, чтобы подтянуть телефон клиента в главную форму
+                                // Формируем ссылку, чтобы подтянуть телефон клиента в главную форму
                                 const phoneParam = newestNotif.client_phone ? '?phone=' + newestNotif.client_phone : '';
                                 const targetUrl = window.location.origin + window.location.pathname + phoneParam;
                                 
-                                // 2. Открываем новую вкладку и ПРИНУДИТЕЛЬНО РАЗВОРАЧИВАЕМ БРАУЗЕР
+                                // Открываем новую вкладку и ПРИНУДИТЕЛЬНО РАЗВОРАЧИВАЕМ БРАУЗЕР
                                 const newTab = window.open(targetUrl, '_blank');
                                 if (newTab) {
-                                    newTab.focus(); // <--- Именно эта команда вытягивает свернутый браузер на экран!
+                                    newTab.focus(); // Вытягивает свернутый браузер на экран!
                                 }
                             }
                         }
@@ -995,8 +1040,20 @@
                     previousNotifCount = data.notifications.length; notifList.innerHTML = '';
                     data.notifications.forEach(notif => {
                         const div = document.createElement('div'); div.className = 'notif-item-modern';
-                        div.onclick = () => openNotifModal(notif.id, notif.client_name, notif.message);
-                        div.innerHTML = `<div class="notif-title"><span>📞 ${notif.client_name}</span><span class="new-tag">New</span></div><div class="notif-preview">${notif.message}</div>`;
+                        
+                        // Парсим дату красиво
+                        let timeStr = notif.created_at ? new Date(notif.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        let shortMsg = notif.message.replace(/\n/g, ' ').substring(0, 65) + '...';
+
+                        div.onclick = () => openNotifModal(notif.id, notif.client_name, notif.message, notif.created_at);
+                        div.innerHTML = `
+                            <div class="notif-title">
+                                <span>📞 ${notif.client_name}</span>
+                                <span class="new-tag">New</span>
+                            </div>
+                            <div class="notif-preview">${shortMsg}</div>
+                            <div class="notif-time">🕒 Received: ${timeStr}</div>
+                        `;
                         notifList.appendChild(div);
                     });
                 } else { badge.style.display = 'none'; previousNotifCount = 0; notifList.innerHTML = '<div style="color: #888; text-align: center; padding: 30px 20px; font-size: 14px;">No new tasks.</div>'; }
