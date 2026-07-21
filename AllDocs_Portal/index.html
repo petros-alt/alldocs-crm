@@ -975,13 +975,23 @@
         }
     };
 
-    // === НОВАЯ ЛОГИКА ЖУРНАЛА И ФИЛЬТРОВ ===
-    window.renderCallHistoryList = async function() {
+   // === УМНЫЙ СЕРВЕРНЫЙ ПОИСК И ФИЛЬТРЫ (SMART SEARCH) ===
+    window.renderCallHistoryList = async function(searchQuery = '') {
         const tableContainer = document.getElementById('historyTableContainer');
         const noCallsMessage = document.getElementById('noCallsMessage');
         try {
-            const response = await fetch('/api/get-journal?t=' + new Date().getTime(), { cache: 'no-store' });
+            noCallsMessage.style.display = 'block'; 
+            noCallsMessage.innerText = searchQuery ? "🔍 Searching entire database..." : "Loading recent call history...";
+            tableContainer.style.display = 'none';
+
+            let url = '/api/get-journal?t=' + new Date().getTime();
+            if (searchQuery) {
+                url += '&search=' + encodeURIComponent(searchQuery);
+            }
+
+            const response = await fetch(url, { cache: 'no-store' });
             const result = await response.json();
+            
             if (result.success && result.logs && result.logs.length > 0) {
                 globalCallLogs = result.logs;
                 tableContainer.style.display = 'table'; 
@@ -990,14 +1000,13 @@
             } else { 
                 tableContainer.style.display = 'none'; 
                 noCallsMessage.style.display = 'block'; 
-                noCallsMessage.innerText = "The internal database journal is empty."; 
+                noCallsMessage.innerText = searchQuery ? "No results found for your search." : "The internal database journal is empty."; 
             }
         } catch (e) { noCallsMessage.innerText = "Database connection error."; }
     }
 
     window.applyHistoryFilters = function() {
         const tbody = document.getElementById('oomaCallHistoryBody');
-        const searchQ = document.getElementById('historySearchInput').value.toLowerCase();
         const statusF = document.getElementById('historyStatusFilter').value;
         const typeF = document.getElementById('historyTypeFilter').value;
         
@@ -1037,8 +1046,7 @@
                 trackingBadge = `<span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">✅ Resolved<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
             }
 
-            const searchString = `${log.client_name} ${log.client_phone} ${displayStaff} ${cleanDesc}`.toLowerCase();
-            if (searchQ && !searchString.includes(searchQ)) return;
+            // ПРИМЕНЯЕМ ФИЛЬТРЫ СТАТУСА И ТИПА
             if (statusF === 'Pending' && isResolved) return;
             if (statusF === 'Resolved' && !isResolved) return;
             if (typeF !== 'All' && !st.includes(typeF)) return;
@@ -1049,7 +1057,6 @@
             const tr = document.createElement('tr'); tr.className = 'journal-row';
             tr.style.cssText = urgentBg;
             
-            // Здесь обновленная логика передачи client_id!
             tr.onclick = () => openJournalModal(log.client_name, log.client_phone, d.toLocaleString(), log.operator_name, st, badgeColor, cleanDesc, log.follow_up_notes, trackingBadge, log.id, displayStaff, isResolved, log.client_id);
             
             tr.innerHTML = `
@@ -1062,6 +1069,19 @@
             tbody.appendChild(tr);
         });
     }
+
+    // Задержка (debounce) для поля поиска
+    let searchTimeout;
+    document.getElementById('historySearchInput').addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        const query = e.target.value.trim();
+        searchTimeout = setTimeout(() => {
+            window.renderCallHistoryList(query);
+        }, 600); 
+    });
+
+    document.getElementById('historyStatusFilter').addEventListener('change', applyHistoryFilters);
+    document.getElementById('historyTypeFilter').addEventListener('change', applyHistoryFilters);
 
     document.getElementById('historySearchInput').addEventListener('input', applyHistoryFilters);
     document.getElementById('historyStatusFilter').addEventListener('change', applyHistoryFilters);
