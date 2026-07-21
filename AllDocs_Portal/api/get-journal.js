@@ -5,33 +5,36 @@ export default async function handler(req, res) {
         const pool = postgres.createPool({ connectionString });
 
         const search = req.query.search || '';
+        const staff = req.query.staff || 'All'; // Ловим фильтр сотрудника
         let rows;
 
-        if (search) {
-            // === УМНЫЙ ПОИСК ПО ВСЕЙ ИСТОРИИ ===
-            
-            const likeSearch = `%${search}%`; // Для поиска по тексту (имена, заметки)
-            const cleanPhone = search.replace(/\D/g, ''); // Очищаем запрос от скобок и тире (оставляем только цифры)
-            const phoneSearch = cleanPhone ? `%${cleanPhone}%` : 'IMPOSSIBLE_MATCH'; // Защита от пустых поисков
+        // Если есть поиск ИЛИ выбран конкретный сотрудник — ищем по всей базе без лимита дней!
+        if (search || staff !== 'All') {
+            const likeSearch = search ? `%${search}%` : '%';
+            const cleanPhone = search ? search.replace(/\D/g, '') : '';
+            const phoneSearch = cleanPhone ? `%${cleanPhone}%` : 'IMPOSSIBLE_MATCH';
+            const staffMatch = staff !== 'All' ? staff : '%';
 
-            // Ищем совпадения в любом из полей без ограничения по датам!
             const result = await pool.sql`
                 SELECT * FROM call_logs 
                 WHERE 
-                    client_name ILIKE ${likeSearch}
-                    OR call_description ILIKE ${likeSearch}
-                    OR operator_name ILIKE ${likeSearch}
-                    OR assigned_staff_name ILIKE ${likeSearch}
-                    OR REGEXP_REPLACE(client_phone, '\\D', '', 'g') ILIKE ${phoneSearch}
+                    (
+                        client_name ILIKE ${likeSearch}
+                        OR call_description ILIKE ${likeSearch}
+                        OR REGEXP_REPLACE(client_phone, '\\D', '', 'g') ILIKE ${phoneSearch}
+                        OR ${search} = ''
+                    )
+                    AND (
+                        assigned_staff_name ILIKE ${staffMatch} 
+                        OR operator_name ILIKE ${staffMatch}
+                        OR ${staff} = 'All'
+                    )
                 ORDER BY created_at DESC
-                LIMIT 200; -- Выдаем до 200 совпадений, чтобы браузер не завис
+                LIMIT 200;
             `;
             rows = result.rows;
-            
         } else {
-            // === СТАНДАРТНАЯ ЗАГРУЗКА (ЕСЛИ ПОИСК ПУСТ) ===
-            
-            // Выгружаем только логи за последние 30 дней
+            // Если всё пусто — грузим только последние 30 дней для скорости
             const result = await pool.sql`
                 SELECT * FROM call_logs 
                 WHERE created_at > NOW() - INTERVAL '30 days'
