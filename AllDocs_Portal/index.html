@@ -975,49 +975,25 @@
         }
     };
 
-   // === УМНЫЙ СЕРВЕРНЫЙ ПОИСК (SMART SEARCH) ===
-    window.renderCallHistoryList = async function(searchQuery = '') {
+    // === НОВАЯ ЛОГИКА ЖУРНАЛА И ФИЛЬТРОВ ===
+    window.renderCallHistoryList = async function() {
         const tableContainer = document.getElementById('historyTableContainer');
         const noCallsMessage = document.getElementById('noCallsMessage');
         try {
-            // Показываем индикатор загрузки при поиске
-            noCallsMessage.style.display = 'block'; 
-            noCallsMessage.innerText = searchQuery ? "🔍 Searching entire database..." : "Loading recent call history...";
-            tableContainer.style.display = 'none';
-
-            let url = '/api/get-journal?t=' + new Date().getTime();
-            if (searchQuery) {
-                url += '&search=' + encodeURIComponent(searchQuery);
-            }
-
-            const response = await fetch(url, { cache: 'no-store' });
+            const response = await fetch('/api/get-journal?t=' + new Date().getTime(), { cache: 'no-store' });
             const result = await response.json();
-            
             if (result.success && result.logs && result.logs.length > 0) {
                 globalCallLogs = result.logs;
                 tableContainer.style.display = 'table'; 
                 noCallsMessage.style.display = 'none';
-                applyHistoryFilters(); // Применяем фильтры статусов поверх найденного
+                applyHistoryFilters();
             } else { 
                 tableContainer.style.display = 'none'; 
                 noCallsMessage.style.display = 'block'; 
-                noCallsMessage.innerText = searchQuery ? "No results found for your search." : "The internal database journal is empty."; 
+                noCallsMessage.innerText = "The internal database journal is empty."; 
             }
         } catch (e) { noCallsMessage.innerText = "Database connection error."; }
     }
-
-    // Делаем задержку (debounce), чтобы не "спамить" сервер при каждой введенной букве
-    let searchTimeout;
-    document.getElementById('historySearchInput').addEventListener('input', function(e) {
-        clearTimeout(searchTimeout);
-        const query = e.target.value.trim();
-        searchTimeout = setTimeout(() => {
-            window.renderCallHistoryList(query);
-        }, 600); // Сервер начнет поиск через 0.6 сек после того, как ты перестанешь печатать
-    });
-
-    document.getElementById('historyStatusFilter').addEventListener('change', applyHistoryFilters);
-    document.getElementById('historyTypeFilter').addEventListener('change', applyHistoryFilters);
 
     window.applyHistoryFilters = function() {
         const tbody = document.getElementById('oomaCallHistoryBody');
