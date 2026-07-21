@@ -1132,7 +1132,7 @@
             } catch (e) { alert('Server error'); } finally { btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; }
         };
 
-    async function checkNotifications() {
+   async function checkNotifications() {
             if (!myStaffId) return; 
             try {
                 const res = await fetch(`/api/get-notifications?staffId=${myStaffId}`);
@@ -1147,11 +1147,11 @@
                         if (newestNotif) {
                             const popupKey = 'popup_opened_' + newestNotif.id;
                             
-                            // Защита от бесконечного срабатывания
+                            // Защита от повторного срабатывания
                             if (!localStorage.getItem(popupKey)) {
                                 localStorage.setItem(popupKey, 'true');
                                 
-                                // БРАУЗЕРНОЕ PUSH-УВЕДОМЛЕНИЕ ВМЕСТО ОТКРЫТИЯ НОВОЙ ВКЛАДКИ
+                                // === БРАУЗЕРНОЕ PUSH-УВЕДОМЛЕНИЕ ВМЕСТО ОТКРЫТИЯ ОКНА ===
                                 if (window.Notification && Notification.permission === "granted") {
                                     let isUrgent = newestNotif.message.includes('[🚨 URGENT]');
                                     let notifTitle = isUrgent ? `🚨 URGENT: ${newestNotif.client_name}` : `📞 New Task: ${newestNotif.client_name}`;
@@ -1159,21 +1159,51 @@
                                     
                                     const sysNotif = new Notification(notifTitle, {
                                         body: cleanMsg,
-                                        icon: "https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png"
+                                        icon: "https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png",
+                                        requireInteraction: true // <--- УВЕДОМЛЕНИЕ НЕ ИСЧЕЗНЕТ САМО ПО СЕБЕ!
                                     });
                                     
-                                    // При клике на пуш - переходим в браузер и открываем вкладку с клиентом
+                                    // При клике на пуш - переходим в браузер и открываем карточку
                                     sysNotif.onclick = function() {
-                                        window.focus();
+                                        window.focus(); // Фокусируемся на браузере
                                         const phoneParam = newestNotif.client_phone ? '?phone=' + newestNotif.client_phone : '';
                                         const targetUrl = window.location.origin + window.location.pathname + phoneParam;
-                                        window.open(targetUrl, '_blank');
-                                        sysNotif.close();
+                                        window.open(targetUrl, '_blank'); // Открываем новую вкладку с клиентом
+                                        sysNotif.close(); // Закрываем пуш-уведомление
                                     };
                                 }
+                                // =========================================================
                             }
                         }
                     }
+
+                    previousNotifCount = data.notifications.length; notifList.innerHTML = '';
+                    data.notifications.forEach(notif => {
+                        const div = document.createElement('div');
+                        let isUrgent = notif.message.includes('[🚨 URGENT]');
+                        let urgentClass = isUrgent ? 'notif-item-urgent' : 'notif-item-modern';
+                        let tagHtml = isUrgent ? `<span class="urgent-tag">🚨 URGENT</span>` : `<span class="new-tag">New</span>`;
+                        
+                        div.className = urgentClass;
+                        
+                        let timeStr = notif.created_at ? new Date(notif.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        let cleanMessage = notif.message.replace(/\[🚨 URGENT\]/g, '').trim();
+                        let shortMsg = cleanMessage.replace(/\n/g, ' ').substring(0, 65) + '...';
+
+                        div.onclick = () => openNotifModal(notif.id, notif.client_name, notif.message, notif.created_at);
+                        div.innerHTML = `
+                            <div class="notif-title">
+                                <span>📞 ${notif.client_name}</span>
+                                ${tagHtml}
+                            </div>
+                            <div class="notif-preview">${shortMsg}</div>
+                            <div class="notif-time">🕒 Received: ${timeStr}</div>
+                        `;
+                        notifList.appendChild(div);
+                    });
+                } else { badge.style.display = 'none'; previousNotifCount = 0; notifList.innerHTML = '<div style="color: #888; text-align: center; padding: 30px 20px; font-size: 14px;">No new tasks.</div>'; }
+            } catch(e) {}
+        }
 
                     previousNotifCount = data.notifications.length; notifList.innerHTML = '';
                     data.notifications.forEach(notif => {
