@@ -921,17 +921,17 @@
                 document.getElementById('dwIdBadge').textContent = 'DOCKETWISE ID: ' + clientData.id;
                 document.getElementById('dwEmail').textContent = clientData.email || 'No email registered';
                 
-              if (clientData.matters && clientData.matters.length > 0) {
+                if (clientData.matters && clientData.matters.length > 0) {
                     let mattersHtml = '';
                     clientData.matters.forEach(m => {
                         let staff = m.assignee_name || m.assignee || m.staff || m.user || "Unassigned";
                         // Генерируем ссылку прямо на карточку дела в Docketwise
-                        let matterUrl = \`https://app.docketwise.com/matters/\${m.id}\`;
+                        let matterUrl = `https://app.docketwise.com/matters/${m.id}`;
                         
-                        mattersHtml += \`<div style="padding: 12px 0; border-bottom: 1px solid #f0ebe1;">
-                            <a href="\${matterUrl}" target="_blank" style="font-weight: 700; color: #1976d2; font-size: 14.5px; text-decoration: none; display: inline-block; transition: 0.2s;" onmouseover="this.style.color='#0d47a1'; this.style.textDecoration='underline'" onmouseout="this.style.color='#1976d2'; this.style.textDecoration='none'">📄 \${m.title} ↗</a>
-                            <div style="font-size: 12.5px; color: #2e7d32; margin-top: 4px; font-weight: 600;">👤 Assigned to: \${staff}</div>
-                        </div>\`;
+                        mattersHtml += `<div style="padding: 12px 0; border-bottom: 1px solid #f0ebe1;">
+                            <a href="${matterUrl}" target="_blank" style="font-weight: 700; color: #1976d2; font-size: 14.5px; text-decoration: none; display: inline-block; transition: 0.2s;" onmouseover="this.style.color='#0d47a1'; this.style.textDecoration='underline'" onmouseout="this.style.color='#1976d2'; this.style.textDecoration='none'">📄 ${m.title} ↗</a>
+                            <div style="font-size: 12.5px; color: #2e7d32; margin-top: 4px; font-weight: 600;">👤 Assigned to: ${staff}</div>
+                        </div>`;
                     });
                     document.getElementById('dwMattersList').innerHTML = mattersHtml;
                 } else {
