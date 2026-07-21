@@ -681,9 +681,21 @@
         </div>
 
         <div id="tabHistoryContent" class="tab-content">
-            <!-- ПАНЕЛЬ ФИЛЬТРОВ ЖУРНАЛА -->
-            <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-                <input type="text" id="historySearchInput" placeholder="🔍 Search history by name, phone, or staff..." style="flex: 2; padding: 14px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 14.5px; outline: none; background-color: var(--surface-color);">
+                
+                <!-- НОВЫЙ ФИЛЬТР ПО СОТРУДНИКАМ -->
+                <select id="historyStaffDropdown" style="flex: 1.5; padding: 14px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 14.5px; outline: none; background: white; cursor: pointer;">
+                    <option value="All">👨‍💼 All Staff</option>
+                    <option value="Mariam Djaradjian">Mariam Djaradjian</option>
+                    <option value="Artak Badalyan">Artak Badalyan</option>
+                    <option value="Gohar Aloyan">Gohar Aloyan</option>
+                    <option value="Argishti Shahbazian">Argishti Shahbazian</option>
+                    <option value="Lilit Avetisyan">Lilit Avetisyan</option>
+                    <option value="Norayr Badalyan">Norayr Badalyan</option>
+                    <option value="Petros Eghiazaryan">Petros Eghiazaryan</option>
+                    <option value="Rima Avetisyan">Rima Avetisyan</option>
+                    <option value="Resolved by Operator">✅ Resolved by Operator</option>
+                </select>
+
                 <select id="historyStatusFilter" style="flex: 1; padding: 14px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 14.5px; outline: none; background: white; cursor: pointer;">
                     <option value="All">All Statuses</option>
                     <option value="Pending">⏳ Pending </option>
@@ -691,13 +703,12 @@
                 </select>
                 <select id="historyTypeFilter" style="flex: 1; padding: 14px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 14.5px; outline: none; background: white; cursor: pointer;">
                     <option value="All">All Call Types</option>
-                    <option value="Lead (New Appt)">🔥 Lead (New Appt)</option>
-                    <option value="Existing Client">👤 Existing Client</option>
+                    <option value="Lead (New Appt)">🔥 Lead</option>
+                    <option value="Existing Client">👤 Existing</option>
                     <option value="Unrecognized">⚠️ Unrecognized</option>
-                    <option value="General Inquiry">ℹ️ General Inquiry</option>
+                    <option value="General Inquiry">ℹ️ General</option>
                 </select>
             </div>
-
             <div id="noCallsMessage" class="no-calls">Loading internal call history...</div>
             <table class="history-table" id="historyTableContainer" style="display: none;">
                 <thead><tr><th>Date & Time</th><th>Client & Notes</th><th>Phone</th><th style="width: 150px;">Status / Assigned To</th></tr></thead>
@@ -975,19 +986,21 @@
         }
     };
 
-   // === УМНЫЙ СЕРВЕРНЫЙ ПОИСК И ФИЛЬТРЫ (SMART SEARCH) ===
-    window.renderCallHistoryList = async function(searchQuery = '') {
+  // === ОБНОВЛЕННАЯ ЛОГИКА ЖУРНАЛА С ФИЛЬТРОМ СОТРУДНИКОВ ===
+    window.renderCallHistoryList = async function() {
         const tableContainer = document.getElementById('historyTableContainer');
         const noCallsMessage = document.getElementById('noCallsMessage');
+        const searchQuery = document.getElementById('historySearchInput').value.trim();
+        const staffQuery = document.getElementById('historyStaffDropdown').value;
+
         try {
             noCallsMessage.style.display = 'block'; 
-            noCallsMessage.innerText = searchQuery ? "🔍 Searching entire database..." : "Loading recent call history...";
+            noCallsMessage.innerText = (searchQuery || staffQuery !== 'All') ? "🔍 Searching database..." : "Loading recent call history...";
             tableContainer.style.display = 'none';
 
             let url = '/api/get-journal?t=' + new Date().getTime();
-            if (searchQuery) {
-                url += '&search=' + encodeURIComponent(searchQuery);
-            }
+            if (searchQuery) url += '&search=' + encodeURIComponent(searchQuery);
+            if (staffQuery !== 'All') url += '&staff=' + encodeURIComponent(staffQuery);
 
             const response = await fetch(url, { cache: 'no-store' });
             const result = await response.json();
@@ -1000,11 +1013,86 @@
             } else { 
                 tableContainer.style.display = 'none'; 
                 noCallsMessage.style.display = 'block'; 
-                noCallsMessage.innerText = searchQuery ? "No results found for your search." : "The internal database journal is empty."; 
+                noCallsMessage.innerText = (searchQuery || staffQuery !== 'All') ? "No results found for your search/staff." : "The internal database journal is empty."; 
             }
         } catch (e) { noCallsMessage.innerText = "Database connection error."; }
     }
 
+    window.applyHistoryFilters = function() {
+        const tbody = document.getElementById('oomaCallHistoryBody');
+        const statusF = document.getElementById('historyStatusFilter').value;
+        const typeF = document.getElementById('historyTypeFilter').value;
+        const staffF = document.getElementById('historyStaffDropdown').value;
+        
+        tbody.innerHTML = '';
+        
+        globalCallLogs.forEach(log => {
+            const d = new Date(log.created_at);
+            let rawDesc = log.call_description || ''; let cleanDesc = rawDesc;
+            let st = "General Call"; let badgeColor = '#1976d2';
+            
+            const isUrgent = rawDesc.includes('[🚨 URGENT]');
+            if (isUrgent) { cleanDesc = cleanDesc.replace(/\[🚨 URGENT\]/g, '').trim(); }
+            
+            const statusMatch = rawDesc.match(/(?:\[Status:\s*|Status:\s*)(.*?)(?:\]|\n| \||$)/i);
+            if (statusMatch) { st = statusMatch[1].trim(); cleanDesc = cleanDesc.replace(statusMatch[0], '').trim(); }
+            else if (rawDesc.includes('NEW LEAD APPOINTMENT')) { st = 'Lead (New Appt)'; cleanDesc = cleanDesc.replace(/\[🔥 NEW LEAD APPOINTMENT\]/i, '').trim(); }
+            else if (rawDesc.includes('APPOINTMENT BOOKED')) { st = 'Existing Client'; cleanDesc = cleanDesc.replace(/\[APPOINTMENT BOOKED\]/i, '').trim(); }
+            
+            if(st.includes('Lead')) badgeColor = '#d32f2f'; 
+            else if(st.includes('Unrecognized')) badgeColor = '#f57c00'; 
+            else if(st.includes('Existing')) badgeColor = '#2e7d32'; 
+            
+            cleanDesc = cleanDesc.replace(/(01-Initial Consultation|03-Client Communication|04-Phone Call|05-Follow-Up Needed|20-Interview|General Call)/ig, '').replace(/^\]?\s*/, '').trim();
+            let snippet = cleanDesc.length > 55 ? cleanDesc.substring(0, 55) + '...' : cleanDesc;
+            
+            let displayStaff = log.assigned_staff_name || log.operator_name || 'Staff';
+            let isResolved = true;
+            let trackingBadge = `<span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">✅ Resolved<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
+
+            if (displayStaff !== "Resolved by Operator" && displayStaff !== "-- Do not notify anyone --" && (!log.follow_up_notes || log.follow_up_notes.trim() === '')) {
+                isResolved = false;
+                trackingBadge = `<span style="font-size: 12px; background: #fff3e0; color: #e65100; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">⏳ Pending<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
+            } else if (displayStaff === "Resolved by Operator" || displayStaff === "-- Do not notify anyone --") {
+                displayStaff = log.operator_name;
+                trackingBadge = `<span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">✅ Resolved<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
+            }
+
+            // ПРИМЕНЯЕМ ФИЛЬТРЫ
+            if (statusF === 'Pending' && isResolved) return;
+            if (statusF === 'Resolved' && !isResolved) return;
+            if (typeF !== 'All' && !st.includes(typeF)) return;
+            if (staffF !== 'All' && displayStaff !== staffF && log.operator_name !== staffF) return;
+
+            let urgentBadge = isUrgent ? `<span class="badge-status" style="background-color:#d32f2f; margin-left:8px; font-size: 10px; animation: pulseAlert 1.5s infinite;">🚨 URGENT</span>` : '';
+            let urgentBg = isUrgent ? 'background-color: #fff0f0;' : '';
+
+            const tr = document.createElement('tr'); tr.className = 'journal-row';
+            tr.style.cssText = urgentBg;
+            
+            tr.onclick = () => openJournalModal(log.client_name, log.client_phone, d.toLocaleString(), log.operator_name, st, badgeColor, cleanDesc, log.follow_up_notes, trackingBadge, log.id, displayStaff, isResolved, log.client_id);
+            
+            tr.innerHTML = `
+                <td><strong>${d.toLocaleDateString()}</strong> <br><span style="color:#888; font-size:12px;">${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></td>
+                <td><div style="font-weight:600; color:var(--primary-color); font-size: 15px;">${log.client_name || 'Unknown'} <span class="badge-status" style="background-color:${badgeColor}; margin-left:8px; font-size: 10px;">${st}</span>${urgentBadge}</div>
+                <div style="font-size: 13px; color: #666; margin-top: 6px;">${snippet}</div></td>
+                <td style="font-weight:500; color:var(--secondary-color); font-size: 14.5px;">📞 ${log.client_phone || '--'}</td>
+                <td>${trackingBadge}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // Слушатели событий
+    let searchTimeout;
+    document.getElementById('historySearchInput').addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => { window.renderCallHistoryList(); }, 600); 
+    });
+
+    document.getElementById('historyStaffDropdown').addEventListener('change', () => { window.renderCallHistoryList(); });
+    document.getElementById('historyStatusFilter').addEventListener('change', applyHistoryFilters);
+    document.getElementById('historyTypeFilter').addEventListener('change', applyHistoryFilters);
     window.applyHistoryFilters = function() {
         const tbody = document.getElementById('oomaCallHistoryBody');
         const statusF = document.getElementById('historyStatusFilter').value;
