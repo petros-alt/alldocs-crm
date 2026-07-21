@@ -450,6 +450,35 @@
     </div>
 </div>
 
+<!-- DOCKETWISE PROFILE MODAL -->
+<div id="dwProfileModal" class="modal-overlay" style="z-index: 2500;">
+    <div class="modal-content" style="max-width: 500px; padding: 0; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); padding: 30px; position: relative; text-align: center; color: white;">
+            <div class="modal-close" style="color: white; top: 15px; right: 15px;" onclick="document.getElementById('dwProfileModal').style.display='none'">✖</div>
+            <div style="width: 80px; height: 80px; background: white; color: var(--primary-color); border-radius: 50%; font-size: 32px; font-weight: bold; line-height: 80px; margin: 0 auto 15px auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2);" id="dwAvatar">A</div>
+            <h2 style="margin: 0; font-size: 24px;" id="dwName">Client Name</h2>
+            <p style="margin: 5px 0 0 0; opacity: 0.8; font-size: 12px; font-weight: bold; letter-spacing: 0.5px; text-transform: uppercase;" id="dwIdBadge">Docketwise ID: ---</p>
+        </div>
+        <div style="padding: 30px; background: var(--surface-color);">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px;">
+                <div style="background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                    <div style="font-size: 11px; color: #888; font-weight: bold; margin-bottom: 5px; text-transform: uppercase;">Phone Number</div>
+                    <div style="font-size: 14.5px; color: var(--primary-color); font-weight: 700;" id="dwPhone">---</div>
+                </div>
+                <div style="background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                    <div style="font-size: 11px; color: #888; font-weight: bold; margin-bottom: 5px; text-transform: uppercase;">Email Address</div>
+                    <div style="font-size: 14.5px; color: var(--primary-color); font-weight: 700; word-break: break-all;" id="dwEmail">---</div>
+                </div>
+            </div>
+            
+            <div style="font-size: 12px; color: var(--accent-color); font-weight: 800; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">📂 Active Matters (Cases)</div>
+            <div id="dwMattersList" style="background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); min-height: 60px; max-height: 250px; overflow-y: auto;">
+                Loading matters...
+            </div>
+        </div>
+    </div>
+</div>
+
 <aside class="sidebar">
     <div class="sidebar-header"><img src="https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png?w=2128&ssl=1" alt="All Docs Consulting"></div>
     <ul class="nav-menu">
@@ -809,8 +838,17 @@
         container.appendChild(row);
     };
 
-    window.openJournalModal = function(client, phone, date, op, st, color, notes, reply, trackingBadgeHTML, logId, assignedStaff, isResolved) {
-        document.getElementById('jmClient').textContent = client || 'Unknown';
+    window.openJournalModal = function(client, phone, date, op, st, color, notes, reply, trackingBadgeHTML, logId, assignedStaff, isResolved, clientId) {
+        
+        // Делаем имя кликабельным для открытия профиля Docketwise
+        const clientEl = document.getElementById('jmClient');
+        if (phone && phone !== '--') {
+            const safeClientName = client ? client.replace(/'/g, "\\'") : 'Unknown';
+            clientEl.innerHTML = `<span style="color: #1976d2; text-decoration: underline; cursor: pointer; transition: 0.2s;" onclick="openDocketwiseProfile('${safeClientName}', '${phone}', '${clientId || ''}')" onmouseover="this.style.color='#0d47a1'" onmouseout="this.style.color='#1976d2'">${client || 'Unknown'} 🔗</span>`;
+        } else {
+            clientEl.textContent = client || 'Unknown';
+        }
+
         document.getElementById('jmPhone').textContent = phone ? '📞 ' + phone : 'No Phone';
         document.getElementById('jmDate').textContent = date;
         document.getElementById('jmOperator').textContent = op;
@@ -820,22 +858,17 @@
         const replyBlock = document.getElementById('jmStaffReplyBlock');
         if(reply) { replyBlock.style.display = 'block'; document.getElementById('jmStaffReply').textContent = reply; } else { replyBlock.style.display = 'none'; }
         
-        // === УМНЫЙ РОЛЕВОЙ ДОСТУП И КНОПКА ЗАКРЫТИЯ ===
         const resolveSection = document.getElementById('jmResolveSection');
         const loggedInStaff = localStorage.getItem('loggedInStaff');
-        
-        // Карта для сопоставления коротких логинов и полных имен операторов
         const staffMap = {
             "Norayr Badalyan": "332487", "Petros Eghiazaryan": "418892", "Petros E.": "418892", "Mariam Djaradjian": "339159", "Mariam D.": "339159",
             "Artak Badalyan": "332810", "Artak B.": "332810", "Argishti Shahbazian": "1005", "Argishti S.": "1005", "Gohar Aloyan": "1001", "Gohar A.": "1001",
             "Rima Avetisyan": "1007", "Rima A.": "1007", "Lilit Avetisyan": "1009", "Lilit A.": "1009"
         };
         
-        // Переводим имена в уникальные ID для точного сравнения
         const assignedId = staffMap[assignedStaff] || assignedStaff;
         const myId = staffMap[loggedInStaff] || loggedInStaff;
         
-        // Показываем кнопку, если ID совпадают (или имена полностью совпадают)
         if (!isResolved && (assignedId === myId || assignedStaff === loggedInStaff)) {
             resolveSection.style.display = 'block';
             document.getElementById('jmResolveNote').value = '';
@@ -843,12 +876,58 @@
         } else {
             resolveSection.style.display = 'none';
         }
-        // ==========================================
 
         document.getElementById('journalViewModal').style.display = 'flex';
     }
     
     window.closeJournalModal = function() { document.getElementById('journalViewModal').style.display = 'none'; }
+
+    // Логика скачивания данных из Docketwise для нового модального окна
+    window.openDocketwiseProfile = async function(name, phone, id) {
+        document.getElementById('dwProfileModal').style.display = 'flex';
+        document.getElementById('dwName').textContent = name || 'Unknown Client';
+        document.getElementById('dwAvatar').textContent = (name && name !== 'Unknown') ? name.charAt(0).toUpperCase() : '?';
+        document.getElementById('dwPhone').textContent = phone ? '📞 ' + phone : '---';
+        document.getElementById('dwIdBadge').textContent = '⏳ SEARCHING DOCKETWISE...';
+        document.getElementById('dwEmail').textContent = 'Loading...';
+        document.getElementById('dwMattersList').innerHTML = '<div style="text-align: center; padding: 20px; color: #888;"><b>⏳ Fetching live data from Docketwise...</b></div>';
+
+        try {
+            let cleanPhone = phone.replace(/[^\d+]/g, '');
+            if (!cleanPhone) cleanPhone = name; 
+            
+            const type = cleanPhone.match(/\d/) ? 'phone' : 'name';
+            const res = await fetch(`/api/search?query=${encodeURIComponent(cleanPhone)}&type=${type}`);
+            const data = await res.json();
+            
+            if (data.success && data.clients && data.clients.length > 0) {
+                let clientData = data.clients.find(c => String(c.id) === String(id) || c.name.includes(name.split(' ')[0])) || data.clients[0];
+                
+                document.getElementById('dwIdBadge').textContent = 'DOCKETWISE ID: ' + clientData.id;
+                document.getElementById('dwEmail').textContent = clientData.email || 'No email registered';
+                
+                if (clientData.matters && clientData.matters.length > 0) {
+                    let mattersHtml = '';
+                    clientData.matters.forEach(m => {
+                        let staff = m.assignee_name || m.assignee || m.staff || m.user || "Unassigned";
+                        mattersHtml += `<div style="padding: 12px 0; border-bottom: 1px solid #f0ebe1;">
+                            <div style="font-weight: 700; color: var(--primary-color); font-size: 14.5px;">📄 ${m.title}</div>
+                            <div style="font-size: 12.5px; color: #2e7d32; margin-top: 4px; font-weight: 600;">👤 Assigned to: ${staff}</div>
+                        </div>`;
+                    });
+                    document.getElementById('dwMattersList').innerHTML = mattersHtml;
+                } else {
+                    document.getElementById('dwMattersList').innerHTML = '<div style="color: #888; font-size: 14px; padding: 10px; text-align: center;">No active matters found for this client.</div>';
+                }
+            } else {
+                document.getElementById('dwIdBadge').textContent = 'NOT FOUND IN DOCKETWISE';
+                document.getElementById('dwEmail').textContent = '---';
+                document.getElementById('dwMattersList').innerHTML = '<div style="color: #d32f2f; font-size: 14px; padding: 10px; text-align: center; font-weight: bold;">Could not retrieve cases. This client might be a Lead or not fully registered.</div>';
+            }
+        } catch (e) {
+            document.getElementById('dwMattersList').innerHTML = '<div style="color: #d32f2f; font-size: 14px; text-align: center; padding: 10px;">Connection error. Please try again.</div>';
+        }
+    };
 
     // === НОВАЯ, УМНАЯ ФУНКЦИЯ ЗАКРЫТИЯ ЖУРНАЛА ===
     window.resolveFromJournal = async function(logId, clientName) {
@@ -861,7 +940,6 @@
         const btn = document.getElementById('jmResolveBtn');
         btn.textContent = "Saving..."; btn.disabled = true;
         try {
-            // Ищем правильный ID уведомления (колокольчика) для этого звонка
             const loggedInStaff = localStorage.getItem('loggedInStaff');
             const staffMap = {
                 "Norayr Badalyan": "332487", "Petros Eghiazaryan": "418892", "Petros E.": "418892", "Mariam Djaradjian": "339159", "Mariam D.": "339159",
@@ -870,27 +948,23 @@
             };
             const myStaffId = staffMap[loggedInStaff];
             
-            // Сканируем активный колокольчик, чтобы найти нужную задачу
             const res = await fetch(`/api/get-notifications?staffId=${myStaffId}`);
             const data = await res.json();
             
-            let targetNotifId = logId; // на случай, если вдруг ID совпадают
+            let targetNotifId = logId; 
             
             if (data.success && data.notifications) {
-                // Ищем уведомление, которое принадлежит этому же клиенту
                 const matchedNotif = data.notifications.find(n => n.client_name.includes(clientName) || clientName.includes(n.client_name));
                 if (matchedNotif) {
                     targetNotifId = matchedNotif.id;
                 }
             }
 
-            // Отправляем правильный ID на сервер
             await fetch(`/api/get-notifications?action=read&notificationId=${targetNotifId}&note=${encodeURIComponent(extraNote)}`);
             closeJournalModal(); 
             
             if (typeof checkNotifications === "function") checkNotifications(); 
             
-            // Ждем 0.8 сек, чтобы база данных точно успела сохранить
             await new Promise(resolve => setTimeout(resolve, 800));
             
             window.renderCallHistoryList(); 
@@ -906,7 +980,6 @@
         const tableContainer = document.getElementById('historyTableContainer');
         const noCallsMessage = document.getElementById('noCallsMessage');
         try {
-            // === ДОБАВЛЕНО ВЗЛАМЫВАНИЕ КЭША (?t=таймер), ЧТОБЫ ВСЕГДА ГРУЗИТЬ СВЕЖИЕ ДАННЫЕ ===
             const response = await fetch('/api/get-journal?t=' + new Date().getTime(), { cache: 'no-store' });
             const result = await response.json();
             if (result.success && result.logs && result.logs.length > 0) {
@@ -956,7 +1029,6 @@
             let isResolved = true;
             let trackingBadge = `<span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">✅ Resolved<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
 
-            // ЛОГИКА СВЕТОФОРА (Pending vs Resolved)
             if (displayStaff !== "Resolved by Operator" && displayStaff !== "-- Do not notify anyone --" && (!log.follow_up_notes || log.follow_up_notes.trim() === '')) {
                 isResolved = false;
                 trackingBadge = `<span style="font-size: 12px; background: #fff3e0; color: #e65100; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">⏳ Pending<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
@@ -965,7 +1037,6 @@
                 trackingBadge = `<span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">✅ Resolved<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
             }
 
-            // ПРИМЕНЯЕМ ФИЛЬТРЫ
             const searchString = `${log.client_name} ${log.client_phone} ${displayStaff} ${cleanDesc}`.toLowerCase();
             if (searchQ && !searchString.includes(searchQ)) return;
             if (statusF === 'Pending' && isResolved) return;
@@ -977,7 +1048,10 @@
 
             const tr = document.createElement('tr'); tr.className = 'journal-row';
             tr.style.cssText = urgentBg;
-            tr.onclick = () => openJournalModal(log.client_name, log.client_phone, d.toLocaleString(), log.operator_name, st, badgeColor, cleanDesc, log.follow_up_notes, trackingBadge, log.id, displayStaff, isResolved);
+            
+            // Здесь обновленная логика передачи client_id!
+            tr.onclick = () => openJournalModal(log.client_name, log.client_phone, d.toLocaleString(), log.operator_name, st, badgeColor, cleanDesc, log.follow_up_notes, trackingBadge, log.id, displayStaff, isResolved, log.client_id);
+            
             tr.innerHTML = `
                 <td><strong>${d.toLocaleDateString()}</strong> <br><span style="color:#888; font-size:12px;">${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></td>
                 <td><div style="font-weight:600; color:var(--primary-color); font-size: 15px;">${log.client_name || 'Unknown'} <span class="badge-status" style="background-color:${badgeColor}; margin-left:8px; font-size: 10px;">${st}</span>${urgentBadge}</div>
@@ -1011,7 +1085,6 @@
     };
 
     document.addEventListener("DOMContentLoaded", async function() {
-        // Запрос прав на уведомления при первом клике (чтобы браузер не блокировал)
         document.addEventListener('click', () => {
             if (window.Notification && Notification.permission !== "granted" && Notification.permission !== "denied") {
                 Notification.requestPermission();
@@ -1048,28 +1121,27 @@
         });
 
         transferSelect.addEventListener('change', function() {
-    const staffName = this.value; if (!staffName) return; 
-    const descArea = document.getElementById('briefDescription'); const transferText = `Call Transferred to: ${staffName}`;
-    if (descArea.value.trim() !== "") { descArea.value = descArea.value + "\n\n" + transferText; } else { descArea.value = transferText; }
-    document.getElementById('transferPanel').style.display = 'none';
-    
-    // ВОЗВРАЩАЕМ АВТОМАТИЧЕСКОЕ НАЗНАЧЕНИЕ СОТРУДНИКА (Чтобы был колокольчик и статус Pending)
-    for (let i = 0; i < staffSelect.options.length; i++) { 
-        if (staffSelect.options[i].text === staffName) { 
-            staffSelect.selectedIndex = i; 
-            break; 
-        } 
-    }
-    
-    // На всякий случай снимаем галочку "Resolved", если оператор случайно её нажал
-    const resolvedOpCheckbox = document.getElementById('resolvedByOpCheckbox');
-    if (resolvedOpCheckbox && resolvedOpCheckbox.checked) {
-        resolvedOpCheckbox.checked = false;
-        resolvedOpCheckbox.dispatchEvent(new Event('change'));
-    }
+            const staffName = this.value; if (!staffName) return; 
+            const descArea = document.getElementById('briefDescription'); const transferText = `Call Transferred to: ${staffName}`;
+            if (descArea.value.trim() !== "") { descArea.value = descArea.value + "\n\n" + transferText; } else { descArea.value = transferText; }
+            document.getElementById('transferPanel').style.display = 'none';
+            
+            for (let i = 0; i < staffSelect.options.length; i++) { 
+                if (staffSelect.options[i].text === staffName) { 
+                    staffSelect.selectedIndex = i; 
+                    break; 
+                } 
+            }
+            
+            const resolvedOpCheckbox = document.getElementById('resolvedByOpCheckbox');
+            if (resolvedOpCheckbox && resolvedOpCheckbox.checked) {
+                resolvedOpCheckbox.checked = false;
+                resolvedOpCheckbox.dispatchEvent(new Event('change'));
+            }
 
-    this.value = ""; 
-});
+            this.value = ""; 
+        });
+
         const userProfile = document.getElementById('userProfile'); const logoutMenu = document.getElementById('logoutMenu');
         document.getElementById('logoutBtn').addEventListener('click', () => { localStorage.clear(); window.location.href = 'login.html'; });
         userProfile.addEventListener('click', () => logoutMenu.style.display = (logoutMenu.style.display === 'block') ? 'none' : 'block');
@@ -1082,7 +1154,7 @@
         bellBtn.addEventListener('click', () => { notifDropdown.style.display = notifDropdown.style.display === 'block' ? 'none' : 'block'; });
         document.getElementById('closeDropdownBtn').addEventListener('click', () => { notifDropdown.style.display = 'none'; });
 
-       window.openNotifModal = function(id, clientName, message, createdAt) {
+        window.openNotifModal = function(id, clientName, message, createdAt) {
             currentActiveNotifId = id; 
             
             let isUrgent = message.includes('[🚨 URGENT]');
@@ -1092,14 +1164,12 @@
                 document.getElementById('modalClientName').textContent = '📞 ' + clientName;
             }
             
-            // Устанавливаем точное время получения задачи
             let timeText = createdAt ? new Date(createdAt).toLocaleString([], {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit'}) : new Date().toLocaleString([], {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit'});
             document.getElementById('modalNotifTime').textContent = '🕒 ' + timeText;
 
             let operatorInfo = "System Alert"; 
             let issueText = message;
             
-            // Умный парсинг сообщения
             if (message.includes("transferred a client to you")) {
                 let parts = message.split("\n");
                 operatorInfo = parts[0].trim();
@@ -1135,10 +1205,8 @@
                 extraNote = "Task closed without comments";
             }
             
-            // === АВТОМАТИЧЕСКИЙ ШТАМП ВРЕМЕНИ ЗАКРЫТИЯ ===
             const resolvedTime = new Date().toLocaleString([], {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit'});
             extraNote = extraNote + `\n\n[✅ Resolved at: ${resolvedTime}]`;
-            // =============================================
 
             const btn = document.getElementById('resolveBtn');
             btn.textContent = "Saving..."; btn.disabled = true;
@@ -1146,101 +1214,97 @@
                 await fetch(`/api/get-notifications?action=read&notificationId=${currentActiveNotifId}&note=${encodeURIComponent(extraNote)}`);
                 closeNotifModal(); checkNotifications(); 
                 
-                // === ДОБАВЛЕНА ПАУЗА 0.8 СЕК ===
                 await new Promise(resolve => setTimeout(resolve, 800));
                 
                 if (document.getElementById('tabHistoryContent').classList.contains('active')) window.renderCallHistoryList(); 
             } catch (e) { alert('Server error'); } finally { btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; }
         };
 
-    async function checkNotifications() {
-        if (!myStaffId) return; 
-        try {
-            const res = await fetch(`/api/get-notifications?staffId=${myStaffId}`);
-            const data = await res.json(); 
-            const badge = document.getElementById('notifBadge');
-            
-            if (data.success && data.notifications && data.notifications.length > 0) {
-                badge.style.display = 'block'; 
-                badge.textContent = data.notifications.length;
+        async function checkNotifications() {
+            if (!myStaffId) return; 
+            try {
+                const res = await fetch(`/api/get-notifications?staffId=${myStaffId}`);
+                const data = await res.json(); 
+                const badge = document.getElementById('notifBadge');
                 
-                let hasNewTasks = false;
-
-                // === НОВАЯ НАДЕЖНАЯ ЛОГИКА ПУШЕЙ (по ID) ===
-                data.notifications.forEach(notif => {
-                    const pushKey = 'notif_pushed_v3_' + notif.id;
+                if (data.success && data.notifications && data.notifications.length > 0) {
+                    badge.style.display = 'block'; 
+                    badge.textContent = data.notifications.length;
                     
-                    if (!localStorage.getItem(pushKey)) {
-                        localStorage.setItem(pushKey, 'true'); // Запоминаем, что уже показали
-                        hasNewTasks = true;
+                    let hasNewTasks = false;
+
+                    data.notifications.forEach(notif => {
+                        const pushKey = 'notif_pushed_v3_' + notif.id;
                         
-                        if (window.Notification && Notification.permission === "granted") {
-                            let msgText = notif.message || "New Task";
-                            let clientName = notif.client_name || "Client";
-                            let isUrgent = msgText.includes('[🚨 URGENT]');
-                            let notifTitle = isUrgent ? `🚨 URGENT: ${clientName}` : `📞 New Task: ${clientName}`;
-                            let cleanMsg = msgText.replace(/\[🚨 URGENT\]/g, '').replace(/\n/g, ' ').substring(0, 100) + '...';
+                        if (!localStorage.getItem(pushKey)) {
+                            localStorage.setItem(pushKey, 'true'); 
+                            hasNewTasks = true;
                             
-                            try {
-                                const sysNotif = new Notification(notifTitle, {
-                                    body: cleanMsg,
-                                    icon: "https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png"
-                                });
+                            if (window.Notification && Notification.permission === "granted") {
+                                let msgText = notif.message || "New Task";
+                                let clientName = notif.client_name || "Client";
+                                let isUrgent = msgText.includes('[🚨 URGENT]');
+                                let notifTitle = isUrgent ? `🚨 URGENT: ${clientName}` : `📞 New Task: ${clientName}`;
+                                let cleanMsg = msgText.replace(/\[🚨 URGENT\]/g, '').replace(/\n/g, ' ').substring(0, 100) + '...';
                                 
-                                sysNotif.onclick = function() {
-                                    window.focus(); // Поднимаем браузер наверх
-                                    const phoneParam = notif.client_phone ? '?phone=' + notif.client_phone : '';
-                                    const targetUrl = window.location.origin + window.location.pathname + phoneParam;
-                                    window.open(targetUrl, '_blank'); // Открываем новую вкладку с клиентом
-                                    sysNotif.close();
-                                };
-                            } catch (e) {
-                                console.log("Push API Error:", e);
+                                try {
+                                    const sysNotif = new Notification(notifTitle, {
+                                        body: cleanMsg,
+                                        icon: "https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png"
+                                    });
+                                    
+                                    sysNotif.onclick = function() {
+                                        window.focus(); 
+                                        const phoneParam = notif.client_phone ? '?phone=' + notif.client_phone : '';
+                                        const targetUrl = window.location.origin + window.location.pathname + phoneParam;
+                                        window.open(targetUrl, '_blank'); 
+                                        sysNotif.close();
+                                    };
+                                } catch (e) {
+                                    console.log("Push API Error:", e);
+                                }
                             }
                         }
+                    });
+
+                    if (hasNewTasks) {
+                        bellSound.play().catch(e => console.log('Audio blocked.'));
                     }
-                });
 
-                if (hasNewTasks) {
-                    bellSound.play().catch(e => console.log('Audio blocked.'));
+                    notifList.innerHTML = '';
+                    data.notifications.forEach(notif => {
+                        const div = document.createElement('div');
+                        let msgText = notif.message || "";
+                        let isUrgent = msgText.includes('[🚨 URGENT]');
+                        let urgentClass = isUrgent ? 'notif-item-urgent' : 'notif-item-modern';
+                        let tagHtml = isUrgent ? `<span class="urgent-tag">🚨 URGENT</span>` : `<span class="new-tag">New</span>`;
+                        
+                        div.className = urgentClass;
+                        
+                        let timeStr = notif.created_at ? new Date(notif.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        let cleanMessage = msgText.replace(/\[🚨 URGENT\]/g, '').trim();
+                        let shortMsg = cleanMessage.replace(/\n/g, ' ').substring(0, 65) + '...';
+
+                        div.onclick = () => openNotifModal(notif.id, notif.client_name, notif.message, notif.created_at);
+                        div.innerHTML = `
+                            <div class="notif-title">
+                                <span>📞 ${notif.client_name || "Client"}</span>
+                                ${tagHtml}
+                            </div>
+                            <div class="notif-preview">${shortMsg}</div>
+                            <div class="notif-time">🕒 Received: ${timeStr}</div>
+                        `;
+                        notifList.appendChild(div);
+                    });
+                } else { 
+                    badge.style.display = 'none'; 
+                    notifList.innerHTML = '<div style="color: #888; text-align: center; padding: 30px 20px; font-size: 14px;">No new tasks.</div>'; 
                 }
-                // ============================================
+            } catch(e) { console.log("Check Notif Error:", e); }
+        }
+        
+        checkNotifications(); 
 
-                notifList.innerHTML = '';
-                data.notifications.forEach(notif => {
-                    const div = document.createElement('div');
-                    let msgText = notif.message || "";
-                    let isUrgent = msgText.includes('[🚨 URGENT]');
-                    let urgentClass = isUrgent ? 'notif-item-urgent' : 'notif-item-modern';
-                    let tagHtml = isUrgent ? `<span class="urgent-tag">🚨 URGENT</span>` : `<span class="new-tag">New</span>`;
-                    
-                    div.className = urgentClass;
-                    
-                    let timeStr = notif.created_at ? new Date(notif.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    let cleanMessage = msgText.replace(/\[🚨 URGENT\]/g, '').trim();
-                    let shortMsg = cleanMessage.replace(/\n/g, ' ').substring(0, 65) + '...';
-
-                    div.onclick = () => openNotifModal(notif.id, notif.client_name, notif.message, notif.created_at);
-                    div.innerHTML = `
-                        <div class="notif-title">
-                            <span>📞 ${notif.client_name || "Client"}</span>
-                            ${tagHtml}
-                        </div>
-                        <div class="notif-preview">${shortMsg}</div>
-                        <div class="notif-time">🕒 Received: ${timeStr}</div>
-                    `;
-                    notifList.appendChild(div);
-                });
-            } else { 
-                badge.style.display = 'none'; 
-                notifList.innerHTML = '<div style="color: #888; text-align: center; padding: 30px 20px; font-size: 14px;">No new tasks.</div>'; 
-            }
-        } catch(e) { console.log("Check Notif Error:", e); }
-    }
-        checkNotifications(); // Запускаем первый раз при открытии страницы
-
-        // === ОБХОД СНА БРАУЗЕРА (WEB WORKER) ===
-        // Создаем невидимый фоновый процесс, который не засыпает, когда вкладка скрыта
         const workerCode = `
             setInterval(() => {
                 postMessage('wakeup');
@@ -1249,13 +1313,11 @@
         const blob = new Blob([workerCode], { type: 'application/javascript' });
         const bgWorker = new Worker(URL.createObjectURL(blob));
         
-        // Как только фоновый рабочий подает сигнал, проверяем уведомления
         bgWorker.onmessage = function(e) {
             if (e.data === 'wakeup') {
                 checkNotifications();
             }
         };
-        // =======================================
 
         function setDateTime() {
             const now = new Date();
@@ -1524,7 +1586,6 @@
                             const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
                             if (existingRadio) { existingRadio.checked = true; existingRadio.dispatchEvent(new Event('change')); }
                         } else {
-                            // НОВАЯ ЛОГИКА: ЕСЛИ КЛИЕНТОВ НЕСКОЛЬКО
                             document.getElementById('fullName').value = ''; 
                             document.getElementById('fullName').placeholder = "⚠️ CHOOSE A CLIENT FROM THE LIST 👇";
                             
@@ -1568,6 +1629,7 @@
             }
         }
         checkIncomingCall();
+
         let lastRadarPhone = incomingPhone || "";
         if (loggedInStaff === "Norayr Badalyan") {
             setInterval(async () => {
@@ -1583,6 +1645,7 @@
                 } catch (e) { console.error("Radar error:", e); }
             }, 2000); 
         }
+
         const callForm = document.getElementById('callForm');
         callForm.addEventListener('submit', async function(event) {
             event.preventDefault();
@@ -1592,7 +1655,6 @@
             const checkedStatus = document.querySelector('input[name="clientStatus"]:checked');
             const isUnrecognized = checkedStatus?.value === 'Unrecognized Number (Existing Client)'; const isGeneral = checkedStatus?.value === 'General Inquiry';
             
-            // ПРОВЕРКА КНОПКИ СРОЧНОСТИ
             const isUrgent = document.getElementById('urgentCallCheckbox') && document.getElementById('urgentCallCheckbox').checked;
             
             let callerInfoBlock = ""; let finalClientName = document.getElementById('fullName').value || "Unknown Client"; let finalClientPhone = document.getElementById('phoneNumber').value || "";
@@ -1615,7 +1677,7 @@
 
             const statusText = checkedStatus ? `Status: ${checkedStatus.value}` : "";
             let combinedDesc = []; 
-            if (isUrgent) combinedDesc.push("[🚨 URGENT]"); // Добавляем тег срочности в начало
+            if (isUrgent) combinedDesc.push("[🚨 URGENT]"); 
             if (statusText) combinedDesc.push(statusText); 
             if (callerInfoBlock) combinedDesc.push(callerInfoBlock); 
             if (finalDescription) combinedDesc.push(finalDescription);
