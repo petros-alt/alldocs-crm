@@ -805,7 +805,7 @@
         container.appendChild(row);
     };
 
-    window.openJournalModal = function(client, phone, date, op, st, color, notes, reply, trackingBadgeHTML, logId, assignedStaff, isResolved) {
+   window.openJournalModal = function(client, phone, date, op, st, color, notes, reply, trackingBadgeHTML, logId, assignedStaff, isResolved) {
         document.getElementById('jmClient').textContent = client || 'Unknown';
         document.getElementById('jmPhone').textContent = phone ? '📞 ' + phone : 'No Phone';
         document.getElementById('jmDate').textContent = date;
@@ -816,11 +816,23 @@
         const replyBlock = document.getElementById('jmStaffReplyBlock');
         if(reply) { replyBlock.style.display = 'block'; document.getElementById('jmStaffReply').textContent = reply; } else { replyBlock.style.display = 'none'; }
         
-        // === РОЛЕВОЙ ДОСТУП И КНОПКА ЗАКРЫТИЯ ===
+        // === УМНЫЙ РОЛЕВОЙ ДОСТУП И КНОПКА ЗАКРЫТИЯ ===
         const resolveSection = document.getElementById('jmResolveSection');
         const loggedInStaff = localStorage.getItem('loggedInStaff');
         
-        if (!isResolved && assignedStaff === loggedInStaff) {
+        // Карта для сопоставления коротких логинов и полных имен операторов
+        const staffMap = {
+            "Norayr Badalyan": "332487", "Petros Eghiazaryan": "418892", "Petros E.": "418892", "Mariam Djaradjian": "339159", "Mariam D.": "339159",
+            "Artak Badalyan": "332810", "Artak B.": "332810", "Argishti Shahbazian": "1005", "Argishti S.": "1005", "Gohar Aloyan": "1001", "Gohar A.": "1001",
+            "Rima Avetisyan": "1007", "Rima A.": "1007", "Lilit Avetisyan": "1009", "Lilit A.": "1009"
+        };
+        
+        // Переводим имена в уникальные ID для точного сравнения
+        const assignedId = staffMap[assignedStaff] || assignedStaff;
+        const myId = staffMap[loggedInStaff] || loggedInStaff;
+        
+        // Показываем кнопку, если ID совпадают (или имена полностью совпадают)
+        if (!isResolved && (assignedId === myId || assignedStaff === loggedInStaff)) {
             resolveSection.style.display = 'block';
             document.getElementById('jmResolveNote').value = '';
             document.getElementById('jmResolveBtn').onclick = () => resolveFromJournal(logId);
