@@ -805,7 +805,7 @@
         container.appendChild(row);
     };
 
-   window.openJournalModal = function(client, phone, date, op, st, color, notes, reply, trackingBadgeHTML, logId, assignedStaff, isResolved) {
+    window.openJournalModal = function(client, phone, date, op, st, color, notes, reply, trackingBadgeHTML, logId, assignedStaff, isResolved) {
         document.getElementById('jmClient').textContent = client || 'Unknown';
         document.getElementById('jmPhone').textContent = phone ? '📞 ' + phone : 'No Phone';
         document.getElementById('jmDate').textContent = date;
@@ -835,7 +835,7 @@
         if (!isResolved && (assignedId === myId || assignedStaff === loggedInStaff)) {
             resolveSection.style.display = 'block';
             document.getElementById('jmResolveNote').value = '';
-            document.getElementById('jmResolveBtn').onclick = () => resolveFromJournal(logId);
+            document.getElementById('jmResolveBtn').onclick = () => resolveFromJournal(logId, client);
         } else {
             resolveSection.style.display = 'none';
         }
@@ -846,7 +846,8 @@
     
     window.closeJournalModal = function() { document.getElementById('journalViewModal').style.display = 'none'; }
 
-   window.resolveFromJournal = async function(logId) {
+    // === НОВАЯ, УМНАЯ ФУНКЦИЯ ЗАКРЫТИЯ ЖУРНАЛА ===
+    window.resolveFromJournal = async function(logId, clientName) {
         let extraNote = document.getElementById('jmResolveNote').value.trim();
         if (extraNote === "") { extraNote = "Task closed without comments"; }
         
@@ -856,12 +857,37 @@
         const btn = document.getElementById('jmResolveBtn');
         btn.textContent = "Saving..."; btn.disabled = true;
         try {
-            await fetch(`/api/get-notifications?action=read&notificationId=${logId}&note=${encodeURIComponent(extraNote)}`);
+            // Ищем правильный ID уведомления (колокольчика) для этого звонка
+            const loggedInStaff = localStorage.getItem('loggedInStaff');
+            const staffMap = {
+                "Norayr Badalyan": "332487", "Petros Eghiazaryan": "418892", "Petros E.": "418892", "Mariam Djaradjian": "339159", "Mariam D.": "339159",
+                "Artak Badalyan": "332810", "Artak B.": "332810", "Argishti Shahbazian": "1005", "Argishti S.": "1005", "Gohar Aloyan": "1001", "Gohar A.": "1001",
+                "Rima Avetisyan": "1007", "Rima A.": "1007", "Lilit Avetisyan": "1009", "Lilit A.": "1009"
+            };
+            const myStaffId = staffMap[loggedInStaff];
+            
+            // Сканируем активный колокольчик, чтобы найти нужную задачу
+            const res = await fetch(`/api/get-notifications?staffId=${myStaffId}`);
+            const data = await res.json();
+            
+            let targetNotifId = logId; // на случай, если вдруг ID совпадают
+            
+            if (data.success && data.notifications) {
+                // Ищем уведомление, которое принадлежит этому же клиенту
+                const matchedNotif = data.notifications.find(n => n.client_name.includes(clientName) || clientName.includes(n.client_name));
+                if (matchedNotif) {
+                    targetNotifId = matchedNotif.id;
+                }
+            }
+
+            // Отправляем правильный ID на сервер
+            await fetch(`/api/get-notifications?action=read&notificationId=${targetNotifId}&note=${encodeURIComponent(extraNote)}`);
             closeJournalModal(); 
+            
             if (typeof checkNotifications === "function") checkNotifications(); 
             
-            // === ДОБАВЛЕНА ПАУЗА 0.5 СЕК, ЧТОБЫ БАЗА УСПЕЛА СОХРАНИТЬ ===
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // Ждем 0.8 сек, чтобы база данных точно успела сохранить
+            await new Promise(resolve => setTimeout(resolve, 800));
             
             window.renderCallHistoryList(); 
         } catch (e) { 
@@ -1081,8 +1107,10 @@
                 extraNote = "Task closed without comments";
             }
             
+            // === АВТОМАТИЧЕСКИЙ ШТАМП ВРЕМЕНИ ЗАКРЫТИЯ ===
             const resolvedTime = new Date().toLocaleString([], {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit'});
             extraNote = extraNote + `\n\n[✅ Resolved at: ${resolvedTime}]`;
+            // =============================================
 
             const btn = document.getElementById('resolveBtn');
             btn.textContent = "Saving..."; btn.disabled = true;
@@ -1090,12 +1118,13 @@
                 await fetch(`/api/get-notifications?action=read&notificationId=${currentActiveNotifId}&note=${encodeURIComponent(extraNote)}`);
                 closeNotifModal(); checkNotifications(); 
                 
-                // === ДОБАВЛЕНА ПАУЗА 0.5 СЕК ===
-                await new Promise(resolve => setTimeout(resolve, 500));
+                // === ДОБАВЛЕНА ПАУЗА 0.8 СЕК ===
+                await new Promise(resolve => setTimeout(resolve, 800));
                 
                 if (document.getElementById('tabHistoryContent').classList.contains('active')) window.renderCallHistoryList(); 
             } catch (e) { alert('Server error'); } finally { btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; }
         };
+
     async function checkNotifications() {
             if (!myStaffId) return; 
             try {
