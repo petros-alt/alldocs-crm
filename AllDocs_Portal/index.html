@@ -990,6 +990,13 @@
     document.getElementById('historyTypeFilter').addEventListener('change', applyHistoryFilters);
 
     document.addEventListener("DOMContentLoaded", async function() {
+        // Запрос прав на уведомления при первом клике (чтобы браузер не блокировал)
+        document.addEventListener('click', () => {
+            if (window.Notification && Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
+        }, { once: true });
+
         await window.loadSharedContacts();
 
         let incomingPhone = new URLSearchParams(window.location.search).get('phone');
@@ -1140,18 +1147,29 @@
                         if (newestNotif) {
                             const popupKey = 'popup_opened_' + newestNotif.id;
                             
-                            // Защита от бесконечного открытия окон
+                            // Защита от бесконечного срабатывания
                             if (!localStorage.getItem(popupKey)) {
                                 localStorage.setItem(popupKey, 'true');
                                 
-                                // Формируем ссылку, чтобы подтянуть телефон клиента в главную форму
-                                const phoneParam = newestNotif.client_phone ? '?phone=' + newestNotif.client_phone : '';
-                                const targetUrl = window.location.origin + window.location.pathname + phoneParam;
-                                
-                                // Открываем новую вкладку и ПРИНУДИТЕЛЬНО РАЗВОРАЧИВАЕМ БРАУЗЕР
-                                const newTab = window.open(targetUrl, '_blank');
-                                if (newTab) {
-                                    newTab.focus(); // Вытягивает свернутый браузер на экран!
+                                // БРАУЗЕРНОЕ PUSH-УВЕДОМЛЕНИЕ ВМЕСТО ОТКРЫТИЯ НОВОЙ ВКЛАДКИ
+                                if (window.Notification && Notification.permission === "granted") {
+                                    let isUrgent = newestNotif.message.includes('[🚨 URGENT]');
+                                    let notifTitle = isUrgent ? `🚨 URGENT: ${newestNotif.client_name}` : `📞 New Task: ${newestNotif.client_name}`;
+                                    let cleanMsg = newestNotif.message.replace(/\[🚨 URGENT\]/g, '').replace(/\n/g, ' ').substring(0, 100) + '...';
+                                    
+                                    const sysNotif = new Notification(notifTitle, {
+                                        body: cleanMsg,
+                                        icon: "https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png"
+                                    });
+                                    
+                                    // При клике на пуш - переходим в браузер и открываем вкладку с клиентом
+                                    sysNotif.onclick = function() {
+                                        window.focus();
+                                        const phoneParam = newestNotif.client_phone ? '?phone=' + newestNotif.client_phone : '';
+                                        const targetUrl = window.location.origin + window.location.pathname + phoneParam;
+                                        window.open(targetUrl, '_blank');
+                                        sysNotif.close();
+                                    };
                                 }
                             }
                         }
