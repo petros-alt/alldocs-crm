@@ -938,9 +938,17 @@
 
         window.closeNotifModal = function() { notifModal.style.display = 'none'; currentActiveNotifId = null; };
 
-        window.resolveNotification = async function() {
+     window.resolveNotification = async function() {
             if (!currentActiveNotifId) return;
-            const extraNote = document.getElementById('modalStaffNote').value.trim();
+            
+            // 1. Меняем const на let
+            let extraNote = document.getElementById('modalStaffNote').value.trim();
+            
+            // 2. ДОБАВЛЯЕМ ВОТ ЭТУ ПРОВЕРКУ:
+            if (extraNote === "") {
+                extraNote = "Task closed without comments";
+            }
+            
             const btn = document.getElementById('resolveBtn');
             btn.textContent = "Saving..."; btn.disabled = true;
             try {
