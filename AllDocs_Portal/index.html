@@ -846,7 +846,7 @@
     
     window.closeJournalModal = function() { document.getElementById('journalViewModal').style.display = 'none'; }
 
-    window.resolveFromJournal = async function(logId) {
+   window.resolveFromJournal = async function(logId) {
         let extraNote = document.getElementById('jmResolveNote').value.trim();
         if (extraNote === "") { extraNote = "Task closed without comments"; }
         
@@ -859,6 +859,10 @@
             await fetch(`/api/get-notifications?action=read&notificationId=${logId}&note=${encodeURIComponent(extraNote)}`);
             closeJournalModal(); 
             if (typeof checkNotifications === "function") checkNotifications(); 
+            
+            // === ДОБАВЛЕНА ПАУЗА 0.5 СЕК, ЧТОБЫ БАЗА УСПЕЛА СОХРАНИТЬ ===
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
             window.renderCallHistoryList(); 
         } catch (e) { 
             alert('Server error'); 
@@ -872,7 +876,8 @@
         const tableContainer = document.getElementById('historyTableContainer');
         const noCallsMessage = document.getElementById('noCallsMessage');
         try {
-            const response = await fetch('/api/get-journal');
+            // === ДОБАВЛЕНО ВЗЛАМЫВАНИЕ КЭША (?t=таймер), ЧТОБЫ ВСЕГДА ГРУЗИТЬ СВЕЖИЕ ДАННЫЕ ===
+            const response = await fetch('/api/get-journal?t=' + new Date().getTime(), { cache: 'no-store' });
             const result = await response.json();
             if (result.success && result.logs && result.logs.length > 0) {
                 globalCallLogs = result.logs;
@@ -1076,20 +1081,21 @@
                 extraNote = "Task closed without comments";
             }
             
-            // === АВТОМАТИЧЕСКИЙ ШТАМП ВРЕМЕНИ ЗАКРЫТИЯ ===
             const resolvedTime = new Date().toLocaleString([], {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit'});
             extraNote = extraNote + `\n\n[✅ Resolved at: ${resolvedTime}]`;
-            // =============================================
 
             const btn = document.getElementById('resolveBtn');
             btn.textContent = "Saving..."; btn.disabled = true;
             try {
                 await fetch(`/api/get-notifications?action=read&notificationId=${currentActiveNotifId}&note=${encodeURIComponent(extraNote)}`);
                 closeNotifModal(); checkNotifications(); 
+                
+                // === ДОБАВЛЕНА ПАУЗА 0.5 СЕК ===
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
                 if (document.getElementById('tabHistoryContent').classList.contains('active')) window.renderCallHistoryList(); 
             } catch (e) { alert('Server error'); } finally { btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; }
         };
-
     async function checkNotifications() {
             if (!myStaffId) return; 
             try {
