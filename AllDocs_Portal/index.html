@@ -1237,7 +1237,25 @@
             }
         } catch(e) { console.log("Check Notif Error:", e); }
     }
-        setInterval(checkNotifications, 3000); checkNotifications();
+        checkNotifications(); // Запускаем первый раз при открытии страницы
+
+        // === ОБХОД СНА БРАУЗЕРА (WEB WORKER) ===
+        // Создаем невидимый фоновый процесс, который не засыпает, когда вкладка скрыта
+        const workerCode = `
+            setInterval(() => {
+                postMessage('wakeup');
+            }, 3000);
+        `;
+        const blob = new Blob([workerCode], { type: 'application/javascript' });
+        const bgWorker = new Worker(URL.createObjectURL(blob));
+        
+        // Как только фоновый рабочий подает сигнал, проверяем уведомления
+        bgWorker.onmessage = function(e) {
+            if (e.data === 'wakeup') {
+                checkNotifications();
+            }
+        };
+        // =======================================
 
         function setDateTime() {
             const now = new Date();
