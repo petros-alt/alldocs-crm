@@ -1568,7 +1568,21 @@
             }
         }
         checkIncomingCall();
-        
+        let lastRadarPhone = incomingPhone || "";
+        if (loggedInStaff === "Norayr Badalyan") {
+            setInterval(async () => {
+                try {
+                    await window.loadSharedContacts(); 
+                    const res = await fetch('/api/active-call?t=' + new Date().getTime(), { cache: 'no-store' }); 
+                    if (!res.ok) return;
+                    const data = await res.json(); 
+                    if (data.success && data.phone && data.phone !== lastRadarPhone) { 
+                        lastRadarPhone = data.phone; 
+                        window.open(window.location.origin + window.location.pathname + '?phone=' + data.phone, '_blank'); 
+                    }
+                } catch (e) { console.error("Radar error:", e); }
+            }, 2000); 
+        }
         const callForm = document.getElementById('callForm');
         callForm.addEventListener('submit', async function(event) {
             event.preventDefault();
