@@ -245,6 +245,14 @@
                 <div style="font-size: 11px; margin-top: 3px;">Logged by: <span id="jmOperator"></span></div>
             </div>
         </div>
+        
+        <!-- NEW RESOLVE SECTION -->
+        <div id="jmResolveSection" style="display: none; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+            <div style="font-size: 12px; color: #2e7d32; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">✍️ Resolve this pending task:</div>
+            <textarea id="jmResolveNote" placeholder="e.g., Called client back, question resolved..." style="width: 100%; border: 2px solid #c8e6c9; background: #f1f8e9; padding: 12px; border-radius: 8px; margin-bottom: 10px; min-height: 60px; font-family: inherit; font-size: 14.5px; box-sizing: border-box; outline: none;"></textarea>
+            <button id="jmResolveBtn" class="btn-resolve" style="width: 100%; background: var(--accent-color); color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s;">Mark as Resolved ✓</button>
+        </div>
+        
     </div>
 </div>
 
@@ -797,7 +805,7 @@
         container.appendChild(row);
     };
 
-    window.openJournalModal = function(client, phone, date, op, st, color, notes, reply, trackingBadgeHTML) {
+    window.openJournalModal = function(client, phone, date, op, st, color, notes, reply, trackingBadgeHTML, logId, assignedStaff, isResolved) {
         document.getElementById('jmClient').textContent = client || 'Unknown';
         document.getElementById('jmPhone').textContent = phone ? '📞 ' + phone : 'No Phone';
         document.getElementById('jmDate').textContent = date;
@@ -807,9 +815,45 @@
         document.getElementById('jmNotes').textContent = notes || 'No notes provided by operator.';
         const replyBlock = document.getElementById('jmStaffReplyBlock');
         if(reply) { replyBlock.style.display = 'block'; document.getElementById('jmStaffReply').textContent = reply; } else { replyBlock.style.display = 'none'; }
+        
+        // === РОЛЕВОЙ ДОСТУП И КНОПКА ЗАКРЫТИЯ ===
+        const resolveSection = document.getElementById('jmResolveSection');
+        const loggedInStaff = localStorage.getItem('loggedInStaff');
+        
+        if (!isResolved && assignedStaff === loggedInStaff) {
+            resolveSection.style.display = 'block';
+            document.getElementById('jmResolveNote').value = '';
+            document.getElementById('jmResolveBtn').onclick = () => resolveFromJournal(logId);
+        } else {
+            resolveSection.style.display = 'none';
+        }
+        // ==========================================
+
         document.getElementById('journalViewModal').style.display = 'flex';
     }
+    
     window.closeJournalModal = function() { document.getElementById('journalViewModal').style.display = 'none'; }
+
+    window.resolveFromJournal = async function(logId) {
+        let extraNote = document.getElementById('jmResolveNote').value.trim();
+        if (extraNote === "") { extraNote = "Task closed without comments"; }
+        
+        const resolvedTime = new Date().toLocaleString([], {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit'});
+        extraNote = extraNote + `\n\n[✅ Resolved at: ${resolvedTime}]`;
+
+        const btn = document.getElementById('jmResolveBtn');
+        btn.textContent = "Saving..."; btn.disabled = true;
+        try {
+            await fetch(`/api/get-notifications?action=read&notificationId=${logId}&note=${encodeURIComponent(extraNote)}`);
+            closeJournalModal(); 
+            if (typeof checkNotifications === "function") checkNotifications(); 
+            window.renderCallHistoryList(); 
+        } catch (e) { 
+            alert('Server error'); 
+        } finally { 
+            btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; 
+        }
+    };
 
     // === НОВАЯ ЛОГИКА ЖУРНАЛА И ФИЛЬТРОВ ===
     window.renderCallHistoryList = async function() {
@@ -886,7 +930,7 @@
 
             const tr = document.createElement('tr'); tr.className = 'journal-row';
             tr.style.cssText = urgentBg;
-            tr.onclick = () => openJournalModal(log.client_name, log.client_phone, d.toLocaleString(), log.operator_name, st, badgeColor, cleanDesc, log.follow_up_notes, trackingBadge);
+            tr.onclick = () => openJournalModal(log.client_name, log.client_phone, d.toLocaleString(), log.operator_name, st, badgeColor, cleanDesc, log.follow_up_notes, trackingBadge, log.id, displayStaff, isResolved);
             tr.innerHTML = `
                 <td><strong>${d.toLocaleDateString()}</strong> <br><span style="color:#888; font-size:12px;">${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></td>
                 <td><div style="font-weight:600; color:var(--primary-color); font-size: 15px;">${log.client_name || 'Unknown'} <span class="badge-status" style="background-color:${badgeColor}; margin-left:8px; font-size: 10px;">${st}</span>${urgentBadge}</div>
