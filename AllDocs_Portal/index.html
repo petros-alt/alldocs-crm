@@ -101,12 +101,18 @@
         .dropdown-header h4 { margin: 0; color: var(--primary-color); font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
         #notifList { max-height: 380px; overflow-y: auto; background: #fafafa; }
         
-        /* НОВЫЙ ДИЗАЙН КАРТОЧЕК В КОЛОКОЛЬЧИКЕ */
+        /* НОВЫЙ ДИЗАЙН КАРТОЧЕК В КОЛОКОЛЬЧИКЕ (С анимациями для URGENT) */
+        @keyframes pulseAlert { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
         .notif-item-modern { padding: 16px 20px; border-bottom: 1px solid #f0ebe1; cursor: pointer; transition: all 0.2s ease; border-left: 4px solid transparent; background: #fff; }
         .notif-item-modern:hover { background: #fdfaf6; border-left-color: var(--accent-color); }
+        .notif-item-urgent { padding: 16px 20px; border-bottom: 1px solid #ffcdd2; cursor: pointer; transition: all 0.2s ease; border-left: 5px solid #d32f2f; background: #fff0f0; }
+        .notif-item-urgent:hover { background: #ffebee; }
+        
         .notif-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: var(--primary-color); font-size: 14.5px; }
         .notif-title span:first-child { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%; }
         .new-tag { background: #e65100; color: white; font-size: 10px; padding: 3px 8px; border-radius: 12px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; box-shadow: 0 2px 5px rgba(230, 81, 0, 0.2); }
+        .urgent-tag { background: #d32f2f; color: white; font-size: 10px; padding: 3px 8px; border-radius: 12px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; box-shadow: 0 2px 5px rgba(211, 47, 47, 0.3); animation: pulseAlert 1.5s infinite; }
+        
         .notif-preview { font-size: 13px; color: var(--secondary-color); line-height: 1.5; background: #fcfbfa; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
         .notif-time { font-size: 11px; color: #999; margin-top: 8px; text-align: right; font-weight: 600; }
 
@@ -552,6 +558,14 @@
                     <div style="background: #fcfbfa; padding: 20px; border-left: 4px solid var(--accent-color); border-radius: 8px; margin-bottom: 20px;">
                         <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 8px; display: block;">Call Description / Note Text:</label>
                         <textarea id="briefDescription" placeholder="Summarize the client's inquiry..." required></textarea>
+                        
+                        <!-- НОВАЯ КНОПКА СРОЧНОСТИ -->
+                        <div style="margin-top: 15px; padding: 12px; background: #fff0f0; border-radius: 8px; border-left: 4px solid #d32f2f; animation: fadeIn 0.3s ease;">
+                            <label style="display: flex; align-items: center; cursor: pointer; color: #b71c1c; font-weight: 700; font-size: 14.5px; margin: 0;">
+                                <input type="checkbox" id="urgentCallCheckbox" style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer; accent-color: #d32f2f;">
+                                🚨 URGENT: Action Required / Call Back ASAP
+                            </label>
+                        </div>
                     </div>
 
                     <h2 class="section-title">3. Internal CRM Routing</h2>
@@ -830,6 +844,11 @@
             let rawDesc = log.call_description || ''; let cleanDesc = rawDesc;
             let st = "General Call"; let badgeColor = '#1976d2';
             
+            const isUrgent = rawDesc.includes('[🚨 URGENT]');
+            if (isUrgent) {
+                cleanDesc = cleanDesc.replace(/\[🚨 URGENT\]/g, '').trim();
+            }
+            
             const statusMatch = rawDesc.match(/(?:\[Status:\s*|Status:\s*)(.*?)(?:\]|\n| \||$)/i);
             if (statusMatch) { st = statusMatch[1].trim(); cleanDesc = cleanDesc.replace(statusMatch[0], '').trim(); }
             else if (rawDesc.includes('NEW LEAD APPOINTMENT')) { st = 'Lead (New Appt)'; cleanDesc = cleanDesc.replace(/\[🔥 NEW LEAD APPOINTMENT\]/i, '').trim(); }
@@ -862,11 +881,15 @@
             if (statusF === 'Resolved' && !isResolved) return;
             if (typeF !== 'All' && !st.includes(typeF)) return;
 
+            let urgentBadge = isUrgent ? `<span class="badge-status" style="background-color:#d32f2f; margin-left:8px; font-size: 10px; animation: pulseAlert 1.5s infinite;">🚨 URGENT</span>` : '';
+            let urgentBg = isUrgent ? 'background-color: #fff0f0;' : '';
+
             const tr = document.createElement('tr'); tr.className = 'journal-row';
+            tr.style.cssText = urgentBg;
             tr.onclick = () => openJournalModal(log.client_name, log.client_phone, d.toLocaleString(), log.operator_name, st, badgeColor, cleanDesc, log.follow_up_notes, trackingBadge);
             tr.innerHTML = `
                 <td><strong>${d.toLocaleDateString()}</strong> <br><span style="color:#888; font-size:12px;">${d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></td>
-                <td><div style="font-weight:600; color:var(--primary-color); font-size: 15px;">${log.client_name || 'Unknown'} <span class="badge-status" style="background-color:${badgeColor}; margin-left:8px; font-size: 10px;">${st}</span></div>
+                <td><div style="font-weight:600; color:var(--primary-color); font-size: 15px;">${log.client_name || 'Unknown'} <span class="badge-status" style="background-color:${badgeColor}; margin-left:8px; font-size: 10px;">${st}</span>${urgentBadge}</div>
                 <div style="font-size: 13px; color: #666; margin-top: 6px;">${snippet}</div></td>
                 <td style="font-weight:500; color:var(--secondary-color); font-size: 14.5px;">📞 ${log.client_phone || '--'}</td>
                 <td>${trackingBadge}</td>
@@ -946,7 +969,13 @@
 
        window.openNotifModal = function(id, clientName, message, createdAt) {
             currentActiveNotifId = id; 
-            document.getElementById('modalClientName').textContent = '📞 ' + clientName;
+            
+            let isUrgent = message.includes('[🚨 URGENT]');
+            if (isUrgent) {
+                document.getElementById('modalClientName').innerHTML = '🚨 <span style="color:#d32f2f;">URGENT:</span> ' + clientName;
+            } else {
+                document.getElementById('modalClientName').textContent = '📞 ' + clientName;
+            }
             
             // Устанавливаем точное время получения задачи
             let timeText = createdAt ? new Date(createdAt).toLocaleString([], {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit'}) : new Date().toLocaleString([], {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit'});
@@ -967,6 +996,8 @@
             } else {
                 issueText = message.replace(/\n/g, '<br>');
             }
+            
+            issueText = issueText.replace(/\[🚨 URGENT\]/g, '').replace(/<br><br>/g, '<br>').trim();
 
             document.getElementById('modalMessage').innerHTML = `
                 <div style="font-size: 13.5px; color: var(--accent-color); font-weight: 800; margin-bottom: 12px; border-bottom: 1px dashed #d7ccc8; padding-bottom: 8px;">
@@ -1011,7 +1042,6 @@
                 if (data.success && data.notifications && data.notifications.length > 0) {
                     badge.style.display = 'block'; badge.textContent = data.notifications.length;
                     
-                    // === ЛОГИКА АВТОМАТИЧЕСКОГО ОТКРЫТИЯ НОВОЙ ВКЛАДКИ ===
                     if (data.notifications.length > previousNotifCount) {
                         bellSound.play().catch(e => console.log('Audio blocked.'));
                         
@@ -1035,21 +1065,26 @@
                             }
                         }
                     }
-                    // ====================================================================
 
                     previousNotifCount = data.notifications.length; notifList.innerHTML = '';
                     data.notifications.forEach(notif => {
-                        const div = document.createElement('div'); div.className = 'notif-item-modern';
+                        const div = document.createElement('div');
+                        let isUrgent = notif.message.includes('[🚨 URGENT]');
+                        let urgentClass = isUrgent ? 'notif-item-urgent' : 'notif-item-modern';
+                        let tagHtml = isUrgent ? `<span class="urgent-tag">🚨 URGENT</span>` : `<span class="new-tag">New</span>`;
+                        
+                        div.className = urgentClass;
                         
                         // Парсим дату красиво
                         let timeStr = notif.created_at ? new Date(notif.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                        let shortMsg = notif.message.replace(/\n/g, ' ').substring(0, 65) + '...';
+                        let cleanMessage = notif.message.replace(/\[🚨 URGENT\]/g, '').trim();
+                        let shortMsg = cleanMessage.replace(/\n/g, ' ').substring(0, 65) + '...';
 
                         div.onclick = () => openNotifModal(notif.id, notif.client_name, notif.message, notif.created_at);
                         div.innerHTML = `
                             <div class="notif-title">
                                 <span>📞 ${notif.client_name}</span>
-                                <span class="new-tag">New</span>
+                                ${tagHtml}
                             </div>
                             <div class="notif-preview">${shortMsg}</div>
                             <div class="notif-time">🕒 Received: ${timeStr}</div>
@@ -1234,6 +1269,7 @@
             const assigneeTextDiv = document.getElementById('matterAssigneeText'); if (assigneeTextDiv) assigneeTextDiv.style.display = 'none';
             if(resolvedCheckbox) resolvedCheckbox.checked = false; if(staffRow) staffRow.style.display = 'flex'; if(briefDesc) briefDesc.setAttribute('required', 'true');
             const leadCard = document.getElementById('leadCardWrapper'); if (leadCard) { leadCard.classList.remove('disabled'); leadCard.querySelector('input').disabled = false; }
+            const urgentCb = document.getElementById('urgentCallCheckbox'); if(urgentCb) urgentCb.checked = false;
         }
 
         async function fetchDocketwiseData(query, isPhone) {
@@ -1391,6 +1427,9 @@
             const checkedStatus = document.querySelector('input[name="clientStatus"]:checked');
             const isUnrecognized = checkedStatus?.value === 'Unrecognized Number (Existing Client)'; const isGeneral = checkedStatus?.value === 'General Inquiry';
             
+            // ПРОВЕРКА КНОПКИ СРОЧНОСТИ
+            const isUrgent = document.getElementById('urgentCallCheckbox') && document.getElementById('urgentCallCheckbox').checked;
+            
             let callerInfoBlock = ""; let finalClientName = document.getElementById('fullName').value || "Unknown Client"; let finalClientPhone = document.getElementById('phoneNumber').value || "";
 
             if (isGeneral) {
@@ -1410,7 +1449,11 @@
             }
 
             const statusText = checkedStatus ? `Status: ${checkedStatus.value}` : "";
-            let combinedDesc = []; if (statusText) combinedDesc.push(statusText); if (callerInfoBlock) combinedDesc.push(callerInfoBlock); if (finalDescription) combinedDesc.push(finalDescription);
+            let combinedDesc = []; 
+            if (isUrgent) combinedDesc.push("[🚨 URGENT]"); // Добавляем тег срочности в начало
+            if (statusText) combinedDesc.push(statusText); 
+            if (callerInfoBlock) combinedDesc.push(callerInfoBlock); 
+            if (finalDescription) combinedDesc.push(finalDescription);
             finalDescription = combinedDesc.join('\n\n');
 
             const staffSelect = document.getElementById('assignedStaff'); const resolvedOpCheckbox = document.getElementById('resolvedByOpCheckbox');
