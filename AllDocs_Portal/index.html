@@ -647,9 +647,18 @@
     let globalCallLogs = []; 
 
     const smsTemplates = {
-        ENG: `All Docs Consulting\n\nHello {name},\nyou have an appointment\nwith {staff}\n\nStart Time\n{date}\n{time}\n\nAppointments Length {duration}\n\nAddress\n{address}\n\nService\n{service}\n\nFor questions call:\n(747) 204-2404\n\nSTOP=opt-out.`,
-        RUSS: `All Docs Consulting\n\nПривет {name} ,\nу тебя назначена встреча\nс {staff}\n\nДата начала\n{date}\n{time}\n\nпродолжительность\nвстречи {duration}\n\nАдрес\n{address}\n\nУслуга\n{service}\n\nПо вопросам звоните:\n(747) 204-2404\n\nSTOP=opt-out.`,
-        ARM: `All Docs Consulting\n\nԲարև {name},\nԴուք ունեք հանդիպում\n{staff} -ի հետ\n\nՍկիզբ\n{date}\n{time}\n\nՏևողությունը {duration}\n\nՀասցե\n{address}\n\nԾառայություն\n{service}\n\nՀարցերի դեպքում զանգահարեք՝\n(747) 204-2404\n\nSTOP=opt-out.`
+        ENG: `All Docs Consulting\n\nHello {name},\nyou have an appointment\nwith {staff}\n\nStart Time\n{date}\n{time}\n\nAppointments Length {duration}\n\nAddress\n{address}\n\nService\n{service}\n\nFor questions call:\n
+
+(747) 204-2404
+\n\nSTOP=opt-out.`,
+        RUSS: `All Docs Consulting\n\nПривет {name} ,\nу тебя назначена встреча\nс {staff}\n\nДата начала\n{date}\n{time}\n\nпродолжительность\nвстречи {duration}\n\nАдрес\n{address}\n\nУслуга\n{service}\n\nПо вопросам звоните:\n
+
+(747) 204-2404
+\n\nSTOP=opt-out.`,
+        ARM: `All Docs Consulting\n\nԲարև {name},\nԴուք ունեք հանդիպում\n{staff} -ի հետ\n\nՍկիզբ\n{date}\n{time}\n\nՏևողությունը {duration}\n\nՀասցե\n{address}\n\nԾառայություն\n{service}\n\nՀարցերի դեպքում զանգահարեք՝\n
+
+(747) 204-2404
+\n\nSTOP=opt-out.`
     };
 
     window.loadSharedContacts = async function() {
@@ -948,7 +957,20 @@
                 const data = await res.json(); const badge = document.getElementById('notifBadge');
                 if (data.success && data.notifications && data.notifications.length > 0) {
                     badge.style.display = 'block'; badge.textContent = data.notifications.length;
-                    if (data.notifications.length > previousNotifCount) bellSound.play().catch(e => console.log('Audio blocked.'));
+                    
+                    // === НОВАЯ ЛОГИКА АВТОМАТИЧЕСКОГО ОТКРЫТИЯ ===
+                    if (data.notifications.length > previousNotifCount) {
+                        // 1. Проигрываем звук
+                        bellSound.play().catch(e => console.log('Audio blocked.'));
+                        
+                        // 2. Берем самое новое уведомление и автоматически открываем его!
+                        const newestNotif = data.notifications[0];
+                        if (newestNotif) {
+                            openNotifModal(newestNotif.id, newestNotif.client_name, newestNotif.message);
+                        }
+                    }
+                    // ============================================
+
                     previousNotifCount = data.notifications.length; notifList.innerHTML = '';
                     data.notifications.forEach(notif => {
                         const div = document.createElement('div'); div.className = 'notif-item-modern';
