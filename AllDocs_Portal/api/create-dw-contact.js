@@ -4,14 +4,25 @@ export default async function handler(req, res) {
     }
 
     const { first_name, last_name, phone } = req.body;
+    const apiKey = process.env.DOCKETWISE_API_KEY;
+
+    // 1. ПРОВЕРКА КЛЮЧА В VERCEL
+    if (!apiKey) {
+        return res.status(400).json({ 
+            success: false, 
+            error: "API Key is missing! Please check Vercel Environment Variables." 
+        });
+    }
 
     try {
-        const dwResponse = await fetch('https://app.docketwise.com/api/v1/contacts', {
+        // 2. ПЕРЕДАЕМ КЛЮЧ ПРЯМО В URL (Так надежнее для Docketwise API v1)
+        const apiUrl = `https://app.docketwise.com/api/v1/contacts?api_key=${apiKey}`;
+
+        const dwResponse = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // Передаем токен авторизации
-                'Authorization': `Bearer ${process.env.DOCKETWISE_API_KEY}` 
+                'Accept': 'application/json'
             },
             body: JSON.stringify({
                 first_name: first_name || "Test",
@@ -20,24 +31,20 @@ export default async function handler(req, res) {
             })
         });
 
-        // 1. Сначала читаем ответ как простой текст, чтобы сервер не выдавал ошибку JSON
         const textResponse = await dwResponse.text();
         let data = {};
 
-        // 2. Если ответ не пустой, пробуем перевести его в JSON
         if (textResponse) {
             try {
                 data = JSON.parse(textResponse);
             } catch (e) {
-                data = { raw_text: textResponse }; // Если это HTML-ошибка от Docketwise
+                data = { raw_text: textResponse }; 
             }
         }
 
-        // 3. Отвечаем фронтенду
         if (dwResponse.ok) {
             return res.status(200).json({ success: true, contact: data });
         } else {
-            // Теперь мы увидим реальную причину отказа (status 401, 404, 422 и т.д.)
             return res.status(400).json({ 
                 success: false, 
                 error: "Docketwise rejected the request", 
