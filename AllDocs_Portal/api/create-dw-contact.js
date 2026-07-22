@@ -4,25 +4,23 @@ export default async function handler(req, res) {
     }
 
     const { first_name, last_name, phone } = req.body;
-    const apiKey = process.env.DOCKETWISE_API_KEY;
 
-    // 1. ПРОВЕРКА КЛЮЧА В VERCEL
-    if (!apiKey) {
-        return res.status(400).json({ 
-            success: false, 
-            error: "API Key is missing! Please check Vercel Environment Variables." 
-        });
-    }
+    // 🔑 ТВОИ РЕАЛЬНЫЕ КЛЮЧИ DOCKETWISE
+    const CLIENT_ID = "ca918898ed5b7b8f01a0d8c680ed992e8c45a01c4a6d562f8a6fc8c584d6a984";
+    const CLIENT_SECRET = "0a4098bdd5b44c1e3a5e881daddbebc8555ca8afd6502f80263a6f3628e0f4d2";
+    const API_KEY = "a-YHg4J2SN1SX7TC17_iLQHTB43qSTXaTUZLNqtAeAE";
 
     try {
-        // 2. ПЕРЕДАЕМ КЛЮЧ ПРЯМО В URL (Так надежнее для Docketwise API v1)
-        const apiUrl = `https://app.docketwise.com/api/v1/contacts?api_key=${apiKey}`;
+        // 1. Передаем ID и Secret прямо в ссылке
+        const apiUrl = `https://app.docketwise.com/api/v1/contacts?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}`;
 
         const dwResponse = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                // 2. На всякий случай дублируем API-ключ в заголовке
+                'Authorization': `Bearer ${API_KEY}` 
             },
             body: JSON.stringify({
                 first_name: first_name || "Test",
@@ -31,6 +29,7 @@ export default async function handler(req, res) {
             })
         });
 
+        // Безопасно читаем ответ сервера
         const textResponse = await dwResponse.text();
         let data = {};
 
