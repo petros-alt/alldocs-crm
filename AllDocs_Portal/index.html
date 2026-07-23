@@ -1010,6 +1010,7 @@
 
     window.openJournalModal = function(client, phone, date, op, st, color, notes, reply, trackingBadgeHTML, logId, assignedStaff, isResolved, clientId) {
         
+        // Делаем имя кликабельным для открытия профиля Docketwise
         const clientEl = document.getElementById('jmClient');
         if (phone && phone !== '--') {
             const safeClientName = client ? client.replace(/'/g, "\\'") : 'Unknown';
@@ -1051,6 +1052,7 @@
     
     window.closeJournalModal = function() { document.getElementById('journalViewModal').style.display = 'none'; }
 
+    // Логика скачивания данных из Docketwise для нового модального окна
     window.openDocketwiseProfile = async function(name, phone, id) {
         document.getElementById('dwProfileModal').style.display = 'flex';
         document.getElementById('dwName').textContent = name || 'Unknown Client';
@@ -1078,6 +1080,7 @@
                     let mattersHtml = '';
                     clientData.matters.forEach(m => {
                         let staff = m.assignee_name || m.assignee || m.staff || m.user || "Unassigned";
+                        // Генерируем ссылку прямо на карточку дела в Docketwise
                         let matterUrl = `https://app.docketwise.com/matters/${m.id}`;
                         
                         mattersHtml += `<div style="padding: 12px 0; border-bottom: 1px solid #f0ebe1;">
@@ -1099,6 +1102,7 @@
         }
     };
 
+    // === НОВАЯ, УМНАЯ ФУНКЦИЯ ЗАКРЫТИЯ ЖУРНАЛА ===
     window.resolveFromJournal = async function(logId, clientName) {
         let extraNote = document.getElementById('jmResolveNote').value.trim();
         if (extraNote === "") { extraNote = "Task closed without comments"; }
@@ -1144,6 +1148,7 @@
         }
     };
 
+    // === ОБНОВЛЕННАЯ ЛОГИКА ЖУРНАЛА С ФИЛЬТРОМ СОТРУДНИКОВ ===
     window.renderCallHistoryList = async function() {
         const tableContainer = document.getElementById('historyTableContainer');
         const noCallsMessage = document.getElementById('noCallsMessage');
@@ -1240,6 +1245,7 @@
         });
     }
 
+    // Слушатели событий
     let searchTimeout;
     document.getElementById('historySearchInput').addEventListener('input', function() {
         clearTimeout(searchTimeout);
@@ -1655,8 +1661,16 @@
             if (!editingId && (apptRemType === 'Text' || apptRemType === 'Both')) {
                 const smsText = document.getElementById('smsPreviewBubble').textContent;
                 
+                // === УМНОЕ ФОРМАТИРОВАНИЕ НОМЕРА ===
+                let formattedPhone = phoneInput.replace(/[^\d+]/g, ''); // убираем всё кроме цифр и плюса
+                if (formattedPhone.length === 10 && !formattedPhone.startsWith('+')) {
+                    formattedPhone = '+1' + formattedPhone;
+                } else if (formattedPhone.length === 11 && formattedPhone.startsWith('1')) {
+                    formattedPhone = '+' + formattedPhone;
+                }
+                
                 // === ОТПРАВКА СИГНАЛА В ZAPIER ===
-                const zapierUrl = `https://hooks.zapier.com/hooks/catch/28342465/44ft1ex/?phone=${encodeURIComponent(phoneInput)}&message=${encodeURIComponent(smsText)}`;
+                const zapierUrl = `https://hooks.zapier.com/hooks/catch/28342465/44ft1ex/?phone=${encodeURIComponent(formattedPhone)}&message=${encodeURIComponent(smsText)}`;
                 fetch(zapierUrl, { mode: 'no-cors' }).catch(e => console.log('Zapier webhook error:', e));
                 
                 // Запись в Inbox чат для истории
@@ -1790,8 +1804,16 @@
         window.sendManualMessage = function(phone, name, key) {
             const input = document.getElementById('manualSmsInput'); const text = input.value.trim(); if (!text) return;
             
+            // === УМНОЕ ФОРМАТИРОВАНИЕ НОМЕРА ===
+            let formattedPhone = phone.replace(/[^\d+]/g, ''); 
+            if (formattedPhone.length === 10 && !formattedPhone.startsWith('+')) {
+                formattedPhone = '+1' + formattedPhone;
+            } else if (formattedPhone.length === 11 && formattedPhone.startsWith('1')) {
+                formattedPhone = '+' + formattedPhone;
+            }
+
             // === ОТПРАВКА СИГНАЛА В ZAPIER ИЗ ЧАТА ===
-            const zapierUrl = `https://hooks.zapier.com/hooks/catch/28342465/44ft1ex/?phone=${encodeURIComponent(phone)}&message=${encodeURIComponent(text)}`;
+            const zapierUrl = `https://hooks.zapier.com/hooks/catch/28342465/44ft1ex/?phone=${encodeURIComponent(formattedPhone)}&message=${encodeURIComponent(text)}`;
             fetch(zapierUrl, { mode: 'no-cors' }).catch(e => console.log('Zapier webhook error:', e));
 
             let msgs = JSON.parse(localStorage.getItem('gr_messages')) || [];
