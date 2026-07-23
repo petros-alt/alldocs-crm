@@ -238,6 +238,8 @@
 </head>
 <body>
 
+<button class="clear-db-btn" onclick="clearSandboxData()">🗑️ Clear Sandbox Data</button>
+
 <!-- NOTIFICATIONS -->
 <div id="notificationContainer">
     <div id="notificationBell" title="Click anywhere to enable sound!">🔔<span id="notifBadge" class="badge">0</span></div>
@@ -373,14 +375,26 @@
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label>Appt. Location</label>
-                    <select id="modalApptLocation" onchange="updatePreview()">
-                        <option value="400 W Colorado St, Suite 202 Glendale, CA 91204 United States">All Docs Consulting</option>
-                        <option value="100 W. Broadway Ave., Suite 540, Glendale, CA 91210">Armen Shaghzo Attorney</option>
-                        <option value="2601 Wilshire Blvd, Los Angeles, CA 90057">Capi Metro Office</option>
-                        <option value="3580 Wilshire Blvd 12th floor Ste 1290 Los Angeles, CA 90005">David Bagdasaryan Attorney</option>
-                    </select>
+                <div class="form-row">
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label>Appt. Location</label>
+                        <select id="modalApptLocation" onchange="updatePreview()">
+                            <option value="400 W Colorado St, Suite 202 Glendale, CA 91204 United States">All Docs Consulting</option>
+                            <option value="100 W. Broadway Ave., Suite 540, Glendale, CA 91210">Armen Shaghzo Attorney</option>
+                            <option value="2601 Wilshire Blvd, Los Angeles, CA 90057">Capi Metro Office</option>
+                            <option value="3580 Wilshire Blvd 12th floor Ste 1290 Los Angeles, CA 90005">David Bagdasaryan Attorney</option>
+                            <option value="1141 N Brand Blvd Unit 400 Glendale CA 91202 United States">Dr. Karine Gaboian</option>
+                            <option value="225 N Los Angeles St Los Angeles, CA 90012 United States">LA Court 300</option>
+                            <option value="606 South Olive St, 15 floor, Los Angeles, CA 90014 United States">LA Court 606</option>
+                            <option value="5245 Pacific Concourse Dr #100 Los Angeles, Ca 90045">LA Pacific</option>
+                            <option value="333 E Glenoaks Blvd # 202 Glendale, 91207">Mercury Hospice Care</option>
+                            <option value="19809 Prairie St, Chatsworth, CA 91311 United States">USCIS - Chatsworth</option>
+                            <option value="995 Hardt Street San Bernardino, Ca 92408">USCIS San Bernardino</option>
+                            <option value="14101 Myford Rd Tustin, CA 92780">USCIS Tustin</option>
+                            <option value="500 N Brand Blvd Suite 1250 Glendale CA 91203 United States">Vadim Yuzefpolsky attorney</option>
+                            <option value="6230 Van Nuys Blvd Van Nuys, CA 91401 United States">Van Nuys Court</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="form-row">
@@ -388,8 +402,23 @@
                         <label>Service</label>
                         <select id="modalApptService" onchange="updatePreview()">
                             <option>001-Initial Consultation</option>
+                            <option>01-Phone appointment</option>
+                            <option>02-Client Registration</option>
+                            <option>03-Document Drop-off</option>
+                            <option>04-Document Pick-up</option>
+                            <option>05-Application Preparation</option>
+                            <option>06-Document Signing</option>
+                            <option>07-Court Filing</option>
+                            <option>08-Follow-up Meeting</option>
                             <option selected>09-Interview / Hearing Practice</option>
                             <option>10-Interview Hearing / Representation</option>
+                            <option>11-Court Appearance / Representation</option>
+                            <option>12-Lawyer Consultation</option>
+                            <option>13-Doctor Visit</option>
+                            <option>14-Translation Services</option>
+                            <option>15-Notary Service (In-Office)</option>
+                            <option>16-Mobile Notary (Client Location)</option>
+                            <option>17-Confidential Marriage</option>
                         </select>
                     </div>
                     <div class="form-group" style="margin-bottom: 15px;">
@@ -466,7 +495,11 @@
                 <div style="margin-top: 15px;">
                     <label style="font-size: 13px; color: var(--secondary-color);">Duration:</label>
                     <select id="aDuration" style="width: 100%;" onchange="updatePreview()">
-                        <option>30 minutes</option><option selected>1 hour</option><option>1 hour 30 minutes</option><option>2 hours</option>
+                        <option>5 minutes</option><option>10 minutes</option><option>15 minutes</option><option>20 minutes</option><option>25 minutes</option>
+                        <option>30 minutes</option><option>35 minutes</option><option>40 minutes</option><option>45 minutes</option><option>50 minutes</option><option>55 minutes</option>
+                        <option selected>1 hour</option><option>1 hour 15 minutes</option><option>1 hour 30 minutes</option><option>1 hour 45 minutes</option>
+                        <option>2 hours</option><option>2 hours 15 minutes</option><option>2 hours 30 minutes</option><option>2 hours 45 minutes</option>
+                        <option>3 hours</option><option>3 hours 30 minutes</option><option>4 hours</option><option>4 hours 30 minutes</option><option>5 hours</option><option>5 hours 30 minutes</option>
                     </select>
                 </div>
             </div>
@@ -640,6 +673,7 @@
                         <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 8px; display: block;">Call Description / Note Text:</label>
                         <textarea id="briefDescription" placeholder="Summarize the client's inquiry..." required></textarea>
                         
+                        <!-- НОВА КНОПКА СРОЧНОСТИ -->
                         <div style="margin-top: 15px; padding: 12px; background: #fff0f0; border-radius: 8px; border-left: 4px solid #d32f2f; animation: fadeIn 0.3s ease;">
                             <label style="display: flex; align-items: center; cursor: pointer; color: #b71c1c; font-weight: 700; font-size: 14.5px; margin: 0;">
                                 <input type="checkbox" id="urgentCallCheckbox" style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer; accent-color: #d32f2f;">
@@ -721,6 +755,8 @@
 
                     <select id="viewSelector" onchange="renderMainCalendar()">
                         <option value="agenda">Agenda</option>
+                        <option value="day">Day</option>
+                        <option value="week">Week</option>
                         <option value="month-condensed" selected>Month (condensed)</option>
                         <option value="month-full">Month (full view)</option>
                     </select>
@@ -1016,7 +1052,7 @@
     
     window.closeJournalModal = function() { document.getElementById('journalViewModal').style.display = 'none'; }
 
-    // Логика скачивания данных из Docketwise для профиля
+    // Логика скачивания данных из Docketwise для нового модального окна
     window.openDocketwiseProfile = async function(name, phone, id) {
         document.getElementById('dwProfileModal').style.display = 'flex';
         document.getElementById('dwName').textContent = name || 'Unknown Client';
@@ -1044,6 +1080,7 @@
                     let mattersHtml = '';
                     clientData.matters.forEach(m => {
                         let staff = m.assignee_name || m.assignee || m.staff || m.user || "Unassigned";
+                        // Генерируем ссылку прямо на карточку дела в Docketwise
                         let matterUrl = `https://app.docketwise.com/matters/${m.id}`;
                         
                         mattersHtml += `<div style="padding: 12px 0; border-bottom: 1px solid #f0ebe1;">
@@ -1208,12 +1245,13 @@
         });
     }
 
-    // Слушатели событий журнала
+    // Слушатели событий
     let searchTimeout;
     document.getElementById('historySearchInput').addEventListener('input', function() {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => { window.renderCallHistoryList(); }, 600); 
     });
+
     document.getElementById('historyStaffDropdown').addEventListener('change', () => { window.renderCallHistoryList(); });
     document.getElementById('historyStatusFilter').addEventListener('change', applyHistoryFilters);
     document.getElementById('historyTypeFilter').addEventListener('change', applyHistoryFilters);
@@ -1289,6 +1327,7 @@
                 resolvedOpCheckbox.checked = false;
                 resolvedOpCheckbox.dispatchEvent(new Event('change'));
             }
+
             this.value = ""; 
         });
 
@@ -1351,7 +1390,9 @@
             if (!currentActiveNotifId) return;
             
             let extraNote = document.getElementById('modalStaffNote').value.trim();
-            if (extraNote === "") { extraNote = "Task closed without comments"; }
+            if (extraNote === "") {
+                extraNote = "Task closed without comments";
+            }
             
             const resolvedTime = new Date().toLocaleString([], {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit'});
             extraNote = extraNote + `\n\n[✅ Resolved at: ${resolvedTime}]`;
@@ -1378,6 +1419,7 @@
                 if (data.success && data.notifications && data.notifications.length > 0) {
                     badge.style.display = 'block'; 
                     badge.textContent = data.notifications.length;
+                    
                     let hasNewTasks = false;
 
                     data.notifications.forEach(notif => {
@@ -1399,6 +1441,7 @@
                                         body: cleanMsg,
                                         icon: "https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png"
                                     });
+                                    
                                     sysNotif.onclick = function() {
                                         window.focus(); 
                                         const phoneParam = notif.client_phone ? '?phone=' + notif.client_phone : '';
@@ -1406,12 +1449,16 @@
                                         window.open(targetUrl, '_blank'); 
                                         sysNotif.close();
                                     };
-                                } catch (e) { console.log("Push API Error:", e); }
+                                } catch (e) {
+                                    console.log("Push API Error:", e);
+                                }
                             }
                         }
                     });
 
-                    if (hasNewTasks) { bellSound.play().catch(e => console.log('Audio blocked.')); }
+                    if (hasNewTasks) {
+                        bellSound.play().catch(e => console.log('Audio blocked.'));
+                    }
 
                     notifList.innerHTML = '';
                     data.notifications.forEach(notif => {
@@ -1447,10 +1494,19 @@
         
         checkNotifications(); 
 
-        const workerCode = `setInterval(() => { postMessage('wakeup'); }, 3000);`;
+        const workerCode = `
+            setInterval(() => {
+                postMessage('wakeup');
+            }, 3000);
+        `;
         const blob = new Blob([workerCode], { type: 'application/javascript' });
         const bgWorker = new Worker(URL.createObjectURL(blob));
-        bgWorker.onmessage = function(e) { if (e.data === 'wakeup') { checkNotifications(); } };
+        
+        bgWorker.onmessage = function(e) {
+            if (e.data === 'wakeup') {
+                checkNotifications();
+            }
+        };
 
         function setDateTime() {
             const now = new Date();
@@ -1489,7 +1545,8 @@
 
         window.updatePreview = function() {
             const name = document.getElementById('modalApptName').value || 'Client'; const staff = document.getElementById('modalApptStaff').value; const duration = document.getElementById('aDuration').value;
-            const address = document.getElementById('modalApptLocation').value; const rawService = document.getElementById('modalApptService').value; const cleanService = rawService.replace(/^\d+-/, '').trim();
+            const address = document.getElementById('modalApptLocation').value; const rawService = document.getElementById('modalApptService').value; 
+            const cleanService = rawService.replace(/^\d+-\s*/, '').trim();
             const h = document.getElementById('aTimeHour').value; const m = document.getElementById('aTimeMinute').value; const ampm = document.getElementById('aTimeAMPM').value;
             const timeStr = `${h}:${m}${ampm.toLowerCase()}`; const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
             const dateStr = `${days[selectedApptDate.getDay()]} ${selectedApptDate.getMonth()+1}/${selectedApptDate.getDate()}`;
@@ -1521,7 +1578,7 @@
             const m = document.getElementById('aTimeMinute').value; 
             const ampm = document.getElementById('aTimeAMPM').value;
             const rawService = document.getElementById('modalApptService').value; 
-            const cleanService = rawService.replace(/^\d+-/, '').trim(); 
+            const cleanService = rawService.replace(/^\d+-\s*/, '').trim(); 
             const apptStaff = document.getElementById('modalApptStaff').value;
             const durationStr = document.getElementById('aDuration').value;
 
@@ -1574,6 +1631,7 @@
             const isLead = currentStatus === 'Lead';
             const clientName = document.getElementById('modalApptName').value.trim() || (isLead ? "New Lead" : "Unknown Client");
             const phoneInput = document.getElementById('modalApptPhone').value.trim();
+            const locSelect = document.getElementById('modalApptLocation');
 
             const appointmentData = {
                 id: editingId ? parseInt(editingId) : Date.now(), 
@@ -1585,7 +1643,7 @@
                 service: cleanService, 
                 staff: apptStaff, 
                 bookedBy: localStorage.getItem('loggedInStaff') || "Unknown", 
-                location: document.getElementById('modalApptLocation').value, 
+                location: locSelect.options[locSelect.selectedIndex].text, 
                 length: durationStr,
                 reminder: apptRemType, language: apptLang, 
                 message: document.getElementById('modalApptMessage').value, 
@@ -1799,7 +1857,7 @@
                     <strong>💼 Service:</strong> <span>${appt.service}</span>
                     <strong>👨‍💼 Staff:</strong> <span>${appt.staff}</span>
                     <strong>📝 Booked By:</strong> <span>${appt.bookedBy || 'Admin / Front Desk'}</span>
-                    <strong>📍 Loc:</strong> <span>${appt.location.split(',')[0]}</span>
+                    <strong>📍 Loc:</strong> <span>${appt.location}</span>
                 </div>
                 ${noteHtml}
             `;
@@ -1845,7 +1903,7 @@
                     const dObj = new Date(appt.timestamp); const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; const dateTitle = `${days[dObj.getDay()]}, ${dObj.getMonth()+1}/${dObj.getDate()}`;
                     if (dateTitle !== currentDate) { html += `<div class="agenda-date-header"><span style="font-size: 20px;">📅</span> ${dateTitle}</div>`; currentDate = dateTitle; }
                     let leadBadge = appt.isLead ? '<span style="background: #e65100; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; vertical-align: middle; font-weight: bold; letter-spacing: 0.5px;">🔥 LEAD</span>' : '';
-                    html += `<div class="agenda-card" onclick="openPreviewModal(${appt.id})"><div class="agenda-info"><div class="client-name">${appt.client} ${leadBadge}</div><div class="service-details">${appt.service} @ ${appt.location.split(',')[0]} <span style="font-size:11px;">WITH</span> ${appt.staff}</div></div><div class="agenda-time">${appt.time}</div></div>`;
+                    html += `<div class="agenda-card" onclick="openPreviewModal(${appt.id})"><div class="agenda-info"><div class="client-name">${appt.client} ${leadBadge}</div><div class="service-details">${appt.service} @ ${appt.location} <span style="font-size:11px;">WITH</span> ${appt.staff}</div></div><div class="agenda-time">${appt.time}</div></div>`;
                 });
                 area.innerHTML = html;
             } else if (view === 'month-condensed' || view === 'month-full') {
