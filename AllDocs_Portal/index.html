@@ -850,16 +850,23 @@
         window.globalAppointments = JSON.parse(localStorage.getItem('gr_db')) || [];
     }
     
+   let lastKnownMessageCount = 0;
     window.globalMessages = [];
+
     window.loadMessages = async function() {
         try {
             const res = await fetch('/api/messages?t=' + new Date().getTime(), { cache: 'no-store' });
             if (res.ok) {
                 const data = await res.json();
-                if (data.success) { window.globalMessages = data.messages || []; return; }
+                if (data.success) { 
+                    window.globalMessages = data.messages || []; 
+                    lastKnownMessageCount = window.globalMessages.length;
+                    return; 
+                }
             }
         } catch (e) { console.log('Messages API not ready.'); }
         window.globalMessages = JSON.parse(localStorage.getItem('gr_messages')) || [];
+        lastKnownMessageCount = window.globalMessages.length;
     }
     
     window.saveAppointmentsDb = async function(recs) {
@@ -937,9 +944,18 @@
     }
 
     const smsTemplates = {
-        ENG: `All Docs Consulting\n\nHello {name},\nyou have an appointment\nwith {staff}\n\nStart Time\n{date}\n{time}\n\nAppointments Length {duration}\n\nAddress\n{address}\n\nService\n{service}\n\nFor questions call:\n(747) 204-2404\n\nSTOP=opt-out.`,
-        RUSS: `All Docs Consulting\n\nПривет {name} ,\nу тебя назначена встреча\nс {staff}\n\nДата начала\n{date}\n{time}\n\nпродолжительность\nвстречи {duration}\n\nАдрес\n{address}\n\nУслуга\n{service}\n\nПо вопросам звоните:\n(747) 204-2404\n\nSTOP=opt-out.`,
-        ARM: `All Docs Consulting\n\nԲարև {name},\nԴուք ունեք հանդիպում\n{staff} -ի հետ\n\nՍկիզբ\n{date}\n{time}\n\nՏևողությունը {duration}\n\nՀասցե\n{address}\n\nԾառայություն\n{service}\n\nՀարցերի դեպքում զանգահարեք՝\n(747) 204-2404\n\nSTOP=opt-out.`
+        ENG: `All Docs Consulting\n\nHello {name},\nyou have an appointment\nwith {staff}\n\nStart Time\n{date}\n{time}\n\nAppointments Length {duration}\n\nAddress\n{address}\n\nService\n{service}\n\nFor questions call:\n
+
+(747) 204-2404
+\n\nSTOP=opt-out.`,
+        RUSS: `All Docs Consulting\n\nПривет {name} ,\nу тебя назначена встреча\nс {staff}\n\nДата начала\n{date}\n{time}\n\nпродолжительность\nвстречи {duration}\n\nАдрес\n{address}\n\nУслуга\n{service}\n\nПо вопросам звоните:\n
+
+(747) 204-2404
+\n\nSTOP=opt-out.`,
+        ARM: `All Docs Consulting\n\nԲարև {name},\nԴուք ունեք հանդիպում\n{staff} -ի հետ\n\nՍկիզբ\n{date}\n{time}\n\nՏևողությունը {duration}\n\nՀասցե\n{address}\n\nԾառայություն\n{service}\n\nՀարցերի դեպքում զանգահարեք՝\n
+
+(747) 204-2404
+\n\nSTOP=opt-out.`
     };
 
     window.loadSharedContacts = async function() {
@@ -983,7 +999,7 @@
         if(tabId === 'tabCalendarContent') window.renderMainCalendar();
     }
 
-    window.switchCalView = async function(viewType) {
+  window.switchCalView = async function(viewType) {
         const btnCal = document.getElementById('btnNavCal');
         const btnInbox = document.getElementById('btnNavInbox');
         const calGrid = document.getElementById('calGridWrapper');
@@ -992,6 +1008,12 @@
         if (viewType === 'inbox') {
             btnCal.className = 'top-nav-btn inactive';
             btnInbox.className = 'top-nav-btn active';
+            
+            // Сброс стилей кнопки при прочтении
+            btnInbox.style.backgroundColor = '';
+            btnInbox.style.color = '';
+            btnInbox.innerHTML = '✉️ Inbox / SMS';
+
             calGrid.style.display = 'none';
             inboxWrap.style.display = 'flex';
             await window.loadMessages();
@@ -1503,6 +1525,106 @@
             } catch (e) { alert('Server error'); } finally { btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; }
         };
 
+     // === ЖИВОЙ СКАНЕР SMS ===
+        async function checkLiveMessages() {
+            try {
+                const res = await fetch('/api/messages?t=' + new Date().getTime(), { cache: 'no-store' });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success) {
+                        const newMessages = data.messages || [];
+                        if (newMessages.length > lastKnownMessageCount) {
+                            const addedMessages = newMessages.slice(lastKnownMessageCount);
+                            window.globalMessages = newMessages;
+                            lastKnownMessageCount = newMessages.length;
+                            
+                            let shouldPlaySound = false;
+                            let needsChatRefresh = false;
+                            let refreshPhone = ""; let refreshName = ""; let refreshKey = "";
+
+                            addedMessages.forEach(msg => {
+                                const msgKey = `${msg.name}_${msg.phone || 'NoPhone'}`;
+                                const isInboxOpen = document.getElementById('inboxWrapper').style.display === 'flex';
+                                const isThisChatOpen = currentChatKey === msgKey;
+
+                                if (msg.direction === 'in') {
+                                    if (isInboxOpen && isThisChatOpen) {
+                                        // Смотрят прямо в чат - просто обновляем
+                                        needsChatRefresh = true; refreshPhone = msg.phone; refreshName = msg.name; refreshKey = msgKey;
+                                    } else {
+                                        // Не смотрят в чат - шлем уведомление
+                                        shouldPlaySound = true;
+                                        addSmsToBell(msg, msgKey);
+                                        
+                                        if (window.Notification && Notification.permission === "granted") {
+                                            new Notification("💬 New SMS from " + msg.name, { body: msg.text, icon: "https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png" });
+                                        }
+                                    }
+                                } else {
+                                    // Сообщение от другого оператора (out)
+                                    if (isInboxOpen && isThisChatOpen) { needsChatRefresh = true; refreshPhone = msg.phone; refreshName = msg.name; refreshKey = msgKey; }
+                                }
+                            });
+
+                            if (document.getElementById('inboxWrapper').style.display === 'flex') { renderInboxList(); }
+                            if (needsChatRefresh) { openChat(refreshPhone, refreshName, refreshKey); }
+
+                            if (shouldPlaySound) {
+                                const smsSound = new Audio('https://assets.mixkit.co/active_storage/sfx/238/238-preview.mp3');
+                                smsSound.play().catch(e => console.log('Audio blocked'));
+                                
+                                const inboxBtn = document.getElementById('btnNavInbox');
+                                if (!inboxBtn.classList.contains('active')) {
+                                    inboxBtn.style.backgroundColor = '#e3f2fd';
+                                    inboxBtn.style.color = '#0d47a1';
+                                    inboxBtn.innerHTML = '✉️ Inbox / SMS <span style="background:#d32f2f;color:white;border-radius:12px;padding:2px 6px;font-size:11px;margin-left:5px;">New SMS</span>';
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e) {}
+        }
+
+        function addSmsToBell(msg, msgKey) {
+            const badge = document.getElementById('notifBadge');
+            let currentCount = parseInt(badge.textContent || '0');
+            badge.style.display = 'block'; badge.textContent = currentCount + 1;
+
+            const notifList = document.getElementById('notifList');
+            if (notifList.innerHTML.includes('No new tasks')) { notifList.innerHTML = ''; }
+
+            const div = document.createElement('div');
+            div.className = 'notif-item-modern';
+            div.style.borderLeft = '4px solid #1976d2';
+            div.style.backgroundColor = '#f4f9ff';
+            
+            let timeStr = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            let shortMsg = msg.text.substring(0, 60) + '...';
+
+            div.onclick = () => {
+                // При клике: Открыть Inbox -> Открыть этот чат -> Удалить это уведомление
+                switchMainTab('tabCalendarContent', document.querySelectorAll('.tab-btn')[1]);
+                switchCalView('inbox');
+                openChat(msg.phone, msg.name, msgKey);
+                
+                div.remove();
+                let newCount = parseInt(badge.textContent) - 1;
+                if (newCount <= 0) {
+                    badge.style.display = 'none'; badge.textContent = '0';
+                    notifList.innerHTML = '<div style="color: #888; text-align: center; padding: 30px 20px; font-size: 14px;">No new tasks.</div>';
+                } else { badge.textContent = newCount; }
+                document.getElementById('notificationDropdown').style.display = 'none';
+            };
+
+            div.innerHTML = `
+                <div class="notif-title"><span>💬 SMS: ${msg.name}</span><span class="new-tag" style="background:#1976d2;">SMS</span></div>
+                <div class="notif-preview">${shortMsg}</div>
+                <div class="notif-time">🕒 ${timeStr}</div>
+            `;
+            notifList.prepend(div);
+        }
+
         async function checkNotifications() {
             if (!myStaffId) return; 
             try {
@@ -1596,9 +1718,10 @@
         const blob = new Blob([workerCode], { type: 'application/javascript' });
         const bgWorker = new Worker(URL.createObjectURL(blob));
         
-        bgWorker.onmessage = function(e) {
+       bgWorker.onmessage = function(e) {
             if (e.data === 'wakeup') {
                 checkNotifications();
+                checkLiveMessages(); // Запуск сканера SMS в реальном времени
             }
         };
 
