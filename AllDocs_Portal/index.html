@@ -1702,7 +1702,7 @@ window.currentCrmNotifs = [];
             finally { btn.textContent = 'Send SMS ✉️'; btn.disabled = false; }
         };
 
-        // === ЖИВОЙ СКАНЕР SMS ===
+       // === ЖИВОЙ СКАНЕР SMS ===
         async function checkLiveMessages() {
             try {
                 const res = await fetch('/api/messages?t=' + new Date().getTime(), { cache: 'no-store' });
@@ -1730,13 +1730,12 @@ window.currentCrmNotifs = [];
                                 const isInboxOpen = document.getElementById('inboxWrapper').style.display === 'flex';
                                 const isThisChatOpen = currentChatKey === msgKey;
 
-                            if (msg.direction === 'in') {
+                                if (msg.direction === 'in') {
                                     if (isInboxOpen && isThisChatOpen) {
                                         needsChatRefresh = true; refreshPhone = msg.phone; refreshName = msg.name; refreshKey = msgKey;
                                     } else {
                                         shouldPlaySound = true;
                                         window.currentSmsNotifs.push({...msg, key: msgKey});
-                                        // Сохраняем уведомление на случай F5
                                         localStorage.setItem('unreadSmsNotifs', JSON.stringify(window.currentSmsNotifs));
                                         
                                         if (window.Notification && Notification.permission === "granted") {
@@ -1756,8 +1755,7 @@ window.currentCrmNotifs = [];
                             if (document.getElementById('inboxWrapper').style.display === 'flex') { renderInboxList(); }
                             if (needsChatRefresh) { openChat(refreshPhone, refreshName, refreshKey); }
 
-                           if (shouldPlaySound) {
-                                // Запускаем нормальный мягкий звук колокольчика!
+                            if (shouldPlaySound) {
                                 const smsSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3?v=2');
                                 smsSound.play().catch(e => console.log('Audio blocked'));
                                 
