@@ -2349,7 +2349,7 @@ window.currentCrmNotifs = [];
             document.getElementById('emojiPicker').style.display = 'none'; // Закрываем меню
         };
         // ==========================
-
+        window.openCustomerDetails = async function(phone, name) {
         window.openCustomerDetails = async function(phone, name) {
             document.getElementById('cdName').textContent = name;
             document.getElementById('cdPhone').textContent = (phone && phone !== "No Phone" && phone !== "null") ? `📞 ${phone}` : '📞 No Phone Provided';
