@@ -1161,8 +1161,7 @@
         }
     };
 
-  // === УЛЬТРА-ЖЕСТКОЕ ЗАКРЫТИЕ ПЕНДИНГА ===
-   window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
+ window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
         let extraNote = document.getElementById('jmResolveNote').value.trim();
         if (extraNote === "") { extraNote = "Task closed without comments"; }
         
@@ -1179,25 +1178,53 @@
                 "Rima Avetisyan": "1007", "Rima A.": "1007", "Lilit Avetisyan": "1009", "Lilit A.": "1009"
             };
             
-            const myStaffId = staffMap[loggedInStaff];
-            
-            const res = await fetch(`/api/get-notifications?staffId=${myStaffId}`);
-            const data = await res.json();
-            
+            const myStaffId = staffMap[loggedInStaff] || '000000'; // Заглушка, чтобы не ломался запрос
             let targetNotifId = ''; 
             
-            if (data.success && data.notifications) {
-                const matchedNotif = data.notifications.find(n => {
-                    if (n.call_log_id && String(n.call_log_id) === String(logId)) return true;
-                    const nClient = n.client_name ? n.client_name.toLowerCase().trim() : "";
-                    const pClient = clientName ? clientName.toLowerCase().trim() : "";
-                    return (nClient && pClient && (nClient.includes(pClient) || pClient.includes(nClient)));
-                });
+            try {
+                // Добавляем анти-кеш
+                const res = await fetch(`/api/get-notifications?staffId=${myStaffId}&t=${Date.now()}`, { cache: 'no-store' });
+                const data = await res.json();
+                
+                if (data.success && data.notifications) {
+                    const matchedNotif = data.notifications.find(n => {
+                        if (n.call_log_id && String(n.call_log_id) === String(logId)) return true;
+                        const nClient = n.client_name ? n.client_name.toLowerCase().trim() : "";
+                        const pClient = clientName ? clientName.toLowerCase().trim() : "";
+                        return (nClient && pClient && (nClient.includes(pClient) || pClient.includes(nClient)));
+                    });
 
-                if (matchedNotif) {
-                    targetNotifId = matchedNotif.id;
+                    if (matchedNotif) {
+                        targetNotifId = matchedNotif.id;
+                    }
                 }
+            } catch (err) {
+                console.log("Уведомление не найдено, закрываем напрямую", err);
             }
+
+            // ПЕРЕДАЕМ И logId (для Журнала) И notificationId (для Колокольчика), плюс анти-кеш t=Date.now()
+            const resolveUrl = `/api/get-notifications?action=read&notificationId=${targetNotifId}&logId=${logId}&note=${encodeURIComponent(extraNote)}&t=${Date.now()}`;
+            
+            const resolveRes = await fetch(resolveUrl, { cache: 'no-store' });
+            const resolveData = await resolveRes.json();
+
+            if (!resolveData.success) {
+                console.error("Server error:", resolveData.error);
+                alert("Не удалось закрыть задачу на сервере. Убедись, что файл get-notifications.js обновлен!");
+            }
+            
+            closeJournalModal(); 
+            if (typeof checkNotifications === "function") checkNotifications(); 
+            
+            await new Promise(resolve => setTimeout(resolve, 800));
+            
+            window.renderCallHistoryList(); 
+        } catch (e) { 
+            alert('Сбой соединения с сервером. Попробуй еще раз.'); 
+        } finally { 
+            btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; 
+        }
+    };
 
             // ПЕРЕДАЕМ И logId (чтобы точно закрыть журнал) И notificationId (чтобы закрыть колокольчик)
             await fetch(`/api/get-notifications?action=read&notificationId=${targetNotifId}&logId=${logId}&note=${encodeURIComponent(extraNote)}`);
