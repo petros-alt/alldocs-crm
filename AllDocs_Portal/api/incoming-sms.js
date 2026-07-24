@@ -15,8 +15,6 @@ export default async function handler(req, res) {
         const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
         const pool = postgres.createPool({ connectionString });
 
-        // Разные сервисы (Zapier, Twilio, RingCentral) присылают данные в разных форматах.
-        // Мы ловим все возможные варианты названия полей:
         const body = req.body || {};
         const query = req.query || {};
         
@@ -27,7 +25,6 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Missing phone number or message text' });
         }
 
-        // Очищаем номер от лишних символов (оставляем только цифры)
         let cleanPhone = phone.replace(/[^\d+]/g, '');
         if (cleanPhone.length === 10 && !cleanPhone.startsWith('+')) {
             cleanPhone = '+1' + cleanPhone;
@@ -35,27 +32,37 @@ export default async function handler(req, res) {
             cleanPhone = '+' + cleanPhone;
         }
 
-        // 1. Получаем текущую историю ВСЕХ сообщений из базы
         const result = await pool.sql`SELECT data FROM global_messages WHERE id = 1;`;
         let messages = result.rows.length > 0 ? result.rows[0].data : [];
 
-        // 2. Ищем имя клиента по номеру (проверяем, общались ли мы с ним ранее)
+        // === УМНЫЙ ПОИСК КЛИЕНТА ПО ПОСЛЕДНИМ 10 ЦИФРАМ ===
         let clientName = "Unknown Client";
-        const existingMsg = messages.find(m => m.phone && m.phone.includes(cleanPhone.replace('+', '')));
-        if (existingMsg && existingMsg.name) {
-            clientName = existingMsg.name;
+        let finalPhoneToSave = cleanPhone; 
+        
+        // Берем ровно 10 последних цифр входящего номера (например 7472042404)
+        const incPhone10 = cleanPhone.replace(/[^\d]/g, '').slice(-10);
+
+        // Ищем в истории чатов совпадение по этим 10 цифрам
+        const existingMsg = messages.find(m => {
+            if (!m.phone) return false;
+            const histPhone10 = String(m.phone).replace(/[^\d]/g, '').slice(-10);
+            return histPhone10 === incPhone10;
+        });
+
+        if (existingMsg) {
+            if (existingMsg.name) clientName = existingMsg.name;
+            if (existingMsg.phone) finalPhoneToSave = existingMsg.phone; // КРИТИЧНО ВАЖНО: берем оригинальный формат номера с формочки!
         }
 
-        // 3. Создаем объект ВХОДЯЩЕГО сообщения
+        // Создаем объект ВХОДЯЩЕГО сообщения
         const newIncomingMessage = {
-            phone: cleanPhone,
+            phone: finalPhoneToSave,
             name: clientName,
             text: text,
             timestamp: Date.now(),
-            direction: 'in' // 'in' означает входящее (будет слева в чате)
+            direction: 'in' 
         };
 
-        // 4. Добавляем в массив и сохраняем обратно в базу
         messages.push(newIncomingMessage);
 
         await pool.sql`
