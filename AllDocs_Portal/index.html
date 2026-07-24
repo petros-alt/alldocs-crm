@@ -234,6 +234,17 @@
         .history-table tr.journal-row:hover { background-color: #fdfaf6; box-shadow: inset 4px 0 0 var(--accent-color); }
         .badge-status { padding: 4px 8px; border-radius: 6px; font-size: 11.5px; font-weight: bold; color: white; display: inline-block; letter-spacing: 0.5px;}
         .journal-modal-content { background: var(--form-bg); padding: 30px; border-radius: 16px; width: 100%; max-width: 550px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); position: relative; margin: auto; animation: fadeIn 0.2s ease;}
+
+        /* MODAL FOR CHECK AVAILABILITY */
+        #availabilityModal .modal-content { padding: 0; max-width: 600px; overflow: hidden; }
+        .avail-header { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); padding: 25px; color: white; text-align: center; position: relative; }
+        .avail-title { margin: 0; font-size: 22px; }
+        .avail-subtitle { margin: 5px 0 0 0; opacity: 0.8; font-size: 14px; }
+        .avail-body { padding: 30px; background: var(--surface-color); max-height: 400px; overflow-y: auto; }
+        .avail-slot { background: white; border: 1px solid var(--border-color); border-left: 4px solid #d32f2f; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .avail-slot .time { font-weight: bold; font-size: 16px; color: #d32f2f; }
+        .avail-slot .dur { font-size: 13px; color: var(--secondary-color); }
+        .avail-empty { text-align: center; padding: 30px; color: #2e7d32; font-size: 16px; font-weight: bold; background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -319,6 +330,18 @@
             <div style="display: flex; gap: 10px; margin-right: 25px;" id="previewButtonsContainer"></div>
         </div>
         <div class="modal-body" id="previewBody" style="color: var(--secondary-color); line-height: 1.6; margin-bottom: 10px; font-size: 14.5px;"></div>
+    </div>
+</div>
+
+<!-- AVAILABILITY MODAL -->
+<div class="modal-overlay" id="availabilityModal">
+    <div class="modal-content">
+        <div class="modal-close" style="color: white; top: 15px; right: 15px;" onclick="document.getElementById('availabilityModal').style.display='none'">✖</div>
+        <div class="avail-header">
+            <h2 class="avail-title">Schedule Check</h2>
+            <p class="avail-subtitle" id="availSubtitle">Loading...</p>
+        </div>
+        <div class="avail-body" id="availBody"></div>
     </div>
 </div>
 
@@ -494,7 +517,6 @@
                             <option>AM</option><option selected>PM</option>
                         </select>
                     </div>
-                    <div id="availabilityBox" style="margin-top: 10px; font-size: 12.5px; color: #555; display: none; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #eee;"></div>
                 </div>
                 <div style="margin-top: 15px;">
                     <label style="font-size: 13px; color: var(--secondary-color); font-weight: 600;">Duration:</label>
@@ -815,6 +837,7 @@
                 </select>
                 <select id="historyTypeFilter" style="flex: 1; padding: 14px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 14.5px; outline: none; background: white; cursor: pointer;">
                     <option value="All">All Call Types</option>
+                    <option value="Appointment">📅 Appointment</option>
                     <option value="Lead (New Appt)">🔥 Lead</option>
                     <option value="Existing Client">👤 Existing</option>
                     <option value="Unrecognized">⚠️ Unrecognized</option>
@@ -1261,6 +1284,8 @@
             const tr = document.createElement('tr'); tr.className = 'journal-row';
             tr.style.cssText = urgentBg;
             
+            // Если это аппойнтмент, по клику мы можем также добавить отдельную логику в будущем,
+            // но пока открывается стандартный журнал для просмотра примечаний.
             tr.onclick = () => openJournalModal(log.client_name, log.client_phone, d.toLocaleString(), log.operator_name, st, badgeColor, cleanDesc, log.follow_up_notes, trackingBadge, log.id, displayStaff, isResolved, log.client_id);
             
             tr.innerHTML = `
@@ -1550,9 +1575,12 @@
         window.checkStaffAvailability = async function() {
             const staff = document.getElementById('modalApptStaff').value;
             const dateStr = selectedApptDate.toDateString();
-            const box = document.getElementById('availabilityBox');
-            box.style.display = 'block';
-            box.innerHTML = '⏳ Checking schedule...';
+            const modal = document.getElementById('availabilityModal');
+            const box = document.getElementById('availBody');
+            
+            document.getElementById('availSubtitle').textContent = `For ${staff} on ${selectedApptDate.toLocaleDateString()}`;
+            modal.style.display = 'flex';
+            box.innerHTML = '<div style="text-align:center; padding:30px; color:#888;">⏳ Checking schedule...</div>';
             
             await window.loadAppointments(); // Подтягиваем последние данные с сервера
             const records = window.globalAppointments || [];
@@ -1561,11 +1589,21 @@
             const dayAppts = records.filter(a => a.staff === staff && a.dateStr === dateStr && a.id !== editingId);
             
             if (dayAppts.length === 0) {
-                box.innerHTML = `<span style="color: #2e7d32; font-weight: bold;">✅ ${staff} is fully open on this day.</span>`;
+                box.innerHTML = `<div class="avail-empty">✅ This staff member is fully open and has no appointments on this day.</div>`;
             } else {
                 dayAppts.sort((a,b) => a.timestamp - b.timestamp);
-                let times = dayAppts.map(a => `<span style="display:inline-block; background:#ffebee; color:#d32f2f; padding:2px 6px; border-radius:4px; margin:2px;">${a.time} (${a.length})</span>`).join(' ');
-                box.innerHTML = `<strong style="color: #d32f2f;">🗓️ ${staff} is already booked at:</strong><br><div style="margin-top:5px;">${times}</div>`;
+                let html = '';
+                dayAppts.forEach(a => {
+                    html += `
+                        <div class="avail-slot">
+                            <div>
+                                <div class="time">⏰ ${a.time}</div>
+                                <div class="dur">Duration: ${a.length}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                box.innerHTML = html;
             }
         }
 
@@ -1579,7 +1617,6 @@
             document.getElementById('modalApptName').value = nameToUse; 
             document.getElementById('modalApptPhone').value = phoneToUse;
             document.getElementById('modalApptMessage').value = '';
-            document.getElementById('availabilityBox').style.display = 'none';
             
             const isLead = document.querySelector('input[name="clientStatus"]:checked')?.value === 'Lead'; 
             const titleEl = document.getElementById('apptModalTitle');
@@ -1626,7 +1663,6 @@
             document.getElementById('dayListModal').style.display = 'none'; 
             document.getElementById('customerDetailsModal').style.display = 'none';
             document.getElementById('previewModal').style.display = 'none';
-            document.getElementById('availabilityBox').style.display = 'none';
 
             document.getElementById('editingApptId').value = appt.id;
             document.getElementById('apptModalTitle').innerHTML = '✏️ Edit Appointment';
@@ -1696,7 +1732,6 @@
                 btn.onclick = (e) => { 
                     e.preventDefault(); document.querySelectorAll('#aCalDates .cal-btn').forEach(b => b.classList.remove('selected')); 
                     btn.classList.add('selected'); selectedApptDate = cDate; 
-                    document.getElementById('availabilityBox').style.display = 'none'; // прячем подсказку при смене дня
                     updatePreview(); 
                 };
                 if(selectedApptDate && cDate.toDateString() === selectedApptDate.toDateString()) btn.classList.add('selected'); grid.appendChild(btn);
