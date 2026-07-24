@@ -2234,7 +2234,6 @@ window.currentCrmNotifs = [];
             const thread = msgs.filter(m => `${m.name}_${m.phone || 'NoPhone'}` === key).sort((a,b) => a.timestamp - b.timestamp);
 
             let chatHtml = `
-                let chatHtml = `
                 <div class="chat-header">
                     <h3>${name}</h3>
                     <div style="display:flex; gap: 10px; align-items:center;">
@@ -2700,6 +2699,68 @@ window.currentCrmNotifs = [];
                 }
             }
         }
+    // === АРХИВАЦИЯ ЧАТА В БАЗУ ДАННЫХ CRM ===
+        window.saveChatToJournal = async function(phone, name, key, event) {
+            const btn = event.target;
+            btn.textContent = 'Saving...'; btn.disabled = true;
+            
+            await window.loadMessages();
+            let msgs = window.globalMessages || [];
+            const thread = msgs.filter(m => `${m.name}_${m.phone || 'NoPhone'}` === key).sort((a,b) => a.timestamp - b.timestamp);
+            
+            if (thread.length === 0) {
+                alert("Нет сообщений для сохранения!");
+                btn.textContent = '💾 Save to CRM'; btn.disabled = false;
+                return;
+            }
+
+            // Формируем красивый текст переписки
+            let chatText = `[💬 SMS CHAT HISTORY ARCHIVE]\nSaved on: ${new Date().toLocaleString()}\n\n`;
+            thread.forEach(m => {
+                const timeStr = new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const sender = m.direction === 'out' ? "🏢 Us" : `👤 ${name}`;
+                chatText += `[${timeStr}] ${sender}: ${m.text}\n`;
+            });
+
+            const loggedInStaff = localStorage.getItem('loggedInStaff') || "Unknown Operator";
+            
+            // Формируем такой же объект, как при сохранении звонка
+            const formData = {
+                clientId: "", 
+                clientName: name, 
+                clientPhone: phone,
+                matterTitle: "", 
+                program: "", 
+                description: chatText, 
+                operatorName: loggedInStaff, 
+                operatorId: myStaffId, 
+                assignedStaffName: "Resolved by Operator", 
+                assignedStaffId: "", 
+                followUpNotes: "SMS Chat automatically archived to database.", 
+                status: "Resolved"
+            };
+
+            try {
+                // Отправляем на сервер в таблицу Журнала
+                const response = await fetch('/api/save-call', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(formData) 
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert("✅ Чат успешно навсегда сохранен в Internal Call History!");
+                    window.renderCallHistoryList();
+                } else {
+                    alert("❌ Ошибка при сохранении: " + (result.error || ""));
+                }
+            } catch (error) {
+                alert('Сбой соединения с сервером. Попробуйте еще раз.');
+            } finally {
+                btn.textContent = '💾 Save to CRM'; btn.disabled = false;
+            }
+        };
     });    
 </script>
 </body>
