@@ -234,17 +234,6 @@
         .history-table tr.journal-row:hover { background-color: #fdfaf6; box-shadow: inset 4px 0 0 var(--accent-color); }
         .badge-status { padding: 4px 8px; border-radius: 6px; font-size: 11.5px; font-weight: bold; color: white; display: inline-block; letter-spacing: 0.5px;}
         .journal-modal-content { background: var(--form-bg); padding: 30px; border-radius: 16px; width: 100%; max-width: 550px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); position: relative; margin: auto; animation: fadeIn 0.2s ease;}
-
-        /* MODAL FOR CHECK AVAILABILITY */
-        #availabilityModal .modal-content { padding: 0; max-width: 600px; overflow: hidden; }
-        .avail-header { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); padding: 25px; color: white; text-align: center; position: relative; }
-        .avail-title { margin: 0; font-size: 22px; }
-        .avail-subtitle { margin: 5px 0 0 0; opacity: 0.8; font-size: 14px; }
-        .avail-body { padding: 30px; background: var(--surface-color); max-height: 400px; overflow-y: auto; }
-        .avail-slot { background: white; border: 1px solid var(--border-color); border-left: 4px solid #d32f2f; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        .avail-slot .time { font-weight: bold; font-size: 16px; color: #d32f2f; }
-        .avail-slot .dur { font-size: 13px; color: var(--secondary-color); }
-        .avail-empty { text-align: center; padding: 30px; color: #2e7d32; font-size: 16px; font-weight: bold; background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -330,18 +319,6 @@
             <div style="display: flex; gap: 10px; margin-right: 25px;" id="previewButtonsContainer"></div>
         </div>
         <div class="modal-body" id="previewBody" style="color: var(--secondary-color); line-height: 1.6; margin-bottom: 10px; font-size: 14.5px;"></div>
-    </div>
-</div>
-
-<!-- AVAILABILITY MODAL - ДОБАВЛЕН Z-INDEX 2600 ЧТОБЫ БЫТЬ ПОВЕРХ АППОЙНТМЕНТА -->
-<div class="modal-overlay" id="availabilityModal" style="z-index: 2600;">
-    <div class="modal-content">
-        <div class="modal-close" style="color: white; top: 15px; right: 15px;" onclick="document.getElementById('availabilityModal').style.display='none'">✖</div>
-        <div class="avail-header">
-            <h2 class="avail-title">Schedule Check</h2>
-            <p class="avail-subtitle" id="availSubtitle">Loading...</p>
-        </div>
-        <div class="avail-body" id="availBody"></div>
     </div>
 </div>
 
@@ -500,10 +477,7 @@
                 </div>
                 
                 <div style="margin-top: 15px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                        <label style="font-size: 13.5px; color: var(--accent-color); font-weight: 800; margin: 0;">⏰ Select Time:</label>
-                        <button type="button" onclick="checkStaffAvailability()" style="background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); padding: 4px 8px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; transition: 0.2s;">👀 Check Availability</button>
-                    </div>
+                    <label style="font-size: 13.5px; color: var(--accent-color); font-weight: 800; margin: 0 0 5px 0; display: block;">⏰ Select Time:</label>
                     <div class="time-select-group">
                         <select id="aTimeHour" onchange="updatePreview()">
                             <option>01</option><option>02</option><option>03</option><option>04</option><option>05</option><option>06</option>
@@ -517,8 +491,8 @@
                             <option>AM</option><option selected>PM</option>
                         </select>
                     </div>
-                    <div id="availabilityBox" style="margin-top: 10px; font-size: 12.5px; color: #555; display: none; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #eee;"></div>
                 </div>
+
                 <div style="margin-top: 15px;">
                     <label style="font-size: 13px; color: var(--secondary-color); font-weight: 600;">Duration:</label>
                     <select id="aDuration" style="width: 100%;" onchange="updatePreview()">
@@ -529,6 +503,13 @@
                         <option>3 hours</option><option>3 hours 30 minutes</option><option>4 hours</option><option>4 hours 30 minutes</option><option>5 hours</option><option>5 hours 30 minutes</option>
                     </select>
                 </div>
+
+                <!-- AVAILABILITY FINDER INLINE -->
+                <div style="margin-top: 15px;">
+                    <button type="button" onclick="checkStaffAvailability()" style="width: 100%; background: #e8f5e9; border: 1px solid #4caf50; color: #2e7d32; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">✅ Find Available Slots</button>
+                    <div id="availabilityBox" style="margin-top: 10px; display: none;"></div>
+                </div>
+
             </div>
 
             <!-- COLUMN 3: Live SMS Preview -->
@@ -884,7 +865,7 @@
         } catch (e) {}
     }
 
-    // ОЧИСТКА БАЗЫ ДАННЫХ ДЛЯ ТЕСТОВ (Только Календарь и СМС, без лога звонков)
+    // ОЧИСТКА БАЗЫ ДАННЫХ ДЛЯ ТЕСТОВ
     window.clearSandboxData = function() {
         if(confirm("Are you sure you want to delete all Calendar & SMS test data?")) {
             saveAppointmentsDb([]);
@@ -893,7 +874,7 @@
         }
     }
 
-    // --- HELPER FUNCTIONS ДЛЯ РАСЧЕТА ВРЕМЕНИ И ФОРМАТИРОВАНИЯ ---
+    // --- HELPER FUNCTIONS ДЛЯ РАСЧЕТА ВРЕМЕНИ ---
     function parseTimeStrToMinutes(timeStr) {
         const match = timeStr.match(/(\d+):(\d+)\s+(AM|PM)/i);
         if (!match) return 0;
@@ -923,16 +904,10 @@
         return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
     }
 
-    // КОНВЕРТЕР В 24-ЧАСОВОЙ ФОРМАТ
-    function formatTo24Hour(time12h) {
-        const match = time12h.match(/(\d+):(\d+)\s+(AM|PM)/i);
-        if (!match) return time12h;
-        let h = parseInt(match[1], 10);
-        let m = match[2];
-        let ampm = match[3].toUpperCase();
-        if (h === 12 && ampm === 'AM') h = 0;
-        if (h !== 12 && ampm === 'PM') h += 12;
-        return `${String(h).padStart(2, '0')}:${m}`;
+    function formatMinutesTo24h(mins) {
+        let h = Math.floor(mins / 60);
+        let m = mins % 60;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     }
 
     const smsTemplates = {
@@ -1088,11 +1063,19 @@
         if(reply) { replyBlock.style.display = 'block'; document.getElementById('jmStaffReply').textContent = reply; } else { replyBlock.style.display = 'none'; }
         
         const resolveSection = document.getElementById('jmResolveSection');
+        const loggedInStaff = localStorage.getItem('loggedInStaff');
+        const staffMap = {
+            "Norayr Badalyan": "332487", "Petros Eghiazaryan": "418892", "Petros E.": "418892", "Mariam Djaradjian": "339159", "Mariam D.": "339159",
+            "Artak Badalyan": "332810", "Artak B.": "332810", "Argishti Shahbazian": "1005", "Argishti S.": "1005", "Gohar Aloyan": "1001", "Gohar A.": "1001",
+            "Rima Avetisyan": "1007", "Rima A.": "1007", "Lilit Avetisyan": "1009", "Lilit A.": "1009"
+        };
         
-        // ВНИМАНИЕ: Ограничения сняты! 
-        // Теперь если задача "Pending" (не закрыта), ЛЮБОЙ залогиненный сотрудник 
-        // может открыть это окно и нажать "Mark as Resolved".
-        if (!isResolved) {
+        const assignedId = staffMap[assignedStaff] || assignedStaff;
+        const myId = staffMap[loggedInStaff] || loggedInStaff;
+        
+        // ВНИМАНИЕ: ЖЕСТКАЯ ПРОВЕРКА ПРАВ
+        // Разрешить "Mark as Resolved" ТОЛЬКО если задача не закрыта И пользователь совпадает с назначенным!
+        if (!isResolved && (assignedId === myId || assignedStaff === loggedInStaff)) {
             resolveSection.style.display = 'block';
             document.getElementById('jmResolveNote').value = '';
             document.getElementById('jmResolveBtn').onclick = () => resolveFromJournal(logId, client, assignedStaff);
@@ -1105,7 +1088,6 @@
     
     window.closeJournalModal = function() { document.getElementById('journalViewModal').style.display = 'none'; }
 
-    // Логика скачивания данных из Docketwise для нового модального окна
     window.openDocketwiseProfile = async function(name, phone, id) {
         document.getElementById('dwProfileModal').style.display = 'flex';
         document.getElementById('dwName').textContent = name || 'Unknown Client';
@@ -1154,7 +1136,6 @@
         }
     };
 
-    // === ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАКРЫТИЯ ЖУРНАЛА ===
     window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
         let extraNote = document.getElementById('jmResolveNote').value.trim();
         if (extraNote === "") { extraNote = "Task closed without comments"; }
@@ -1165,7 +1146,6 @@
         const btn = document.getElementById('jmResolveBtn');
         btn.textContent = "Saving..."; btn.disabled = true;
         try {
-            // Передаем жесткий logId, чтобы система точно закрыла именно эту задачу, игнорируя опечатки в имени
             await fetch(`/api/get-notifications?action=read&notificationId=${logId}&note=${encodeURIComponent(extraNote)}`);
             closeJournalModal(); 
             
@@ -1578,58 +1558,76 @@
 
         let apptDate = new Date(); let selectedApptDate = new Date(); 
         
-        // === ИСПРАВЛЕННАЯ ФУНКЦИЯ ДЛЯ ПРОВЕРКИ РАСПИСАНИЯ СОТРУДНИКА ===
+        // === ИСПРАВЛЕННАЯ ФУНКЦИЯ ПРОСМОТРА ДОСТУПНОСТИ (ЗЕЛЕНЫЕ ОКНА) ===
         window.checkStaffAvailability = async function() {
             const staff = document.getElementById('modalApptStaff').value;
             const dateStr = selectedApptDate.toDateString();
-            const modal = document.getElementById('availabilityModal');
-            const box = document.getElementById('availBody');
+            const durationStr = document.getElementById('aDuration').value;
+            const durationMins = parseDurationToMinutes(durationStr);
+            const box = document.getElementById('availabilityBox');
             
-            document.getElementById('availSubtitle').textContent = `For ${staff} on ${selectedApptDate.toLocaleDateString()}`;
-            modal.style.display = 'flex';
-            box.innerHTML = '<div style="text-align:center; padding:30px; color:#888;">⏳ Checking schedule...</div>';
+            box.style.display = 'block';
+            box.innerHTML = '<div style="text-align:center; color:#888; font-size: 13px;">⏳ Checking schedule...</div>';
             
-            await window.loadAppointments(); // Подтягиваем последние данные с сервера
+            await window.loadAppointments(); 
             const records = window.globalAppointments || [];
-            // Исключаем из поиска саму эту встречу (если мы ее редактируем)
             const editingId = parseInt(document.getElementById('editingApptId').value || '0');
             const dayAppts = records.filter(a => a.staff === staff && a.dateStr === dateStr && a.id !== editingId);
             
-            let html = `<div style="background: #e3f2fd; color: #0d47a1; padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 15px; text-align: center; border: 1px solid #bbdefb; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
-                <strong>🏢 Рабочие часы (Working Hours):</strong><br>
-                <span style="font-size: 18px; font-weight: 800;">10:00 — 19:00</span>
-            </div>`;
+            // Сортируем встречи по времени начала
+            dayAppts.sort((a,b) => parseTimeStrToMinutes(a.time) - parseTimeStrToMinutes(b.time));
 
-            if (dayAppts.length === 0) {
-                html += `<div class="avail-empty">✅ This staff member is fully open for the whole day!</div>`;
-                box.innerHTML = html;
+            const workStart = 10 * 60; // 10:00 AM 
+            const workEnd = 19 * 60;   // 7:00 PM
+            
+            let freeSlots = [];
+            let currentMin = workStart;
+
+            // Если проверяют сегодняшний день и время уже больше 10 утра, сдвигаем начало поиска
+            let now = new Date();
+            if (now.toDateString() === dateStr) {
+                let nowMins = now.getHours() * 60 + now.getMinutes();
+                if (nowMins > workStart) {
+                    currentMin = Math.ceil(nowMins / 5) * 5; // Округляем до 5 минут
+                }
+            }
+
+            if (currentMin >= workEnd) {
+                box.innerHTML = `<div style="color: #d32f2f; font-size: 13px; text-align: center; font-weight: bold;">Working hours are over for this date.</div>`;
+                return;
+            }
+
+            // Вычисляем свободные окна между занятыми слотами
+            dayAppts.forEach(appt => {
+                let apptStart = parseTimeStrToMinutes(appt.time);
+                let apptDur = parseDurationToMinutes(appt.length);
+                let apptEnd = apptStart + apptDur;
+
+                if (apptStart - currentMin >= durationMins) {
+                    freeSlots.push({ start: currentMin, end: apptStart });
+                }
+                currentMin = Math.max(currentMin, apptEnd);
+            });
+
+            // Проверяем остаток времени до конца дня
+            if (workEnd - currentMin >= durationMins) {
+                freeSlots.push({ start: currentMin, end: workEnd });
+            }
+
+            if (freeSlots.length === 0) {
+                box.innerHTML = `<div style="background: #ffebee; color: #c62828; padding: 10px; border-radius: 6px; font-size: 13px; text-align: center; border: 1px solid #ffcdd2;"><strong>🚫 No available ${durationStr} slots left</strong> on this date.</div>`;
             } else {
-                dayAppts.sort((a,b) => a.timestamp - b.timestamp);
-                html += `<h4 style="margin: 0 0 10px 0; color: #d32f2f;">🗓️ Занятое время (Occupied Slots):</h4>`;
-                
-                dayAppts.forEach(a => {
-                    const startMins = parseTimeStrToMinutes(a.time);
-                    const durMins = parseDurationToMinutes(a.length);
-                    const endMins = startMins + durMins;
-                    const end12 = formatMinutesToTimeStr(endMins);
-                    
-                    const start24 = formatTo24Hour(a.time);
-                    const end24 = formatTo24Hour(end12);
-
-                    html += `
-                        <div class="avail-slot">
-                            <div>
-                                <div class="time">🚫 ${start24} — ${end24}</div>
-                                <div class="dur" style="font-size: 11px; margin-top:2px;">Original: ${a.time} - ${end12} (${a.length})</div>
-                            </div>
-                        </div>
-                    `;
+                let html = `<div style="font-size: 12px; font-weight: bold; color: #2e7d32; margin-bottom: 5px;">Available time windows (${durationStr}):</div><div style="display: flex; flex-wrap: wrap; gap: 6px;">`;
+                freeSlots.forEach(slot => {
+                    let sTime = formatMinutesTo24h(slot.start);
+                    let eTime = formatMinutesTo24h(slot.end);
+                    html += `<span style="background: #e8f5e9; border: 1px solid #a5d6a7; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">${sTime} - ${eTime}</span>`;
                 });
+                html += `</div>`;
                 box.innerHTML = html;
             }
         }
 
-        // === ИСПРАВЛЕННАЯ ФУНКЦИЯ ДЛЯ ОТКРЫТИЯ ОКНА БРОНИРОВАНИЯ ===
         window.openApptModal = function(preName = '', prePhone = '') {
             document.getElementById('editingApptId').value = '';
             
@@ -1645,7 +1643,6 @@
             const titleEl = document.getElementById('apptModalTitle');
             if (isLead) { titleEl.innerHTML = '🔥 Book New Lead'; } else { titleEl.innerHTML = '📅 Book Appointment'; }
             
-            // --- УМНАЯ АВТОПОДСТАНОВКА ВРЕМЕНИ (10 AM - 7 PM) ---
             let now = new Date();
             selectedApptDate = now; 
             apptDate = new Date(now);
@@ -1677,7 +1674,6 @@
             renderApptCal(); updatePreview();
         }
 
-        // === ВЕРНУЛИ ФУНКЦИЮ РЕДАКТИРОВАНИЯ ИЗ МАСТЕР-КАЛЕНДАРЯ ===
         window.editAppointment = function(id) {
             const records = window.globalAppointments || []; 
             const appt = records.find(a => a.id === id); 
@@ -1726,7 +1722,6 @@
             const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]'); const leadRadio = document.querySelector('input[name="clientStatus"][value="Lead"]');
             if (existingRadio && leadRadio && leadRadio.checked) { existingRadio.checked = true; document.getElementById('unrecognizedCallerSection').style.display = 'none'; }
             
-            // Сбрасываем время на главной форме обратно к текущему после закрытия
             if(document.getElementById('tabFormContent').classList.contains('active')) {
                 setDateTime();
             }
@@ -1742,6 +1737,9 @@
             let text = smsTemplates[apptLang];
             text = text.replace('{name}', name); text = text.replace('{staff}', staff); text = text.replace('{date}', dateStr); text = text.replace('{time}', timeStr); text = text.replace('{duration}', duration.replace('minutes', 'minute')); text = text.replace('{address}', address); text = text.replace('{service}', cleanService); 
             document.getElementById('smsPreviewBubble').textContent = text;
+            
+            // Если они меняют длительность или время, прячем старую подсказку о доступности
+            document.getElementById('availabilityBox').style.display = 'none';
         }
 
         window.changeMonth = function(dir) { apptDate.setMonth(apptDate.getMonth() + dir); renderApptCal(); }
@@ -1756,6 +1754,7 @@
                 btn.onclick = (e) => { 
                     e.preventDefault(); document.querySelectorAll('#aCalDates .cal-btn').forEach(b => b.classList.remove('selected')); 
                     btn.classList.add('selected'); selectedApptDate = cDate; 
+                    document.getElementById('availabilityBox').style.display = 'none'; 
                     updatePreview(); 
                 };
                 if(selectedApptDate && cDate.toDateString() === selectedApptDate.toDateString()) btn.classList.add('selected'); grid.appendChild(btn);
@@ -1852,14 +1851,11 @@
                 recs.push(appointmentData); 
             }
             
-            // Сохраняем в новую общую базу данных
             await saveAppointmentsDb(recs);
 
-            // Логика Инбокса (Отправка SMS через ZAPIER)
             if (!editingId && (apptRemType === 'Text' || apptRemType === 'Both')) {
                 const smsText = document.getElementById('smsPreviewBubble').textContent;
                 
-                // === УМНОЕ ФОРМАТИРОВАНИЕ НОМЕРА ===
                 let formattedPhone = phoneInput.replace(/[^\d+]/g, ''); 
                 if (formattedPhone.length === 10 && !formattedPhone.startsWith('+')) {
                     formattedPhone = '+1' + formattedPhone;
@@ -1867,11 +1863,9 @@
                     formattedPhone = '+' + formattedPhone;
                 }
                 
-                // === ОТПРАВКА СИГНАЛА В ZAPIER ===
                 const zapierUrl = `https://hooks.zapier.com/hooks/catch/28342465/44ft1ex/?phone=${encodeURIComponent(formattedPhone)}&message=${encodeURIComponent(smsText)}`;
                 fetch(zapierUrl, { mode: 'no-cors' }).catch(e => console.log('Zapier webhook error:', e));
                 
-                // Запись в Inbox чат для истории
                 let msgs = JSON.parse(localStorage.getItem('gr_messages')) || [];
                 msgs.push({
                     phone: phoneInput || "No Phone",
@@ -1883,7 +1877,6 @@
                 localStorage.setItem('gr_messages', JSON.stringify(msgs));
             }
 
-            // Логика сохранения звонка в Журнал (Только если бронируем первый раз)
             if (!editingId) {
                 let finalDescription = isLead ? `[🔥 NEW LEAD APPOINTMENT]\nScheduled: ${selectedApptDate.toLocaleDateString()} at ${h}:${m} ${ampm}\nService: ${rawService}\nStaff: ${apptStaff}` : `[APPOINTMENT BOOKED]\nScheduled: ${selectedApptDate.toLocaleDateString()} at ${h}:${m} ${ampm}\nService: ${rawService}\nStaff: ${apptStaff}`;
                 const formData = {
@@ -1913,17 +1906,14 @@
                     renderMainCalendar(); 
                 }
                 
-                // Очистка формы звонка и обновление списка в фоне
                 if (!editingId && document.getElementById('tabFormContent').classList.contains('active')) {
                     clearClientData(); document.getElementById('fullName').value = ''; document.getElementById('phoneNumber').value = ''; document.getElementById('callForm').reset(); document.querySelector('input[name="clientStatus"][value="Existing Client"]').checked = true; setDateTime();
                 }
                 
-                // Автоматическое обновление Журнала без перезагрузки страницы
                 window.renderCallHistoryList();
             }, 300);
         }
 
-        // --- ЛОГИКА ОТОБРАЖЕНИЯ INBOX / SMS ---
         window.renderInboxList = function() {
             const listDiv = document.getElementById('inboxContactList');
             const searchQ = document.getElementById('inboxSearch').value.toLowerCase();
@@ -2007,7 +1997,6 @@
         window.sendManualMessage = function(phone, name, key) {
             const input = document.getElementById('manualSmsInput'); const text = input.value.trim(); if (!text) return;
             
-            // === УМНОЕ ФОРМАТИРОВАНИЕ НОМЕРА ===
             let formattedPhone = phone.replace(/[^\d+]/g, ''); 
             if (formattedPhone.length === 10 && !formattedPhone.startsWith('+')) {
                 formattedPhone = '+1' + formattedPhone;
@@ -2015,7 +2004,6 @@
                 formattedPhone = '+' + formattedPhone;
             }
 
-            // === ОТПРАВКА СИГНАЛА В ZAPIER ИЗ ЧАТА ===
             const zapierUrl = `https://hooks.zapier.com/hooks/catch/28342465/44ft1ex/?phone=${encodeURIComponent(formattedPhone)}&message=${encodeURIComponent(text)}`;
             fetch(zapierUrl, { mode: 'no-cors' }).catch(e => console.log('Zapier webhook error:', e));
 
