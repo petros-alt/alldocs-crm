@@ -477,7 +477,7 @@
                 </div>
                 
                 <div style="margin-top: 15px;">
-                    <label style="font-size: 13px; color: var(--secondary-color); font-weight: 600;">Time:</label>
+                    <label style="font-size: 13.5px; color: var(--accent-color); font-weight: 800; margin: 0 0 5px 0; display: block;">⏰ Select Time:</label>
                     <div class="time-select-group">
                         <select id="aTimeHour" onchange="updatePreview()">
                             <option>01</option><option>02</option><option>03</option><option>04</option><option>05</option><option>06</option>
@@ -862,6 +862,14 @@
         window.globalMessages = JSON.parse(localStorage.getItem('gr_messages')) || [];
     }
     
+    window.saveAppointmentsDb = async function(recs) {
+        window.globalAppointments = recs;
+        localStorage.setItem('gr_db', JSON.stringify(recs));
+        try {
+            await fetch('/api/appointments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ appointments: recs }) });
+        } catch (e) {}
+    }
+
     window.saveMessagesDb = async function(msgs) {
         window.globalMessages = msgs;
         localStorage.setItem('gr_messages', JSON.stringify(msgs));
@@ -869,9 +877,11 @@
             await fetch('/api/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messages: msgs }) });
         } catch (e) {}
     }
+
     window.clearSandboxData = function() {
         if(confirm("Are you sure you want to delete all Calendar & SMS test data?")) {
             saveAppointmentsDb([]);
+            saveMessagesDb([]);
             localStorage.removeItem('gr_messages');
             location.reload();
         }
@@ -927,18 +937,9 @@
     }
 
     const smsTemplates = {
-        ENG: `All Docs Consulting\n\nHello {name},\nyou have an appointment\nwith {staff}\n\nStart Time\n{date}\n{time}\n\nAppointments Length {duration}\n\nAddress\n{address}\n\nService\n{service}\n\nFor questions call:\n
-
-(747) 204-2404
-\n\nSTOP=opt-out.`,
-        RUSS: `All Docs Consulting\n\nПривет {name} ,\nу тебя назначена встреча\nс {staff}\n\nДата начала\n{date}\n{time}\n\nпродолжительность\nвстречи {duration}\n\nАдрес\n{address}\n\nУслуга\n{service}\n\nПо вопросам звоните:\n
-
-(747) 204-2404
-\n\nSTOP=opt-out.`,
-        ARM: `All Docs Consulting\n\nԲարև {name},\nԴուք ունեք հանդիպում\n{staff} -ի հետ\n\nՍկիզբ\n{date}\n{time}\n\nՏևողությունը {duration}\n\nՀասցե\n{address}\n\nԾառայություն\n{service}\n\nՀարցերի դեպքում զանգահարեք՝\n
-
-(747) 204-2404
-\n\nSTOP=opt-out.`
+        ENG: `All Docs Consulting\n\nHello {name},\nyou have an appointment\nwith {staff}\n\nStart Time\n{date}\n{time}\n\nAppointments Length {duration}\n\nAddress\n{address}\n\nService\n{service}\n\nFor questions call:\n(747) 204-2404\n\nSTOP=opt-out.`,
+        RUSS: `All Docs Consulting\n\nПривет {name} ,\nу тебя назначена встреча\nс {staff}\n\nДата начала\n{date}\n{time}\n\nпродолжительность\nвстречи {duration}\n\nАдрес\n{address}\n\nУслуга\n{service}\n\nПо вопросам звоните:\n(747) 204-2404\n\nSTOP=opt-out.`,
+        ARM: `All Docs Consulting\n\nԲարև {name},\nԴուք ունեք հանդիպում\n{staff} -ի հետ\n\nՍկիզբ\n{date}\n{time}\n\nՏևողությունը {duration}\n\nՀասցե\n{address}\n\nԾառայություն\n{service}\n\nՀարցերի դեպքում զանգահարեք՝\n(747) 204-2404\n\nSTOP=opt-out.`
     };
 
     window.loadSharedContacts = async function() {
@@ -982,7 +983,7 @@
         if(tabId === 'tabCalendarContent') window.renderMainCalendar();
     }
 
-  window.switchCalView = async function(viewType) {
+    window.switchCalView = async function(viewType) {
         const btnCal = document.getElementById('btnNavCal');
         const btnInbox = document.getElementById('btnNavInbox');
         const calGrid = document.getElementById('calGridWrapper');
@@ -1098,8 +1099,6 @@
         const assignedId = staffMap[assignedStaff] || assignedStaff;
         const myId = staffMap[loggedInStaff] || loggedInStaff;
         
-        // СТРОГАЯ ПРОВЕРКА: Разрешить закрытие, только если задача не закрыта 
-        // И пользователь совпадает с назначенным сотрудником (или он сам создал задачу)
         if (!isResolved && (assignedId === myId || assignedStaff === loggedInStaff)) {
             resolveSection.style.display = 'block';
             document.getElementById('jmResolveNote').value = '';
@@ -1161,7 +1160,7 @@
         }
     };
 
- window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
+    window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
         let extraNote = document.getElementById('jmResolveNote').value.trim();
         if (extraNote === "") { extraNote = "Task closed without comments"; }
         
@@ -1178,11 +1177,10 @@
                 "Rima Avetisyan": "1007", "Rima A.": "1007", "Lilit Avetisyan": "1009", "Lilit A.": "1009"
             };
             
-            const myStaffId = staffMap[loggedInStaff] || '000000'; // Заглушка, чтобы не ломался запрос
+            const myStaffId = staffMap[loggedInStaff] || '000000';
             let targetNotifId = ''; 
             
             try {
-                // Добавляем анти-кеш
                 const res = await fetch(`/api/get-notifications?staffId=${myStaffId}&t=${Date.now()}`, { cache: 'no-store' });
                 const data = await res.json();
                 
@@ -1198,11 +1196,8 @@
                         targetNotifId = matchedNotif.id;
                     }
                 }
-            } catch (err) {
-                console.log("Уведомление не найдено, закрываем напрямую", err);
-            }
+            } catch (err) { console.log(err); }
 
-            // ПЕРЕДАЕМ И logId (для Журнала) И notificationId (для Колокольчика), плюс анти-кеш t=Date.now()
             const resolveUrl = `/api/get-notifications?action=read&notificationId=${targetNotifId}&logId=${logId}&note=${encodeURIComponent(extraNote)}&t=${Date.now()}`;
             
             const resolveRes = await fetch(resolveUrl, { cache: 'no-store' });
@@ -1210,7 +1205,7 @@
 
             if (!resolveData.success) {
                 console.error("Server error:", resolveData.error);
-                alert("Не удалось закрыть задачу на сервере. Убедись, что файл get-notifications.js обновлен!");
+                alert("Не удалось закрыть задачу на сервере.");
             }
             
             closeJournalModal(); 
@@ -1226,21 +1221,6 @@
         }
     };
 
-            // ПЕРЕДАЕМ И logId (чтобы точно закрыть журнал) И notificationId (чтобы закрыть колокольчик)
-            await fetch(`/api/get-notifications?action=read&notificationId=${targetNotifId}&logId=${logId}&note=${encodeURIComponent(extraNote)}`);
-            
-            closeJournalModal(); 
-            if (typeof checkNotifications === "function") checkNotifications(); 
-            
-            await new Promise(resolve => setTimeout(resolve, 800));
-            
-            window.renderCallHistoryList(); 
-        } catch (e) { 
-            alert('Server error'); 
-        } finally { 
-            btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; 
-        }
-    };
     window.renderCallHistoryList = async function() {
         const tableContainer = document.getElementById('historyTableContainer');
         const noCallsMessage = document.getElementById('noCallsMessage');
@@ -1297,7 +1277,6 @@
             else if (rawDesc.includes('NEW LEAD APPOINTMENT')) { st = 'Lead (New Appt)'; }
             else if (rawDesc.includes('APPOINTMENT BOOKED')) { st = 'Existing Client'; }
             
-            // --- УМНАЯ ЛОГИКА ДЛЯ АППОЙНТМЕНТОВ ---
             let isAppt = rawDesc.includes('NEW LEAD APPOINTMENT') || rawDesc.includes('APPOINTMENT BOOKED');
             if (isAppt) {
                 const dateMatch = rawDesc.match(/Scheduled:\s*(.*?)\s*at\s*(.*?)\n/i);
@@ -1318,9 +1297,8 @@
                 }
                 cleanDesc = cleanDesc.replace(/\[🔥 NEW LEAD APPOINTMENT\]/i, '').replace(/\[APPOINTMENT BOOKED\]/i, '').trim();
                 st = 'Appointment';
-                badgeColor = '#8e24aa'; // purple badge
+                badgeColor = '#8e24aa';
             } else {
-                // Стандартная логика задач
                 if(st.includes('Lead')) badgeColor = '#d32f2f'; 
                 else if(st.includes('Unrecognized')) badgeColor = '#f57c00'; 
                 else if(st.includes('Existing')) badgeColor = '#2e7d32'; 
@@ -1339,7 +1317,6 @@
             cleanDesc = cleanDesc.replace(/(01-Initial Consultation|03-Client Communication|04-Phone Call|05-Follow-Up Needed|20-Interview|General Call)/ig, '').replace(/^\]?\s*/, '').trim();
             let snippet = cleanDesc.length > 55 ? cleanDesc.substring(0, 55) + '...' : cleanDesc;
             
-            // ПРИМЕНЯЕМ ФИЛЬТРЫ
             if (statusF === 'Pending' && isResolved) return;
             if (statusF === 'Resolved' && !isResolved) return;
             if (typeF !== 'All' && !st.includes(typeF)) return;
@@ -1363,7 +1340,6 @@
         });
     }
 
-    // Слушатели событий
     let searchTimeout;
     document.getElementById('historySearchInput').addEventListener('input', function() {
         clearTimeout(searchTimeout);
@@ -2076,7 +2052,7 @@
             setTimeout(() => document.getElementById('manualSmsInput').focus(), 50);
         }
 
-        window.sendManualMessage = function(phone, name, key) {
+        window.sendManualMessage = async function(phone, name, key) {
             const input = document.getElementById('manualSmsInput'); const text = input.value.trim(); if (!text) return;
             
             // === УМНОЕ ФОРМАТИРОВАНИЕ НОМЕРА ===
@@ -2489,7 +2465,6 @@
                     alert(`✅ Call successfully saved! \n\n${assignedStaffName !== "-- Do not notify anyone --" && assignedStaffName !== "" && assignedStaffName !== "Resolved by Operator" ? "Staff member has been notified." : ""}`);
                     clearClientData(); document.getElementById('fullName').value = ''; document.getElementById('phoneNumber').value = ''; document.getElementById('genCallerName').value = ''; document.getElementById('genCallerPhone').value = ''; callForm.reset(); document.querySelector('input[name="clientStatus"][value="Existing Client"]').checked = true; document.getElementById('generalInquirySection').style.display = 'none'; setDateTime(); 
                     
-                    // Обновляем журнал без рефреша страницы
                     window.renderCallHistoryList();
                 } else { alert(`❌ Error saving call: ` + (result.error || "")); }
             } catch (error) { alert('Network error. Failed to save.'); } 
