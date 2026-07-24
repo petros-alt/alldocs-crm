@@ -122,7 +122,7 @@
         .btn-cancel { flex: 1; background: var(--surface-color); border: 1px solid var(--border-color); padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--secondary-color); transition: 0.2s; }
         .btn-cancel:hover { background: #e0d8d3; color: var(--primary-color); }
         .btn-resolve { flex: 2; background: var(--accent-color); border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 700; color: white; transition: 0.2s; box-shadow: 0 4px 10px rgba(161, 104, 58, 0.2); }
-        .btn-resolve:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(161, 104, 58, 0.35); }
+        .btn-resolve:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-2px); }
         .btn-resolve:disabled { background: #d7ccc8; cursor: not-allowed; box-shadow: none; transform: none; }
 
         /* PHONE PREVIEW (SMS) */
@@ -464,7 +464,7 @@
 
             <!-- COLUMN 2: Calendar & Time -->
             <div style="flex: 1; min-width: 230px; background: #fdfaf6; padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); margin-top: 0;">
-                <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 10px; display: block;">Select Date</label>
+                <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 10px; display: block;">Select Date & Time</label>
                 
                 <div class="calendar-widget">
                     <div class="cal-header">
@@ -477,7 +477,7 @@
                 </div>
                 
                 <div style="margin-top: 15px;">
-                    <label style="font-size: 13.5px; color: var(--accent-color); font-weight: 800; margin: 0 0 5px 0; display: block;">⏰ Select Time:</label>
+                    <label style="font-size: 13px; color: var(--secondary-color);">Time:</label>
                     <div class="time-select-group">
                         <select id="aTimeHour" onchange="updatePreview()">
                             <option>01</option><option>02</option><option>03</option><option>04</option><option>05</option><option>06</option>
@@ -492,9 +492,8 @@
                         </select>
                     </div>
                 </div>
-
                 <div style="margin-top: 15px;">
-                    <label style="font-size: 13px; color: var(--secondary-color); font-weight: 600;">Duration:</label>
+                    <label style="font-size: 13px; color: var(--secondary-color);">Duration:</label>
                     <select id="aDuration" style="width: 100%;" onchange="updatePreview()">
                         <option>5 minutes</option><option>10 minutes</option><option>15 minutes</option><option>20 minutes</option><option>25 minutes</option>
                         <option>30 minutes</option><option>35 minutes</option><option>40 minutes</option><option>45 minutes</option><option>50 minutes</option><option>55 minutes</option>
@@ -503,13 +502,6 @@
                         <option>3 hours</option><option>3 hours 30 minutes</option><option>4 hours</option><option>4 hours 30 minutes</option><option>5 hours</option><option>5 hours 30 minutes</option>
                     </select>
                 </div>
-
-                <!-- AVAILABILITY FINDER INLINE -->
-                <div style="margin-top: 15px;">
-                    <button type="button" onclick="checkStaffAvailability()" style="width: 100%; background: #e8f5e9; border: 1px solid #4caf50; color: #2e7d32; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">✅ Find Available Slots</button>
-                    <div id="availabilityBox" style="margin-top: 10px; display: none;"></div>
-                </div>
-
             </div>
 
             <!-- COLUMN 3: Live SMS Preview -->
@@ -819,7 +811,6 @@
                 </select>
                 <select id="historyTypeFilter" style="flex: 1; padding: 14px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 14.5px; outline: none; background: white; cursor: pointer;">
                     <option value="All">All Call Types</option>
-                    <option value="Appointment">📅 Appointment</option>
                     <option value="Lead (New Appt)">🔥 Lead</option>
                     <option value="Existing Client">👤 Existing</option>
                     <option value="Unrecognized">⚠️ Unrecognized</option>
@@ -844,37 +835,16 @@
     let globalCallLogs = []; 
     let currentChatKey = null;
 
-    // --- SHARED APPOINTMENT API LOGIC ---
-    window.globalAppointments = [];
-    window.loadAppointments = async function() {
-        try {
-            const res = await fetch('/api/appointments?t=' + new Date().getTime(), { cache: 'no-store' });
-            if (res.ok) {
-                const data = await res.json();
-                if (data.success) { window.globalAppointments = data.appointments || []; return; }
-            }
-        } catch (e) { console.log('Appointment API not ready, falling back to local storage.'); }
-        window.globalAppointments = JSON.parse(localStorage.getItem('gr_db')) || [];
-    }
-    
-    window.saveAppointmentsDb = async function(recs) {
-        window.globalAppointments = recs;
-        localStorage.setItem('gr_db', JSON.stringify(recs));
-        try {
-            await fetch('/api/appointments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ appointments: recs }) });
-        } catch (e) {}
-    }
-
-    // ОЧИСТКА БАЗЫ ДАННЫХ ДЛЯ ТЕСТОВ
+    // ОЧИСТКА БАЗЫ ДАННЫХ ДЛЯ ТЕСТОВ (Только Календарь и СМС, без лога звонков)
     window.clearSandboxData = function() {
         if(confirm("Are you sure you want to delete all Calendar & SMS test data?")) {
-            saveAppointmentsDb([]);
+            localStorage.removeItem('gr_db');
             localStorage.removeItem('gr_messages');
             location.reload();
         }
     }
 
-    // --- HELPER FUNCTIONS ДЛЯ РАСЧЕТА ВРЕМЕНИ ---
+    // --- HELPER FUNCTIONS ДЛЯ РАСЧЕТА ВРЕМЕНИ (Double Booking) ---
     function parseTimeStrToMinutes(timeStr) {
         const match = timeStr.match(/(\d+):(\d+)\s+(AM|PM)/i);
         if (!match) return 0;
@@ -902,12 +872,6 @@
         h = h % 12;
         if (h === 0) h = 12;
         return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')} ${ampm}`;
-    }
-
-    function formatMinutesTo24h(mins) {
-        let h = Math.floor(mins / 60);
-        let m = mins % 60;
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     }
 
     const smsTemplates = {
@@ -1045,6 +1009,8 @@
     };
 
     window.openJournalModal = function(client, phone, date, op, st, color, notes, reply, trackingBadgeHTML, logId, assignedStaff, isResolved, clientId) {
+        
+        // Делаем имя кликабельным для открытия профиля Docketwise
         const clientEl = document.getElementById('jmClient');
         if (phone && phone !== '--') {
             const safeClientName = client ? client.replace(/'/g, "\\'") : 'Unknown';
@@ -1073,12 +1039,10 @@
         const assignedId = staffMap[assignedStaff] || assignedStaff;
         const myId = staffMap[loggedInStaff] || loggedInStaff;
         
-        // ВНИМАНИЕ: ЖЕСТКАЯ ПРОВЕРКА ПРАВ
-        // Разрешить "Mark as Resolved" ТОЛЬКО если задача не закрыта И пользователь совпадает с назначенным!
         if (!isResolved && (assignedId === myId || assignedStaff === loggedInStaff)) {
             resolveSection.style.display = 'block';
             document.getElementById('jmResolveNote').value = '';
-            document.getElementById('jmResolveBtn').onclick = () => resolveFromJournal(logId, client, assignedStaff);
+            document.getElementById('jmResolveBtn').onclick = () => resolveFromJournal(logId, client);
         } else {
             resolveSection.style.display = 'none';
         }
@@ -1088,6 +1052,7 @@
     
     window.closeJournalModal = function() { document.getElementById('journalViewModal').style.display = 'none'; }
 
+    // Логика скачивания данных из Docketwise для нового модального окна
     window.openDocketwiseProfile = async function(name, phone, id) {
         document.getElementById('dwProfileModal').style.display = 'flex';
         document.getElementById('dwName').textContent = name || 'Unknown Client';
@@ -1115,6 +1080,7 @@
                     let mattersHtml = '';
                     clientData.matters.forEach(m => {
                         let staff = m.assignee_name || m.assignee || m.staff || m.user || "Unassigned";
+                        // Генерируем ссылку прямо на карточку дела в Docketwise
                         let matterUrl = `https://app.docketwise.com/matters/${m.id}`;
                         
                         mattersHtml += `<div style="padding: 12px 0; border-bottom: 1px solid #f0ebe1;">
@@ -1136,8 +1102,8 @@
         }
     };
 
-    // === ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАКРЫТИЯ ЖУРНАЛА ===
-    window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
+    // === НОВАЯ, УМНАЯ ФУНКЦИЯ ЗАКРЫТИЯ ЖУРНАЛА ===
+    window.resolveFromJournal = async function(logId, clientName) {
         let extraNote = document.getElementById('jmResolveNote').value.trim();
         if (extraNote === "") { extraNote = "Task closed without comments"; }
         
@@ -1146,40 +1112,28 @@
 
         const btn = document.getElementById('jmResolveBtn');
         btn.textContent = "Saving..."; btn.disabled = true;
-        
         try {
-            // 1. Находим правильного сотрудника
             const loggedInStaff = localStorage.getItem('loggedInStaff');
             const staffMap = {
                 "Norayr Badalyan": "332487", "Petros Eghiazaryan": "418892", "Petros E.": "418892", "Mariam Djaradjian": "339159", "Mariam D.": "339159",
                 "Artak Badalyan": "332810", "Artak B.": "332810", "Argishti Shahbazian": "1005", "Argishti S.": "1005", "Gohar Aloyan": "1001", "Gohar A.": "1001",
                 "Rima Avetisyan": "1007", "Rima A.": "1007", "Lilit Avetisyan": "1009", "Lilit A.": "1009"
             };
+            const myStaffId = staffMap[loggedInStaff];
             
-            const targetStaffId = staffMap[assignedStaff] || staffMap[loggedInStaff] || "";
-            
-            // 2. Ищем ПРАВИЛЬНЫЙ ID уведомления
-            const res = await fetch(`/api/get-notifications?staffId=${targetStaffId}`);
+            const res = await fetch(`/api/get-notifications?staffId=${myStaffId}`);
             const data = await res.json();
             
-            let targetNotifId = logId; // Запасной вариант
+            let targetNotifId = logId; 
             
             if (data.success && data.notifications) {
-                // Связываем Журнал и Колокольчик по имени клиента
-                const matchedNotif = data.notifications.find(n => {
-                    const nClient = n.client_name ? n.client_name.toLowerCase() : "";
-                    const pClient = clientName ? clientName.toLowerCase() : "";
-                    return (nClient && pClient && (nClient.includes(pClient) || pClient.includes(nClient)));
-                });
-
+                const matchedNotif = data.notifications.find(n => n.client_name.includes(clientName) || clientName.includes(n.client_name));
                 if (matchedNotif) {
                     targetNotifId = matchedNotif.id;
                 }
             }
 
-            // 3. Отправляем запрос с правильным ID, который сервер точно поймет
             await fetch(`/api/get-notifications?action=read&notificationId=${targetNotifId}&note=${encodeURIComponent(extraNote)}`);
-            
             closeJournalModal(); 
             
             if (typeof checkNotifications === "function") checkNotifications(); 
@@ -1194,7 +1148,7 @@
         }
     };
 
-    // === ОБНОВЛЕННАЯ ЛОГИКА ЖУРНАЛА С ФИЛЬТРОМ СОТРУДНИКОВ И АППОЙНТМЕНТАМИ ===
+    // === ОБНОВЛЕННАЯ ЛОГИКА ЖУРНАЛА С ФИЛЬТРОМ СОТРУДНИКОВ ===
     window.renderCallHistoryList = async function() {
         const tableContainer = document.getElementById('historyTableContainer');
         const noCallsMessage = document.getElementById('noCallsMessage');
@@ -1238,61 +1192,34 @@
             const d = new Date(log.created_at);
             let rawDesc = log.call_description || ''; let cleanDesc = rawDesc;
             let st = "General Call"; let badgeColor = '#1976d2';
-            let isResolved = true;
-            let displayStaff = log.assigned_staff_name || log.operator_name || 'Staff';
-            let trackingBadge = '';
-            let urgentBg = '';
             
             const isUrgent = rawDesc.includes('[🚨 URGENT]');
-            if (isUrgent) { cleanDesc = cleanDesc.replace(/\[🚨 URGENT\]/g, '').trim(); urgentBg = 'background-color: #fff0f0;'; }
+            if (isUrgent) { cleanDesc = cleanDesc.replace(/\[🚨 URGENT\]/g, '').trim(); }
             
             const statusMatch = rawDesc.match(/(?:\[Status:\s*|Status:\s*)(.*?)(?:\]|\n| \||$)/i);
             if (statusMatch) { st = statusMatch[1].trim(); cleanDesc = cleanDesc.replace(statusMatch[0], '').trim(); }
-            else if (rawDesc.includes('NEW LEAD APPOINTMENT')) { st = 'Lead (New Appt)'; }
-            else if (rawDesc.includes('APPOINTMENT BOOKED')) { st = 'Existing Client'; }
+            else if (rawDesc.includes('NEW LEAD APPOINTMENT')) { st = 'Lead (New Appt)'; cleanDesc = cleanDesc.replace(/\[🔥 NEW LEAD APPOINTMENT\]/i, '').trim(); }
+            else if (rawDesc.includes('APPOINTMENT BOOKED')) { st = 'Existing Client'; cleanDesc = cleanDesc.replace(/\[APPOINTMENT BOOKED\]/i, '').trim(); }
             
-            // --- УМНАЯ ЛОГИКА ДЛЯ АППОЙНТМЕНТОВ ---
-            let isAppt = rawDesc.includes('NEW LEAD APPOINTMENT') || rawDesc.includes('APPOINTMENT BOOKED');
-            if (isAppt) {
-                const dateMatch = rawDesc.match(/Scheduled:\s*(.*?)\s*at\s*(.*?)\n/i);
-                if (dateMatch) {
-                    const apptDateStr = dateMatch[1] + ' ' + dateMatch[2];
-                    const apptTime = new Date(apptDateStr).getTime();
-                    if (Date.now() > apptTime) {
-                        isResolved = true;
-                        trackingBadge = `<span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">✅ Completed<br><span style="font-size:10px; font-weight:normal;">(System)</span></span>`;
-                        if(!isUrgent) urgentBg = 'background-color: #fcfcfc;'; 
-                    } else {
-                        isResolved = false;
-                        trackingBadge = `<span style="font-size: 12px; background: #f3e5f5; color: #7b1fa2; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">📅 Scheduled<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
-                        if(!isUrgent) urgentBg = 'background-color: #faf5ff;'; 
-                    }
-                } else {
-                    trackingBadge = `<span style="font-size: 12px; background: #f3e5f5; color: #7b1fa2; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">📅 Scheduled<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
-                }
-                cleanDesc = cleanDesc.replace(/\[🔥 NEW LEAD APPOINTMENT\]/i, '').replace(/\[APPOINTMENT BOOKED\]/i, '').trim();
-                st = 'Appointment';
-                badgeColor = '#8e24aa'; // purple badge
-            } else {
-                // Стандартная логика задач
-                if(st.includes('Lead')) badgeColor = '#d32f2f'; 
-                else if(st.includes('Unrecognized')) badgeColor = '#f57c00'; 
-                else if(st.includes('Existing')) badgeColor = '#2e7d32'; 
-
-                if (displayStaff !== "Resolved by Operator" && displayStaff !== "-- Do not notify anyone --" && (!log.follow_up_notes || log.follow_up_notes.trim() === '')) {
-                    isResolved = false;
-                    trackingBadge = `<span style="font-size: 12px; background: #fff3e0; color: #e65100; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">⏳ Pending<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
-                } else if (displayStaff === "Resolved by Operator" || displayStaff === "-- Do not notify anyone --") {
-                    displayStaff = log.operator_name;
-                    trackingBadge = `<span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">✅ Resolved<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
-                } else {
-                    trackingBadge = `<span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">✅ Resolved<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
-                }
-            }
+            if(st.includes('Lead')) badgeColor = '#d32f2f'; 
+            else if(st.includes('Unrecognized')) badgeColor = '#f57c00'; 
+            else if(st.includes('Existing')) badgeColor = '#2e7d32'; 
             
             cleanDesc = cleanDesc.replace(/(01-Initial Consultation|03-Client Communication|04-Phone Call|05-Follow-Up Needed|20-Interview|General Call)/ig, '').replace(/^\]?\s*/, '').trim();
             let snippet = cleanDesc.length > 55 ? cleanDesc.substring(0, 55) + '...' : cleanDesc;
             
+            let displayStaff = log.assigned_staff_name || log.operator_name || 'Staff';
+            let isResolved = true;
+            let trackingBadge = `<span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">✅ Resolved<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
+
+            if (displayStaff !== "Resolved by Operator" && displayStaff !== "-- Do not notify anyone --" && (!log.follow_up_notes || log.follow_up_notes.trim() === '')) {
+                isResolved = false;
+                trackingBadge = `<span style="font-size: 12px; background: #fff3e0; color: #e65100; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">⏳ Pending<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
+            } else if (displayStaff === "Resolved by Operator" || displayStaff === "-- Do not notify anyone --") {
+                displayStaff = log.operator_name;
+                trackingBadge = `<span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">✅ Resolved<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
+            }
+
             // ПРИМЕНЯЕМ ФИЛЬТРЫ
             if (statusF === 'Pending' && isResolved) return;
             if (statusF === 'Resolved' && !isResolved) return;
@@ -1300,12 +1227,11 @@
             if (staffF !== 'All' && displayStaff !== staffF && log.operator_name !== staffF) return;
 
             let urgentBadge = isUrgent ? `<span class="badge-status" style="background-color:#d32f2f; margin-left:8px; font-size: 10px; animation: pulseAlert 1.5s infinite;">🚨 URGENT</span>` : '';
+            let urgentBg = isUrgent ? 'background-color: #fff0f0;' : '';
 
             const tr = document.createElement('tr'); tr.className = 'journal-row';
             tr.style.cssText = urgentBg;
             
-            // Если это аппойнтмент, по клику мы можем также добавить отдельную логику в будущем,
-            // но пока открывается стандартный журнал для просмотра примечаний.
             tr.onclick = () => openJournalModal(log.client_name, log.client_phone, d.toLocaleString(), log.operator_name, st, badgeColor, cleanDesc, log.follow_up_notes, trackingBadge, log.id, displayStaff, isResolved, log.client_id);
             
             tr.innerHTML = `
@@ -1591,188 +1517,42 @@
 
         let apptDate = new Date(); let selectedApptDate = new Date(); 
         
-        // === ИСПРАВЛЕННАЯ ФУНКЦИЯ ПРОСМОТРА ДОСТУПНОСТИ (ЗЕЛЕНЫЕ ОКНА) ===
-        window.checkStaffAvailability = async function() {
-            const staff = document.getElementById('modalApptStaff').value;
-            const dateStr = selectedApptDate.toDateString();
-            const durationStr = document.getElementById('aDuration').value;
-            const durationMins = parseDurationToMinutes(durationStr);
-            const box = document.getElementById('availabilityBox');
-            
-            box.style.display = 'block';
-            box.innerHTML = '<div style="text-align:center; color:#888; font-size: 13px;">⏳ Checking schedule...</div>';
-            
-            await window.loadAppointments(); 
-            const records = window.globalAppointments || [];
-            const editingId = parseInt(document.getElementById('editingApptId').value || '0');
-            const dayAppts = records.filter(a => a.staff === staff && a.dateStr === dateStr && a.id !== editingId);
-            
-            // Сортируем встречи по времени начала
-            dayAppts.sort((a,b) => parseTimeStrToMinutes(a.time) - parseTimeStrToMinutes(b.time));
-
-            const workStart = 10 * 60; // 10:00 AM 
-            const workEnd = 19 * 60;   // 7:00 PM
-            
-            let freeSlots = [];
-            let currentMin = workStart;
-
-            // Если проверяют сегодняшний день и время уже больше 10 утра, сдвигаем начало поиска
-            let now = new Date();
-            if (now.toDateString() === dateStr) {
-                let nowMins = now.getHours() * 60 + now.getMinutes();
-                if (nowMins > workStart) {
-                    currentMin = Math.ceil(nowMins / 5) * 5; // Округляем до 5 минут
-                }
-            }
-
-            if (currentMin >= workEnd) {
-                box.innerHTML = `<div style="color: #d32f2f; font-size: 13px; text-align: center; font-weight: bold;">Working hours are over for this date.</div>`;
-                return;
-            }
-
-            // Вычисляем свободные окна между занятыми слотами
-            dayAppts.forEach(appt => {
-                let apptStart = parseTimeStrToMinutes(appt.time);
-                let apptDur = parseDurationToMinutes(appt.length);
-                let apptEnd = apptStart + apptDur;
-
-                if (apptStart - currentMin >= durationMins) {
-                    freeSlots.push({ start: currentMin, end: apptStart });
-                }
-                currentMin = Math.max(currentMin, apptEnd);
-            });
-
-            // Проверяем остаток времени до конца дня
-            if (workEnd - currentMin >= durationMins) {
-                freeSlots.push({ start: currentMin, end: workEnd });
-            }
-
-            if (freeSlots.length === 0) {
-                box.innerHTML = `<div style="background: #ffebee; color: #c62828; padding: 10px; border-radius: 6px; font-size: 13px; text-align: center; border: 1px solid #ffcdd2;"><strong>🚫 No available ${durationStr} slots left</strong> on this date.</div>`;
-            } else {
-                let html = `<div style="font-size: 12px; font-weight: bold; color: #2e7d32; margin-bottom: 5px;">Available time windows (${durationStr}):</div><div style="display: flex; flex-wrap: wrap; gap: 6px;">`;
-                freeSlots.forEach(slot => {
-                    let sTime = formatMinutesTo24h(slot.start);
-                    let eTime = formatMinutesTo24h(slot.end);
-                    html += `<span style="background: #e8f5e9; border: 1px solid #a5d6a7; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">${sTime} - ${eTime}</span>`;
-                });
-                html += `</div>`;
-                box.innerHTML = html;
-            }
-        }
-
         window.openApptModal = function(preName = '', prePhone = '') {
             document.getElementById('editingApptId').value = '';
             
+            // Если вызывается из Call Form, берем значения из полей. Иначе переданные.
             let nameToUse = preName || document.getElementById('fullName').value;
             let phoneToUse = prePhone || document.getElementById('phoneNumber').value;
             
             document.getElementById('modalApptName').value = nameToUse; 
             document.getElementById('modalApptPhone').value = phoneToUse;
             document.getElementById('modalApptMessage').value = '';
-            document.getElementById('availabilityBox').style.display = 'none';
             
             const isLead = document.querySelector('input[name="clientStatus"]:checked')?.value === 'Lead'; 
             const titleEl = document.getElementById('apptModalTitle');
             if (isLead) { titleEl.innerHTML = '🔥 Book New Lead'; } else { titleEl.innerHTML = '📅 Book Appointment'; }
             
-            let now = new Date();
-            selectedApptDate = now; 
-            apptDate = new Date(now);
-            
-            let h24 = now.getHours();
-            if (h24 < 10 || h24 >= 19) {
-                document.getElementById('aTimeHour').value = '10';
-                document.getElementById('aTimeMinute').value = '00';
-                document.getElementById('aTimeAMPM').value = 'AM';
-            } else {
-                let m = Math.ceil(now.getMinutes() / 5) * 5;
-                if (m >= 60) { m = 0; h24++; }
-                
-                if (h24 >= 19) {
-                    document.getElementById('aTimeHour').value = '07';
-                    document.getElementById('aTimeMinute').value = '00';
-                    document.getElementById('aTimeAMPM').value = 'PM';
-                } else {
-                    let ampm = h24 >= 12 ? 'PM' : 'AM';
-                    let h12 = h24 % 12;
-                    if (h12 === 0) h12 = 12;
-                    document.getElementById('aTimeHour').value = String(h12).padStart(2, '0');
-                    document.getElementById('aTimeMinute').value = String(m).padStart(2, '0');
-                    document.getElementById('aTimeAMPM').value = ampm;
-                }
-            }
-
+            selectedApptDate = new Date(); apptDate = new Date();
             document.getElementById('apptModal').style.display = 'flex'; 
             renderApptCal(); updatePreview();
-        }
-
-        window.editAppointment = function(id) {
-            const records = window.globalAppointments || []; 
-            const appt = records.find(a => a.id === id); 
-            if(!appt) return;
-
-            document.getElementById('dayListModal').style.display = 'none'; 
-            document.getElementById('customerDetailsModal').style.display = 'none';
-            document.getElementById('previewModal').style.display = 'none';
-            document.getElementById('availabilityBox').style.display = 'none';
-
-            document.getElementById('editingApptId').value = appt.id;
-            document.getElementById('apptModalTitle').innerHTML = '✏️ Edit Appointment';
-
-            document.getElementById('modalApptName').value = appt.client;
-            document.getElementById('modalApptPhone').value = appt.phone || "";
-            
-            let serviceSelect = document.getElementById('modalApptService');
-            let matchedService = Array.from(serviceSelect.options).find(opt => opt.text.includes(appt.service) || opt.value.includes(appt.service));
-            if(matchedService) serviceSelect.value = matchedService.value;
-            
-            let locSelect = document.getElementById('modalApptLocation');
-            let matchedLoc = Array.from(locSelect.options).find(opt => opt.text === appt.location);
-            if(matchedLoc) locSelect.value = matchedLoc.value;
-
-            document.getElementById('modalApptStaff').value = appt.staff;
-            document.getElementById('aDuration').value = appt.length || "1 hour";
-            document.getElementById('modalApptMessage').value = appt.message || "";
-
-            const timeMatch = appt.time.match(/(\d+):(\d+)\s+(AM|PM)/i);
-            if(timeMatch) {
-                document.getElementById('aTimeHour').value = timeMatch[1].padStart(2, '0');
-                document.getElementById('aTimeMinute').value = timeMatch[2];
-                document.getElementById('aTimeAMPM').value = timeMatch[3].toUpperCase();
-            }
-
-            selectedApptDate = new Date(appt.timestamp);
-            apptDate = new Date(appt.timestamp); 
-
-            document.getElementById('apptModal').style.display = 'flex';
-            renderApptCal();
-            updatePreview();
         }
 
         window.closeApptModal = function() { 
             document.getElementById('apptModal').style.display = 'none'; 
             const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]'); const leadRadio = document.querySelector('input[name="clientStatus"][value="Lead"]');
             if (existingRadio && leadRadio && leadRadio.checked) { existingRadio.checked = true; document.getElementById('unrecognizedCallerSection').style.display = 'none'; }
-            
-            if(document.getElementById('tabFormContent').classList.contains('active')) {
-                setDateTime();
-            }
         }
 
         window.updatePreview = function() {
             const name = document.getElementById('modalApptName').value || 'Client'; const staff = document.getElementById('modalApptStaff').value; const duration = document.getElementById('aDuration').value;
             const address = document.getElementById('modalApptLocation').value; const rawService = document.getElementById('modalApptService').value; 
-            const cleanService = rawService.replace(/^\d+\s*-\s*/, '').trim();
+            const cleanService = rawService.replace(/^\d+-\s*/, '').trim();
             const h = document.getElementById('aTimeHour').value; const m = document.getElementById('aTimeMinute').value; const ampm = document.getElementById('aTimeAMPM').value;
             const timeStr = `${h}:${m}${ampm.toLowerCase()}`; const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
             const dateStr = `${days[selectedApptDate.getDay()]} ${selectedApptDate.getMonth()+1}/${selectedApptDate.getDate()}`;
             let text = smsTemplates[apptLang];
             text = text.replace('{name}', name); text = text.replace('{staff}', staff); text = text.replace('{date}', dateStr); text = text.replace('{time}', timeStr); text = text.replace('{duration}', duration.replace('minutes', 'minute')); text = text.replace('{address}', address); text = text.replace('{service}', cleanService); 
             document.getElementById('smsPreviewBubble').textContent = text;
-            
-            // Если они меняют длительность или время, прячем старую подсказку о доступности
-            document.getElementById('availabilityBox').style.display = 'none';
         }
 
         window.changeMonth = function(dir) { apptDate.setMonth(apptDate.getMonth() + dir); renderApptCal(); }
@@ -1784,18 +1564,13 @@
             for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div'));
             for (let i = 1; i <= daysInMonth; i++) {
                 const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'cal-btn'; btn.textContent = i; const cDate = new Date(y, m, i);
-                btn.onclick = (e) => { 
-                    e.preventDefault(); document.querySelectorAll('#aCalDates .cal-btn').forEach(b => b.classList.remove('selected')); 
-                    btn.classList.add('selected'); selectedApptDate = cDate; 
-                    document.getElementById('availabilityBox').style.display = 'none'; 
-                    updatePreview(); 
-                };
+                btn.onclick = (e) => { e.preventDefault(); document.querySelectorAll('#aCalDates .cal-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); selectedApptDate = cDate; updatePreview(); };
                 if(selectedApptDate && cDate.toDateString() === selectedApptDate.toDateString()) btn.classList.add('selected'); grid.appendChild(btn);
             }
         }
 
         // --- ЛОГИКА СОХРАНЕНИЯ КАЛЕНДАРЯ И ОТПРАВКИ СМС ---
-        window.saveAppointment = async function() {
+        window.saveAppointment = function() {
             if (!selectedApptDate) { alert("Please select a date on the calendar."); return; }
             
             const editingId = document.getElementById('editingApptId').value;
@@ -1803,7 +1578,7 @@
             const m = document.getElementById('aTimeMinute').value; 
             const ampm = document.getElementById('aTimeAMPM').value;
             const rawService = document.getElementById('modalApptService').value; 
-            const cleanService = rawService.replace(/^\d+\s*-\s*/, '').trim(); 
+            const cleanService = rawService.replace(/^\d+-\s*/, '').trim(); 
             const apptStaff = document.getElementById('modalApptStaff').value;
             const durationStr = document.getElementById('aDuration').value;
 
@@ -1816,9 +1591,7 @@
 
             let isPast = checkDate < new Date();
             let isEditingPastAppt = false;
-            
-            await window.loadAppointments(); // Убеждаемся что база свежая
-            let recs = window.globalAppointments || [];
+            let recs = JSON.parse(localStorage.getItem('gr_db')) || [];
 
             if (editingId) {
                 const existingAppt = recs.find(r => r.id === parseInt(editingId));
@@ -1883,51 +1656,40 @@
             } else {
                 recs.push(appointmentData); 
             }
-            
-            await saveAppointmentsDb(recs);
+            localStorage.setItem('gr_db', JSON.stringify(recs));
 
+            // Логика Инбокса (Отправка SMS)
             if (!editingId && (apptRemType === 'Text' || apptRemType === 'Both')) {
-                const smsText = document.getElementById('smsPreviewBubble').textContent;
-                
-                let formattedPhone = phoneInput.replace(/[^\d+]/g, ''); 
-                if (formattedPhone.length === 10 && !formattedPhone.startsWith('+')) {
-                    formattedPhone = '+1' + formattedPhone;
-                } else if (formattedPhone.length === 11 && formattedPhone.startsWith('1')) {
-                    formattedPhone = '+' + formattedPhone;
-                }
-                
-                const zapierUrl = `https://hooks.zapier.com/hooks/catch/28342465/44ft1ex/?phone=${encodeURIComponent(formattedPhone)}&message=${encodeURIComponent(smsText)}`;
-                fetch(zapierUrl, { mode: 'no-cors' }).catch(e => console.log('Zapier webhook error:', e));
-                
                 let msgs = JSON.parse(localStorage.getItem('gr_messages')) || [];
                 msgs.push({
                     phone: phoneInput || "No Phone",
                     name: clientName,
-                    text: smsText,
+                    text: document.getElementById('smsPreviewBubble').textContent,
                     timestamp: Date.now(),
                     direction: 'out' 
                 });
                 localStorage.setItem('gr_messages', JSON.stringify(msgs));
             }
 
+            console.log(`[OOMA SMS API STUB] Phone: ${appointmentData.phone} \nMessage: ${document.getElementById('smsPreviewBubble').textContent}`);
+
+            // Логика сохранения звонка (Только если бронируем первый раз)
             if (!editingId) {
                 let finalDescription = isLead ? `[🔥 NEW LEAD APPOINTMENT]\nScheduled: ${selectedApptDate.toLocaleDateString()} at ${h}:${m} ${ampm}\nService: ${rawService}\nStaff: ${apptStaff}` : `[APPOINTMENT BOOKED]\nScheduled: ${selectedApptDate.toLocaleDateString()} at ${h}:${m} ${ampm}\nService: ${rawService}\nStaff: ${apptStaff}`;
                 const formData = {
                     clientId: document.getElementById('hiddenClientId').value || "", clientName: clientName, clientPhone: appointmentData.phone, matterTitle: "", program: "", 
-                    description: finalDescription, operatorName: loggedInStaff || "Unknown Operator", operatorId: myStaffId, assignedStaffName: apptStaff, assignedStaffId: "", 
-                    followUpNotes: "System: Appointment booked automatically.", 
-                    status: "Resolved"
+                    description: finalDescription, operatorName: loggedInStaff || "Unknown Operator", operatorId: myStaffId, assignedStaffName: apptStaff, assignedStaffId: "", followUpNotes: "", status: "Resolved"
                 };
 
                 fetch('/api/save-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) })
                     .then(response => response.json())
                     .then(result => {
-                        if (!result.success) console.log(`❌ Call History Save Error`);
+                        if (!result.success) alert(`❌ Call History Save Error: ` + (result.error || ""));
                     }).catch(error => { console.log('Network error. Failed to save to CRM.'); });
             }
 
             setTimeout(() => {
-                alert(editingId ? `✅ Appointment Updated!` : `✅ Appointment Saved & SMS Sent!`); 
+                alert(editingId ? `✅ Appointment Updated!` : `✅ Appointment Saved & SMS Queued!`); 
                 closeApptModal(); btn.textContent = "Save Appointment & Send SMS ✉️"; btn.disabled = false; 
                 
                 const isInboxActive = document.getElementById('btnNavInbox').classList.contains('active');
@@ -1939,14 +1701,14 @@
                     renderMainCalendar(); 
                 }
                 
+                // Очистка формы звонка если мы были там
                 if (!editingId && document.getElementById('tabFormContent').classList.contains('active')) {
-                    clearClientData(); document.getElementById('fullName').value = ''; document.getElementById('phoneNumber').value = ''; document.getElementById('callForm').reset(); document.querySelector('input[name="clientStatus"][value="Existing Client"]').checked = true; setDateTime();
+                    clearClientData(); document.getElementById('fullName').value = ''; document.getElementById('phoneNumber').value = ''; document.getElementById('callForm').reset(); document.querySelector('input[name="clientStatus"][value="Existing Client"]').checked = true;
                 }
-                
-                window.renderCallHistoryList();
             }, 300);
         }
 
+        // --- ЛОГИКА ОТОБРАЖЕНИЯ INBOX / SMS ---
         window.renderInboxList = function() {
             const listDiv = document.getElementById('inboxContactList');
             const searchQ = document.getElementById('inboxSearch').value.toLowerCase();
@@ -2029,31 +1791,19 @@
 
         window.sendManualMessage = function(phone, name, key) {
             const input = document.getElementById('manualSmsInput'); const text = input.value.trim(); if (!text) return;
-            
-            let formattedPhone = phone.replace(/[^\d+]/g, ''); 
-            if (formattedPhone.length === 10 && !formattedPhone.startsWith('+')) {
-                formattedPhone = '+1' + formattedPhone;
-            } else if (formattedPhone.length === 11 && formattedPhone.startsWith('1')) {
-                formattedPhone = '+' + formattedPhone;
-            }
-
-            const zapierUrl = `https://hooks.zapier.com/hooks/catch/28342465/44ft1ex/?phone=${encodeURIComponent(formattedPhone)}&message=${encodeURIComponent(text)}`;
-            fetch(zapierUrl, { mode: 'no-cors' }).catch(e => console.log('Zapier webhook error:', e));
-
             let msgs = JSON.parse(localStorage.getItem('gr_messages')) || [];
             msgs.push({ phone: phone || "No Phone", name: name, text: text, timestamp: Date.now(), direction: 'out' });
             localStorage.setItem('gr_messages', JSON.stringify(msgs));
-            
+            console.log(`[OOMA MANUAL SMS STUB]\nTo: ${phone || name}\nText: ${text}`);
             input.value = ''; openChat(phone, name, key);
         }
 
-        window.openCustomerDetails = async function(phone, name) {
+        window.openCustomerDetails = function(phone, name) {
             document.getElementById('cdName').textContent = name;
             document.getElementById('cdPhone').textContent = (phone && phone !== "No Phone" && phone !== "null") ? `📞 ${phone}` : '📞 No Phone Provided';
             document.getElementById('cdAvatar').textContent = name.charAt(0).toUpperCase();
 
-            await window.loadAppointments();
-            const records = window.globalAppointments || [];
+            const records = JSON.parse(localStorage.getItem('gr_db')) || [];
             const appts = records.filter(a => {
                 const phoneMatch = (phone && phone !== "No Phone" && phone !== "null") ? (a.phone === phone) : true;
                 return a.client === name && phoneMatch;
@@ -2089,10 +1839,8 @@
             document.getElementById('customerDetailsModal').style.display = 'none'; openApptModal(window._tempNewApptData.name, window._tempNewApptData.phone);
         }
 
-        window.openPreviewModal = async function(id) {
-            await window.loadAppointments();
-            const records = window.globalAppointments || []; 
-            const appt = records.find(a => a.id === id); if(!appt) return;
+        window.openPreviewModal = function(id) {
+            const records = JSON.parse(localStorage.getItem('gr_db')) || []; const appt = records.find(a => a.id === id); if(!appt) return;
             document.getElementById('dayListModal').style.display = 'none'; document.getElementById('customerDetailsModal').style.display = 'none';
 
             let noteHtml = '';
@@ -2126,35 +1874,25 @@
             document.getElementById('previewModal').style.display = 'flex';
         };
 
-        window.deleteAppointment = async function(id) {
-            await window.loadAppointments();
-            let records = window.globalAppointments || []; 
-            records = records.filter(a => a.id !== id); 
-            await saveAppointmentsDb(records);
-            
-            document.getElementById('previewModal').style.display = 'none';
-            const isInboxActive = document.getElementById('btnNavInbox').classList.contains('active'); 
-            if (isInboxActive) renderInboxList(); else renderMainCalendar(); 
+        window.deleteAppointment = function(id) {
+            let records = JSON.parse(localStorage.getItem('gr_db')) || []; records = records.filter(a => a.id !== id); localStorage.setItem('gr_db', JSON.stringify(records)); document.getElementById('previewModal').style.display = 'none';
+            const isInboxActive = document.getElementById('btnNavInbox').classList.contains('active'); if (isInboxActive) renderInboxList(); else renderMainCalendar(); 
         };
 
         let viewDate = new Date(); window.changeViewDate = function(dir) { viewDate.setMonth(viewDate.getMonth() + dir); window.renderMainCalendar(); }
 
-        window.openDayList = async function(dateStr) {
-            await window.loadAppointments();
-            const records = window.globalAppointments || []; 
-            const dayAppts = records.filter(a => new Date(a.timestamp).toDateString() === dateStr);
+        window.openDayList = function(dateStr) {
+            const records = JSON.parse(localStorage.getItem('gr_db')) || []; const dayAppts = records.filter(a => new Date(a.timestamp).toDateString() === dateStr);
             const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; const dObj = new Date(dateStr);
             document.getElementById('dayListTitle').textContent = `Appointments on ${days[dObj.getDay()]}, ${dObj.getMonth()+1}/${dObj.getDate()}`;
             let html = ''; dayAppts.forEach(appt => { html += `<div class="agenda-card" onclick="openPreviewModal(${appt.id})" style="padding: 10px 15px; margin-bottom: 8px;"><div class="agenda-info"><div class="client-name" style="font-size: 14px;">${appt.client}</div><div class="service-details" style="font-size: 12px;">${appt.service} with ${appt.staff}</div></div><div class="agenda-time" style="font-size: 13px;">${appt.time}</div></div>`; });
             document.getElementById('dayListBody').innerHTML = html; document.getElementById('dayListModal').style.display = 'flex';
         };
 
-        window.renderMainCalendar = async function() {
-            await window.loadAppointments();
+        window.renderMainCalendar = function() {
             const view = document.getElementById('viewSelector').value; const area = document.getElementById('calendarContent'); area.innerHTML = ''; const title = document.getElementById('mainCalTitle');
             const months = ['January','February','March','April','May','June','July','August','September','October','November','December']; const y = viewDate.getFullYear(); const m = viewDate.getMonth(); title.textContent = `${months[m]} ${y}`;
-            let records = window.globalAppointments || [];
-            
+            let records = JSON.parse(localStorage.getItem('gr_db')) || [];
             const staffF = document.getElementById('staffFilter').value; if(staffF !== 'All Staff') { records = records.filter(r => r.staff === staffF); }
             const statusF = document.getElementById('statusFilter').value; if(statusF !== 'All Statuses') { records = records.filter(r => { const recStatus = r.clientStatus || (r.isLead ? 'Lead' : 'Existing Client'); return recStatus === statusF; }); }
 
@@ -2436,9 +2174,6 @@
                 if (result.success) {
                     alert(`✅ Call successfully saved! \n\n${assignedStaffName !== "-- Do not notify anyone --" && assignedStaffName !== "" && assignedStaffName !== "Resolved by Operator" ? "Staff member has been notified." : ""}`);
                     clearClientData(); document.getElementById('fullName').value = ''; document.getElementById('phoneNumber').value = ''; document.getElementById('genCallerName').value = ''; document.getElementById('genCallerPhone').value = ''; callForm.reset(); document.querySelector('input[name="clientStatus"][value="Existing Client"]').checked = true; document.getElementById('generalInquirySection').style.display = 'none'; setDateTime(); 
-                    
-                    // Обновляем журнал без рефреша страницы
-                    window.renderCallHistoryList();
                 } else { alert(`❌ Error saving call: ` + (result.error || "")); }
             } catch (error) { alert('Network error. Failed to save.'); } 
             finally { submitBtn.disabled = false; submitBtn.textContent = 'Save Call Log to Internal CRM'; }
