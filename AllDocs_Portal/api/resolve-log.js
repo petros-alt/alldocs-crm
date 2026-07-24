@@ -1,9 +1,6 @@
 export default async function handler(req, res) {
-    // Настройка CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
     if (req.method === 'OPTIONS') {
         res.status(200).end();
@@ -15,35 +12,32 @@ export default async function handler(req, res) {
         const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
         const pool = postgres.createPool({ connectionString });
 
-        // Принимаем ID лога из запроса
-        const logId = req.query.logId || req.body?.logId;
-        const note = req.query.note || req.body?.note;
+        const logId = req.query.logId;
+        const note = req.query.note;
 
         if (!logId) {
             return res.status(400).json({ success: false, error: 'No logId provided' });
         }
 
-        // ЖЕСТКО ОБНОВЛЯЕМ ЛОГ В БАЗЕ (убираем Pending)
+        // ЖЕСТКО ОБНОВЛЯЕМ ЛОГ (Убиваем Pending)
         await pool.sql`
             UPDATE call_logs 
-            SET follow_up_notes = ${note} 
+            SET follow_up_notes = ${note}, status = 'Resolved'
             WHERE id = ${logId};
         `;
 
-        // На всякий случай пытаемся закрыть и уведомление, если оно существует
+        // Пытаемся закрыть и уведомление, если оно существует
         try {
             await pool.sql`
                 UPDATE notifications 
                 SET is_read = true 
                 WHERE call_log_id = ${logId};
             `;
-        } catch (e) {
-            console.log("No notification to update");
-        }
+        } catch (e) { }
 
         return res.status(200).json({ success: true, message: 'Log resolved directly' });
     } catch (error) {
-        console.error('Resolve Log API Error:', error);
+        console.error('Resolve Log Error:', error);
         return res.status(500).json({ success: false, error: error.message });
     }
 }
