@@ -1140,7 +1140,7 @@
         }
     };
 
-   // === УЛЬТРА-ЖЕСТКОЕ ЗАКРЫТИЕ ПЕНДИНГА ===
+  // === УЛЬТРА-ЖЕСТКОЕ ЗАКРЫТИЕ ПЕНДИНГА ===
     window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
         let extraNote = document.getElementById('jmResolveNote').value.trim();
         if (extraNote === "") { extraNote = "Task closed without comments"; }
@@ -1153,11 +1153,16 @@
         
         try {
             // 1. УБИВАЕМ ПЕНДИНГ НАПРЯМУЮ В БАЗЕ ЛОГОВ (Работает 100% даже для старых записей)
-            await fetch('/api/resolve-log', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ logId: logId, note: extraNote })
-            });
+            const response = await fetch(`/api/resolve-log?logId=${logId}&note=${encodeURIComponent(extraNote)}`);
+            const result = await response.json();
+
+            // Если сервер не нашел файл resolve-log.js или выдал ошибку — выводим на экран!
+            if (!response.ok || !result.success) {
+                alert("Ошибка на сервере при закрытии: " + (result.error || "Файл resolve-log.js не найден на сервере!"));
+                btn.textContent = "Mark as Resolved ✓"; 
+                btn.disabled = false;
+                return; // Останавливаемся
+            }
             
             // 2. Дублируем сигнал в старую систему, чтобы погасить колокольчик (если он горит)
             try {
@@ -1190,12 +1195,11 @@
             
             window.renderCallHistoryList(); 
         } catch (e) { 
-            alert('Server error while resolving task.'); 
+            alert('Сбой подключения. Убедись, что файл resolve-log.js сохранен на GitHub!'); 
         } finally { 
             btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; 
         }
     };
-
     window.renderCallHistoryList = async function() {
         const tableContainer = document.getElementById('historyTableContainer');
         const noCallsMessage = document.getElementById('noCallsMessage');
