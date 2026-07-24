@@ -477,7 +477,10 @@
                 </div>
                 
                 <div style="margin-top: 15px;">
-                    <label style="font-size: 13.5px; color: var(--accent-color); font-weight: 800;">⏰ Time (Working Hours 10:00 AM - 7:00 PM):</label>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <label style="font-size: 13.5px; color: var(--accent-color); font-weight: 800; margin: 0;">⏰ Select Time:</label>
+                        <button type="button" onclick="checkStaffAvailability()" style="background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); padding: 4px 8px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 11px; transition: 0.2s;">👀 Check Availability</button>
+                    </div>
                     <div class="time-select-group">
                         <select id="aTimeHour" onchange="updatePreview()">
                             <option>01</option><option>02</option><option>03</option><option>04</option><option>05</option><option>06</option>
@@ -491,6 +494,7 @@
                             <option>AM</option><option selected>PM</option>
                         </select>
                     </div>
+                    <div id="availabilityBox" style="margin-top: 10px; font-size: 12.5px; color: #555; display: none; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #eee;"></div>
                 </div>
                 <div style="margin-top: 15px;">
                     <label style="font-size: 13px; color: var(--secondary-color); font-weight: 600;">Duration:</label>
@@ -835,10 +839,31 @@
     let globalCallLogs = []; 
     let currentChatKey = null;
 
+    // --- SHARED APPOINTMENT API LOGIC ---
+    window.globalAppointments = [];
+    window.loadAppointments = async function() {
+        try {
+            const res = await fetch('/api/appointments?t=' + new Date().getTime(), { cache: 'no-store' });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success) { window.globalAppointments = data.appointments || []; return; }
+            }
+        } catch (e) { console.log('Appointment API not ready, falling back to local storage.'); }
+        window.globalAppointments = JSON.parse(localStorage.getItem('gr_db')) || [];
+    }
+    
+    window.saveAppointmentsDb = async function(recs) {
+        window.globalAppointments = recs;
+        localStorage.setItem('gr_db', JSON.stringify(recs));
+        try {
+            await fetch('/api/appointments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ appointments: recs }) });
+        } catch (e) {}
+    }
+
     // ОЧИСТКА БАЗЫ ДАННЫХ ДЛЯ ТЕСТОВ (Только Календарь и СМС, без лога звонков)
     window.clearSandboxData = function() {
         if(confirm("Are you sure you want to delete all Calendar & SMS test data?")) {
-            localStorage.removeItem('gr_db');
+            saveAppointmentsDb([]);
             localStorage.removeItem('gr_messages');
             location.reload();
         }
@@ -1110,29 +1135,8 @@
         const btn = document.getElementById('jmResolveBtn');
         btn.textContent = "Saving..."; btn.disabled = true;
         try {
-            const loggedInStaff = localStorage.getItem('loggedInStaff');
-            const staffMap = {
-                "Norayr Badalyan": "332487", "Petros Eghiazaryan": "418892", "Petros E.": "418892", "Mariam Djaradjian": "339159", "Mariam D.": "339159",
-                "Artak Badalyan": "332810", "Artak B.": "332810", "Argishti Shahbazian": "1005", "Argishti S.": "1005", "Gohar Aloyan": "1001", "Gohar A.": "1001",
-                "Rima Avetisyan": "1007", "Rima A.": "1007", "Lilit Avetisyan": "1009", "Lilit A.": "1009"
-            };
-            
-            // Если задачу закрывает Петрос за Лилит, нам нужно искать в уведомлениях Лилит!
-            const targetStaffId = staffMap[assignedStaff] || staffMap[loggedInStaff] || "";
-            
-            const res = await fetch(`/api/get-notifications?staffId=${targetStaffId}`);
-            const data = await res.json();
-            
-            let targetNotifId = logId; 
-            
-            if (data.success && data.notifications) {
-                const matchedNotif = data.notifications.find(n => n.client_name.includes(clientName) || clientName.includes(n.client_name));
-                if (matchedNotif) {
-                    targetNotifId = matchedNotif.id;
-                }
-            }
-
-            await fetch(`/api/get-notifications?action=read&notificationId=${targetNotifId}&note=${encodeURIComponent(extraNote)}`);
+            // Передаем жесткий logId, чтобы система точно закрыла именно эту задачу, игнорируя опечатки в имени
+            await fetch(`/api/get-notifications?action=read&notificationId=${logId}&note=${encodeURIComponent(extraNote)}`);
             closeJournalModal(); 
             
             if (typeof checkNotifications === "function") checkNotifications(); 
@@ -1147,7 +1151,7 @@
         }
     };
 
-    // === ОБНОВЛЕННАЯ ЛОГИКА ЖУРНАЛА С ФИЛЬТРОМ СОТРУДНИКОВ ===
+    // === ОБНОВЛЕННАЯ ЛОГИКА ЖУРНАЛА С ФИЛЬТРОМ СОТРУДНИКОВ И АППОЙНТМЕНТАМИ ===
     window.renderCallHistoryList = async function() {
         const tableContainer = document.getElementById('historyTableContainer');
         const noCallsMessage = document.getElementById('noCallsMessage');
@@ -1191,35 +1195,61 @@
             const d = new Date(log.created_at);
             let rawDesc = log.call_description || ''; let cleanDesc = rawDesc;
             let st = "General Call"; let badgeColor = '#1976d2';
+            let isResolved = true;
+            let displayStaff = log.assigned_staff_name || log.operator_name || 'Staff';
+            let trackingBadge = '';
+            let urgentBg = '';
             
             const isUrgent = rawDesc.includes('[🚨 URGENT]');
-            if (isUrgent) { cleanDesc = cleanDesc.replace(/\[🚨 URGENT\]/g, '').trim(); }
+            if (isUrgent) { cleanDesc = cleanDesc.replace(/\[🚨 URGENT\]/g, '').trim(); urgentBg = 'background-color: #fff0f0;'; }
             
             const statusMatch = rawDesc.match(/(?:\[Status:\s*|Status:\s*)(.*?)(?:\]|\n| \||$)/i);
             if (statusMatch) { st = statusMatch[1].trim(); cleanDesc = cleanDesc.replace(statusMatch[0], '').trim(); }
-            else if (rawDesc.includes('NEW LEAD APPOINTMENT')) { st = 'Lead (New Appt)'; cleanDesc = cleanDesc.replace(/\[🔥 NEW LEAD APPOINTMENT\]/i, '').trim(); }
-            else if (rawDesc.includes('APPOINTMENT BOOKED')) { st = 'Existing Client'; cleanDesc = cleanDesc.replace(/\[APPOINTMENT BOOKED\]/i, '').trim(); }
+            else if (rawDesc.includes('NEW LEAD APPOINTMENT')) { st = 'Lead (New Appt)'; }
+            else if (rawDesc.includes('APPOINTMENT BOOKED')) { st = 'Existing Client'; }
             
-            if(st.includes('Lead')) badgeColor = '#d32f2f'; 
-            else if(st.includes('Unrecognized')) badgeColor = '#f57c00'; 
-            else if(st.includes('Existing')) badgeColor = '#2e7d32'; 
+            // --- УМНАЯ ЛОГИКА ДЛЯ АППОЙНТМЕНТОВ ---
+            let isAppt = rawDesc.includes('NEW LEAD APPOINTMENT') || rawDesc.includes('APPOINTMENT BOOKED');
+            if (isAppt) {
+                const dateMatch = rawDesc.match(/Scheduled:\s*(.*?)\s*at\s*(.*?)\n/i);
+                if (dateMatch) {
+                    const apptDateStr = dateMatch[1] + ' ' + dateMatch[2];
+                    const apptTime = new Date(apptDateStr).getTime();
+                    if (Date.now() > apptTime) {
+                        isResolved = true;
+                        trackingBadge = `<span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">✅ Completed<br><span style="font-size:10px; font-weight:normal;">(System)</span></span>`;
+                        if(!isUrgent) urgentBg = 'background-color: #fcfcfc;'; 
+                    } else {
+                        isResolved = false;
+                        trackingBadge = `<span style="font-size: 12px; background: #f3e5f5; color: #7b1fa2; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">📅 Scheduled<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
+                        if(!isUrgent) urgentBg = 'background-color: #faf5ff;'; 
+                    }
+                } else {
+                    trackingBadge = `<span style="font-size: 12px; background: #f3e5f5; color: #7b1fa2; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">📅 Scheduled<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
+                }
+                cleanDesc = cleanDesc.replace(/\[🔥 NEW LEAD APPOINTMENT\]/i, '').replace(/\[APPOINTMENT BOOKED\]/i, '').trim();
+                st = 'Appointment';
+                badgeColor = '#8e24aa'; // purple badge
+            } else {
+                // Стандартная логика задач
+                if(st.includes('Lead')) badgeColor = '#d32f2f'; 
+                else if(st.includes('Unrecognized')) badgeColor = '#f57c00'; 
+                else if(st.includes('Existing')) badgeColor = '#2e7d32'; 
+
+                if (displayStaff !== "Resolved by Operator" && displayStaff !== "-- Do not notify anyone --" && (!log.follow_up_notes || log.follow_up_notes.trim() === '')) {
+                    isResolved = false;
+                    trackingBadge = `<span style="font-size: 12px; background: #fff3e0; color: #e65100; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">⏳ Pending<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
+                } else if (displayStaff === "Resolved by Operator" || displayStaff === "-- Do not notify anyone --") {
+                    displayStaff = log.operator_name;
+                    trackingBadge = `<span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">✅ Resolved<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
+                } else {
+                    trackingBadge = `<span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">✅ Resolved<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
+                }
+            }
             
             cleanDesc = cleanDesc.replace(/(01-Initial Consultation|03-Client Communication|04-Phone Call|05-Follow-Up Needed|20-Interview|General Call)/ig, '').replace(/^\]?\s*/, '').trim();
             let snippet = cleanDesc.length > 55 ? cleanDesc.substring(0, 55) + '...' : cleanDesc;
             
-            let displayStaff = log.assigned_staff_name || log.operator_name || 'Staff';
-            let isResolved = true;
-            let trackingBadge = `<span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">✅ Resolved<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
-
-            // Обновленное условие для статуса
-            if (displayStaff !== "Resolved by Operator" && displayStaff !== "-- Do not notify anyone --" && (!log.follow_up_notes || log.follow_up_notes.trim() === '')) {
-                isResolved = false;
-                trackingBadge = `<span style="font-size: 12px; background: #fff3e0; color: #e65100; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">⏳ Pending<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
-            } else if (displayStaff === "Resolved by Operator" || displayStaff === "-- Do not notify anyone --") {
-                displayStaff = log.operator_name;
-                trackingBadge = `<span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">✅ Resolved<br><span style="font-size:10px; font-weight:normal;">(${displayStaff})</span></span>`;
-            }
-
             // ПРИМЕНЯЕМ ФИЛЬТРЫ
             if (statusF === 'Pending' && isResolved) return;
             if (statusF === 'Resolved' && !isResolved) return;
@@ -1227,7 +1257,6 @@
             if (staffF !== 'All' && displayStaff !== staffF && log.operator_name !== staffF) return;
 
             let urgentBadge = isUrgent ? `<span class="badge-status" style="background-color:#d32f2f; margin-left:8px; font-size: 10px; animation: pulseAlert 1.5s infinite;">🚨 URGENT</span>` : '';
-            let urgentBg = isUrgent ? 'background-color: #fff0f0;' : '';
 
             const tr = document.createElement('tr'); tr.className = 'journal-row';
             tr.style.cssText = urgentBg;
@@ -1517,6 +1546,29 @@
 
         let apptDate = new Date(); let selectedApptDate = new Date(); 
         
+        // === ИСПРАВЛЕННАЯ ФУНКЦИЯ ДЛЯ ПРОВЕРКИ РАСПИСАНИЯ СОТРУДНИКА ===
+        window.checkStaffAvailability = async function() {
+            const staff = document.getElementById('modalApptStaff').value;
+            const dateStr = selectedApptDate.toDateString();
+            const box = document.getElementById('availabilityBox');
+            box.style.display = 'block';
+            box.innerHTML = '⏳ Checking schedule...';
+            
+            await window.loadAppointments(); // Подтягиваем последние данные с сервера
+            const records = window.globalAppointments || [];
+            // Исключаем из поиска саму эту встречу (если мы ее редактируем)
+            const editingId = parseInt(document.getElementById('editingApptId').value || '0');
+            const dayAppts = records.filter(a => a.staff === staff && a.dateStr === dateStr && a.id !== editingId);
+            
+            if (dayAppts.length === 0) {
+                box.innerHTML = `<span style="color: #2e7d32; font-weight: bold;">✅ ${staff} is fully open on this day.</span>`;
+            } else {
+                dayAppts.sort((a,b) => a.timestamp - b.timestamp);
+                let times = dayAppts.map(a => `<span style="display:inline-block; background:#ffebee; color:#d32f2f; padding:2px 6px; border-radius:4px; margin:2px;">${a.time} (${a.length})</span>`).join(' ');
+                box.innerHTML = `<strong style="color: #d32f2f;">🗓️ ${staff} is already booked at:</strong><br><div style="margin-top:5px;">${times}</div>`;
+            }
+        }
+
         // === ИСПРАВЛЕННАЯ ФУНКЦИЯ ДЛЯ ОТКРЫТИЯ ОКНА БРОНИРОВАНИЯ ===
         window.openApptModal = function(preName = '', prePhone = '') {
             document.getElementById('editingApptId').value = '';
@@ -1527,6 +1579,7 @@
             document.getElementById('modalApptName').value = nameToUse; 
             document.getElementById('modalApptPhone').value = phoneToUse;
             document.getElementById('modalApptMessage').value = '';
+            document.getElementById('availabilityBox').style.display = 'none';
             
             const isLead = document.querySelector('input[name="clientStatus"]:checked')?.value === 'Lead'; 
             const titleEl = document.getElementById('apptModalTitle');
@@ -1539,12 +1592,10 @@
             
             let h24 = now.getHours();
             if (h24 < 10 || h24 >= 19) {
-                // Если сейчас ночь или раннее утро — ставим на 10 утра.
                 document.getElementById('aTimeHour').value = '10';
                 document.getElementById('aTimeMinute').value = '00';
                 document.getElementById('aTimeAMPM').value = 'AM';
             } else {
-                // Если рабочее время — округляем до ближайших 5 минут.
                 let m = Math.ceil(now.getMinutes() / 5) * 5;
                 if (m >= 60) { m = 0; h24++; }
                 
@@ -1568,13 +1619,14 @@
 
         // === ВЕРНУЛИ ФУНКЦИЮ РЕДАКТИРОВАНИЯ ИЗ МАСТЕР-КАЛЕНДАРЯ ===
         window.editAppointment = function(id) {
-            const records = JSON.parse(localStorage.getItem('gr_db')) || []; 
+            const records = window.globalAppointments || []; 
             const appt = records.find(a => a.id === id); 
             if(!appt) return;
 
             document.getElementById('dayListModal').style.display = 'none'; 
             document.getElementById('customerDetailsModal').style.display = 'none';
             document.getElementById('previewModal').style.display = 'none';
+            document.getElementById('availabilityBox').style.display = 'none';
 
             document.getElementById('editingApptId').value = appt.id;
             document.getElementById('apptModalTitle').innerHTML = '✏️ Edit Appointment';
@@ -1613,6 +1665,11 @@
             document.getElementById('apptModal').style.display = 'none'; 
             const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]'); const leadRadio = document.querySelector('input[name="clientStatus"][value="Lead"]');
             if (existingRadio && leadRadio && leadRadio.checked) { existingRadio.checked = true; document.getElementById('unrecognizedCallerSection').style.display = 'none'; }
+            
+            // Сбрасываем время на главной форме обратно к текущему после закрытия
+            if(document.getElementById('tabFormContent').classList.contains('active')) {
+                setDateTime();
+            }
         }
 
         window.updatePreview = function() {
@@ -1636,13 +1693,18 @@
             for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div'));
             for (let i = 1; i <= daysInMonth; i++) {
                 const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'cal-btn'; btn.textContent = i; const cDate = new Date(y, m, i);
-                btn.onclick = (e) => { e.preventDefault(); document.querySelectorAll('#aCalDates .cal-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); selectedApptDate = cDate; updatePreview(); };
+                btn.onclick = (e) => { 
+                    e.preventDefault(); document.querySelectorAll('#aCalDates .cal-btn').forEach(b => b.classList.remove('selected')); 
+                    btn.classList.add('selected'); selectedApptDate = cDate; 
+                    document.getElementById('availabilityBox').style.display = 'none'; // прячем подсказку при смене дня
+                    updatePreview(); 
+                };
                 if(selectedApptDate && cDate.toDateString() === selectedApptDate.toDateString()) btn.classList.add('selected'); grid.appendChild(btn);
             }
         }
 
         // --- ЛОГИКА СОХРАНЕНИЯ КАЛЕНДАРЯ И ОТПРАВКИ СМС ---
-        window.saveAppointment = function() {
+        window.saveAppointment = async function() {
             if (!selectedApptDate) { alert("Please select a date on the calendar."); return; }
             
             const editingId = document.getElementById('editingApptId').value;
@@ -1663,7 +1725,9 @@
 
             let isPast = checkDate < new Date();
             let isEditingPastAppt = false;
-            let recs = JSON.parse(localStorage.getItem('gr_db')) || [];
+            
+            await window.loadAppointments(); // Убеждаемся что база свежая
+            let recs = window.globalAppointments || [];
 
             if (editingId) {
                 const existingAppt = recs.find(r => r.id === parseInt(editingId));
@@ -1728,7 +1792,9 @@
             } else {
                 recs.push(appointmentData); 
             }
-            localStorage.setItem('gr_db', JSON.stringify(recs));
+            
+            // Сохраняем в новую общую базу данных
+            await saveAppointmentsDb(recs);
 
             // Логика Инбокса (Отправка SMS через ZAPIER)
             if (!editingId && (apptRemType === 'Text' || apptRemType === 'Both')) {
@@ -1764,7 +1830,7 @@
                 const formData = {
                     clientId: document.getElementById('hiddenClientId').value || "", clientName: clientName, clientPhone: appointmentData.phone, matterTitle: "", program: "", 
                     description: finalDescription, operatorName: loggedInStaff || "Unknown Operator", operatorId: myStaffId, assignedStaffName: apptStaff, assignedStaffId: "", 
-                    followUpNotes: "System: Appointment booked automatically.", // Автоматическое закрытие статуса
+                    followUpNotes: "System: Appointment booked automatically.", 
                     status: "Resolved"
                 };
 
@@ -1790,7 +1856,7 @@
                 
                 // Очистка формы звонка и обновление списка в фоне
                 if (!editingId && document.getElementById('tabFormContent').classList.contains('active')) {
-                    clearClientData(); document.getElementById('fullName').value = ''; document.getElementById('phoneNumber').value = ''; document.getElementById('callForm').reset(); document.querySelector('input[name="clientStatus"][value="Existing Client"]').checked = true;
+                    clearClientData(); document.getElementById('fullName').value = ''; document.getElementById('phoneNumber').value = ''; document.getElementById('callForm').reset(); document.querySelector('input[name="clientStatus"][value="Existing Client"]').checked = true; setDateTime();
                 }
                 
                 // Автоматическое обновление Журнала без перезагрузки страницы
@@ -1901,12 +1967,13 @@
             input.value = ''; openChat(phone, name, key);
         }
 
-        window.openCustomerDetails = function(phone, name) {
+        window.openCustomerDetails = async function(phone, name) {
             document.getElementById('cdName').textContent = name;
             document.getElementById('cdPhone').textContent = (phone && phone !== "No Phone" && phone !== "null") ? `📞 ${phone}` : '📞 No Phone Provided';
             document.getElementById('cdAvatar').textContent = name.charAt(0).toUpperCase();
 
-            const records = JSON.parse(localStorage.getItem('gr_db')) || [];
+            await window.loadAppointments();
+            const records = window.globalAppointments || [];
             const appts = records.filter(a => {
                 const phoneMatch = (phone && phone !== "No Phone" && phone !== "null") ? (a.phone === phone) : true;
                 return a.client === name && phoneMatch;
@@ -1942,8 +2009,10 @@
             document.getElementById('customerDetailsModal').style.display = 'none'; openApptModal(window._tempNewApptData.name, window._tempNewApptData.phone);
         }
 
-        window.openPreviewModal = function(id) {
-            const records = JSON.parse(localStorage.getItem('gr_db')) || []; const appt = records.find(a => a.id === id); if(!appt) return;
+        window.openPreviewModal = async function(id) {
+            await window.loadAppointments();
+            const records = window.globalAppointments || []; 
+            const appt = records.find(a => a.id === id); if(!appt) return;
             document.getElementById('dayListModal').style.display = 'none'; document.getElementById('customerDetailsModal').style.display = 'none';
 
             let noteHtml = '';
@@ -1977,25 +2046,35 @@
             document.getElementById('previewModal').style.display = 'flex';
         };
 
-        window.deleteAppointment = function(id) {
-            let records = JSON.parse(localStorage.getItem('gr_db')) || []; records = records.filter(a => a.id !== id); localStorage.setItem('gr_db', JSON.stringify(records)); document.getElementById('previewModal').style.display = 'none';
-            const isInboxActive = document.getElementById('btnNavInbox').classList.contains('active'); if (isInboxActive) renderInboxList(); else renderMainCalendar(); 
+        window.deleteAppointment = async function(id) {
+            await window.loadAppointments();
+            let records = window.globalAppointments || []; 
+            records = records.filter(a => a.id !== id); 
+            await saveAppointmentsDb(records);
+            
+            document.getElementById('previewModal').style.display = 'none';
+            const isInboxActive = document.getElementById('btnNavInbox').classList.contains('active'); 
+            if (isInboxActive) renderInboxList(); else renderMainCalendar(); 
         };
 
         let viewDate = new Date(); window.changeViewDate = function(dir) { viewDate.setMonth(viewDate.getMonth() + dir); window.renderMainCalendar(); }
 
-        window.openDayList = function(dateStr) {
-            const records = JSON.parse(localStorage.getItem('gr_db')) || []; const dayAppts = records.filter(a => new Date(a.timestamp).toDateString() === dateStr);
+        window.openDayList = async function(dateStr) {
+            await window.loadAppointments();
+            const records = window.globalAppointments || []; 
+            const dayAppts = records.filter(a => new Date(a.timestamp).toDateString() === dateStr);
             const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; const dObj = new Date(dateStr);
             document.getElementById('dayListTitle').textContent = `Appointments on ${days[dObj.getDay()]}, ${dObj.getMonth()+1}/${dObj.getDate()}`;
             let html = ''; dayAppts.forEach(appt => { html += `<div class="agenda-card" onclick="openPreviewModal(${appt.id})" style="padding: 10px 15px; margin-bottom: 8px;"><div class="agenda-info"><div class="client-name" style="font-size: 14px;">${appt.client}</div><div class="service-details" style="font-size: 12px;">${appt.service} with ${appt.staff}</div></div><div class="agenda-time" style="font-size: 13px;">${appt.time}</div></div>`; });
             document.getElementById('dayListBody').innerHTML = html; document.getElementById('dayListModal').style.display = 'flex';
         };
 
-        window.renderMainCalendar = function() {
+        window.renderMainCalendar = async function() {
+            await window.loadAppointments();
             const view = document.getElementById('viewSelector').value; const area = document.getElementById('calendarContent'); area.innerHTML = ''; const title = document.getElementById('mainCalTitle');
             const months = ['January','February','March','April','May','June','July','August','September','October','November','December']; const y = viewDate.getFullYear(); const m = viewDate.getMonth(); title.textContent = `${months[m]} ${y}`;
-            let records = JSON.parse(localStorage.getItem('gr_db')) || [];
+            let records = window.globalAppointments || [];
+            
             const staffF = document.getElementById('staffFilter').value; if(staffF !== 'All Staff') { records = records.filter(r => r.staff === staffF); }
             const statusF = document.getElementById('statusFilter').value; if(statusF !== 'All Statuses') { records = records.filter(r => { const recStatus = r.clientStatus || (r.isLead ? 'Lead' : 'Existing Client'); return recStatus === statusF; }); }
 
