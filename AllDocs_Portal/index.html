@@ -1724,8 +1724,13 @@ window.currentCrmNotifs = [];
                                         // Сохраняем уведомление на случай F5
                                         localStorage.setItem('unreadSmsNotifs', JSON.stringify(window.currentSmsNotifs));
                                         
-                                        if (window.Notification && Notification.permission === "granted") {
-                                            new Notification("💬 New SMS from " + msg.name, { body: msg.text, icon: "https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png" });
+                                      if (window.Notification && Notification.permission === "granted") {
+                                            new Notification("💬 New SMS from " + msg.name, { 
+                                                body: msg.text, 
+                                                icon: "https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png",
+                                                silent: true // Отключаем резкий звук Mac/Windows!
+                                            });
+                                        }
                                         }
                                     }
                                 } else {
