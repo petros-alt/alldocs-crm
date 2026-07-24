@@ -2351,7 +2351,6 @@ window.currentCrmNotifs = [];
         // ==========================
 
         window.openCustomerDetails = async function(phone, name) {
-        window.openCustomerDetails = async function(phone, name) {
             document.getElementById('cdName').textContent = name;
             document.getElementById('cdPhone').textContent = (phone && phone !== "No Phone" && phone !== "null") ? `📞 ${phone}` : '📞 No Phone Provided';
             document.getElementById('cdAvatar').textContent = name.charAt(0).toUpperCase();
