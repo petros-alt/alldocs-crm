@@ -1141,7 +1141,7 @@
     };
 
   // === УЛЬТРА-ЖЕСТКОЕ ЗАКРЫТИЕ ПЕНДИНГА ===
-    window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
+   window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
         let extraNote = document.getElementById('jmResolveNote').value.trim();
         if (extraNote === "") { extraNote = "Task closed without comments"; }
         
@@ -1150,52 +1150,45 @@
 
         const btn = document.getElementById('jmResolveBtn');
         btn.textContent = "Saving..."; btn.disabled = true;
-        
         try {
-            // 1. УБИВАЕМ ПЕНДИНГ НАПРЯМУЮ В БАЗЕ ЛОГОВ (Работает 100% даже для старых записей)
-            const response = await fetch(`/api/resolve-log?logId=${logId}&note=${encodeURIComponent(extraNote)}`);
-            const result = await response.json();
-
-            // Если сервер не нашел файл resolve-log.js или выдал ошибку — выводим на экран!
-            if (!response.ok || !result.success) {
-                alert("Ошибка на сервере при закрытии: " + (result.error || "Файл resolve-log.js не найден на сервере!"));
-                btn.textContent = "Mark as Resolved ✓"; 
-                btn.disabled = false;
-                return; // Останавливаемся
-            }
+            const loggedInStaff = localStorage.getItem('loggedInStaff');
+            const staffMap = {
+                "Norayr Badalyan": "332487", "Petros Eghiazaryan": "418892", "Petros E.": "418892", "Mariam Djaradjian": "339159", "Mariam D.": "339159",
+                "Artak Badalyan": "332810", "Artak B.": "332810", "Argishti Shahbazian": "1005", "Argishti S.": "1005", "Gohar Aloyan": "1001", "Gohar A.": "1001",
+                "Rima Avetisyan": "1007", "Rima A.": "1007", "Lilit Avetisyan": "1009", "Lilit A.": "1009"
+            };
             
-            // 2. Дублируем сигнал в старую систему, чтобы погасить колокольчик (если он горит)
-            try {
-                const loggedInStaff = localStorage.getItem('loggedInStaff');
-                const staffMap = {
-                    "Norayr Badalyan": "332487", "Petros Eghiazaryan": "418892", "Petros E.": "418892", "Mariam Djaradjian": "339159", "Mariam D.": "339159",
-                    "Artak Badalyan": "332810", "Artak B.": "332810", "Argishti Shahbazian": "1005", "Argishti S.": "1005", "Gohar Aloyan": "1001", "Gohar A.": "1001",
-                    "Rima Avetisyan": "1007", "Rima A.": "1007", "Lilit Avetisyan": "1009", "Lilit A.": "1009"
-                };
-                const myStaffId = staffMap[loggedInStaff];
-                const res = await fetch(`/api/get-notifications?staffId=${myStaffId}`);
-                const data = await res.json();
-                
-                let targetNotifId = logId; 
-                if (data.success && data.notifications) {
-                    const matchedNotif = data.notifications.find(n => 
-                        (n.call_log_id && String(n.call_log_id) === String(logId)) || 
-                        (n.client_name && clientName && n.client_name.toLowerCase().includes(clientName.toLowerCase()))
-                    );
-                    if (matchedNotif) targetNotifId = matchedNotif.id;
+            const myStaffId = staffMap[loggedInStaff];
+            
+            const res = await fetch(`/api/get-notifications?staffId=${myStaffId}`);
+            const data = await res.json();
+            
+            let targetNotifId = ''; 
+            
+            if (data.success && data.notifications) {
+                const matchedNotif = data.notifications.find(n => {
+                    if (n.call_log_id && String(n.call_log_id) === String(logId)) return true;
+                    const nClient = n.client_name ? n.client_name.toLowerCase().trim() : "";
+                    const pClient = clientName ? clientName.toLowerCase().trim() : "";
+                    return (nClient && pClient && (nClient.includes(pClient) || pClient.includes(nClient)));
+                });
+
+                if (matchedNotif) {
+                    targetNotifId = matchedNotif.id;
                 }
-                await fetch(`/api/get-notifications?action=read&notificationId=${targetNotifId}&note=${encodeURIComponent(extraNote)}`);
-            } catch (err) { console.log("Old notif clear skipped"); }
+            }
 
-            closeJournalModal(); 
+            // ПЕРЕДАЕМ И logId (чтобы точно закрыть журнал) И notificationId (чтобы закрыть колокольчик)
+            await fetch(`/api/get-notifications?action=read&notificationId=${targetNotifId}&logId=${logId}&note=${encodeURIComponent(extraNote)}`);
             
+            closeJournalModal(); 
             if (typeof checkNotifications === "function") checkNotifications(); 
             
             await new Promise(resolve => setTimeout(resolve, 800));
             
             window.renderCallHistoryList(); 
         } catch (e) { 
-            alert('Сбой подключения. Убедись, что файл resolve-log.js сохранен на GitHub!'); 
+            alert('Server error'); 
         } finally { 
             btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; 
         }
