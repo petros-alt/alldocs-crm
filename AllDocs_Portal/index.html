@@ -1224,7 +1224,7 @@
         }
     };
 
-    window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
+  window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
         let extraNote = document.getElementById('jmResolveNote').value.trim();
         if (extraNote === "") { extraNote = "Task closed without comments"; }
         
@@ -1233,59 +1233,33 @@
 
         const btn = document.getElementById('jmResolveBtn');
         btn.textContent = "Saving..."; btn.disabled = true;
+        
         try {
-            const loggedInStaff = localStorage.getItem('loggedInStaff');
-            const staffMap = {
-                "Norayr Badalyan": "332487", "Petros Eghiazaryan": "418892", "Petros E.": "418892", "Mariam Djaradjian": "339159", "Mariam D.": "339159",
-                "Artak Badalyan": "332810", "Artak B.": "332810", "Argishti Shahbazian": "1005", "Argishti S.": "1005", "Gohar Aloyan": "1001", "Gohar A.": "1001",
-                "Rima Avetisyan": "1007", "Rima A.": "1007", "Lilit Avetisyan": "1009", "Lilit A.": "1009"
-            };
-            
-            const myStaffId = staffMap[loggedInStaff] || '000000';
+            // 1. Ищем, есть ли это уведомление в колокольчике прямо сейчас
             let targetNotifId = ''; 
-            
-            try {
-                const res = await fetch(`/api/get-notifications?staffId=${myStaffId}&t=${Date.now()}`, { cache: 'no-store' });
-                const data = await res.json();
-                
-                if (data.success && data.notifications) {
-                    const matchedNotif = data.notifications.find(n => {
-                        if (n.call_log_id && String(n.call_log_id) === String(logId)) return true;
-                        const nClient = n.client_name ? n.client_name.toLowerCase().trim() : "";
-                        const pClient = clientName ? clientName.toLowerCase().trim() : "";
-                        return (nClient && pClient && (nClient.includes(pClient) || pClient.includes(nClient)));
-                    });
-
-                    if (matchedNotif) {
-                        targetNotifId = matchedNotif.id;
-                    }
-                }
-            } catch (err) { console.log(err); }
-
-       const resolveUrl = `/api/get-notifications?action=read&notificationId=${targetNotifId}&logId=${logId}&note=${encodeURIComponent(extraNote)}&t=${Date.now()}`;
-
-            const resolveRes = await fetch(resolveUrl, { cache: 'no-store' });
-            const resolveData = await resolveRes.json();
-
-            if (!resolveData.success) {
-                console.error("Server error:", resolveData.error);
-                alert("Не удалось закрыть задачу на сервере.");
+            const matchedNotif = window.currentCrmNotifs.find(n => String(n.call_log_id) === String(logId));
+            if (matchedNotif) {
+                targetNotifId = matchedNotif.id;
             }
+
+            // 2. Отправляем сигнал на сервер
+            const resolveUrl = `/api/get-notifications?action=read&notificationId=${targetNotifId}&logId=${logId}&note=${encodeURIComponent(extraNote)}&t=${Date.now()}`;
+            const resolveRes = await fetch(resolveUrl, { cache: 'no-store' });
             
-            // Моментально удаляем из интерфейса колокольчика
+            // Защита от сбоя JSON: даже если сервер ругнется, мы идем дальше
+            try { await resolveRes.json(); } catch(e) {} 
+
+            // 3. МОМЕНТАЛЬНО удаляем задачу из колокольчика (гасим красную цифру)
             if (targetNotifId) {
                 window.currentCrmNotifs = window.currentCrmNotifs.filter(n => n.id !== targetNotifId);
-                updateUnifiedBell();
+                updateUnifiedBell(); 
             }
-
+            
             closeJournalModal(); 
-            if (typeof checkNotifications === "function") checkNotifications();
+            window.renderCallHistoryList(); // Просто перерисовываем журнал (статус изменится на Resolved)
             
-            await new Promise(resolve => setTimeout(resolve, 800));
-            
-            window.renderCallHistoryList(); 
         } catch (e) { 
-            alert('Сбой соединения с сервером. Попробуй еще раз.'); 
+            alert('Сбой сети, но задача могла быть закрыта. Проверьте журнал.'); 
         } finally { 
             btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; 
         }
@@ -1395,6 +1369,7 @@
             let urgentBadge = isUrgent ? `<span class="badge-status" style="background-color:#d32f2f; margin-left:8px; font-size: 10px; animation: pulseAlert 1.5s infinite;">🚨 URGENT</span>` : '';
 
             const tr = document.createElement('tr'); tr.className = 'journal-row';
+            tr.id = 'log-row-' + log.id; // Добавляем ID строке, чтобы потом ее найти!
             tr.style.cssText = urgentBg;
             
             tr.onclick = () => openJournalModal(log.client_name, log.client_phone, d.toLocaleString(), log.operator_name, st, badgeColor, cleanDesc, log.follow_up_notes, trackingBadge, log.id, displayStaff, isResolved, log.client_id);
@@ -1507,7 +1482,7 @@
         bellBtn.addEventListener('click', () => { notifDropdown.style.display = notifDropdown.style.display === 'block' ? 'none' : 'block'; });
         document.getElementById('closeDropdownBtn').addEventListener('click', () => { notifDropdown.style.display = 'none'; });
 
-       window.openNotifModal = function(id, clientName, message, createdAt) {
+window.openNotifModal = function(id, clientName, message, createdAt, logId) {
             currentActiveNotifId = id; 
             
             let isUrgent = message.includes('[🚨 URGENT]');
@@ -1544,18 +1519,34 @@
                 <div style="font-size: 15px;">${issueText}</div>
             `;
             
-            // Настраиваем кнопку перехода в Журнал
+            // Настраиваем умную кнопку перехода в Журнал
             const showBtn = document.getElementById('showInJournalBtn');
-            showBtn.onclick = function() {
-                closeNotifModal();
-                // Переключаем вкладку на Internal Call History
-                switchMainTab('tabHistoryContent', document.querySelectorAll('.tab-btn')[2]);
-                // Вставляем имя клиента в поиск и ищем
-                const searchInput = document.getElementById('historySearchInput');
-                searchInput.value = clientName || '';
-                document.getElementById('historyStatusFilter').value = 'Pending';
-                window.renderCallHistoryList();
-            };
+            if (showBtn) {
+                showBtn.onclick = function() {
+                    closeNotifModal();
+                    switchMainTab('tabHistoryContent', document.querySelectorAll('.tab-btn')[2]);
+                    
+                    document.getElementById('historySearchInput').value = ''; // Сбрасываем поиск
+                    document.getElementById('historyStatusFilter').value = 'All'; // Показываем все статусы
+                    document.getElementById('historyStaffDropdown').value = 'All'; // Показываем всех сотрудников
+                    
+                    window.renderCallHistoryList().then(() => {
+                        // Ждем пока таблица отрисуется, находим строку и подсвечиваем ее
+                        setTimeout(() => {
+                            if (logId) {
+                                const row = document.getElementById('log-row-' + logId);
+                                if (row) {
+                                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    const origBg = row.style.backgroundColor;
+                                    row.style.backgroundColor = '#ffe082'; // Желтая подсветка!
+                                    row.style.transition = 'background-color 1.5s ease';
+                                    setTimeout(() => row.style.backgroundColor = origBg, 2500); // Убираем через 2.5 сек
+                                }
+                            }
+                        }, 400);
+                    });
+                };
+            }
 
             notifDropdown.style.display = 'none'; 
             notifModal.style.display = 'flex';    
@@ -1611,7 +1602,7 @@ window.currentCrmNotifs = [];
                     let cleanMessage = msgText.replace(/\[🚨 URGENT\]/g, '').trim();
                     let shortMsg = cleanMessage.replace(/\n/g, ' ').substring(0, 65) + '...';
                     
-                    div.onclick = () => openNotifModal(notif.id, notif.client_name, notif.message, notif.created_at);
+                   div.onclick = () => openNotifModal(notif.id, notif.client_name, notif.message, notif.created_at, notif.call_log_id);
                     div.innerHTML = `
                         <div class="notif-title"><span>📞 ${notif.client_name || "Client"}</span>${tagHtml}</div>
                         <div class="notif-preview">${shortMsg}</div>
