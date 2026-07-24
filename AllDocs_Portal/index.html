@@ -1136,6 +1136,7 @@
         }
     };
 
+    // === ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАКРЫТИЯ ЖУРНАЛА ===
     window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
         let extraNote = document.getElementById('jmResolveNote').value.trim();
         if (extraNote === "") { extraNote = "Task closed without comments"; }
@@ -1145,8 +1146,40 @@
 
         const btn = document.getElementById('jmResolveBtn');
         btn.textContent = "Saving..."; btn.disabled = true;
+        
         try {
-            await fetch(`/api/get-notifications?action=read&notificationId=${logId}&note=${encodeURIComponent(extraNote)}`);
+            // 1. Находим правильного сотрудника
+            const loggedInStaff = localStorage.getItem('loggedInStaff');
+            const staffMap = {
+                "Norayr Badalyan": "332487", "Petros Eghiazaryan": "418892", "Petros E.": "418892", "Mariam Djaradjian": "339159", "Mariam D.": "339159",
+                "Artak Badalyan": "332810", "Artak B.": "332810", "Argishti Shahbazian": "1005", "Argishti S.": "1005", "Gohar Aloyan": "1001", "Gohar A.": "1001",
+                "Rima Avetisyan": "1007", "Rima A.": "1007", "Lilit Avetisyan": "1009", "Lilit A.": "1009"
+            };
+            
+            const targetStaffId = staffMap[assignedStaff] || staffMap[loggedInStaff] || "";
+            
+            // 2. Ищем ПРАВИЛЬНЫЙ ID уведомления
+            const res = await fetch(`/api/get-notifications?staffId=${targetStaffId}`);
+            const data = await res.json();
+            
+            let targetNotifId = logId; // Запасной вариант
+            
+            if (data.success && data.notifications) {
+                // Связываем Журнал и Колокольчик по имени клиента
+                const matchedNotif = data.notifications.find(n => {
+                    const nClient = n.client_name ? n.client_name.toLowerCase() : "";
+                    const pClient = clientName ? clientName.toLowerCase() : "";
+                    return (nClient && pClient && (nClient.includes(pClient) || pClient.includes(nClient)));
+                });
+
+                if (matchedNotif) {
+                    targetNotifId = matchedNotif.id;
+                }
+            }
+
+            // 3. Отправляем запрос с правильным ID, который сервер точно поймет
+            await fetch(`/api/get-notifications?action=read&notificationId=${targetNotifId}&note=${encodeURIComponent(extraNote)}`);
+            
             closeJournalModal(); 
             
             if (typeof checkNotifications === "function") checkNotifications(); 
