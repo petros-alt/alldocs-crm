@@ -310,6 +310,30 @@
     </div>
 </div>
 
+<!-- QUICK SMS REPLY MODAL -->
+<div class="modal-overlay" id="smsReplyModal">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-close" onclick="closeSmsReplyModal()">✖</div>
+        <h3 style="margin-top:0; color:var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">💬 Quick SMS Reply</h3>
+        
+        <div style="display:flex; justify-content:space-between; margin-bottom: 10px; font-size: 14px;">
+            <strong id="qsName" style="color:var(--accent-color);">Client Name</strong>
+            <span id="qsPhone" style="color:var(--secondary-color);">+1...</span>
+        </div>
+        
+        <div id="qsMessageText" style="background: #fdfaf6; padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px; font-size: 14.5px; line-height: 1.5; color: var(--primary-color);">
+            Client message goes here...
+        </div>
+        
+        <textarea id="qsReplyInput" placeholder="Type your reply to the client..." style="width:100%; min-height:80px; margin-bottom:15px; border: 2px solid #e0d8d3; border-radius: 8px; padding: 12px; outline: none; font-family: inherit; font-size: 14px; box-sizing: border-box;"></textarea>
+        
+        <div class="modal-actions" style="margin-top: 0; border: none; padding: 0;">
+            <button class="btn-cancel" onclick="closeSmsReplyModal()">Close</button>
+            <button class="btn-resolve" onclick="sendQuickSmsReply()" id="qsSendBtn">Send SMS ✉️</button>
+        </div>
+    </div>
+</div>
+
 <!-- PREVIEW MODAL (Master Calendar Preview) -->
 <div class="modal-overlay" id="previewModal">
     <div class="modal-content" style="width: 450px;">
@@ -332,7 +356,11 @@
             <div class="cd-avatar" id="cdAvatar">A</div>
             <div class="cd-info">
                 <h3 id="cdName">Client Name</h3>
-                <p id="cdPhone">📞 (000) 000-0000</p>
+                <p id="cdPhone">📞 
+
+
+(000) 000-0000
+</p>
                 <p style="font-size: 12px; margin-top: 5px;">Contact preference: Text</p>
             </div>
         </div>
@@ -1540,8 +1568,12 @@
             } catch (e) { alert('Server error'); } finally { btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; }
         };
 
- window.currentCrmNotifs = [];
-        window.currentSmsNotifs = [];
+window.currentCrmNotifs = [];
+        // 1. Учим систему ЗАПОМИНАТЬ непрочитанные СМС при перезагрузке
+        window.currentSmsNotifs = JSON.parse(localStorage.getItem('unreadSmsNotifs')) || [];
+        
+        // 2. Учим сканер запоминать, сколько сообщений он уже видел
+        let lastKnownMessageCount = parseInt(localStorage.getItem('lastKnownMessageCount')) || 0;
 
         function updateUnifiedBell() {
             const badge = document.getElementById('notifBadge');
@@ -1553,7 +1585,7 @@
                 badge.textContent = total;
                 notifList.innerHTML = '';
                 
-                // 1. Отрисовка SMS-уведомлений (сверху)
+                // Отрисовка SMS-уведомлений (сверху)
                 window.currentSmsNotifs.forEach((sms, index) => {
                     const div = document.createElement('div');
                     div.className = 'notif-item-modern';
@@ -1562,26 +1594,18 @@
                     let timeStr = new Date(sms.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
                     let shortMsg = sms.text.substring(0, 60) + '...';
                     
-                    div.onclick = () => {
-                        window.currentSmsNotifs.splice(index, 1);
-                        updateUnifiedBell(); // Обновляем счетчик
-                        
-                        switchMainTab('tabCalendarContent', document.querySelectorAll('.tab-btn')[1]);
-                        switchCalView('inbox');
-                        openChat(sms.phone, sms.name, sms.key);
-                        
-                        document.getElementById('notificationDropdown').style.display = 'none';
-                    };
+                    // КЛИК ТЕПЕРЬ ОТКРЫВАЕТ ОКНО БЫСТРОГО ОТВЕТА!
+                    div.onclick = () => openSmsReplyModal(index);
                     
                     div.innerHTML = `
-                        <div class="notif-title"><span>💬 SMS: ${sms.name}</span><span class="new-tag" style="background:#1976d2;">SMS</span></div>
+                        <div class="notif-title"><span>💬 SMS: ${sms.name}</span><span class="new-tag" style="background:#1976d2;">Reply</span></div>
                         <div class="notif-preview">${shortMsg}</div>
                         <div class="notif-time">🕒 ${timeStr}</div>
                     `;
                     notifList.appendChild(div);
                 });
 
-                // 2. Отрисовка CRM задач (снизу)
+                // Отрисовка CRM задач (снизу)
                 window.currentCrmNotifs.forEach(notif => {
                     const div = document.createElement('div');
                     let msgText = notif.message || "";
@@ -1607,6 +1631,62 @@
             }
         }
 
+        // === ФУНКЦИИ ОКНА БЫСТРОГО ОТВЕТА НА СМС ===
+        window.openSmsReplyModal = function(index) {
+            const sms = window.currentSmsNotifs[index];
+            if(!sms) return;
+            
+            document.getElementById('qsName').textContent = sms.name;
+            document.getElementById('qsPhone').textContent = sms.phone;
+            document.getElementById('qsMessageText').textContent = sms.text;
+            document.getElementById('qsReplyInput').value = '';
+            window.currentQuickReplyIndex = index;
+            
+            document.getElementById('notificationDropdown').style.display = 'none';
+            document.getElementById('smsReplyModal').style.display = 'flex';
+        };
+
+        window.closeSmsReplyModal = function() {
+            document.getElementById('smsReplyModal').style.display = 'none';
+        };
+
+        window.sendQuickSmsReply = async function() {
+            const index = window.currentQuickReplyIndex;
+            const sms = window.currentSmsNotifs[index];
+            const text = document.getElementById('qsReplyInput').value.trim();
+            if (!text || !sms) return;
+
+            const btn = document.getElementById('qsSendBtn');
+            btn.textContent = 'Sending...'; btn.disabled = true;
+
+            try {
+                let formattedPhone = sms.phone.replace(/[^\d+]/g, ''); 
+                if (formattedPhone.length === 10 && !formattedPhone.startsWith('+')) formattedPhone = '+1' + formattedPhone;
+                else if (formattedPhone.length === 11 && formattedPhone.startsWith('1')) formattedPhone = '+' + formattedPhone;
+
+                const zapierUrl = `https://hooks.zapier.com/hooks/catch/28342465/44ft1ex/?phone=${encodeURIComponent(formattedPhone)}&message=${encodeURIComponent(text)}`;
+                fetch(zapierUrl, { mode: 'no-cors' }).catch(e => console.log('Zapier error', e));
+
+                await window.loadMessages();
+                let msgs = window.globalMessages || [];
+                msgs.push({ phone: sms.phone || "No Phone", name: sms.name, text: text, timestamp: Date.now(), direction: 'out' });
+                await window.saveMessagesDb(msgs);
+
+                // Удаляем из непрочитанных в колокольчике
+                window.currentSmsNotifs.splice(index, 1);
+                localStorage.setItem('unreadSmsNotifs', JSON.stringify(window.currentSmsNotifs));
+                updateUnifiedBell();
+                closeSmsReplyModal();
+                
+                // Если Инбокс открыт на фоне - обновляем экран
+                if (document.getElementById('inboxWrapper').style.display === 'flex') {
+                    renderInboxList();
+                    if (currentChatKey === sms.key) openChat(sms.phone, sms.name, sms.key);
+                }
+            } catch(e) { alert('Error sending message'); } 
+            finally { btn.textContent = 'Send SMS ✉️'; btn.disabled = false; }
+        };
+
         // === ЖИВОЙ СКАНЕР SMS ===
         async function checkLiveMessages() {
             try {
@@ -1616,9 +1696,15 @@
                     if (data.success) {
                         const newMessages = data.messages || [];
                         if (newMessages.length > lastKnownMessageCount) {
+                            const isFirstRun = (lastKnownMessageCount === 0);
                             const addedMessages = newMessages.slice(lastKnownMessageCount);
+                            
                             window.globalMessages = newMessages;
                             lastKnownMessageCount = newMessages.length;
+                            localStorage.setItem('lastKnownMessageCount', lastKnownMessageCount);
+                            
+                            // Блокируем фантомные уведомления при первой загрузке
+                            if (isFirstRun) return; 
                             
                             let shouldPlaySound = false;
                             let needsChatRefresh = false;
@@ -1635,6 +1721,8 @@
                                     } else {
                                         shouldPlaySound = true;
                                         window.currentSmsNotifs.push({...msg, key: msgKey});
+                                        // Сохраняем уведомление на случай F5
+                                        localStorage.setItem('unreadSmsNotifs', JSON.stringify(window.currentSmsNotifs));
                                         
                                         if (window.Notification && Notification.permission === "granted") {
                                             new Notification("💬 New SMS from " + msg.name, { body: msg.text, icon: "https://i0.wp.com/alldocsconsulting.wpcomstaging.com/wp-content/uploads/2025/08/1.png" });
@@ -1650,7 +1738,6 @@
                             if (needsChatRefresh) { openChat(refreshPhone, refreshName, refreshKey); }
 
                             if (shouldPlaySound) {
-                                // Возвращен старый приятный звук колокольчика!
                                 bellSound.play().catch(e => console.log('Audio blocked'));
                                 
                                 const inboxBtn = document.getElementById('btnNavInbox');
@@ -1669,7 +1756,7 @@
         async function checkNotifications() {
             if (!myStaffId) return; 
             try {
-                // Антикэш для CRM задач
+                // Антикэш
                 const res = await fetch(`/api/get-notifications?staffId=${myStaffId}&t=${Date.now()}`);
                 const data = await res.json(); 
                 
@@ -1701,7 +1788,6 @@
                     window.currentCrmNotifs = [];
                 }
                 
-                // Перерисовываем и CRM задачи, и СМС вместе!
                 updateUnifiedBell(); 
             } catch(e) { console.log("Check Notif Error:", e); }
         }
