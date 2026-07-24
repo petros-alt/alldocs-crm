@@ -1737,8 +1737,10 @@ window.currentCrmNotifs = [];
                             if (document.getElementById('inboxWrapper').style.display === 'flex') { renderInboxList(); }
                             if (needsChatRefresh) { openChat(refreshPhone, refreshName, refreshKey); }
 
-                            if (shouldPlaySound) {
-                                bellSound.play().catch(e => console.log('Audio blocked'));
+                           if (shouldPlaySound) {
+                                // Запускаем нормальный мягкий звук колокольчика!
+                                const smsSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2870/2870-preview.mp3?v=2');
+                                smsSound.play().catch(e => console.log('Audio blocked'));
                                 
                                 const inboxBtn = document.getElementById('btnNavInbox');
                                 if (!inboxBtn.classList.contains('active')) {
