@@ -266,12 +266,9 @@
         <div style="font-size: 12px; color: var(--secondary-color); font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">💬 Transfer / Message Details:</div>
         <div id="modalMessage" style="background: #fdfaf6; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); border-left: 5px solid var(--accent-color); margin-bottom: 25px; line-height: 1.6; font-size: 14.5px; color: var(--primary-color);"></div>
         
-        <div style="font-size: 12px; color: #2e7d32; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">✍️ Add your resolution note:</div>
-        <textarea id="modalStaffNote" placeholder="e.g., Called client back, question resolved..." style="border: 2px solid #c8e6c9; background: #f1f8e9; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);"></textarea>
-        
         <div class="modal-actions" style="margin-top: 20px; border: none; padding: 0;">
             <button class="btn-cancel" onclick="closeNotifModal()">Close window</button>
-            <button class="btn-resolve" onclick="resolveNotification()" id="resolveBtn">Mark as Resolved ✓</button>
+            <button class="btn-resolve" id="showInJournalBtn" style="background: #1976d2; color: white;">🔍 Show in Journal</button>
         </div>
     </div>
 </div>
@@ -327,9 +324,11 @@
         
         <textarea id="qsReplyInput" placeholder="Type your reply to the client..." style="width:100%; min-height:80px; margin-bottom:15px; border: 2px solid #e0d8d3; border-radius: 8px; padding: 12px; outline: none; font-family: inherit; font-size: 14px; box-sizing: border-box;"></textarea>
         
-        <div class="modal-actions" style="margin-top: 0; border: none; padding: 0;">
+       <div class="modal-actions" style="margin-top: 0; border: none; padding: 0;">
             <button class="btn-cancel" onclick="closeSmsReplyModal()">Close</button>
+            <button class="btn-cancel" style="background: #ffebee; color: #d32f2f; border-color: #ffcdd2;" onclick="dismissSmsNotif()">Mark as Read</button>
             <button class="btn-resolve" onclick="sendQuickSmsReply()" id="qsSendBtn">Send SMS ✉️</button>
+        </div>
         </div>
     </div>
 </div>
@@ -1263,8 +1262,8 @@
                 }
             } catch (err) { console.log(err); }
 
-            const resolveUrl = `/api/get-notifications?action=read&notificationId=${targetNotifId}&logId=${logId}&note=${encodeURIComponent(extraNote)}&t=${Date.now()}`;
-            
+       const resolveUrl = `/api/get-notifications?action=read&notificationId=${targetNotifId}&logId=${logId}&note=${encodeURIComponent(extraNote)}&t=${Date.now()}`;
+
             const resolveRes = await fetch(resolveUrl, { cache: 'no-store' });
             const resolveData = await resolveRes.json();
 
@@ -1273,8 +1272,14 @@
                 alert("Не удалось закрыть задачу на сервере.");
             }
             
+            // Моментально удаляем из интерфейса колокольчика
+            if (targetNotifId) {
+                window.currentCrmNotifs = window.currentCrmNotifs.filter(n => n.id !== targetNotifId);
+                updateUnifiedBell();
+            }
+
             closeJournalModal(); 
-            if (typeof checkNotifications === "function") checkNotifications(); 
+            if (typeof checkNotifications === "function") checkNotifications();
             
             await new Promise(resolve => setTimeout(resolve, 800));
             
@@ -1502,7 +1507,7 @@
         bellBtn.addEventListener('click', () => { notifDropdown.style.display = notifDropdown.style.display === 'block' ? 'none' : 'block'; });
         document.getElementById('closeDropdownBtn').addEventListener('click', () => { notifDropdown.style.display = 'none'; });
 
-        window.openNotifModal = function(id, clientName, message, createdAt) {
+       window.openNotifModal = function(id, clientName, message, createdAt) {
             currentActiveNotifId = id; 
             
             let isUrgent = message.includes('[🚨 URGENT]');
@@ -1538,35 +1543,25 @@
                 </div>
                 <div style="font-size: 15px;">${issueText}</div>
             `;
-            document.getElementById('modalStaffNote').value = ""; 
+            
+            // Настраиваем кнопку перехода в Журнал
+            const showBtn = document.getElementById('showInJournalBtn');
+            showBtn.onclick = function() {
+                closeNotifModal();
+                // Переключаем вкладку на Internal Call History
+                switchMainTab('tabHistoryContent', document.querySelectorAll('.tab-btn')[2]);
+                // Вставляем имя клиента в поиск и ищем
+                const searchInput = document.getElementById('historySearchInput');
+                searchInput.value = clientName || '';
+                document.getElementById('historyStatusFilter').value = 'Pending';
+                window.renderCallHistoryList();
+            };
+
             notifDropdown.style.display = 'none'; 
             notifModal.style.display = 'flex';    
         };
 
         window.closeNotifModal = function() { notifModal.style.display = 'none'; currentActiveNotifId = null; };
-
-        window.resolveNotification = async function() {
-            if (!currentActiveNotifId) return;
-            
-            let extraNote = document.getElementById('modalStaffNote').value.trim();
-            if (extraNote === "") {
-                extraNote = "Task closed without comments";
-            }
-            
-            const resolvedTime = new Date().toLocaleString([], {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute:'2-digit'});
-            extraNote = extraNote + `\n\n[✅ Resolved at: ${resolvedTime}]`;
-
-            const btn = document.getElementById('resolveBtn');
-            btn.textContent = "Saving..."; btn.disabled = true;
-            try {
-                await fetch(`/api/get-notifications?action=read&notificationId=${currentActiveNotifId}&note=${encodeURIComponent(extraNote)}`);
-                closeNotifModal(); checkNotifications(); 
-                
-                await new Promise(resolve => setTimeout(resolve, 800));
-                
-                if (document.getElementById('tabHistoryContent').classList.contains('active')) window.renderCallHistoryList(); 
-            } catch (e) { alert('Server error'); } finally { btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; }
-        };
 
 window.currentCrmNotifs = [];
         // 1. Учим систему ЗАПОМИНАТЬ непрочитанные СМС при перезагрузке
@@ -1648,6 +1643,15 @@ window.currentCrmNotifs = [];
 
         window.closeSmsReplyModal = function() {
             document.getElementById('smsReplyModal').style.display = 'none';
+        };
+
+        // НОВАЯ ФУНКЦИЯ ОЧИСТКИ СМС ИЗ КОЛОКОЛЬЧИКА
+        window.dismissSmsNotif = function() {
+            const index = window.currentQuickReplyIndex;
+            window.currentSmsNotifs.splice(index, 1);
+            localStorage.setItem('unreadSmsNotifs', JSON.stringify(window.currentSmsNotifs));
+            updateUnifiedBell();
+            closeSmsReplyModal();
         };
 
         window.sendQuickSmsReply = async function() {
