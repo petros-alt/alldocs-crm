@@ -266,8 +266,9 @@
         <div style="font-size: 12px; color: var(--secondary-color); font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">💬 Transfer / Message Details:</div>
         <div id="modalMessage" style="background: #fdfaf6; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); border-left: 5px solid var(--accent-color); margin-bottom: 25px; line-height: 1.6; font-size: 14.5px; color: var(--primary-color);"></div>
         
-        <div class="modal-actions" style="margin-top: 20px; border: none; padding: 0;">
-            <button class="btn-cancel" onclick="closeNotifModal()">Close window</button>
+       <div class="modal-actions" style="margin-top: 20px; border: none; padding: 0;">
+            <button class="btn-cancel" onclick="closeNotifModal()">Close</button>
+            <button class="btn-cancel" style="background: #ffebee; color: #d32f2f; border-color: #ffcdd2;" onclick="dismissCrmNotif()">Mark as Read</button>
             <button class="btn-resolve" id="showInJournalBtn" style="background: #1976d2; color: white;">🔍 Show in Journal</button>
         </div>
     </div>
@@ -1224,7 +1225,7 @@
         }
     };
 
- window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
+window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
         let extraNote = document.getElementById('jmResolveNote').value.trim();
         if (extraNote === "") { extraNote = "Task closed without comments"; }
         
@@ -1235,44 +1236,46 @@
         btn.textContent = "Saving..."; btn.disabled = true;
         
         try {
-            // 1. Умный поиск задачи в колокольчике
             let targetNotifId = ''; 
-            const matchedNotif = window.currentCrmNotifs.find(n => {
-                if (n.call_log_id && String(n.call_log_id) === String(logId)) return true;
-                const nClient = n.client_name ? n.client_name.toLowerCase().trim() : "";
-                const pClient = clientName ? clientName.toLowerCase().trim() : "";
-                return (nClient && pClient && (nClient.includes(pClient) || pClient.includes(nClient)));
-            });
-
-            if (matchedNotif) {
-                targetNotifId = matchedNotif.id;
-                // СТАВИМ ЖЕСТКИЙ БЛОК, чтобы фоновый сканер больше никогда не вернул это уведомление
-                localStorage.setItem('block_notif_' + targetNotifId, 'true');
+            
+            // 1. АГРЕССИВНО ИЩЕМ И СТИРАЕМ ИЗ КОЛОКОЛЬЧИКА ПРЯМО СЕЙЧАС (до отправки на сервер!)
+            if (window.currentCrmNotifs) {
+                window.currentCrmNotifs = window.currentCrmNotifs.filter(n => {
+                    const isSameLog = n.call_log_id && String(n.call_log_id) === String(logId);
+                    const nClient = n.client_name ? n.client_name.toLowerCase().trim() : "";
+                    const pClient = clientName ? clientName.toLowerCase().trim() : "";
+                    const isSameClient = (nClient && pClient && (nClient.includes(pClient) || pClient.includes(nClient)));
+                    
+                    if (isSameLog || isSameClient) {
+                        targetNotifId = n.id; 
+                        localStorage.setItem('block_notif_' + n.id, 'true'); // Блокируем навсегда
+                        return false; // Выкидываем из колокольчика
+                    }
+                    return true;
+                });
+                updateUnifiedBell(); // Гасим красную цифру мгновенно!
             }
+
             if (logId) {
                 localStorage.setItem('block_log_' + logId, 'true');
             }
 
-            // 2. Отправляем сигнал на сервер (асинхронно, не ждем ответа, чтобы не тормозить интерфейс)
-            const resolveUrl = `/api/get-notifications?action=read&notificationId=${targetNotifId}&logId=${logId}&note=${encodeURIComponent(extraNote)}&t=${Date.now()}`;
-            fetch(resolveUrl, { cache: 'no-store' }).catch(e => console.log(e));
+            // 2. МОМЕНТАЛЬНО ЗАКРЫВАЕМ ОКНО
+            document.getElementById('journalViewModal').style.display = 'none';
 
-            // 3. АГРЕССИВНО вычищаем задачу из колокольчика прямо сейчас
-            window.currentCrmNotifs = window.currentCrmNotifs.filter(n => {
-                const isSameId = targetNotifId && n.id === targetNotifId;
-                const isSameLog = n.call_log_id && String(n.call_log_id) === String(logId);
-                const nClient = n.client_name ? n.client_name.toLowerCase().trim() : "";
-                const pClient = clientName ? clientName.toLowerCase().trim() : "";
-                const isSameClient = (nClient && pClient && (nClient.includes(pClient) || pClient.includes(nClient)));
-                return !(isSameId || isSameLog || isSameClient); 
-            });
-            updateUnifiedBell(); 
+            // 3. Отправляем сигнал на сервер В ФОНЕ (не ждем ответа, чтобы ничего не висло)
+            const resolveUrl = `/api/get-notifications?action=read&notificationId=${targetNotifId}&logId=${logId}&note=${encodeURIComponent(extraNote)}&t=${Date.now()}`;
+            fetch(resolveUrl, { cache: 'no-store' }).catch(e => console.log("Server sync delayed", e));
+
+            // 4. Перерисовываем Журнал
+            await window.renderCallHistoryList(); 
             
-            closeJournalModal(); 
-            window.renderCallHistoryList(); // Перерисовываем журнал (статус изменится на Resolved)
-            
+            setTimeout(() => alert('✅ Task successfully marked as resolved!'), 100);
+
         } catch (e) {
             console.error(e);
+            document.getElementById('journalViewModal').style.display = 'none';
+            await window.renderCallHistoryList();
         } finally { 
             btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; 
         }
@@ -1532,29 +1535,29 @@ window.openNotifModal = function(id, clientName, message, createdAt, logId) {
                 <div style="font-size: 15px;">${issueText}</div>
             `;
             
-           // Настраиваем умную кнопку перехода в Журнал
+         // Настраиваем умную кнопку перехода в Журнал
             const showBtn = document.getElementById('showInJournalBtn');
             if (showBtn) {
                 showBtn.onclick = async function() {
                     closeNotifModal();
                     switchMainTab('tabHistoryContent', document.querySelectorAll('.tab-btn')[2]);
                     
-                    // Вписываем имя клиента в поиск, чтобы изолировать нужную строку!
+                    // Сбрасываем фильтры, вписываем имя
                     document.getElementById('historySearchInput').value = clientName || ''; 
                     document.getElementById('historyStatusFilter').value = 'All'; 
                     document.getElementById('historyStaffDropdown').value = 'All'; 
                     
-                    // ЖДЕМ полной загрузки таблицы!
+                    // ЖДЕМ полной загрузки таблицы без таймаутов!
                     await window.renderCallHistoryList();
                     
+                    // Даем браузеру 100мс на отрисовку HTML, затем ищем
                     setTimeout(() => {
                         let row = null;
                         if (logId) row = document.getElementById('log-row-' + logId);
                         
-                        // Резервный поиск по имени клиента, если ID не сработал
                         if (!row && clientName) {
                             const rows = document.querySelectorAll('.journal-row');
-                            row = Array.from(rows).find(r => r.innerText.includes(clientName));
+                            row = Array.from(rows).find(r => r.innerText.toLowerCase().includes(clientName.toLowerCase()));
                         }
 
                         if (row) {
@@ -1562,17 +1565,33 @@ window.openNotifModal = function(id, clientName, message, createdAt, logId) {
                             const origBg = row.style.backgroundColor;
                             row.style.backgroundColor = '#ffe082'; // Яркая желтая подсветка!
                             row.style.transition = 'background-color 1.5s ease';
-                            setTimeout(() => row.style.backgroundColor = origBg, 2500); 
+                            setTimeout(() => row.style.backgroundColor = origBg, 3000); 
                         }
-                    }, 500); // Даем браузеру полсекунды на отрисовку
+                    }, 100); 
                 };
             }
-
             notifDropdown.style.display = 'none'; 
             notifModal.style.display = 'flex';    
         };
 
-        window.closeNotifModal = function() { notifModal.style.display = 'none'; currentActiveNotifId = null; };
+       window.closeNotifModal = function() { notifModal.style.display = 'none'; currentActiveNotifId = null; };
+
+        // НОВАЯ ФУНКЦИЯ ДЛЯ УДАЛЕНИЯ УВЕДОМЛЕНИЙ CRM (ОБРАТНЫХ)
+        window.dismissCrmNotif = async function() {
+            if (!currentActiveNotifId) return;
+            const notifId = currentActiveNotifId;
+            
+            // 1. Убираем с экрана
+            window.currentCrmNotifs = window.currentCrmNotifs.filter(n => String(n.id) !== String(notifId));
+            updateUnifiedBell();
+            closeNotifModal();
+
+            // 2. Блокируем навсегда
+            localStorage.setItem('block_notif_' + notifId, 'true');
+
+            // 3. Сообщаем серверу, что прочитано (в фоне)
+            fetch(`/api/get-notifications?action=read&notificationId=${notifId}&t=${Date.now()}`).catch(e=>{});
+        };
 
 window.currentCrmNotifs = [];
         // 1. Учим систему ЗАПОМИНАТЬ непрочитанные СМС при перезагрузке
