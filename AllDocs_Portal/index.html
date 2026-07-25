@@ -1238,7 +1238,7 @@ window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
         try {
             let targetNotifId = ''; 
             
-            // 1. АГРЕССИВНО ИЩЕМ И СТИРАЕМ ИЗ КОЛОКОЛЬЧИКА ПРЯМО СЕЙЧАС (до отправки на сервер!)
+            // 1. АГРЕССИВНО ИЩЕМ И СТИРАЕМ ИЗ КОЛОКОЛЬЧИКА ПРЯМО СЕЙЧАС
             if (window.currentCrmNotifs) {
                 window.currentCrmNotifs = window.currentCrmNotifs.filter(n => {
                     const isSameLog = n.call_log_id && String(n.call_log_id) === String(logId);
@@ -1256,26 +1256,29 @@ window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
                 updateUnifiedBell(); // Гасим красную цифру мгновенно!
             }
 
-            if (logId) {
-                localStorage.setItem('block_log_' + logId, 'true');
-            }
+            if (logId) { localStorage.setItem('block_log_' + logId, 'true'); }
 
             // 2. МОМЕНТАЛЬНО ЗАКРЫВАЕМ ОКНО
             document.getElementById('journalViewModal').style.display = 'none';
 
-            // 3. Отправляем сигнал на сервер В ФОНЕ (не ждем ответа, чтобы ничего не висло)
+            // 3. Отправляем сигнал на сервер В ФОНЕ (вообще не ждем ответа!)
             const resolveUrl = `/api/get-notifications?action=read&notificationId=${targetNotifId}&logId=${logId}&note=${encodeURIComponent(extraNote)}&t=${Date.now()}`;
             fetch(resolveUrl, { cache: 'no-store' }).catch(e => console.log("Server sync delayed", e));
 
-            // 4. Перерисовываем Журнал
-            await window.renderCallHistoryList(); 
+            // 4. ОПТИМИСТИЧНОЕ ОБНОВЛЕНИЕ ЖУРНАЛА
+            // Вписываем данные прямо в память браузера, чтобы статус переключился МГНОВЕННО
+            const targetLog = window.globalCallLogs.find(l => String(l.id) === String(logId));
+            if (targetLog) {
+                targetLog.follow_up_notes = extraNote;
+            }
+            window.applyHistoryFilters(); // Перерисовываем таблицу (она станет зеленой)
             
             setTimeout(() => alert('✅ Task successfully marked as resolved!'), 100);
 
         } catch (e) {
             console.error(e);
             document.getElementById('journalViewModal').style.display = 'none';
-            await window.renderCallHistoryList();
+            window.applyHistoryFilters();
         } finally { 
             btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; 
         }
