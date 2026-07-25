@@ -1225,7 +1225,7 @@
         }
     };
 
-window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
+window.resolveFromJournal = function(logId, clientName, assignedStaff) {
         let extraNote = document.getElementById('jmResolveNote').value.trim();
         if (extraNote === "") { extraNote = "Task closed without comments"; }
         
@@ -1238,7 +1238,7 @@ window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
         try {
             let targetNotifId = ''; 
             
-            // 1. СТИРАЕМ ИЗ КОЛОКОЛЬЧИКА
+            // 1. АГРЕССИВНО ИЩЕМ И СТИРАЕМ ИЗ КОЛОКОЛЬЧИКА ПРЯМО СЕЙЧАС
             if (window.currentCrmNotifs) {
                 window.currentCrmNotifs = window.currentCrmNotifs.filter(n => {
                     const isSameLog = n.call_log_id && String(n.call_log_id) === String(logId);
@@ -1253,29 +1253,53 @@ window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
                     }
                     return true;
                 });
-                updateUnifiedBell(); // Гасим красную цифру
+                updateUnifiedBell(); // Гасим красную цифру мгновенно!
             }
 
             if (logId) {
                 localStorage.setItem('block_log_' + logId, 'true');
             }
 
-            // 2. МГНОВЕННО МЕНЯЕМ СТАТУС В ПАМЯТИ (без запроса к серверу!)
-            const targetLog = window.globalCallLogs.find(l => String(l.id) === String(logId));
-            if (targetLog) {
-                targetLog.follow_up_notes = extraNote; // Вписываем заметку, это автоматически делает статус Resolved
-            }
-
-            // 3. ЗАКРЫВАЕМ ОКНО
+            // 2. МОМЕНТАЛЬНО ЗАКРЫВАЕМ ОКНО
             document.getElementById('journalViewModal').style.display = 'none';
 
-            // 4. ПЕРЕРИСОВЫВАЕМ ТАБЛИЦУ локально (она сразу станет зеленой)
-            window.applyHistoryFilters(); 
+            // 3. ЖЕЛЕЗОБЕТОННО МЕНЯЕМ СТАТУС ПРЯМО В HTML-ТАБЛИЦЕ
+            if (logId && logId !== 'null' && logId !== 'undefined') {
+                const row = document.getElementById('log-row-' + logId);
+                if (row) {
+                    const cells = row.getElementsByTagName('td');
+                    if (cells.length >= 4) {
+                        // Физически меняем ячейку статуса на зеленую
+                        cells[3].innerHTML = `<span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">✅ Resolved<br><span style="font-size:10px; font-weight:normal;">(${assignedStaff})</span></span>`;
+                    }
+                    
+                    // Записываем заметку в память, чтобы при сортировке она не слетела
+                    const targetLog = window.globalCallLogs.find(l => String(l.id) === String(logId));
+                    if (targetLog) { targetLog.follow_up_notes = extraNote; }
+                    
+                    // Красим строку в приятный зеленый цвет успеха на 2 секунды
+                    const origBg = row.style.backgroundColor;
+                    row.style.backgroundColor = '#c8e6c9';
+                    setTimeout(() => { row.style.backgroundColor = origBg; }, 2000);
+                } else {
+                    // Если вдруг строка не найдена, пробуем обычную перерисовку
+                    const targetLog = window.globalCallLogs.find(l => String(l.id) === String(logId));
+                    if (targetLog) targetLog.follow_up_notes = extraNote;
+                    window.applyHistoryFilters();
+                }
+            } else {
+                window.applyHistoryFilters();
+            }
 
-            // 5. Отправляем сигнал на сервер В ФОНЕ (не ждем ответа)
+            // 4. ОТПРАВЛЯЕМ СИГНАЛ НА СЕРВЕР В ФОНЕ (Ничего не ждем!)
             const resolveUrl = `/api/get-notifications?action=read&notificationId=${targetNotifId}&logId=${logId}&note=${encodeURIComponent(extraNote)}&t=${Date.now()}`;
-            fetch(resolveUrl, { cache: 'no-store' }).catch(e => console.log("Server sync delayed", e));
-            
+            fetch(resolveUrl, { cache: 'no-store' })
+                .then(() => {
+                    // Через 2 секунды, когда сервер всё сохранил, тихо обновляем базу в фоне
+                    setTimeout(() => window.renderCallHistoryList(), 2000);
+                })
+                .catch(e => console.log(e));
+
         } catch (e) {
             console.error(e);
             document.getElementById('journalViewModal').style.display = 'none';
