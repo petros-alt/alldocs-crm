@@ -1234,10 +1234,16 @@
         const btn = document.getElementById('jmResolveBtn');
         btn.textContent = "Saving..."; btn.disabled = true;
         
-        try {
-            // 1. Ищем, есть ли это уведомление в колокольчике прямо сейчас
+       try {
+            // 1. Умный поиск задачи (по ID звонка ИЛИ по имени клиента)
             let targetNotifId = ''; 
-            const matchedNotif = window.currentCrmNotifs.find(n => String(n.call_log_id) === String(logId));
+            const matchedNotif = window.currentCrmNotifs.find(n => {
+                if (n.call_log_id && String(n.call_log_id) === String(logId)) return true;
+                const nClient = n.client_name ? n.client_name.toLowerCase().trim() : "";
+                const pClient = clientName ? clientName.toLowerCase().trim() : "";
+                return (nClient && pClient && (nClient.includes(pClient) || pClient.includes(nClient)));
+            });
+
             if (matchedNotif) {
                 targetNotifId = matchedNotif.id;
             }
@@ -1245,20 +1251,23 @@
             // 2. Отправляем сигнал на сервер
             const resolveUrl = `/api/get-notifications?action=read&notificationId=${targetNotifId}&logId=${logId}&note=${encodeURIComponent(extraNote)}&t=${Date.now()}`;
             const resolveRes = await fetch(resolveUrl, { cache: 'no-store' });
-            
-            // Защита от сбоя JSON: даже если сервер ругнется, мы идем дальше
             try { await resolveRes.json(); } catch(e) {} 
 
-            // 3. МОМЕНТАЛЬНО удаляем задачу из колокольчика (гасим красную цифру)
-            if (targetNotifId) {
-                window.currentCrmNotifs = window.currentCrmNotifs.filter(n => n.id !== targetNotifId);
-                updateUnifiedBell(); 
-            }
+            // 3. АГРЕССИВНО удаляем задачу из колокольчика сразу по всем параметрам
+            window.currentCrmNotifs = window.currentCrmNotifs.filter(n => {
+                const isSameId = targetNotifId && n.id === targetNotifId;
+                const isSameLog = n.call_log_id && String(n.call_log_id) === String(logId);
+                const nClient = n.client_name ? n.client_name.toLowerCase().trim() : "";
+                const pClient = clientName ? clientName.toLowerCase().trim() : "";
+                const isSameClient = (nClient && pClient && (nClient.includes(pClient) || pClient.includes(nClient)));
+                return !(isSameId || isSameLog || isSameClient); // Вычищаем всё, что совпадает!
+            });
+            updateUnifiedBell(); 
             
             closeJournalModal(); 
-            window.renderCallHistoryList(); // Просто перерисовываем журнал (статус изменится на Resolved)
+            window.renderCallHistoryList(); // Перерисовываем журнал
             
-        } catch (e) { 
+        } catch (e) {
             alert('Сбой сети, но задача могла быть закрыта. Проверьте журнал.'); 
         } finally { 
             btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; 
@@ -1366,10 +1375,10 @@
             if (typeF !== 'All' && !st.includes(typeF)) return;
             if (staffF !== 'All' && displayStaff !== staffF && log.operator_name !== staffF) return;
 
-            let urgentBadge = isUrgent ? `<span class="badge-status" style="background-color:#d32f2f; margin-left:8px; font-size: 10px; animation: pulseAlert 1.5s infinite;">🚨 URGENT</span>` : '';
+           let urgentBadge = isUrgent ? `<span class="badge-status" style="background-color:#d32f2f; margin-left:8px; font-size: 10px; animation: pulseAlert 1.5s infinite;">🚨 URGENT</span>` : '';
 
             const tr = document.createElement('tr'); tr.className = 'journal-row';
-            tr.id = 'log-row-' + log.id; // Добавляем ID строке, чтобы потом ее найти!
+            tr.id = 'log-row-' + log.id; // КРИТИЧЕСКИ ВАЖНО: Добавляем ID для поиска!
             tr.style.cssText = urgentBg;
             
             tr.onclick = () => openJournalModal(log.client_name, log.client_phone, d.toLocaleString(), log.operator_name, st, badgeColor, cleanDesc, log.follow_up_notes, trackingBadge, log.id, displayStaff, isResolved, log.client_id);
@@ -1526,9 +1535,10 @@ window.openNotifModal = function(id, clientName, message, createdAt, logId) {
                     closeNotifModal();
                     switchMainTab('tabHistoryContent', document.querySelectorAll('.tab-btn')[2]);
                     
-                    document.getElementById('historySearchInput').value = ''; // Сбрасываем поиск
-                    document.getElementById('historyStatusFilter').value = 'All'; // Показываем все статусы
-                    document.getElementById('historyStaffDropdown').value = 'All'; // Показываем всех сотрудников
+                   // Вписываем имя клиента в поиск, чтобы изолировать нужную строку!
+                    document.getElementById('historySearchInput').value = clientName || ''; 
+                    document.getElementById('historyStatusFilter').value = 'All'; 
+                    document.getElementById('historyStaffDropdown').value = 'All';
                     
                     window.renderCallHistoryList().then(() => {
                         // Ждем пока таблица отрисуется, находим строку и подсвечиваем ее
@@ -1602,7 +1612,8 @@ window.currentCrmNotifs = [];
                     let cleanMessage = msgText.replace(/\[🚨 URGENT\]/g, '').trim();
                     let shortMsg = cleanMessage.replace(/\n/g, ' ').substring(0, 65) + '...';
                     
-                   div.onclick = () => openNotifModal(notif.id, notif.client_name, notif.message, notif.created_at, notif.call_log_id);
+                  // ДОБАВЛЕНО: notif.call_log_id
+                    div.onclick = () => openNotifModal(notif.id, notif.client_name, notif.message, notif.created_at, notif.call_log_id);
                     div.innerHTML = `
                         <div class="notif-title"><span>📞 ${notif.client_name || "Client"}</span>${tagHtml}</div>
                         <div class="notif-preview">${shortMsg}</div>
