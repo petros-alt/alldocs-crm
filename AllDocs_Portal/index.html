@@ -1225,7 +1225,7 @@
         }
     };
 
-window.resolveFromJournal = function(logId, clientName, assignedStaff) {
+ window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
         let extraNote = document.getElementById('jmResolveNote').value.trim();
         if (extraNote === "") { extraNote = "Task closed without comments"; }
         
@@ -1234,75 +1234,53 @@ window.resolveFromJournal = function(logId, clientName, assignedStaff) {
 
         const btn = document.getElementById('jmResolveBtn');
         btn.textContent = "Saving..."; btn.disabled = true;
-        
         try {
+            const loggedInStaff = localStorage.getItem('loggedInStaff');
+            const staffMap = {
+                "Norayr Badalyan": "332487", "Petros Eghiazaryan": "418892", "Petros E.": "418892", "Mariam Djaradjian": "339159", "Mariam D.": "339159",
+                "Artak Badalyan": "332810", "Artak B.": "332810", "Argishti Shahbazian": "1005", "Argishti S.": "1005", "Gohar Aloyan": "1001", "Gohar A.": "1001",
+                "Rima Avetisyan": "1007", "Rima A.": "1007", "Lilit Avetisyan": "1009", "Lilit A.": "1009"
+            };
+            
+            const myStaffId = staffMap[loggedInStaff] || '000000';
             let targetNotifId = ''; 
             
-            // 1. АГРЕССИВНО ИЩЕМ И СТИРАЕМ ИЗ КОЛОКОЛЬЧИКА ПРЯМО СЕЙЧАС
-            if (window.currentCrmNotifs) {
-                window.currentCrmNotifs = window.currentCrmNotifs.filter(n => {
-                    const isSameLog = n.call_log_id && String(n.call_log_id) === String(logId);
-                    const nClient = n.client_name ? n.client_name.toLowerCase().trim() : "";
-                    const pClient = clientName ? clientName.toLowerCase().trim() : "";
-                    const isSameClient = (nClient && pClient && (nClient.includes(pClient) || pClient.includes(nClient)));
-                    
-                    if (isSameLog || isSameClient) {
-                        targetNotifId = n.id; 
-                        localStorage.setItem('block_notif_' + n.id, 'true'); // Блокируем навсегда
-                        return false; 
+            try {
+                const res = await fetch(`/api/get-notifications?staffId=${myStaffId}&t=${Date.now()}`, { cache: 'no-store' });
+                const data = await res.json();
+                
+                if (data.success && data.notifications) {
+                    const matchedNotif = data.notifications.find(n => {
+                        if (n.call_log_id && String(n.call_log_id) === String(logId)) return true;
+                        const nClient = n.client_name ? n.client_name.toLowerCase().trim() : "";
+                        const pClient = clientName ? clientName.toLowerCase().trim() : "";
+                        return (nClient && pClient && (nClient.includes(pClient) || pClient.includes(nClient)));
+                    });
+
+                    if (matchedNotif) {
+                        targetNotifId = matchedNotif.id;
                     }
-                    return true;
-                });
-                updateUnifiedBell(); // Гасим красную цифру мгновенно!
-            }
-
-            if (logId) {
-                localStorage.setItem('block_log_' + logId, 'true');
-            }
-
-            // 2. МОМЕНТАЛЬНО ЗАКРЫВАЕМ ОКНО
-            document.getElementById('journalViewModal').style.display = 'none';
-
-            // 3. ЖЕЛЕЗОБЕТОННО МЕНЯЕМ СТАТУС ПРЯМО В HTML-ТАБЛИЦЕ
-            if (logId && logId !== 'null' && logId !== 'undefined') {
-                const row = document.getElementById('log-row-' + logId);
-                if (row) {
-                    const cells = row.getElementsByTagName('td');
-                    if (cells.length >= 4) {
-                        // Физически меняем ячейку статуса на зеленую
-                        cells[3].innerHTML = `<span style="font-size: 12px; background: #e8f5e9; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-weight:bold; display: inline-block;">✅ Resolved<br><span style="font-size:10px; font-weight:normal;">(${assignedStaff})</span></span>`;
-                    }
-                    
-                    // Записываем заметку в память, чтобы при сортировке она не слетела
-                    const targetLog = window.globalCallLogs.find(l => String(l.id) === String(logId));
-                    if (targetLog) { targetLog.follow_up_notes = extraNote; }
-                    
-                    // Красим строку в приятный зеленый цвет успеха на 2 секунды
-                    const origBg = row.style.backgroundColor;
-                    row.style.backgroundColor = '#c8e6c9';
-                    setTimeout(() => { row.style.backgroundColor = origBg; }, 2000);
-                } else {
-                    // Если вдруг строка не найдена, пробуем обычную перерисовку
-                    const targetLog = window.globalCallLogs.find(l => String(l.id) === String(logId));
-                    if (targetLog) targetLog.follow_up_notes = extraNote;
-                    window.applyHistoryFilters();
                 }
-            } else {
-                window.applyHistoryFilters();
-            }
+            } catch (err) { console.log(err); }
 
-            // 4. ОТПРАВЛЯЕМ СИГНАЛ НА СЕРВЕР В ФОНЕ (Ничего не ждем!)
             const resolveUrl = `/api/get-notifications?action=read&notificationId=${targetNotifId}&logId=${logId}&note=${encodeURIComponent(extraNote)}&t=${Date.now()}`;
-            fetch(resolveUrl, { cache: 'no-store' })
-                .then(() => {
-                    // Через 2 секунды, когда сервер всё сохранил, тихо обновляем базу в фоне
-                    setTimeout(() => window.renderCallHistoryList(), 2000);
-                })
-                .catch(e => console.log(e));
+            
+            const resolveRes = await fetch(resolveUrl, { cache: 'no-store' });
+            const resolveData = await resolveRes.json();
 
-        } catch (e) {
-            console.error(e);
-            document.getElementById('journalViewModal').style.display = 'none';
+            if (!resolveData.success) {
+                console.error("Server error:", resolveData.error);
+                alert("Не удалось закрыть задачу на сервере.");
+            }
+            
+            closeJournalModal(); 
+            if (typeof checkNotifications === "function") checkNotifications(); 
+            
+            await new Promise(resolve => setTimeout(resolve, 800));
+            
+            window.renderCallHistoryList(); 
+        } catch (e) { 
+            alert('Сбой соединения с сервером. Попробуй еще раз.'); 
         } finally { 
             btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; 
         }
