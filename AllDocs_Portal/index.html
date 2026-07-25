@@ -1224,7 +1224,7 @@
         }
     };
 
-  window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
+ window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
         let extraNote = document.getElementById('jmResolveNote').value.trim();
         if (extraNote === "") { extraNote = "Task closed without comments"; }
         
@@ -1234,8 +1234,8 @@
         const btn = document.getElementById('jmResolveBtn');
         btn.textContent = "Saving..."; btn.disabled = true;
         
-       try {
-            // 1. Умный поиск задачи (по ID звонка ИЛИ по имени клиента)
+        try {
+            // 1. Умный поиск задачи в колокольчике
             let targetNotifId = ''; 
             const matchedNotif = window.currentCrmNotifs.find(n => {
                 if (n.call_log_id && String(n.call_log_id) === String(logId)) return true;
@@ -1246,29 +1246,33 @@
 
             if (matchedNotif) {
                 targetNotifId = matchedNotif.id;
+                // СТАВИМ ЖЕСТКИЙ БЛОК, чтобы фоновый сканер больше никогда не вернул это уведомление
+                localStorage.setItem('block_notif_' + targetNotifId, 'true');
+            }
+            if (logId) {
+                localStorage.setItem('block_log_' + logId, 'true');
             }
 
-            // 2. Отправляем сигнал на сервер
+            // 2. Отправляем сигнал на сервер (асинхронно, не ждем ответа, чтобы не тормозить интерфейс)
             const resolveUrl = `/api/get-notifications?action=read&notificationId=${targetNotifId}&logId=${logId}&note=${encodeURIComponent(extraNote)}&t=${Date.now()}`;
-            const resolveRes = await fetch(resolveUrl, { cache: 'no-store' });
-            try { await resolveRes.json(); } catch(e) {} 
+            fetch(resolveUrl, { cache: 'no-store' }).catch(e => console.log(e));
 
-            // 3. АГРЕССИВНО удаляем задачу из колокольчика сразу по всем параметрам
+            // 3. АГРЕССИВНО вычищаем задачу из колокольчика прямо сейчас
             window.currentCrmNotifs = window.currentCrmNotifs.filter(n => {
                 const isSameId = targetNotifId && n.id === targetNotifId;
                 const isSameLog = n.call_log_id && String(n.call_log_id) === String(logId);
                 const nClient = n.client_name ? n.client_name.toLowerCase().trim() : "";
                 const pClient = clientName ? clientName.toLowerCase().trim() : "";
                 const isSameClient = (nClient && pClient && (nClient.includes(pClient) || pClient.includes(nClient)));
-                return !(isSameId || isSameLog || isSameClient); // Вычищаем всё, что совпадает!
+                return !(isSameId || isSameLog || isSameClient); 
             });
             updateUnifiedBell(); 
             
             closeJournalModal(); 
-            window.renderCallHistoryList(); // Перерисовываем журнал
+            window.renderCallHistoryList(); // Перерисовываем журнал (статус изменится на Resolved)
             
         } catch (e) {
-            alert('Сбой сети, но задача могла быть закрыта. Проверьте журнал.'); 
+            console.error(e);
         } finally { 
             btn.textContent = "Mark as Resolved ✓"; btn.disabled = false; 
         }
@@ -1528,33 +1532,39 @@ window.openNotifModal = function(id, clientName, message, createdAt, logId) {
                 <div style="font-size: 15px;">${issueText}</div>
             `;
             
-            // Настраиваем умную кнопку перехода в Журнал
+           // Настраиваем умную кнопку перехода в Журнал
             const showBtn = document.getElementById('showInJournalBtn');
             if (showBtn) {
-                showBtn.onclick = function() {
+                showBtn.onclick = async function() {
                     closeNotifModal();
                     switchMainTab('tabHistoryContent', document.querySelectorAll('.tab-btn')[2]);
                     
-                   // Вписываем имя клиента в поиск, чтобы изолировать нужную строку!
+                    // Вписываем имя клиента в поиск, чтобы изолировать нужную строку!
                     document.getElementById('historySearchInput').value = clientName || ''; 
                     document.getElementById('historyStatusFilter').value = 'All'; 
-                    document.getElementById('historyStaffDropdown').value = 'All';
+                    document.getElementById('historyStaffDropdown').value = 'All'; 
                     
-                    window.renderCallHistoryList().then(() => {
-                        // Ждем пока таблица отрисуется, находим строку и подсвечиваем ее
-                        setTimeout(() => {
-                            if (logId) {
-                                const row = document.getElementById('log-row-' + logId);
-                                if (row) {
-                                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                    const origBg = row.style.backgroundColor;
-                                    row.style.backgroundColor = '#ffe082'; // Желтая подсветка!
-                                    row.style.transition = 'background-color 1.5s ease';
-                                    setTimeout(() => row.style.backgroundColor = origBg, 2500); // Убираем через 2.5 сек
-                                }
-                            }
-                        }, 400);
-                    });
+                    // ЖДЕМ полной загрузки таблицы!
+                    await window.renderCallHistoryList();
+                    
+                    setTimeout(() => {
+                        let row = null;
+                        if (logId) row = document.getElementById('log-row-' + logId);
+                        
+                        // Резервный поиск по имени клиента, если ID не сработал
+                        if (!row && clientName) {
+                            const rows = document.querySelectorAll('.journal-row');
+                            row = Array.from(rows).find(r => r.innerText.includes(clientName));
+                        }
+
+                        if (row) {
+                            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            const origBg = row.style.backgroundColor;
+                            row.style.backgroundColor = '#ffe082'; // Яркая желтая подсветка!
+                            row.style.transition = 'background-color 1.5s ease';
+                            setTimeout(() => row.style.backgroundColor = origBg, 2500); 
+                        }
+                    }, 500); // Даем браузеру полсекунды на отрисовку
                 };
             }
 
@@ -1765,7 +1775,7 @@ window.currentCrmNotifs = [];
             } catch (e) {}
         }
 
-        async function checkNotifications() {
+       async function checkNotifications() {
             if (!myStaffId) return; 
             try {
                 // Антикэш
@@ -1773,7 +1783,12 @@ window.currentCrmNotifs = [];
                 const data = await res.json(); 
                 
                 if (data.success && data.notifications) {
-                    window.currentCrmNotifs = data.notifications;
+                    // ФИЛЬТР "ПРИЗРАКОВ": Игнорируем уведомления, которые мы только что закрыли
+                    window.currentCrmNotifs = data.notifications.filter(notif => {
+                        const isIdBlocked = localStorage.getItem('block_notif_' + notif.id);
+                        const isLogBlocked = notif.call_log_id && localStorage.getItem('block_log_' + notif.call_log_id);
+                        return !isIdBlocked && !isLogBlocked;
+                    });
                     
                     let hasNewTasks = false;
                     data.notifications.forEach(notif => {
