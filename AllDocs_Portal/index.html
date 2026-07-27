@@ -1605,7 +1605,16 @@ window.currentCrmNotifs = [];
         // 2. Учим сканер запоминать, сколько сообщений он уже видел (без слова let)
         lastKnownMessageCount = parseInt(localStorage.getItem('lastKnownMessageCount')) || 0;
 
-        function updateUnifiedBell() {
+       function updateUnifiedBell() {
+            // Очищаем локальные уведомления от спама (выкидываем всё, на что мы не отправляли аппойнтмент)
+            if (window.globalMessages && window.globalMessages.length > 0) {
+                window.currentSmsNotifs = window.currentSmsNotifs.filter(sms => {
+                    const msgKey = `${sms.name}_${sms.phone || 'NoPhone'}`;
+                    return window.globalMessages.some(m => (`${m.name}_${m.phone || 'NoPhone'}` === msgKey) && m.direction === 'out');
+                });
+                localStorage.setItem('unreadSmsNotifs', JSON.stringify(window.currentSmsNotifs));
+            }
+
             const badge = document.getElementById('notifBadge');
             const notifList = document.getElementById('notifList');
             const total = window.currentCrmNotifs.length + window.currentSmsNotifs.length;
@@ -1750,12 +1759,16 @@ window.currentCrmNotifs = [];
                             let needsChatRefresh = false;
                             let refreshPhone = ""; let refreshName = ""; let refreshKey = "";
 
-                            addedMessages.forEach(msg => {
+                           addedMessages.forEach(msg => {
                                 const msgKey = `${msg.name}_${msg.phone || 'NoPhone'}`;
                                 const isInboxOpen = document.getElementById('inboxWrapper').style.display === 'flex';
                                 const isThisChatOpen = currentChatKey === msgKey;
+                                
+                                // Проверяем глобальную базу: писали ли мы этому клиенту хоть раз?
+                                const hasOut = window.globalMessages.some(m => (`${m.name}_${m.phone || 'NoPhone'}` === msgKey) && m.direction === 'out');
 
-                            if (msg.direction === 'in') {
+                                if (msg.direction === 'in') {
+                                    if (!hasOut) return; // ЖЕСТКИЙ ФИЛЬТР: игнорируем любые СМС от тех, кому мы не писали!
                                     if (isInboxOpen && isThisChatOpen) {
                                         needsChatRefresh = true; refreshPhone = msg.phone; refreshName = msg.name; refreshKey = msgKey;
                                     } else {
@@ -2234,18 +2247,21 @@ window.currentCrmNotifs = [];
             const searchQ = document.getElementById('inboxSearch').value.toLowerCase();
             let msgs = window.globalMessages || [];
             
-            const grouped = {};
+           const grouped = {};
             msgs.forEach(m => {
                 const key = `${m.name}_${m.phone || 'NoPhone'}`;
-                if (!grouped[key]) grouped[key] = { phone: m.phone, name: m.name, key: key, messages: [] };
+                if (!grouped[key]) grouped[key] = { phone: m.phone, name: m.name, key: key, messages: [], hasOut: false };
                 grouped[key].messages.push(m);
+                if (m.direction === 'out') grouped[key].hasOut = true; // Отмечаем, что мы им писали
             });
 
-            let contacts = Object.keys(grouped).map(key => {
-                const mArr = grouped[key].messages;
-                mArr.sort((a,b) => b.timestamp - a.timestamp); 
-                return { phone: grouped[key].phone, name: grouped[key].name, key: key, lastMsg: mArr[0] };
-            });
+            let contacts = Object.keys(grouped)
+                .filter(key => grouped[key].hasOut) // ФИЛЬТР: оставляем только те диалоги, где есть наши ИСХОДЯЩИЕ
+                .map(key => {
+                    const mArr = grouped[key].messages;
+                    mArr.sort((a,b) => b.timestamp - a.timestamp); 
+                    return { phone: grouped[key].phone, name: grouped[key].name, key: key, lastMsg: mArr[0] };
+                });
 
             if (searchQ) contacts = contacts.filter(c => c.name.toLowerCase().includes(searchQ) || (c.phone && c.phone.includes(searchQ)));
             contacts.sort((a,b) => b.lastMsg.timestamp - a.lastMsg.timestamp);
