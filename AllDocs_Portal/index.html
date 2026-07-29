@@ -28,10 +28,14 @@
         .logout-btn { background: transparent; border: none; color: #d32f2f; cursor: pointer; font-weight: 600; font-size: 14px; width: 100%; text-align: left; padding: 12px 15px; border-radius: 4px; transition: background-color 0.2s; }
         .logout-btn:hover { background: #ffebee; }
         
-        .main-wrapper { margin-left: var(--sidebar-width); padding: 40px 20px; width: calc(100% - var(--sidebar-width)); box-sizing: border-box; }
-        .container { max-width: 1000px; margin: 0 auto; background: var(--form-bg); padding: 45px; border-radius: 16px; box-shadow: 0 10px 40px rgba(62, 39, 35, 0.08); border: 1px solid rgba(255, 255, 255, 0.6); overflow: hidden;}
-        .header { text-align: center; border-bottom: 2px solid var(--border-color); padding-bottom: 20px; margin-bottom: 30px; }
+       .main-wrapper { margin-left: var(--sidebar-width); padding: 40px 20px; width: calc(100% - var(--sidebar-width)); box-sizing: border-box; }
+        .container { max-width: 900px; margin: 0 auto; background: var(--form-bg); padding: 45px 50px; border-radius: 20px; box-shadow: 0 12px 40px rgba(62, 39, 35, 0.08), 0 1px 3px rgba(0,0,0,0.02); border: 1px solid rgba(255, 255, 255, 0.8); overflow: hidden;}
+        .header { text-align: center; margin-bottom: 35px; }
         
+        /* НОВЫЕ КЛАССЫ ДЛЯ БЛОКА BOOK APPOINTMENT */
+        .input-with-button-wrap { background: var(--surface-color); border: 1px solid var(--border-color); padding: 25px; border-radius: 14px; margin-bottom: 25px; display: flex; flex-direction: column; gap: 15px; }
+        .input-with-button-row { display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; width: 100%; }
+        .input-with-button-row .form-group { margin-bottom: 0; }
        /* TABS */
         .tab-navigation { display: flex; background: var(--surface-color); padding: 6px; border-radius: 14px; margin-bottom: 30px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.03); }
         .tab-btn { flex: 1; background: transparent; border: none; padding: 14px 20px; cursor: pointer; border-radius: 10px; font-weight: 600; color: var(--secondary-color); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-size: 14.5px; }
@@ -72,8 +76,8 @@
         .submit-btn:hover:not(:disabled) { background-color: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(161, 104, 58, 0.35); }
         .submit-btn:disabled { background-color: #d7ccc8; cursor: not-allowed; box-shadow: none; transform: none; }
         
-        .book-appt-btn { background-color: #2e7d32; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 14.5px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(46,125,50,0.2); display: flex; align-items: center; justify-content: center; gap: 8px;}
-        .book-appt-btn:hover { background-color: #1b5e20; transform: translateY(-1px); box-shadow: 0 6px 15px rgba(46,125,50,0.3);}
+        .book-appt-btn { background-color: var(--success-color); color: white; border: none; padding: 0 24px; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(46,125,50,0.2); display: flex; align-items: center; justify-content: center; gap: 8px; height: 50px;}
+        .book-appt-btn:hover { background-color: #1b5e20; transform: translateY(-2px); box-shadow: 0 6px 15px rgba(46,125,50,0.3);}
 
         .segmented-control { display: flex; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; background: #fcfbfa; width: 100%;}
         .seg-btn { flex: 1; background: transparent; border: none; border-right: 1px solid var(--border-color); padding: 10px; font-size: 13.5px; font-weight: 600; color: var(--secondary-color); cursor: pointer; transition: 0.2s;}
@@ -627,28 +631,30 @@
                     <div class="form-group"><label>Time of Call:</label><input type="time" id="callTime" required></div>
                 </div>
 
-                <div style="background: #fdfaf6; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 25px; position: relative;">
-                    <button type="button" class="book-appt-btn" style="position: absolute; top: 20px; right: 20px;" onclick="openApptModal()">📅 Book Appointment</button>
-
-                    <div class="form-group" style="max-width: 70%;">
-                        <label>Full Name: <span id="clientBadge" style="display: none; background: #4CAF50; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 10px; font-weight: bold;">✓ ID: <span id="displayClientId"></span></span></label>
-                        <div class="autocomplete-wrapper" id="autocompleteWrapper">
-                            <input type="text" id="fullName" placeholder="Type name to search Docketwise..." autocomplete="off">
-                            <span class="loading-indicator" id="nameLoader">Searching...</span>
-                            <ul class="autocomplete-list" id="clientList"></ul>
+              <div class="input-with-button-wrap">
+                    <div class="input-with-button-row">
+                        <div class="form-group" style="flex: 2; min-width: 200px;">
+                            <label>Full Name: <span id="clientBadge" style="display: none; background: #4CAF50; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 10px; font-weight: bold;">✓ ID: <span id="displayClientId"></span></span></label>
+                            <div class="autocomplete-wrapper" id="autocompleteWrapper">
+                                <input type="text" id="fullName" placeholder="Type name to search Docketwise..." autocomplete="off">
+                                <span class="loading-indicator" id="nameLoader">Searching...</span>
+                                <ul class="autocomplete-list" id="clientList"></ul>
+                            </div>
                         </div>
+
+                        <div class="form-group" style="flex: 1.5; min-width: 150px;">
+                            <label>Phone Number:</label>
+                            <div class="autocomplete-wrapper" id="phoneAutocompleteWrapper">
+                                <input type="tel" id="phoneNumber" placeholder="Enter phone number..." autocomplete="off" required>
+                                <span class="loading-indicator" id="phoneLoader">Searching...</span>
+                                <ul class="autocomplete-list" id="phoneList"></ul>
+                            </div>
+                        </div>
+
+                        <button type="button" class="book-appt-btn" onclick="openApptModal()">📅 Book Appointment</button>
                     </div>
 
-                    <div class="form-group" style="margin-bottom: 0; max-width: 70%;">
-                        <label>Phone Number:</label>
-                        <div class="autocomplete-wrapper" id="phoneAutocompleteWrapper">
-                            <input type="tel" id="phoneNumber" placeholder="Enter phone number..." autocomplete="off" required>
-                            <span class="loading-indicator" id="phoneLoader">Searching...</span>
-                            <ul class="autocomplete-list" id="phoneList"></ul>
-                        </div>
-                    </div>
-
-                    <div id="linkedContactsPanel" style="display:none; margin-top: 15px; background: #e8f5e9; border-left: 4px solid #2e7d32; padding: 12px; border-radius: 8px;">
+                    <div id="linkedContactsPanel" style="display:none; width: 100%; margin-top: 5px; background: #e8f5e9; border-left: 4px solid #2e7d32; padding: 12px; border-radius: 8px; box-sizing: border-box;">
                         <div style="font-size: 12px; font-weight: bold; color: #2e7d32; margin-bottom: 8px;">🔗 LINKED CONTACTS (Delete here):</div>
                         <div id="linkedContactsList" style="font-size: 13.5px; color: #1b5e20;"></div>
                     </div>
