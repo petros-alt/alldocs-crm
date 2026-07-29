@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>All Docs Consulting - CRM Portal</title>
     <style>
-       :root { --primary-color: #3e2723; --secondary-color: #5d4037; --accent-color: #a1683a; --accent-hover: #8b552b; --bg-color: #f5f2eb; --form-bg: #ffffff; --border-color: #d7ccc8; --surface-color: #faf7f2; --sidebar-width: 260px; --appt-bg: #fdfaf6; --success-color: #2e7d32; --danger-bg: #fff0f0; --danger-text: #c62828; }
+        :root { --primary-color: #3e2723; --secondary-color: #5d4037; --accent-color: #a1683a; --accent-hover: #8b552b; --bg-color: #f5f2eb; --form-bg: #ffffff; --border-color: #d7ccc8; --surface-color: #faf7f2; --sidebar-width: 260px; --appt-bg: #fdfaf6; }
         body { font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--primary-color); line-height: 1.6; margin: 0; display: flex; position: relative;}
         
         .sidebar { width: var(--sidebar-width); background-color: var(--primary-color); height: 100vh; position: fixed; left: 0; top: 0; display: flex; flex-direction: column; box-shadow: 4px 0 20px rgba(0,0,0,0.15); z-index: 100; color: var(--bg-color); }
@@ -33,51 +33,97 @@
         .header { text-align: center; border-bottom: 2px solid var(--border-color); padding-bottom: 20px; margin-bottom: 30px; }
         
         /* TABS */
-        .tab-navigation { display: flex; background: var(--surface-color); padding: 6px; border-radius: 14px; margin-bottom: 30px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.03); }
-        .tab-btn { flex: 1; background: transparent; border: none; padding: 14px 20px; cursor: pointer; border-radius: 10px; font-weight: 600; color: var(--secondary-color); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); font-size: 14.5px; }
-        .tab-btn:hover:not(.active) { color: var(--primary-color); background: rgba(255,255,255,0.5); }
-        .tab-btn.active { background-color: var(--form-bg); color: var(--accent-color); box-shadow: 0 4px 12px rgba(62, 39, 35, 0.08); }
+        .tab-navigation { display: flex; background: var(--surface-color); padding: 6px; border-radius: 12px; margin-bottom: 30px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .tab-btn { flex: 1; background: transparent; border: none; padding: 12px 20px; cursor: pointer; border-radius: 8px; font-weight: 600; color: var(--secondary-color); transition: all 0.3s ease; font-size: 15px; }
+        .tab-btn.active { background-color: var(--form-bg); color: var(--primary-color); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06); }
         .tab-content { display: none; animation: fadeIn 0.4s ease; }
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
         /* FORM ELEMENTS */
-        .section-title { display: flex; align-items: center; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-color); font-weight: 800; margin: 35px 0 20px 0; }
-        .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border-color); margin-left: 15px; }
+        .section-title { color: var(--primary-color); padding-bottom: 8px; border-bottom: 2px solid var(--border-color); font-size: 18px; margin-bottom: 20px; margin-top: 35px; font-weight: 700; }
         .section-title:first-of-type { margin-top: 0; }
         .form-row { display: flex; gap: 20px; margin-bottom: 15px; }
         .form-group { flex: 1; margin-bottom: 20px; }
-        label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 13.5px; color: var(--primary-color); }
-        input[type="text"], input[type="tel"], input[type="date"], input[type="time"], select, textarea { width: 100%; padding: 14px 16px; border: 2px solid var(--border-color); border-radius: 10px; box-sizing: border-box; font-family: inherit; background-color: var(--surface-color); transition: all 0.2s ease; font-size: 14.5px; color: var(--primary-color); outline: none; }
-        textarea { resize: vertical; min-height: 100px; }
-        input:focus, select:focus, textarea:focus { border-color: var(--accent-color); background-color: var(--form-bg); box-shadow: 0 0 0 4px rgba(161, 104, 58, 0.1); }
+        label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; color: var(--primary-color); }
+        input[type="text"], input[type="tel"], input[type="date"], input[type="time"], select, textarea { width: 100%; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; font-family: inherit; background-color: #fcfbfa; transition: all 0.3s ease; font-size: 14.5px; outline: none;}
+        textarea { resize: vertical; min-height: 90px; }
+        input:focus, select:focus, textarea:focus { border-color: var(--accent-color); background-color: var(--form-bg); box-shadow: 0 0 0 3px rgba(161, 104, 58, 0.15); }
         
-        .category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
+        .category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 25px; }
         @media (max-width: 700px) { .category-grid { grid-template-columns: 1fr; } }
         
         .category-card { cursor: pointer; display: block; margin: 0; }
         .category-card input { display: none; }
-        .category-card span { display: flex; align-items: center; justify-content: center; padding: 16px 10px; background: var(--form-bg); border: 2px solid var(--border-color); border-radius: 12px; font-size: 13.5px; font-weight: 600; color: var(--secondary-color); transition: all 0.2s ease; text-align: center; height: 100%; box-sizing: border-box; line-height: 1.4; }
-        .category-card:hover span { border-color: var(--accent-color); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(62,39,35,0.05); }
+        .category-card span { display: flex; align-items: center; justify-content: center; padding: 14px 10px; background: #fff; border: 1px solid var(--border-color); border-left: 5px solid var(--border-color); border-radius: 10px; font-size: 13px; font-weight: 600; color: var(--secondary-color); transition: all 0.2s ease; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.02); height: 100%; box-sizing: border-box; line-height: 1.3;}
+        .category-card:hover span { background: #fdfaf6; }
         
-        #card-lead input:checked + span { background: #fff5f5; color: #c62828; border-color: #ffcdd2; box-shadow: 0 6px 15px rgba(211, 47, 47, 0.15); transform: translateY(-2px); }
-        #card-existing input:checked + span { background: var(--primary-color); color: white; border-color: var(--primary-color); box-shadow: 0 6px 15px rgba(62, 39, 35, 0.2); transform: translateY(-2px); }
-        #card-unrecognized input:checked + span { background: #fff8e1; color: #f57f17; border-color: #ffe082; box-shadow: 0 6px 15px rgba(245, 127, 23, 0.15); transform: translateY(-2px); }
-        #card-general input:checked + span { background: #e3f2fd; color: #1565c0; border-color: #bbdefb; box-shadow: 0 6px 15px rgba(21, 101, 192, 0.15); transform: translateY(-2px); }
+        #card-lead input:checked + span { border-left-color: #d32f2f; background: #fff0f0; color: #b71c1c; border-top-color: #ffcdd2; border-right-color: #ffcdd2; border-bottom-color: #ffcdd2; box-shadow: 0 4px 12px rgba(211, 47, 47, 0.15); transform: translateY(-2px); }
+        #card-existing input:checked + span { border-left-color: #5d4037; background: #f5f2eb; color: #3e2723; border-top-color: #d7ccc8; border-right-color: #d7ccc8; border-bottom-color: #d7ccc8; box-shadow: 0 4px 12px rgba(93, 64, 55, 0.15); transform: translateY(-2px); }
+        #card-unrecognized input:checked + span { border-left-color: #f57c00; background: #fff3e0; color: #e65100; border-top-color: #ffe0b2; border-right-color: #ffe0b2; border-bottom-color: #ffe0b2; box-shadow: 0 4px 12px rgba(245, 124, 0, 0.15); transform: translateY(-2px); }
+        #card-general input:checked + span { border-left-color: #1976d2; background: #e3f2fd; color: #0d47a1; border-top-color: #bbdefb; border-right-color: #bbdefb; border-bottom-color: #bbdefb; box-shadow: 0 4px 12px rgba(25, 118, 210, 0.15); transform: translateY(-2px); }
+        
         .category-card.disabled span { background: #f5f2eb; color: #bcaaa4; border-left-color: #e0e0e0; border-color: #e0e0e0; cursor: not-allowed; box-shadow: none; transform: none; }
 
-        /* БЛОК ОПИСАНИЯ И АЛЕРТА */
-        .description-box { background: var(--surface-color); padding: 25px; border-radius: 14px; border: 1px solid var(--border-color); margin-bottom: 20px; }
-        .urgent-box { margin-top: 15px; padding: 16px; background: var(--danger-bg); border-radius: 10px; border: 1px solid #ffcdd2; display: flex; align-items: center; }
-        .urgent-box label { margin: 0; color: var(--danger-text); font-weight: 700; display: flex; align-items: center; cursor: pointer; font-size: 14.5px; }
-        .urgent-box input[type="checkbox"] { width: 20px; height: 20px; margin-right: 12px; accent-color: var(--danger-text); cursor: pointer; }
-
-        .submit-btn { background-color: var(--accent-color); color: white; border: none; padding: 18px 20px; font-size: 16px; font-weight: 700; border-radius: 12px; cursor: pointer; width: 100%; transition: all 0.3s ease; margin-top: 30px; box-shadow: 0 4px 15px rgba(161, 104, 58, 0.25); letter-spacing: 0.5px;}
-        .submit-btn:hover:not(:disabled) { background-color: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(161, 104, 58, 0.35); }
+        .submit-btn { background-color: var(--accent-color); color: white; border: none; padding: 18px 20px; font-size: 16px; font-weight: 700; border-radius: 8px; cursor: pointer; width: 100%; transition: all 0.3s ease; margin-top: 30px; box-shadow: 0 4px 15px rgba(161, 104, 58, 0.25); }
+        .submit-btn:hover:not(:disabled) { background-color: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(161, 104, 58, 0.35); }
         .submit-btn:disabled { background-color: #d7ccc8; cursor: not-allowed; box-shadow: none; transform: none; }
         
-        .book-appt-btn { background-color: #2e7d32; color: white; border: none; padding: 12px 20px; border-radius: 10px; font-weight: bold; font-size: 14.5px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(46,125,50,0.2); display: flex; align-items: center; justify-content: center; gap: 8px;}
+        .book-appt-btn { background-color: #2e7d32; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; font-size: 14.5px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(46,125,50,0.2); display: flex; align-items: center; justify-content: center; gap: 8px;}
         .book-appt-btn:hover { background-color: #1b5e20; transform: translateY(-1px); box-shadow: 0 6px 15px rgba(46,125,50,0.3);}
+
+        .segmented-control { display: flex; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; background: #fcfbfa; width: 100%;}
+        .seg-btn { flex: 1; background: transparent; border: none; border-right: 1px solid var(--border-color); padding: 10px; font-size: 13.5px; font-weight: 600; color: var(--secondary-color); cursor: pointer; transition: 0.2s;}
+        .seg-btn:last-child { border-right: none; }
+        .seg-btn.active-rem { background-color: #00bcd4; color: white; border-color: #00bcd4; } 
+        .seg-btn.active-lang { background-color: var(--accent-color); color: white; border-color: var(--accent-color); } 
+
+        .autocomplete-wrapper { position: relative; display: flex; align-items: center; }
+        .autocomplete-wrapper input { padding-right: 35px; width: 100%; }
+        .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--form-bg); border: 1px solid var(--border-color); border-radius: 8px; max-height: 250px; overflow-y: auto; margin: 4px 0 0 0; padding: 0; list-style: none; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: none; }
+        .autocomplete-list li { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f5f2eb; font-size: 14.5px; color: var(--primary-color); transition: background-color 0.2s; line-height: 1.4; }
+        .autocomplete-list li:hover { background-color: #fdfaf6; }
+        .client-name-list { font-weight: 600; color: var(--accent-color); display: block; }
+        .client-phone-list { font-size: 12.5px; color: var(--secondary-color); opacity: 0.8; }
+        .loading-indicator { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--accent-color); font-size: 13px; display: none; font-weight: bold; pointer-events: none; background: #fcfbfa; padding-left: 5px;}
+
+        /* NOTIFICATIONS & MODALS */
+        #notificationContainer { position: fixed; top: 25px; right: 35px; z-index: 1000; }
+        #notificationBell { font-size: 24px; cursor: pointer; position: relative; background: white; padding: 12px 15px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: transform 0.2s; border: 1px solid var(--border-color); }
+        #notificationBell:hover { transform: scale(1.05); }
+        .badge { background: #d32f2f; color: white; border-radius: 50%; padding: 3px 7px; font-size: 11px; position: absolute; top: -5px; right: -5px; font-weight: bold; border: 2px solid white; display: none; }
+        #notificationDropdown { display: none; position: absolute; top: 65px; right: 0; width: 380px; background: white; border-radius: 12px; box-shadow: 0 15px 40px rgba(0,0,0,0.15); border: 1px solid var(--border-color); overflow: hidden; animation: fadeIn 0.2s ease; }
+        .dropdown-header { background: var(--surface-color); padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .dropdown-header h4 { margin: 0; color: var(--primary-color); font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        #notifList { max-height: 380px; overflow-y: auto; background: #fafafa; }
+        
+        @keyframes pulseAlert { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
+        .notif-item-modern { padding: 16px 20px; border-bottom: 1px solid #f0ebe1; cursor: pointer; transition: all 0.2s ease; border-left: 4px solid transparent; background: #fff; }
+        .notif-item-modern:hover { background: #fdfaf6; border-left-color: var(--accent-color); }
+        .notif-item-urgent { padding: 16px 20px; border-bottom: 1px solid #ffcdd2; cursor: pointer; transition: all 0.2s ease; border-left: 5px solid #d32f2f; background: #fff0f0; }
+        .notif-item-urgent:hover { background: #ffebee; }
+        
+        .notif-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; color: var(--primary-color); font-size: 14.5px; }
+        .notif-title span:first-child { font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%; }
+        .new-tag { background: #e65100; color: white; font-size: 10px; padding: 3px 8px; border-radius: 12px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; box-shadow: 0 2px 5px rgba(230, 81, 0, 0.2); }
+        .urgent-tag { background: #d32f2f; color: white; font-size: 10px; padding: 3px 8px; border-radius: 12px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; box-shadow: 0 2px 5px rgba(211, 47, 47, 0.3); animation: pulseAlert 1.5s infinite; }
+        
+        .notif-preview { font-size: 13px; color: var(--secondary-color); line-height: 1.5; background: #fcfbfa; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
+        .notif-time { font-size: 11px; color: #999; margin-top: 8px; text-align: right; font-weight: 600; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(2px); animation: fadeIn 0.2s ease; overflow-y: auto; padding: 20px; box-sizing: border-box;}
+        .modal-content { background: var(--form-bg); padding: 35px; border-radius: 16px; width: 100%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); position: relative; margin: auto;}
+        .modal-content.large { max-width: 1050px; }
+        .modal-close { position: absolute; top: 25px; right: 25px; font-size: 20px; cursor: pointer; color: #888; transition: 0.2s; }
+        .modal-close:hover { color: #333; transform: scale(1.1); }
+        .modal-title { margin: 0 0 25px 0; color: var(--primary-color); font-size: 24px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;}
+        
+        .modal-actions { display: flex; gap: 15px; margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 20px;}
+        .btn-cancel { flex: 1; background: var(--surface-color); border: 1px solid var(--border-color); padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--secondary-color); transition: 0.2s; }
+        .btn-cancel:hover { background: #e0d8d3; color: var(--primary-color); }
+        .btn-resolve { flex: 2; background: var(--accent-color); border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 700; color: white; transition: 0.2s; box-shadow: 0 4px 10px rgba(161, 104, 58, 0.2); }
+        .btn-resolve:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(161, 104, 58, 0.35); }
+        .btn-resolve:disabled { background: #d7ccc8; cursor: not-allowed; box-shadow: none; transform: none; }
 
         /* PHONE PREVIEW (SMS) */
         .phone-preview-wrapper { width: 280px; background: #e0e0e0; border-radius: 25px; padding: 12px; box-shadow: inset 0 0 10px rgba(0,0,0,0.1), 0 10px 25px rgba(0,0,0,0.15); display: flex; flex-direction: column; align-items: center;}
@@ -557,9 +603,8 @@
 
 <main class="main-wrapper">
     <div class="container">
-       <div class="header">
-            <h1 style="font-size: 26px; font-weight: 800; color: var(--primary-color); margin: 0 0 10px 0; letter-spacing: -0.5px;">Operator Call Form</h1>
-            <p style="color: var(--secondary-color); font-size: 14px; margin: 0; opacity: 0.8;">Log incoming calls and route clients seamlessly</p>
+        <div class="header">
+            <p style="font-family: 'Times New Roman', Times, serif; font-size: 28px; font-weight: bold; font-style: italic; margin-top: 5px; margin-bottom: 0; color: var(--primary-color);">Operator Call Form</p>
         </div>
 
         <div class="tab-navigation">
@@ -657,15 +702,13 @@
                         </div>
                     </div>
 
-                   <div class="description-box">
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <label>Call Description / Note Text:</label>
-                            <textarea id="briefDescription" placeholder="Summarize the client's inquiry..." required></textarea>
-                        </div>
+                    <div style="background: #fcfbfa; padding: 20px; border-left: 4px solid var(--accent-color); border-radius: 8px; margin-bottom: 20px;">
+                        <label style="color: var(--primary-color); font-weight: 700; margin-bottom: 8px; display: block;">Call Description / Note Text:</label>
+                        <textarea id="briefDescription" placeholder="Summarize the client's inquiry..." required></textarea>
                         
-                        <div class="urgent-box">
-                            <label>
-                                <input type="checkbox" id="urgentCallCheckbox">
+                        <div style="margin-top: 15px; padding: 12px; background: #fff0f0; border-radius: 8px; border-left: 4px solid #d32f2f; animation: fadeIn 0.3s ease;">
+                            <label style="display: flex; align-items: center; cursor: pointer; color: #b71c1c; font-weight: 700; font-size: 14.5px; margin: 0;">
+                                <input type="checkbox" id="urgentCallCheckbox" style="width: 18px; height: 18px; margin-right: 12px; cursor: pointer; accent-color: #d32f2f;">
                                 🚨 URGENT: Action Required / Call Back ASAP
                             </label>
                         </div>
