@@ -2311,9 +2311,11 @@ window.currentCrmNotifs = [];
                 const zapierUrl = `https://hooks.zapier.com/hooks/catch/28342465/44ft1ex/?phone=${encodeURIComponent(formattedPhone)}&message=${encodeURIComponent(smsText)}&reminders=${encodeURIComponent(selectedReminders)}&reminder_msg=${encodeURIComponent(reminderMsg)}&appt_timestamp=${checkDate.getTime()}`;
                 fetch(zapierUrl, { mode: 'no-cors' }).catch(e => console.log('Zapier webhook error:', e));
                 
-                // Запись в Inbox чат для истории (ОБЩАЯ БАЗА)
+               // Запись в Inbox чат для истории (ОБЩАЯ БАЗА)
                 await window.loadMessages();
                 let msgs = window.globalMessages || [];
+                
+                // 1. Сохраняем главную отправленную SMS
                 msgs.push({
                     phone: phoneInput || "No Phone",
                     name: clientName,
@@ -2321,6 +2323,27 @@ window.currentCrmNotifs = [];
                     timestamp: Date.now(),
                     direction: 'out' 
                 });
+
+                // 2. Если выбраны напоминания - кидаем системное сообщение в чат
+                if (selectedReminders) {
+                    // Делаем красивые названия для чата
+                    let prettyReminders = selectedReminders.split(',').map(r => {
+                        if(r==='1h') return '1 Hour'; if(r==='3h') return '3 Hours'; 
+                        if(r==='6h') return '6 Hours'; if(r==='12h') return '12 Hours';
+                        if(r==='1d') return '1 Day'; if(r==='3d') return '3 Days';
+                        if(r==='7d') return '7 Days'; if(r==='1m') return '1 Month';
+                        return r;
+                    }).join(', ');
+                    
+                    msgs.push({
+                        phone: phoneInput || "No Phone",
+                        name: clientName,
+                        text: `🤖 [System Note]: Automated SMS reminders successfully scheduled for: ${prettyReminders} before the appointment.`,
+                        timestamp: Date.now() + 1000, // Добавляем 1 секунду, чтобы сообщение шло сразу ПОСЛЕ основного
+                        direction: 'out' 
+                    });
+                }
+
                 await window.saveMessagesDb(msgs);
             }
 
