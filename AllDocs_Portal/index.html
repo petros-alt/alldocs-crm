@@ -177,46 +177,39 @@
         .phone-body { flex: 1; padding: 15px; overflow-y: auto; background: #fff;}
         .sms-bubble { background: #e9e9eb; color: #000; padding: 12px 15px; border-radius: 18px; border-bottom-left-radius: 4px; font-size: 13px; line-height: 1.4; white-space: pre-wrap; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;}
 
-       /* --- NEW MASTER CALENDAR & INBOX STYLES --- */
-        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px 0 25px 0; border-bottom: none; background: transparent; }
-        .top-nav-btn { padding: 12px 24px; border-radius: 12px; font-weight: 700; font-size: 14.5px; cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: none; }
-        .top-nav-btn.active { background: var(--accent-color); color: white; box-shadow: 0 6px 15px rgba(161, 104, 58, 0.25); }
-        .top-nav-btn.inactive { background: var(--surface-color); color: var(--secondary-color); border: 2px solid var(--border-color); }
-        .top-nav-btn.inactive:hover { background: white; color: var(--primary-color); transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        /* --- NEW MASTER CALENDAR & INBOX STYLES --- */
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 20px 25px; border-bottom: 1px solid var(--border-color); background: var(--surface-color); border-radius: 16px 16px 0 0; }
+        .top-nav-btn { padding: 10px 20px; border-radius: 8px; font-weight: bold; font-size: 14.5px; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .top-nav-btn.active { background: var(--accent-color); color: white; border: 1px solid var(--accent-color); }
+        .top-nav-btn.inactive { background: white; color: var(--primary-color); border: 1px solid var(--border-color); }
+        .top-nav-btn.inactive:hover { background: #fdfaf6; transform: translateY(-1px); }
 
-        #calGridWrapper { background: white; border-radius: 20px; border: 1px solid var(--border-color); padding: 25px 30px; box-shadow: 0 8px 30px rgba(62, 39, 35, 0.04); }
-
-        .calendar-toolbar { display: flex; justify-content: space-between; align-items: center; padding-bottom: 25px; background: transparent; border-bottom: none; gap: 15px;}
-        .calendar-toolbar > div:first-child { flex: 1; display: flex; gap: 12px; }
-        .calendar-toolbar select { width: auto; min-width: 170px; max-width: 100%; padding: 10px 16px; border: 2px solid var(--border-color); border-radius: 10px; font-size: 14px; outline: none; background: var(--surface-color); color: var(--primary-color); font-weight: 600; cursor: pointer; transition: 0.2s; text-overflow: ellipsis; }
-        .calendar-toolbar select:hover { border-color: var(--accent-color); background: white; }
-        #viewSelector { flex: 1; max-width: 220px; margin-left: auto; }
-        
-        .date-nav { display: flex; align-items: center; justify-content: center; flex: 1; gap: 15px; font-size: 24px; font-weight: 800; color: var(--primary-color); letter-spacing: -0.5px; white-space: nowrap; }
-        .date-nav button { background: var(--surface-color); border: 2px solid var(--border-color); border-radius: 50%; width: 42px; height: 42px; display: flex; justify-content: center; align-items: center; font-size: 18px; cursor: pointer; color: var(--secondary-color); transition: all 0.2s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.02);}
-        .date-nav button:hover { background: white; color: var(--accent-color); border-color: var(--accent-color); transform: scale(1.1); box-shadow: 0 4px 12px rgba(161, 104, 58, 0.15);}
+        .calendar-toolbar { display: flex; justify-content: space-between; align-items: center; padding: 20px 25px; background: white; border-bottom: 1px solid var(--border-color); }
+        .calendar-toolbar select { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; outline: none; background: white; color: var(--primary-color); font-weight: 500;}
+        .date-nav { display: flex; align-items: center; gap: 20px; font-size: 22px; font-weight: 600; color: var(--primary-color); }
+        .date-nav button { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--secondary-color); transition: 0.2s; padding: 0 10px;}
+        .date-nav button:hover { color: var(--accent-color); }
         
         .agenda-date-header { display: flex; align-items: center; gap: 10px; font-weight: bold; color: var(--secondary-color); font-size: 16px; margin: 25px 0 15px 0; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; padding-left: 20px;}
         .agenda-date-header:first-child { margin-top: 0; }
-        .agenda-card { background: var(--surface-color); border: 1px solid var(--border-color); border-left: 4px solid var(--accent-color); border-radius: 12px; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.02); margin-left: 20px; margin-right: 20px;}
-        .agenda-card:hover { background: white; box-shadow: 0 6px 15px rgba(161, 104, 58, 0.15); transform: translateY(-2px); border-color: var(--accent-color); }
-        .agenda-info .client-name { color: var(--primary-color); font-size: 16px; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-        .agenda-info .service-details { font-size: 13.5px; color: var(--secondary-color); font-weight: 500;}
-        .agenda-time { color: var(--accent-color); font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 20px; background: white; padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border-color);}
+        .agenda-card { background: white; border: 1px solid var(--border-color); border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.02); margin-left: 20px; margin-right: 20px;}
+        .agenda-card:hover { background: #fffdfa; box-shadow: 0 4px 12px rgba(161, 104, 58, 0.15); transform: translateY(-1px); }
+        .agenda-info .client-name { color: var(--primary-color); font-size: 16px; font-weight: 700; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
+        .agenda-info .service-details { font-size: 13.5px; color: var(--secondary-color); }
+        .agenda-time { color: var(--accent-color); font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 20px; background: var(--surface-color); padding: 5px 12px; border-radius: 6px;}
 
-        .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); background: var(--border-color); gap: 1px; border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden;}
-        .mc-header { text-align: center; padding: 15px; font-weight: 800; color: var(--secondary-color); font-size: 12px; background: var(--surface-color); text-transform: uppercase; letter-spacing: 1px;}
-        .mc-cell { background: white; min-height: 130px; display: flex; flex-direction: column; padding: 12px; transition: all 0.2s; position: relative;}
-        .mc-cell:hover { background: #fcfbfa; }
-        .mc-cell.condensed { align-items: center; justify-content: center; cursor: pointer;}
-        .mc-cell.condensed:hover { background: var(--form-bg); box-shadow: inset 0 0 0 2px var(--accent-color); z-index: 1;}
-        .mc-date { font-size: 15px; font-weight: 700; color: var(--secondary-color); position: absolute; top: 10px; right: 12px; opacity: 0.7;}
-        .condensed .mc-date { position: relative; top: 0; right: 0; margin-bottom: 12px; font-size: 18px; color: var(--primary-color); opacity: 1;}
+        .month-grid { display: grid; grid-template-columns: repeat(7, 1fr); background: white;}
+        .mc-header { text-align: center; padding: 12px; font-weight: bold; color: var(--primary-color); border-bottom: 2px solid var(--border-color); font-size: 13px; background: var(--surface-color); text-transform: uppercase;}
+        .mc-cell { border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); min-height: 110px; display: flex; flex-direction: column; padding: 8px; transition: background 0.2s;}
+        .mc-cell:hover { background: #fdfaf6; }
+        .mc-cell.condensed { align-items: center; justify-content: flex-start; cursor: pointer;}
+        .mc-date { font-size: 14px; font-weight: 600; color: var(--secondary-color); margin-bottom: 8px; text-align: right; width: 100%;}
+        .condensed .mc-date { text-align: center; font-size: 16px; margin-top: 5px;}
         
-        .mc-badge { background: var(--accent-color); color: white; font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 20px; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 10px rgba(161, 104, 58, 0.25); letter-spacing: 0.5px; width: 80%; box-sizing: border-box; text-align: center;}
-        .mc-badge:hover { background: var(--accent-hover); transform: translateY(-3px) scale(1.05); box-shadow: 0 8px 20px rgba(161, 104, 58, 0.35);}
-        .mini-appt { font-size: 11.5px; font-weight: 600; margin-bottom: 4px; padding: 6px 8px; background: var(--surface-color); border-left: 3px solid var(--accent-color); border-radius: 6px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--primary-color); transition: 0.2s;}
-        .mini-appt:hover { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-color: var(--accent-hover); transform: translateX(2px);}
+        .mc-badge { background: var(--accent-color); color: white; font-size: 12px; font-weight: bold; padding: 4px 12px; border-radius: 12px; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 6px rgba(161, 104, 58, 0.3);}
+        .mc-badge:hover { background: var(--accent-hover); transform: scale(1.05);}
+        .mini-appt { font-size: 11.5px; font-weight: 500; margin-bottom: 4px; padding: 4px 6px; background: var(--surface-color); border-left: 2px solid var(--accent-color); border-radius: 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--secondary-color);}
+        .mini-appt:hover { background: #f0ebe1; }
 
         .calendar-widget { background: white; padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.03);}
         .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: 700; font-size: 15px; color: var(--primary-color);}
@@ -224,61 +217,47 @@
         .cal-header button:hover { color: var(--accent-color); }
         .cal-days { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 12px; color: var(--secondary-color); margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; font-weight: 600;}
         .cal-dates { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-        .cal-btn { padding: 8px 0; border: none; background: transparent; cursor: pointer; font-size: 13.5px; border-radius: 6px; color: var(--primary-color); font-weight: 500; transition: 0.2s; box-sizing: border-box;}
+        .cal-btn { padding: 8px 0; border: none; background: transparent; cursor: pointer; font-size: 13.5px; border-radius: 6px; color: var(--primary-color); font-weight: 500; transition: 0.2s;}
         .cal-btn:hover:not(:disabled) { background: #f0ebe1; }
-       .cal-btn.selected { background-color: var(--accent-color); color: white; font-weight: bold; box-shadow: 0 2px 8px rgba(161, 104, 58, 0.3); }
-        .cal-btn.today-btn { border: 2px solid var(--accent-color); color: var(--accent-color); font-weight: 800; }
-        .cal-btn.today-btn.selected { color: white; }
-        
-        .mc-cell.is-today { background: #fffcf9; }
-        .mc-date.is-today { background: var(--accent-color); color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; position: absolute; top: 8px; right: 8px; opacity: 1; z-index: 2; box-shadow: 0 2px 6px rgba(161, 104, 58, 0.4);}
-        .condensed .mc-date.is-today { position: relative; top: 0; right: 0; margin: 0 auto 12px auto; }
+        .cal-btn.selected { background-color: var(--accent-color); color: white; font-weight: bold; box-shadow: 0 2px 8px rgba(161, 104, 58, 0.3); }
         .time-select-group { display: flex; gap: 8px; margin-top: 5px;}
         .time-select-group select { padding: 10px; text-align: center; border: 1px solid var(--border-color); border-radius: 6px; background: white;}
 
-       /* INBOX STYLES */
-        .inbox-wrapper { display: flex; height: 650px; background: white; border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden; box-shadow: 0 8px 30px rgba(62, 39, 35, 0.04); margin-top: 10px; }
-        .inbox-sidebar { width: 340px; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; background: var(--surface-color); }
-        .inbox-search-wrap { padding: 20px; border-bottom: 1px solid var(--border-color); background: white; }
-        .inbox-search-wrap input { width: 100%; padding: 12px 16px; border-radius: 10px; border: 2px solid var(--border-color); outline: none; transition: 0.2s; font-family: inherit; font-size: 14px;}
-        .inbox-search-wrap input:focus { border-color: var(--accent-color); }
-        .inbox-filters { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; font-size: 12.5px; border-bottom: 1px solid var(--border-color); color: var(--secondary-color); font-weight: 600; background: #fffbfa; }
-        .inbox-filters select { border: none; background: transparent; font-weight: 700; color: var(--accent-color); outline: none; cursor: pointer; font-family: inherit; }
+        /* INBOX STYLES */
+        .inbox-wrapper { display: flex; height: 650px; background: white; }
+        .inbox-sidebar { width: 340px; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; background: #fcfbfa; }
+        .inbox-search-wrap { padding: 15px; border-bottom: 1px solid var(--border-color); }
+        .inbox-search-wrap input { width: 100%; padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border-color); outline: none; }
+        .inbox-filters { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; font-size: 12px; border-bottom: 1px solid var(--border-color); color: var(--secondary-color); }
+        .inbox-filters select { border: none; background: transparent; font-weight: bold; color: var(--primary-color); outline: none; cursor: pointer; }
         
-        .contact-list { flex: 1; overflow-y: auto; background: white; }
-        .contact-item { padding: 16px 20px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: all 0.2s ease; position: relative; display: flex; gap: 12px; align-items: center; }
-        .contact-item:hover { background: var(--surface-color); }
-        .contact-item.active { background: #fffbfa; box-shadow: inset 4px 0 0 var(--accent-color); }
-        .c-avatar { width: 42px; height: 42px; border-radius: 50%; background: var(--border-color); color: var(--primary-color); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; flex-shrink: 0; transition: 0.2s;}
-        .contact-item.active .c-avatar { background: var(--accent-color); color: white; }
-        .c-info-wrap { flex: 1; overflow: hidden; }
-        .contact-item .c-name { font-weight: 700; color: var(--primary-color); font-size: 14.5px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
-        .contact-item .c-time { font-size: 11px; color: #999; font-weight: 600; }
-        .contact-item .c-preview { font-size: 13px; color: var(--secondary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.8; }
+        .contact-list { flex: 1; overflow-y: auto; }
+        .contact-item { padding: 15px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: 0.2s; position: relative; }
+        .contact-item:hover { background: #f5f2eb; }
+        .contact-item.active { background: #e3f2fd; border-left: 4px solid #1976d2; padding-left: 11px; }
+        .contact-item .c-name { font-weight: 700; color: var(--primary-color); font-size: 14.5px; margin-bottom: 4px; display: flex; justify-content: space-between; }
+        .contact-item .c-time { font-size: 11px; color: #888; font-weight: normal; }
+        .contact-item .c-preview { font-size: 12.5px; color: var(--secondary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.8; }
 
-        .inbox-chat { flex: 1; display: flex; flex-direction: column; background: #fdfaf6; position: relative; }
-        .chat-header { padding: 20px 25px; background: white; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.02); z-index: 10; }
-        .chat-header-info { display: flex; align-items: center; gap: 12px; }
-        .chat-header-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--accent-color); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; }
-        .chat-header h3 { margin: 0; color: var(--primary-color); font-size: 18px; font-weight: 800; }
-        .chat-options-btn { background: var(--surface-color); border: 1px solid var(--border-color); border-radius: 8px; font-size: 13px; cursor: pointer; color: var(--secondary-color); font-weight: 700; padding: 8px 12px; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px;}
-        .chat-options-btn:hover { background: white; color: var(--accent-color); border-color: var(--accent-color); transform: scale(1.05); }
+        .inbox-chat { flex: 1; display: flex; flex-direction: column; background: var(--surface-color); position: relative; }
+        .chat-header { padding: 15px 25px; background: white; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .chat-header h3 { margin: 0; color: var(--primary-color); font-size: 18px; }
+        .chat-options-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--secondary-color); font-weight: bold; line-height: 1; padding: 0 5px; transition: 0.2s; }
+        .chat-options-btn:hover { color: var(--accent-color); }
         
-        .chat-messages { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
-        .chat-bubble { max-width: 70%; padding: 14px 18px; border-radius: 18px; font-size: 14.5px; line-height: 1.5; white-space: pre-wrap; position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
-        .chat-bubble.out { background: var(--accent-color); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
-        .chat-bubble.in { background: white; color: var(--primary-color); align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid var(--border-color); }
-        .chat-meta { font-size: 11px; margin-top: 6px; text-align: right; opacity: 0.8; font-weight: 500; }
-        .chat-bubble.out .chat-meta { color: #f0ebe1; }
-        .chat-bubble.in .chat-meta { color: #888; }
+        .chat-messages { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .chat-bubble { max-width: 65%; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.5; white-space: pre-wrap; position: relative; box-shadow: 0 2px 5px rgba(0,0,0,0.04); }
+        .chat-bubble.out { background: #fff3e0; color: #3e2723; align-self: flex-end; border-bottom-right-radius: 2px; border: 1px solid #ffe0b2; }
+        .chat-bubble.in { background: white; color: var(--primary-color); align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid var(--border-color); }
+        .chat-meta { font-size: 10px; color: #aaa; margin-top: 5px; text-align: right; }
 
-        .chat-input-area { padding: 20px 25px; background: white; border-top: 1px solid var(--border-color); display: flex; gap: 12px; align-items: center; }
-        .chat-input-area input { flex: 1; border: 2px solid var(--border-color); background: var(--surface-color); border-radius: 25px; padding: 14px 20px; outline: none; font-family: inherit; font-size: 14.5px; transition: 0.2s; color: var(--primary-color); }
-        .chat-input-area input:focus { border-color: var(--accent-color); background: white; }
-        .chat-send-btn { background: var(--accent-color); color: white; border: none; padding: 0 25px; height: 48px; border-radius: 24px; font-weight: 700; cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 10px rgba(161, 104, 58, 0.25); display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 15px; }
-        .chat-send-btn:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 6px 15px rgba(161, 104, 58, 0.35); }
+        .chat-input-area { padding: 15px 25px; background: white; border-top: 1px solid var(--border-color); display: flex; gap: 10px; align-items: center; }
+        .chat-input-area input { flex: 1; border: 1px solid var(--border-color); border-radius: 20px; padding: 12px 20px; outline: none; font-family: inherit; font-size: 14px;}
+        .chat-input-area input:focus { border-color: var(--accent-color); }
+        .chat-send-btn { background: var(--accent-color); color: white; border: none; padding: 12px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .chat-send-btn:hover { background: var(--accent-hover); }
 
-        .empty-chat { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #aaa; font-size: 15px; background: #fdfaf6; }
+        .empty-chat { flex: 1; display: flex; align-items: center; justify-content: center; color: #888; font-size: 15px; }
 
         /* CUSTOMER DETAILS MODAL */
         .cd-header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; }
@@ -430,10 +409,7 @@
                 <p id="cdPhone">📞 
 
 
-
-
 (000) 000-0000
-
 </p>
                 <p style="font-size: 12px; margin-top: 5px;">Contact preference: Text</p>
             </div>
@@ -478,10 +454,10 @@
                 </div>
 
                 <div class="form-row">
-                   <div class="form-group" style="margin-bottom: 15px;">
-                        <label>Service</label>
-                        <select id="modalApptService" onchange="handleServiceChange()">
-                            <option>001-Initial Consultation</option>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label>Appt. Location</label>
+                        <select id="modalApptLocation" onchange="updatePreview()">
+                            <option value="400 W Colorado St, Suite 202 Glendale, CA 91204 United States">All Docs Consulting</option>
                             <option value="100 W. Broadway Ave., Suite 540, Glendale, CA 91210">Armen Shaghzo Attorney</option>
                             <option value="2601 Wilshire Blvd, Los Angeles, CA 90057">Capi Metro Office</option>
                             <option value="3580 Wilshire Blvd 12th floor Ste 1290 Los Angeles, CA 90005">David Bagdasaryan Attorney</option>
@@ -502,7 +478,7 @@
                 <div class="form-row">
                     <div class="form-group" style="margin-bottom: 15px;">
                         <label>Service</label>
-                      <select id="modalApptService" onchange="handleServiceChange()">
+                        <select id="modalApptService" onchange="updatePreview()">
                             <option>001-Initial Consultation</option>
                             <option>01-Phone appointment</option>
                             <option>02-Client Registration</option>
@@ -833,10 +809,10 @@
 
             <!-- CALENDAR GRID -->
             <div id="calGridWrapper">
-               <div class="calendar-toolbar">
-                    <div style="display: flex; gap: 12px;">
+                <div class="calendar-toolbar">
+                    <div style="display: flex; gap: 10px;">
                         <select id="staffFilter" onchange="renderMainCalendar()">
-                            <option value="All Staff">👨‍💼 All Staff</option>
+                            <option value="All Staff">All Staff</option>
                             <option value="Mariam Djaradjian">Mariam Djaradjian</option>
                             <option value="Artak Badalyan">Artak Badalyan</option>
                             <option value="Gohar Aloyan">Gohar Aloyan</option>
@@ -847,8 +823,8 @@
                             <option value="Rima Avetisyan">Rima Avetisyan</option>
                         </select>
 
-                        <select id="statusFilter" onchange="renderMainCalendar()">
-                            <option value="All Statuses">🎯 All Statuses</option>
+                        <select id="statusFilter" onchange="renderMainCalendar()" style="padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; outline: none; background: white; color: var(--primary-color); font-weight: 500;">
+                            <option value="All Statuses">All Statuses</option>
                             <option value="Lead">🔥 Lead (New Appt)</option>
                             <option value="Existing Client">👤 Existing Client</option>
                             <option value="Unrecognized Number (Existing Client)">⚠️ Unrecognized</option>
@@ -857,17 +833,17 @@
                     </div>
 
                     <div class="date-nav">
-                        <button onclick="changeViewDate(-1)">←</button>
+                        <button onclick="changeViewDate(-1)">&lt;</button>
                         <span id="mainCalTitle">July 2026</span>
-                        <button onclick="changeViewDate(1)">→</button>
+                        <button onclick="changeViewDate(1)">&gt;</button>
                     </div>
 
                     <select id="viewSelector" onchange="renderMainCalendar()">
-                        <option value="agenda">📅 Agenda</option>
-                        <option value="day">📌 Day</option>
-                        <option value="week">🗓️ Week</option>
-                        <option value="month-condensed" selected>📊 Month (condensed)</option>
-                        <option value="month-full">📆 Month (full)</option>
+                        <option value="agenda">Agenda</option>
+                        <option value="day">Day</option>
+                        <option value="week">Week</option>
+                        <option value="month-condensed" selected>Month (condensed)</option>
+                        <option value="month-full">Month (full view)</option>
                     </select>
                 </div>
                 <div class="cal-content" id="calendarContent"></div>
@@ -889,10 +865,7 @@
                     <div class="contact-list" id="inboxContactList"></div>
                 </div>
                 <div class="inbox-chat" id="inboxChatArea">
-                    <div class="empty-chat">
-                        <div style="font-size: 40px; margin-bottom: 10px; opacity: 0.5;">💬</div>
-                        <div>Select a conversation to view messages</div>
-                    </div>
+                    <div class="empty-chat">Select a conversation to view messages.</div>
                 </div>
             </div>
         </div>
@@ -2126,47 +2099,6 @@ window.currentCrmNotifs = [];
             }
         }
 
-       window.handleServiceChange = function() {
-            const serviceVal = document.getElementById('modalApptService').value;
-            const durationSelect = document.getElementById('aDuration');
-            
-            // Вытаскиваем цифры до дефиса (например, "001", "09", "17")
-            const prefixMatch = serviceVal.match(/^(\d+)-/);
-            if (prefixMatch) {
-                const prefix = prefixMatch[1];
-                
-                // Наша карта времени для каждого сервиса
-                const durationMap = {
-                    '001': '30 minutes',
-                    '01': '25 minutes',
-                    '02': '30 minutes',
-                    '03': '10 minutes',
-                    '04': '10 minutes',
-                    '05': '35 minutes',
-                    '06': '20 minutes',
-                    '07': '30 minutes',
-                    '08': '30 minutes',
-                    '09': '1 hour',
-                    '10': '3 hours',
-                    '11': '3 hours',
-                    '12': '1 hour',
-                    '13': '1 hour',
-                    '14': '15 minutes',
-                    '15': '30 minutes',
-                    '16': '2 hours',
-                    '17': '2 hours'
-                };
-                
-                // Если префикс есть в базе, меняем длительность
-                if (durationMap[prefix]) {
-                    durationSelect.value = durationMap[prefix];
-                }
-            }
-            
-            // Обновляем текст превью SMS
-            window.updatePreview(); 
-        };
-
         window.updatePreview = function() {
             const name = document.getElementById('modalApptName').value || 'Client'; const staff = document.getElementById('modalApptStaff').value; const duration = document.getElementById('aDuration').value;
             const address = document.getElementById('modalApptLocation').value; const rawService = document.getElementById('modalApptService').value; 
@@ -2183,19 +2115,13 @@ window.currentCrmNotifs = [];
 
         window.changeMonth = function(dir) { apptDate.setMonth(apptDate.getMonth() + dir); renderApptCal(); }
 
-       function renderApptCal() {
+        function renderApptCal() {
             const grid = document.getElementById('aCalDates'); grid.innerHTML = ''; const y = apptDate.getFullYear(); const m = apptDate.getMonth();
             document.getElementById('aMonthYear').textContent = `${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m]} ${y}`;
             const firstDay = new Date(y, m, 1).getDay(); const daysInMonth = new Date(y, m + 1, 0).getDate();
-            
-            const todayStr = new Date().toDateString(); // Получаем сегодняшнюю дату
-            
             for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div'));
             for (let i = 1; i <= daysInMonth; i++) {
                 const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'cal-btn'; btn.textContent = i; const cDate = new Date(y, m, i);
-                
-                if (cDate.toDateString() === todayStr) btn.classList.add('today-btn'); // Выделяем кружком сегодня
-                
                 btn.onclick = (e) => { 
                     e.preventDefault(); document.querySelectorAll('#aCalDates .cal-btn').forEach(b => b.classList.remove('selected')); 
                     btn.classList.add('selected'); selectedApptDate = cDate; 
@@ -2205,6 +2131,7 @@ window.currentCrmNotifs = [];
                 if(selectedApptDate && cDate.toDateString() === selectedApptDate.toDateString()) btn.classList.add('selected'); grid.appendChild(btn);
             }
         }
+
         // --- ЛОГИКА СОХРАНЕНИЯ КАЛЕНДАРЯ И ОТПРАВКИ СМС ---
         window.saveAppointment = async function() {
             if (!selectedApptDate) { alert("Please select a date on the calendar."); return; }
@@ -2395,21 +2322,17 @@ window.currentCrmNotifs = [];
             listDiv.innerHTML = '';
             if (contacts.length === 0) { listDiv.innerHTML = '<div style="padding: 20px; text-align: center; color: #888; font-size: 13px;">No conversations found.</div>'; return; }
 
-           contacts.forEach(c => {
+            contacts.forEach(c => {
                 const d = new Date(c.lastMsg.timestamp);
                 const timeStr = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}).toLowerCase();
                 const isActive = currentChatKey === c.key;
-                const initial = c.name ? c.name.charAt(0).toUpperCase() : '?';
                 
                 const div = document.createElement('div');
                 div.className = `contact-item ${isActive ? 'active' : ''}`;
                 div.onclick = () => openChat(c.phone, c.name, c.key);
                 div.innerHTML = `
-                    <div class="c-avatar">${initial}</div>
-                    <div class="c-info-wrap">
-                        <div class="c-name"><span>${c.name}</span><span class="c-time">${timeStr}</span></div>
-                        <div class="c-preview">${c.lastMsg.text.replace(/\n/g, ' ')}</div>
-                    </div>
+                    <div class="c-name"><span>${c.name}</span><span class="c-time">${timeStr}</span></div>
+                    <div class="c-preview">${c.lastMsg.text.replace(/\n/g, ' ')}</div>
                 `;
                 listDiv.appendChild(div);
             });
@@ -2424,16 +2347,11 @@ window.currentCrmNotifs = [];
             let msgs = window.globalMessages || [];
             const thread = msgs.filter(m => `${m.name}_${m.phone || 'NoPhone'}` === key).sort((a,b) => a.timestamp - b.timestamp);
 
-            const initial = name ? name.charAt(0).toUpperCase() : '?';
-            
             let chatHtml = `
                 <div class="chat-header">
-                    <div class="chat-header-info">
-                        <div class="chat-header-avatar">${initial}</div>
-                        <h3>${name}</h3>
-                    </div>
+                    <h3>${name}</h3>
                     <div style="display:flex; gap: 10px; align-items:center;">
-                        <button class="chat-options-btn" onclick="openCustomerDetails('${phone}', '${name.replace(/'/g, "\\'")}')" title="Customer Details">⚙️ Details</button>
+                        <button class="chat-options-btn" onclick="openCustomerDetails('${phone}', '${name.replace(/'/g, "\\'")}')">⋮</button>
                     </div>
                 </div>
                 <div class="chat-messages">
@@ -2455,7 +2373,7 @@ window.currentCrmNotifs = [];
                 </div>
                 <div class="chat-input-area">
                     <input type="text" id="manualSmsInput" placeholder="Type a message to ${name}..." onkeypress="if(event.key === 'Enter') sendManualMessage('${phone}', '${name.replace(/'/g, "\\'")}', '${key}')">
-                    <button class="chat-send-btn" onclick="sendManualMessage('${phone}', '${name.replace(/'/g, "\\'")}', '${key}')">Send 📤</button>
+                    <button class="chat-send-btn" onclick="sendManualMessage('${phone}', '${name.replace(/'/g, "\\'")}', '${key}')">Send</button>
                 </div>
             `;
             area.innerHTML = chatHtml;
@@ -2648,18 +2566,12 @@ window.currentCrmNotifs = [];
                 const isCondensed = view === 'month-condensed'; let html = `<div class="month-grid">`;
                 ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => { html += `<div class="mc-header">${d}</div>`; });
                 const firstDay = new Date(y, m, 1).getDay(); const daysInMonth = new Date(y, m + 1, 0).getDate();
-              const todayStr = new Date().toDateString(); // Получаем сегодняшнюю дату
                 for(let i=0; i<firstDay; i++) html += `<div class="mc-cell ${isCondensed ? 'condensed' : ''}" style="background:var(--surface-color);"></div>`; 
                 for(let i=1; i<=daysInMonth; i++) {
-                    const cDateStr = new Date(y, m, i).toDateString(); 
-                    const isToday = cDateStr === todayStr; // Проверяем, сегодня ли это
-                    const dayAppts = records.filter(a => new Date(a.timestamp).toDateString() === cDateStr); let content = '';
-                    
+                    const cDateStr = new Date(y, m, i).toDateString(); const dayAppts = records.filter(a => new Date(a.timestamp).toDateString() === cDateStr); let content = '';
                     if (isCondensed) { if (dayAppts.length > 0) { const word = dayAppts.length === 1 ? 'appt' : 'appts'; content = `<div class="mc-badge" onclick="openDayList('${cDateStr}')">${dayAppts.length} ${word}</div>`; } } 
                     else { dayAppts.forEach(appt => { let leadIcon = appt.isLead ? '🔥 ' : ''; content += `<div class="mini-appt" onclick="openPreviewModal(${appt.id})">${appt.time} ${leadIcon}${appt.client.split(' ')[0]}</div>`; }); }
-                    
-                    // Добавляем классы is-today
-                    html += `<div class="mc-cell ${isCondensed ? 'condensed' : ''} ${isToday ? 'is-today' : ''}"><div class="mc-date ${isToday ? 'is-today' : ''}">${i}</div>${content}</div>`;
+                    html += `<div class="mc-cell ${isCondensed ? 'condensed' : ''}"><div class="mc-date">${i}</div>${content}</div>`;
                 }
                 html += '</div>'; area.innerHTML = html;
             } else {
