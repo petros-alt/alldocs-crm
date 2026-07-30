@@ -430,7 +430,10 @@
                 <p id="cdPhone">📞 
 
 
+
+
 (000) 000-0000
+
 </p>
                 <p style="font-size: 12px; margin-top: 5px;">Contact preference: Text</p>
             </div>
@@ -475,10 +478,10 @@
                 </div>
 
                 <div class="form-row">
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label>Appt. Location</label>
-                        <select id="modalApptLocation" onchange="updatePreview()">
-                            <option value="400 W Colorado St, Suite 202 Glendale, CA 91204 United States">All Docs Consulting</option>
+                   <div class="form-group" style="margin-bottom: 15px;">
+                        <label>Service</label>
+                        <select id="modalApptService" onchange="handleServiceChange()">
+                            <option>001-Initial Consultation</option>
                             <option value="100 W. Broadway Ave., Suite 540, Glendale, CA 91210">Armen Shaghzo Attorney</option>
                             <option value="2601 Wilshire Blvd, Los Angeles, CA 90057">Capi Metro Office</option>
                             <option value="3580 Wilshire Blvd 12th floor Ste 1290 Los Angeles, CA 90005">David Bagdasaryan Attorney</option>
@@ -2122,6 +2125,47 @@ window.currentCrmNotifs = [];
                 setDateTime();
             }
         }
+
+       window.handleServiceChange = function() {
+            const serviceVal = document.getElementById('modalApptService').value;
+            const durationSelect = document.getElementById('aDuration');
+            
+            // Вытаскиваем цифры до дефиса (например, "001", "09", "17")
+            const prefixMatch = serviceVal.match(/^(\d+)-/);
+            if (prefixMatch) {
+                const prefix = prefixMatch[1];
+                
+                // Наша карта времени для каждого сервиса
+                const durationMap = {
+                    '001': '30 minutes',
+                    '01': '25 minutes',
+                    '02': '30 minutes',
+                    '03': '10 minutes',
+                    '04': '10 minutes',
+                    '05': '35 minutes',
+                    '06': '20 minutes',
+                    '07': '30 minutes',
+                    '08': '30 minutes',
+                    '09': '1 hour',
+                    '10': '3 hours',
+                    '11': '3 hours',
+                    '12': '1 hour',
+                    '13': '1 hour',
+                    '14': '15 minutes',
+                    '15': '30 minutes',
+                    '16': '2 hours',
+                    '17': '2 hours'
+                };
+                
+                // Если префикс есть в базе, меняем длительность
+                if (durationMap[prefix]) {
+                    durationSelect.value = durationMap[prefix];
+                }
+            }
+            
+            // Обновляем текст превью SMS
+            window.updatePreview(); 
+        };
 
         window.updatePreview = function() {
             const name = document.getElementById('modalApptName').value || 'Client'; const staff = document.getElementById('modalApptStaff').value; const duration = document.getElementById('aDuration').value;
