@@ -876,7 +876,7 @@
                         <button onclick="changeViewDate(1)">→</button>
                     </div>
 
-                    <select id="viewSelector" onchange="renderMainCalendar()">
+                  <select id="viewSelector" onchange="renderMainCalendar()">
                         <option value="agenda">📅 Agenda</option>
                         <option value="day">📌 Day</option>
                         <option value="week">🗓️ Week</option>
@@ -884,6 +884,12 @@
                         <option value="month-full">📆 Month (full)</option>
                     </select>
                 </div>
+                
+                <!-- ВОТ ЭТИ ДВЕ СТРОЧКИ ВЕРНУТ КАЛЕНДАРЬ И ВКЛАДКИ К ЖИЗНИ -->
+                <div class="cal-content" id="calendarContent"></div>
+            </div>
+
+            <!-- INBOX UI -->
 
             <!-- INBOX UI -->
             <div id="inboxWrapper" class="inbox-wrapper" style="display: none; border-radius: 0 0 16px 16px;">
