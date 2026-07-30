@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>All Docs Consulting - CRM Portal</title>
     <style>
+        @keyframes slideBounce { 0% { transform: translateY(-15px); opacity: 0; } 60% { transform: translateY(5px); opacity: 1; } 100% { transform: translateY(0); opacity: 1; } }
+        @keyframes shine { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
+        .freq-alert { display: none; background: linear-gradient(135deg, #e65100 0%, #f57c00 100%); border-radius: 12px; padding: 16px 20px; color: white; align-items: center; gap: 15px; margin-bottom: 25px; box-shadow: 0 8px 25px rgba(230, 81, 0, 0.3); animation: slideBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); position: relative; overflow: hidden; }
+        .freq-alert::after { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); animation: shine 3s infinite; }
+        .freq-icon { font-size: 24px; background: white; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.1); flex-shrink: 0;}
        :root { --primary-color: #3e2723; --secondary-color: #5d4037; --accent-color: #a1683a; --accent-hover: #8b552b; --bg-color: #f5f2eb; --form-bg: #ffffff; --border-color: #e0d8d3; --surface-color: #f8f5f2; --sidebar-width: 260px; --appt-bg: #fdfaf6; --success-color: #2e7d32; --danger-bg: #fff0f0; --danger-text: #c62828; }
         body { font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); color: var(--primary-color); line-height: 1.6; margin: 0; display: flex; position: relative;}
         
@@ -733,9 +738,15 @@
                     <button type="button" class="book-appt-btn" onclick="openApptModal()">📅 Book Appointment</button>
                 </div>
                 
-                <div id="linkedContactsPanel" style="display:none; margin-bottom: 25px; background: #e8f5e9; border-left: 4px solid #2e7d32; padding: 12px; border-radius: 8px;">
+             <div id="linkedContactsPanel" style="display:none; margin-bottom: 25px; background: #e8f5e9; border-left: 4px solid #2e7d32; padding: 12px; border-radius: 8px;">
                     <div style="font-size: 12px; font-weight: bold; color: #2e7d32; margin-bottom: 8px;">🔗 LINKED CONTACTS (Delete here):</div>
                     <div id="linkedContactsList" style="font-size: 13.5px; color: #1b5e20;"></div>
+                </div>
+
+                <!-- НАШ НОВЫЙ БАННЕР ЧАСТЫХ ЗВОНКОВ -->
+                <div id="frequentCallerAlert" class="freq-alert">
+                    <div class="freq-icon">🔁</div>
+                    <div id="freqAlertText"></div>
                 </div>
 
                 <div style="margin-top: 20px; margin-bottom: 15px;">
@@ -1073,15 +1084,24 @@
     const smsTemplates = {
         ENG: `All Docs Consulting\n\nHello {name},\nyou have an appointment\nwith {staff}\n\nStart Time\n{date}\n{time}\n\nAppointments Length {duration}\n\nAddress\n{address}\n\nService\n{service}\n\nFor questions call:\n
 
+
+
 (747) 204-2404
+
 \n\nSTOP=opt-out.`,
         RUSS: `All Docs Consulting\n\nПривет {name} ,\nу тебя назначена встреча\nс {staff}\n\nДата начала\n{date}\n{time}\n\nпродолжительность\nвстречи {duration}\n\nАдрес\n{address}\n\nУслуга\n{service}\n\nПо вопросам звоните:\n
 
+
+
 (747) 204-2404
+
 \n\nSTOP=opt-out.`,
         ARM: `All Docs Consulting\n\nԲարև {name},\nԴուք ունեք հանդիպում\n{staff} -ի հետ\n\nՍկիզբ\n{date}\n{time}\n\nՏևողությունը {duration}\n\nՀասցե\n{address}\n\nԾառայություն\n{service}\n\nՀարցերի դեպքում զանգահարեք՝\n
 
+
+
 (747) 204-2404
+
 \n\nSTOP=opt-out.`
     };
 
@@ -2755,12 +2775,45 @@ window.currentCrmNotifs = [];
         });
 
         function clearClientData() {
+            document.getElementById('frequentCallerAlert').style.display = 'none';
             window.currentClient = null; window._tempLinkedData = null; document.getElementById('hiddenClientId').value = ''; document.getElementById('displayClientId').textContent = ''; document.getElementById('clientBadge').style.display = 'none';
             document.getElementById('matterSelect').innerHTML = '<option value="">-- Auto-detecting matters... --</option>'; document.getElementById('matterContainer').style.display = 'none'; document.getElementById('linkedContactsPanel').style.display = 'none'; window.renderCallerRows(); document.getElementById('unrecognizedCallerSection').style.display = 'none';
             const assigneeTextDiv = document.getElementById('matterAssigneeText'); if (assigneeTextDiv) assigneeTextDiv.style.display = 'none';
             if(resolvedCheckbox) resolvedCheckbox.checked = false; if(staffRow) staffRow.style.display = 'flex'; if(briefDesc) briefDesc.setAttribute('required', 'true');
             const leadCard = document.getElementById('leadCardWrapper'); if (leadCard) { leadCard.classList.remove('disabled'); leadCard.querySelector('input').disabled = false; }
             const urgentCb = document.getElementById('urgentCallCheckbox'); if(urgentCb) urgentCb.checked = false;
+        }
+
+        window.checkFrequentCaller = async function(phone) {
+            if (!phone || phone.length < 7) return;
+            const alertBox = document.getElementById('frequentCallerAlert');
+            const textContainer = document.getElementById('freqAlertText');
+            
+            try {
+                const cleanPhone = phone.replace(/[^\d+]/g, '');
+                const res = await fetch(`/api/get-journal?search=${encodeURIComponent(cleanPhone)}&t=${Date.now()}`, { cache: 'no-store' });
+                const data = await res.json();
+                
+                if (data.success && data.logs) {
+                    const todayStr = new Date().toLocaleDateString();
+                    const todayCalls = data.logs.filter(log => new Date(log.created_at).toLocaleDateString() === todayStr);
+                    
+                    if (todayCalls.length > 0) {
+                        const callNum = todayCalls.length + 1;
+                        let ordinal = 'th';
+                        if (callNum === 2) ordinal = 'nd';
+                        if (callNum === 3) ordinal = 'rd';
+                        
+                        textContainer.innerHTML = `<div style="font-size: 15px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Frequent Caller Alert</div><div style="font-size: 14px; margin-top: 2px; opacity: 0.95;">This is the client's <b style="background: white; color: #e65100; padding: 2px 8px; border-radius: 8px; margin: 0 4px; font-size: 15px;">${callNum}${ordinal} call</b> today! Check notes.</div>`;
+                        
+                        alertBox.style.display = 'flex';
+                    } else {
+                        alertBox.style.display = 'none';
+                    }
+                }
+           matterSelect.onchange = function() { const selectedOpt = this.options[this.selectedIndex]; const assignedTo = selectedOpt ? selectedOpt.getAttribute('data-assignee') : ""; if (assignedTo) { assigneeTextDiv.style.display = 'block'; assigneeSpan.textContent = assignedTo; } else { assigneeTextDiv.style.display = 'none'; } };
+            
+            if (client.phone) { window.checkFrequentCaller(client.phone); }
         }
 
         async function fetchDocketwiseData(query, isPhone) {
@@ -2830,6 +2883,7 @@ window.currentCrmNotifs = [];
 
         document.getElementById('fullName').addEventListener('input', e => { const val = e.target.value.trim(); if (val === '') clearClientData(); handleSearch(val, false); });
         document.getElementById('phoneNumber').addEventListener('input', e => { const val = e.target.value.replace(/\D/g, ''); if (val === '') clearClientData(); handleSearch(val, true); });
+        document.getElementById('phoneNumber').addEventListener('blur', e => { const val = e.target.value.replace(/[^\d+]/g, ''); if (val.length >= 7) window.checkFrequentCaller(val); });
         document.addEventListener('click', (e) => {
             if (!e.target.closest('#autocompleteWrapper')) { const clientList = document.getElementById('clientList'); if (clientList) clientList.style.display = 'none'; }
             if (!e.target.closest('#phoneAutocompleteWrapper')) { const phoneList = document.getElementById('phoneList'); if (phoneList) phoneList.style.display = 'none'; }
