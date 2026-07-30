@@ -53,7 +53,11 @@
         input[type="text"], input[type="tel"], input[type="date"], input[type="time"], select, textarea { width: 100%; padding: 14px 16px; border: 2px solid var(--border-color); border-radius: 10px; box-sizing: border-box; font-family: inherit; background-color: var(--surface-color); transition: all 0.2s ease; font-size: 14.5px; color: var(--primary-color); outline: none;}
         textarea { resize: vertical; min-height: 100px; }
         input:focus, select:focus, textarea:focus { border-color: var(--accent-color); background-color: var(--form-bg); box-shadow: 0 0 0 4px rgba(161, 104, 58, 0.1); }
-        
+        .rem-checkbox { cursor: pointer; user-select: none; }
+        .rem-checkbox input { display: none; }
+        .rem-checkbox span { background: var(--surface-color); border: 1px solid var(--border-color); padding: 6px 14px; border-radius: 20px; font-size: 12.5px; font-weight: 600; color: var(--secondary-color); transition: 0.2s; display: inline-block; box-shadow: 0 2px 4px rgba(0,0,0,0.02);}
+        .rem-checkbox:hover span { background: white; border-color: var(--accent-color); }
+        .rem-checkbox input:checked + span { background: var(--accent-color); color: white; border-color: var(--accent-color); box-shadow: 0 4px 10px rgba(161,104,58,0.3); transform: translateY(-1px);}
         .category-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
         @media (max-width: 700px) { .category-grid { grid-template-columns: 1fr; } }
         
@@ -452,7 +456,7 @@
                         <input type="text" id="modalApptPhone" placeholder="+1 (555) 000-0000" oninput="updatePreview()">
                     </div>
                 </div>
-
+      
                 <div class="form-row">
                     <div class="form-group" style="margin-bottom: 15px;">
                         <label>Appt. Location</label>
@@ -533,7 +537,19 @@
                         </div>
                     </div>
                 </div>
-
+<div class="form-group" style="margin-bottom: 15px; width: 100%;">
+                    <label style="font-size: 13px; color: var(--secondary-color);">Automated SMS Reminders (Before Appt)</label>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 5px;">
+                        <label class="rem-checkbox"><input type="checkbox" value="1h"> <span>1 Hour</span></label>
+                        <label class="rem-checkbox"><input type="checkbox" value="3h"> <span>3 Hours</span></label>
+                        <label class="rem-checkbox"><input type="checkbox" value="6h"> <span>6 Hours</span></label>
+                        <label class="rem-checkbox"><input type="checkbox" value="12h"> <span>12 Hours</span></label>
+                        <label class="rem-checkbox"><input type="checkbox" value="1d"> <span>1 Day</span></label>
+                        <label class="rem-checkbox"><input type="checkbox" value="3d"> <span>3 Days</span></label>
+                        <label class="rem-checkbox"><input type="checkbox" value="7d"> <span>7 Days</span></label>
+                        <label class="rem-checkbox"><input type="checkbox" value="1m"> <span>1 Month</span></label>
+                    </div>
+                </div>
                 <div class="form-group" style="margin-bottom: 0;">
                     <label>Message to Client (Internal Note)</label>
                     <textarea id="modalApptMessage" placeholder="E.g., Please bring your passport and tax documents..." style="min-height: 60px;"></textarea>
@@ -2010,6 +2026,7 @@ window.currentCrmNotifs = [];
             document.getElementById('modalApptPhone').value = phoneToUse;
             document.getElementById('modalApptMessage').value = '';
             document.getElementById('availabilityBox').style.display = 'none';
+            document.querySelectorAll('.rem-checkbox input').forEach(cb => cb.checked = false);
             
             const isLead = document.querySelector('input[name="clientStatus"]:checked')?.value === 'Lead'; 
             const titleEl = document.getElementById('apptModalTitle');
@@ -2070,9 +2087,17 @@ window.currentCrmNotifs = [];
             let matchedLoc = Array.from(locSelect.options).find(opt => opt.text === appt.location);
             if(matchedLoc) locSelect.value = matchedLoc.value;
 
-            document.getElementById('modalApptStaff').value = appt.staff;
+           document.getElementById('modalApptStaff').value = appt.staff;
             document.getElementById('aDuration').value = appt.length || "1 hour";
             document.getElementById('modalApptMessage').value = appt.message || "";
+            
+            document.querySelectorAll('.rem-checkbox input').forEach(cb => cb.checked = false);
+            if(appt.smsReminders) {
+                appt.smsReminders.split(',').forEach(val => {
+                    const cb = document.querySelector(`.rem-checkbox input[value="${val}"]`);
+                    if(cb) cb.checked = true;
+                });
+            }
 
             const timeMatch = appt.time.match(/(\d+):(\d+)\s+(AM|PM)/i);
             if(timeMatch) {
@@ -2234,12 +2259,14 @@ window.currentCrmNotifs = [];
 
             const btn = document.getElementById('saveApptBtn'); btn.textContent = "Processing..."; btn.disabled = true;
 
-            const currentStatus = document.querySelector('input[name="clientStatus"]:checked')?.value || 'Existing Client'; 
+          const currentStatus = document.querySelector('input[name="clientStatus"]:checked')?.value || 'Existing Client'; 
             const isLead = currentStatus === 'Lead';
             const clientName = document.getElementById('modalApptName').value.trim() || (isLead ? "New Lead" : "Unknown Client");
             const phoneInput = document.getElementById('modalApptPhone').value.trim();
             const locSelect = document.getElementById('modalApptLocation');
-
+            
+            const reminderCheckboxes = document.querySelectorAll('.rem-checkbox input:checked');
+            const selectedReminders = Array.from(reminderCheckboxes).map(cb => cb.value).join(',');
             const appointmentData = {
                 id: editingId ? parseInt(editingId) : Date.now(), 
                 client: clientName, 
@@ -2252,7 +2279,7 @@ window.currentCrmNotifs = [];
                 bookedBy: localStorage.getItem('loggedInStaff') || "Unknown", 
                 location: locSelect.options[locSelect.selectedIndex].text, 
                 length: durationStr,
-                reminder: apptRemType, language: apptLang, 
+                reminder: apptRemType, language: apptLang, smsReminders: selectedReminders,
                 message: document.getElementById('modalApptMessage').value, 
                 isLead: isLead, clientStatus: currentStatus
             };
@@ -2279,8 +2306,9 @@ window.currentCrmNotifs = [];
                     formattedPhone = '+' + formattedPhone;
                 }
                 
-                // === ОТПРАВКА СИГНАЛА В ZAPIER ===
-                const zapierUrl = `https://hooks.zapier.com/hooks/catch/28342465/44ft1ex/?phone=${encodeURIComponent(formattedPhone)}&message=${encodeURIComponent(smsText)}`;
+               // === ОТПРАВКА СИГНАЛА В ZAPIER ===
+                const reminderMsg = "REMINDER:\n" + smsText;
+                const zapierUrl = `https://hooks.zapier.com/hooks/catch/28342465/44ft1ex/?phone=${encodeURIComponent(formattedPhone)}&message=${encodeURIComponent(smsText)}&reminders=${encodeURIComponent(selectedReminders)}&reminder_msg=${encodeURIComponent(reminderMsg)}&appt_timestamp=${checkDate.getTime()}`;
                 fetch(zapierUrl, { mode: 'no-cors' }).catch(e => console.log('Zapier webhook error:', e));
                 
                 // Запись в Inbox чат для истории (ОБЩАЯ БАЗА)
