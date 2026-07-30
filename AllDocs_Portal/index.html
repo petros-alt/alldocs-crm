@@ -226,8 +226,9 @@
         .cal-dates { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
         .cal-btn { padding: 8px 0; border: none; background: transparent; cursor: pointer; font-size: 13.5px; border-radius: 6px; color: var(--primary-color); font-weight: 500; transition: 0.2s; box-sizing: border-box;}
         .cal-btn:hover:not(:disabled) { background: #f0ebe1; }
-        .cal-btn.selected { background-color: var(--accent-color); color: white; font-weight: bold; box-shadow: 0 2px 8px rgba(161, 104, 58, 0.3); }
+       .cal-btn.selected { background-color: var(--accent-color); color: white; font-weight: bold; box-shadow: 0 2px 8px rgba(161, 104, 58, 0.3); }
         .cal-btn.today-btn { border: 2px solid var(--accent-color); color: var(--accent-color); font-weight: 800; }
+        .cal-btn.today-btn.selected { color: white; }
         
         .mc-cell.is-today { background: #fffcf9; }
         .mc-date.is-today { background: var(--accent-color); color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; position: absolute; top: 8px; right: 8px; opacity: 1; z-index: 2; box-shadow: 0 2px 6px rgba(161, 104, 58, 0.4);}
