@@ -476,9 +476,9 @@
                 </div>
 
                 <div class="form-row">
-                    <div class="form-group" style="margin-bottom: 15px;">
+                   <div class="form-group" style="margin-bottom: 15px;">
                         <label>Service</label>
-                        <select id="modalApptService" onchange="updatePreview()">
+                        <select id="modalApptService" onchange="handleServiceChange()">
                             <option>001-Initial Consultation</option>
                             <option>01-Phone appointment</option>
                             <option>02-Client Registration</option>
@@ -2098,6 +2098,48 @@ window.currentCrmNotifs = [];
                 setDateTime();
             }
         }
+
+       window.handleServiceChange = function() {
+            const serviceVal = document.getElementById('modalApptService').value;
+            const durationSelect = document.getElementById('aDuration');
+            
+            // Ищем цифры в начале строки (001, 01, 17 и т.д.)
+            const prefixMatch = serviceVal.match(/^(\d+)-/);
+            
+            if (prefixMatch) {
+                const prefix = prefixMatch[1];
+                
+                // Словарь: Номер сервиса -> Точное время из выпадающего списка
+                const durationMap = {
+                    '001': '30 minutes',
+                    '01': '25 minutes',
+                    '02': '30 minutes',
+                    '03': '10 minutes',
+                    '04': '10 minutes',
+                    '05': '35 minutes',
+                    '06': '20 minutes',
+                    '07': '30 minutes',
+                    '08': '30 minutes',
+                    '09': '1 hour',
+                    '10': '3 hours',
+                    '11': '3 hours',
+                    '12': '1 hour',
+                    '13': '1 hour',
+                    '14': '15 minutes',
+                    '15': '30 minutes',
+                    '16': '2 hours',
+                    '17': '2 hours'
+                };
+                
+                // Если сервис найден в словаре, меняем Duration
+                if (durationMap[prefix]) {
+                    durationSelect.value = durationMap[prefix];
+                }
+            }
+            
+            // После смены времени сразу обновляем превью SMS
+            window.updatePreview(); 
+        };
 
         window.updatePreview = function() {
             const name = document.getElementById('modalApptName').value || 'Client'; const staff = document.getElementById('modalApptStaff').value; const duration = document.getElementById('aDuration').value;
