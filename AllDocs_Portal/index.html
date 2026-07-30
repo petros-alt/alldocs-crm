@@ -2407,7 +2407,7 @@ window.currentCrmNotifs = [];
             document.getElementById('customerDetailsModal').style.display = 'none'; openApptModal(window._tempNewApptData.name, window._tempNewApptData.phone);
         }
 
-        window.openPreviewModal = async function(id) {
+       window.openPreviewModal = async function(id) {
             await window.loadAppointments();
             const records = window.globalAppointments || []; 
             const appt = records.find(a => a.id === id); if(!appt) return;
@@ -2415,20 +2415,58 @@ window.currentCrmNotifs = [];
 
             let noteHtml = '';
             if (appt.message && appt.message.trim() !== '') {
-                noteHtml = `<div style="margin-top: 20px; background: #fff3e0; border-left: 4px solid #ff9800; padding: 12px; border-radius: 4px;"><div style="color: #e65100; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">🔒 Internal Staff Note:</div><div style="color: #3e2723; font-style: italic;">${appt.message}</div></div>`;
+                noteHtml = `<div style="margin-top: 15px; background: #fff3e0; border-left: 4px solid #ff9800; padding: 15px; border-radius: 8px;">
+                                <div style="color: #e65100; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">🔒 Internal Staff Note:</div>
+                                <div style="color: #3e2723; font-style: italic; font-size: 14px;">${appt.message}</div>
+                            </div>`;
             }
 
+            // Получаем первую букву имени для аватара
+            const initial = appt.client.charAt(0).toUpperCase();
+
+            // Новый, красивый HTML дизайн для модалки
             document.getElementById('previewBody').innerHTML = `
-                <div style="font-size: 20px; font-weight: bold; color: var(--primary-color); margin-bottom: 15px; border-bottom: 1px dashed #eee; padding-bottom: 10px;">👤 ${appt.client}</div>
-                <div style="display: grid; grid-template-columns: 80px 1fr; gap: 8px; margin-bottom: 5px;">
-                    <strong>📅 Date:</strong> <span>${appt.dateStr}</span>
-                    <strong>⏰ Time:</strong> <span><span style="color:var(--accent-color); font-weight:bold;">${appt.time}</span> (${appt.length})</span>
-                    <strong>📞 Phone:</strong> <span>${appt.phone || '--'}</span>
-                    <strong>💼 Service:</strong> <span>${appt.service}</span>
-                    <strong>👨‍💼 Staff:</strong> <span>${appt.staff}</span>
-                    <strong>📝 Booked By:</strong> <span>${appt.bookedBy || 'Admin / Front Desk'}</span>
-                    <strong>📍 Loc:</strong> <span>${appt.location}</span>
+                <!-- Шапка с клиентом -->
+                <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
+                    <div style="width: 55px; height: 55px; border-radius: 50%; background: var(--accent-color); color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; box-shadow: 0 4px 10px rgba(161, 104, 58, 0.3);">
+                        ${initial}
+                    </div>
+                    <div>
+                        <div style="font-size: 22px; font-weight: 800; color: var(--primary-color); line-height: 1.2;">${appt.client}</div>
+                        <a href="tel:${appt.phone}" style="color: var(--secondary-color); font-size: 14px; font-weight: 500; text-decoration: none; display: inline-block; margin-top: 4px; padding: 2px 8px; background: var(--surface-color); border-radius: 6px; border: 1px solid var(--border-color);">📞 ${appt.phone || 'No phone'}</a>
+                    </div>
                 </div>
+
+                <!-- Карточки Дата/Время и Место -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                    <div style="background: var(--surface-color); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color);">
+                        <div style="font-size: 11px; text-transform: uppercase; color: #888; font-weight: bold; margin-bottom: 8px;">Date & Time</div>
+                        <div style="font-size: 14.5px; font-weight: 700; color: var(--primary-color); margin-bottom: 5px;">📅 ${appt.dateStr}</div>
+                        <div style="font-size: 14.5px; font-weight: 700; color: var(--accent-color);">⏰ ${appt.time} <span style="font-size: 12px; font-weight: normal; color: var(--secondary-color);">(${appt.length})</span></div>
+                    </div>
+                    
+                    <div style="background: var(--surface-color); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color);">
+                        <div style="font-size: 11px; text-transform: uppercase; color: #888; font-weight: bold; margin-bottom: 8px;">Location</div>
+                        <div style="font-size: 13.5px; color: var(--primary-color); line-height: 1.5; font-weight: 500;">📍 ${appt.location}</div>
+                    </div>
+                </div>
+
+                <!-- Детали аппойнтмента -->
+                <div style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 0 15px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px dashed var(--border-color);">
+                        <span style="color: #888; font-size: 13px; font-weight: 600;">💼 Service:</span>
+                        <span style="font-weight: 700; color: var(--primary-color); font-size: 14px; text-align: right;">${appt.service}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px dashed var(--border-color);">
+                        <span style="color: #888; font-size: 13px; font-weight: 600;">👨‍💼 Staff:</span>
+                        <span style="font-weight: 700; color: var(--primary-color); font-size: 14px;">${appt.staff}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0;">
+                        <span style="color: #888; font-size: 13px; font-weight: 600;">📝 Booked By:</span>
+                        <span style="font-size: 13px; color: var(--secondary-color); font-weight: 500;">${appt.bookedBy || 'Admin / Front Desk'}</span>
+                    </div>
+                </div>
+
                 ${noteHtml}
             `;
 
@@ -2437,13 +2475,12 @@ window.currentCrmNotifs = [];
                 btnContainer.innerHTML = ''; 
             } else {
                 btnContainer.innerHTML = `
-                    <button id="previewEditBtn" style="background: var(--accent-color); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s;" onclick="document.getElementById('previewModal').style.display = 'none'; editAppointment(${id});">✏️ Edit</button>
-                    <button id="previewDelBtn" style="background: #d32f2f; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s;" onclick="if(confirm('Are you sure you want to delete this appointment?')) deleteAppointment(${id})">🗑️ Delete</button>
+                    <button id="previewEditBtn" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; box-shadow: 0 2px 6px rgba(161,104,58,0.2);" onclick="document.getElementById('previewModal').style.display = 'none'; editAppointment(${id});">✏️ Edit</button>
+                    <button id="previewDelBtn" style="background: #fff0f0; color: #d32f2f; border: 1px solid #ffcdd2; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;" onclick="if(confirm('Are you sure you want to delete this appointment?')) deleteAppointment(${id})">🗑️ Delete</button>
                 `;
             }
             document.getElementById('previewModal').style.display = 'flex';
         };
-
         window.deleteAppointment = async function(id) {
             await window.loadAppointments();
             let records = window.globalAppointments || []; 
