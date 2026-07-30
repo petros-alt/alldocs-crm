@@ -98,11 +98,45 @@
         .client-phone-list { font-size: 12.5px; color: var(--secondary-color); opacity: 0.8; }
         .loading-indicator { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--accent-color); font-size: 13px; display: none; font-weight: bold; pointer-events: none; background: #fcfbfa; padding-left: 5px;}
 
-        /* NOTIFICATIONS & MODALS */
-        #notificationContainer { position: fixed; top: 25px; right: 35px; z-index: 1000; }
-        #notificationBell { font-size: 24px; cursor: pointer; position: relative; background: white; padding: 12px 15px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: transform 0.2s; border: 1px solid var(--border-color); }
-        #notificationBell:hover { transform: scale(1.05); }
-        .badge { background: #d32f2f; color: white; border-radius: 50%; padding: 3px 7px; font-size: 11px; position: absolute; top: -5px; right: -5px; font-weight: bold; border: 2px solid white; display: none; }
+       /* NOTIFICATIONS & MODALS */
+        #notificationContainer { position: fixed; top: 30px; right: 40px; z-index: 1000; }
+        
+        #notificationBell { 
+            font-size: 28px; 
+            cursor: pointer; 
+            position: relative; 
+            background: var(--form-bg); 
+            border-radius: 50%; 
+            box-shadow: 0 8px 25px rgba(62, 39, 35, 0.12); 
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            border: none; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            width: 65px; 
+            height: 65px; 
+            box-sizing: border-box; 
+        }
+        
+        #notificationBell:hover { 
+            transform: translateY(-4px) scale(1.02); 
+            box-shadow: 0 12px 35px rgba(62, 39, 35, 0.2); 
+        }
+        
+        .badge { 
+            background: #e65100; /* Яркий акцентный цвет */
+            color: white; 
+            border-radius: 50%; 
+            padding: 4px 8px; 
+            font-size: 13px; 
+            position: absolute; 
+            top: -2px; 
+            right: -4px; 
+            font-weight: 800; 
+            border: 3px solid var(--form-bg); 
+            display: none; 
+            box-shadow: 0 4px 10px rgba(230, 81, 0, 0.3); 
+        }
         #notificationDropdown { display: none; position: absolute; top: 65px; right: 0; width: 380px; background: var(--form-bg); border-radius: 16px; box-shadow: 0 12px 40px rgba(62, 39, 35, 0.12); border: 1px solid var(--border-color); overflow: hidden; animation: fadeIn 0.2s ease; }
         .dropdown-header { background: var(--form-bg); padding: 18px 20px; border-bottom: 1px solid var(--surface-color); display: flex; justify-content: space-between; align-items: center; }
         .dropdown-header h4 { margin: 0; color: var(--accent-color); font-size: 13.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
