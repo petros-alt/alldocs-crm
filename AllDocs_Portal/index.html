@@ -743,7 +743,7 @@
                         </label>
                     </div>
 
-                    <div class="form-row" id="staffSelectionRow">
+                  <div class="form-row" id="staffSelectionRow">
                         <div class="form-group">
                             <label>Assigned To / Staff (Notify via Bell 🔔):</label>
                             <select id="assignedStaff"></select>
@@ -752,6 +752,7 @@
                             <button type="button" id="transferCallBtn" style="height:50px; width:100%; background:var(--surface-color); border:2px solid var(--accent-color); color:var(--accent-color); font-weight:700; border-radius:10px; cursor:pointer; transition: 0.2s;">🔀 Transfer Call</button>
                         </div>
                     </div>
+                </div> <!-- ВОТ ЭТОТ DIV ВСЁ ИСПРАВИТ (он закрывает standardCallSection) -->
 
                 <button type="submit" class="submit-btn" id="submitBtn">Save Call Log to Internal CRM</button>
             </form>
