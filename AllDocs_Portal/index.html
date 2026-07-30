@@ -103,9 +103,9 @@
         #notificationBell { font-size: 24px; cursor: pointer; position: relative; background: white; padding: 12px 15px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: transform 0.2s; border: 1px solid var(--border-color); }
         #notificationBell:hover { transform: scale(1.05); }
         .badge { background: #d32f2f; color: white; border-radius: 50%; padding: 3px 7px; font-size: 11px; position: absolute; top: -5px; right: -5px; font-weight: bold; border: 2px solid white; display: none; }
-        #notificationDropdown { display: none; position: absolute; top: 65px; right: 0; width: 380px; background: white; border-radius: 12px; box-shadow: 0 15px 40px rgba(0,0,0,0.15); border: 1px solid var(--border-color); overflow: hidden; animation: fadeIn 0.2s ease; }
-        .dropdown-header { background: var(--surface-color); padding: 15px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
-        .dropdown-header h4 { margin: 0; color: var(--primary-color); font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+        #notificationDropdown { display: none; position: absolute; top: 65px; right: 0; width: 380px; background: var(--form-bg); border-radius: 16px; box-shadow: 0 12px 40px rgba(62, 39, 35, 0.12); border: 1px solid var(--border-color); overflow: hidden; animation: fadeIn 0.2s ease; }
+        .dropdown-header { background: var(--form-bg); padding: 18px 20px; border-bottom: 1px solid var(--surface-color); display: flex; justify-content: space-between; align-items: center; }
+        .dropdown-header h4 { margin: 0; color: var(--accent-color); font-size: 13.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
         #notifList { max-height: 380px; overflow-y: auto; background: #fafafa; }
         
         @keyframes pulseAlert { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
@@ -251,19 +251,24 @@
 
 <button class="clear-db-btn" onclick="clearSandboxData()">🗑️ Clear Sandbox Data</button>
 
-<!-- NOTIFICATIONS -->
 <div id="notificationContainer">
-    <div id="notificationBell" title="Click anywhere to enable sound!">🔔<span id="notifBadge" class="badge">0</span></div>
+    <div id="notificationBell" title="Notifications">🔔<span id="notifBadge" class="badge">0</span></div>
     
-    <!-- TEST PUSH BUTTON -->
-    <div style="font-size: 11px; text-align: center; margin-top: 5px; cursor: pointer; color: var(--accent-color); font-weight: bold;" onclick="testBrowserPush()">Test Push</div>
+    <!-- Кнопка спрятана, чтобы не портить вид, но осталась кликабельной для тестов -->
+    <div style="font-size: 10px; text-align: center; margin-top: 5px; cursor: pointer; color: transparent; user-select: none;" onclick="testBrowserPush()">.</div>
     
     <div id="notificationDropdown">
         <div class="dropdown-header">
-            <h4>Incoming Tasks</h4>
-            <span id="closeDropdownBtn" style="cursor: pointer; color: #888; font-size: 18px;">✖</span>
+            <h4>📥 Incoming Tasks</h4>
+            <span id="closeDropdownBtn" style="cursor: pointer; color: var(--secondary-color); font-size: 16px; transition: 0.2s;">✖</span>
         </div>
-        <div id="notifList"><div style="color: #888; text-align: center; padding: 30px 20px; font-size: 14px;">No new tasks.</div></div>
+        <div id="notifList">
+            <div style="padding: 45px 20px; text-align: center; color: #a09895;">
+                <div style="font-size: 38px; margin-bottom: 12px; opacity: 0.4;">📭</div>
+                <div style="font-size: 15px; font-weight: 600; color: var(--secondary-color);">You're all caught up!</div>
+                <div style="font-size: 13px; margin-top: 4px;">No new tasks at the moment.</div>
+            </div>
+        </div>
     </div>
 </div>
 
