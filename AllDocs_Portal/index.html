@@ -2784,7 +2784,7 @@ window.currentCrmNotifs = [];
             const urgentCb = document.getElementById('urgentCallCheckbox'); if(urgentCb) urgentCb.checked = false;
         }
 
-        window.checkFrequentCaller = async function(phone) {
+       window.checkFrequentCaller = async function(phone) {
             if (!phone || phone.length < 7) return;
             const alertBox = document.getElementById('frequentCallerAlert');
             const textContainer = document.getElementById('freqAlertText');
@@ -2811,10 +2811,8 @@ window.currentCrmNotifs = [];
                         alertBox.style.display = 'none';
                     }
                 }
-           matterSelect.onchange = function() { const selectedOpt = this.options[this.selectedIndex]; const assignedTo = selectedOpt ? selectedOpt.getAttribute('data-assignee') : ""; if (assignedTo) { assigneeTextDiv.style.display = 'block'; assigneeSpan.textContent = assignedTo; } else { assigneeTextDiv.style.display = 'none'; } };
-            
-            if (client.phone) { window.checkFrequentCaller(client.phone); }
-        }
+            } catch (e) { console.log('Freq check error', e); }
+        };
 
         async function fetchDocketwiseData(query, isPhone) {
             try { const type = isPhone ? 'phone' : 'name'; const res = await fetch(`/api/search?query=${encodeURIComponent(query)}&type=${type}`); const data = await res.json(); return data.success && data.clients ? data.clients : []; } catch (error) { return []; }
@@ -2843,8 +2841,10 @@ window.currentCrmNotifs = [];
                 if (initialAssignee) { assigneeTextDiv.style.display = 'block'; assigneeSpan.textContent = initialAssignee; } else { assigneeTextDiv.style.display = 'none'; }
             } else { assigneeTextDiv.style.display = 'none'; }
             
-            document.getElementById('matterContainer').style.display = 'block';
+          document.getElementById('matterContainer').style.display = 'block';
             matterSelect.onchange = function() { const selectedOpt = this.options[this.selectedIndex]; const assignedTo = selectedOpt ? selectedOpt.getAttribute('data-assignee') : ""; if (assignedTo) { assigneeTextDiv.style.display = 'block'; assigneeSpan.textContent = assignedTo; } else { assigneeTextDiv.style.display = 'none'; } };
+            
+            if (client.phone) { window.checkFrequentCaller(client.phone); }
         }
 
         const handleSearch = debounce(async (query, isPhone) => {
