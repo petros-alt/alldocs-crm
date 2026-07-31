@@ -2754,16 +2754,16 @@ window.renderMainCalendar = async function() {
     const staffF = document.getElementById('staffFilter').value; if(staffF !== 'All Staff') { records = records.filter(r => r.staff === staffF); }
     const statusF = document.getElementById('statusFilter').value; if(statusF !== 'All Statuses') { records = records.filter(r => { const recStatus = r.clientStatus || (r.isLead ? 'Lead' : 'Existing Client'); return recStatus === statusF; }); }
 
-    if (view === 'agenda') {
-        title.textContent = `${months[m]} ${y}`; 
-        let html = ''; let currentDate = ''; 
-        
-        const sorted = records.filter(a => {
-            const d = new Date(a.timestamp);
-            return d.getMonth() === m && d.getFullYear() === y;
-        }).sort((a,b) => a.timestamp - b.timestamp);
+   if (view === 'agenda') {
+                title.textContent = `${months[m]} ${y}`; 
+                let html = ''; let currentDate = ''; 
+                
+                const sorted = records.filter(a => {
+                    const d = new Date(a.timestamp);
+                    return d.getMonth() === m && d.getFullYear() === y;
+                }).sort((a,b) => a.timestamp - b.timestamp);
 
-        if(sorted.length === 0) { area.innerHTML = `<div style="padding:30px; text-align:center; color:var(--secondary-color);">No appointments found in ${months[m]} ${y}.</div>`; return; }
+                if(sorted.length === 0) { area.innerHTML = `<div style="padding:30px; text-align:center; color:var(--secondary-color);">No appointments found in ${months[m]} ${y}.</div>`; return; }
         
         sorted.forEach(appt => {
             const dObj = new Date(appt.timestamp); const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; const dateTitle = `${days[dObj.getDay()]}, ${dObj.getMonth()+1}/${dObj.getDate()}`;
