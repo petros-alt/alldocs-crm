@@ -1,5 +1,4 @@
 import { google } from 'googleapis';
-import postgres from '@vercel/postgres';
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 const auth = new google.auth.JWT(
@@ -11,10 +10,8 @@ const auth = new google.auth.JWT(
 const calendar = google.calendar({ version: 'v3', auth });
 const calendarId = 'alldocsconsulting@gmail.com';
 
-// Вспомогательная функция для парсинга описания (чтобы вытащить телефон, сотрудника и т.д.)
 function extractFromDescription(desc, fieldName) {
     if (!desc) return '';
-    // Ищет строчку вида "Phone: +1 555-5555" или "Staff: Artak"
     const regex = new RegExp(`${fieldName}:\\s*(.+)`, 'i');
     const match = desc.match(regex);
     return match ? match[1].trim() : '';
@@ -32,12 +29,8 @@ export default async function handler(req, res) {
     }
 
     try {
-        // ==========================================
-        // 1. ЧТЕНИЕ: БЕРЕМ ДАННЫЕ ИЗ GOOGLE И ПЕРЕВОДИМ
-        // ==========================================
         if (req.method === 'GET') {
             const now = new Date();
-            // Берем на 1 месяц назад (чтобы была история) и на 6 месяцев вперед
             const minDate = new Date(); minDate.setMonth(now.getMonth() - 1);
             const maxDate = new Date(); maxDate.setMonth(now.getMonth() + 6);
 
@@ -51,23 +44,19 @@ export default async function handler(req, res) {
 
             const googleEvents = response.data.items || [];
             
-            // "ПЕРЕВОДЧИК" из формата Google в формат твоего календаря
             const mappedAppointments = googleEvents.map(event => {
-                // Пытаемся получить дату начала
                 const startDateTime = event.start.dateTime || event.start.date;
                 if (!startDateTime) return null;
 
                 const startDateObj = new Date(startDateTime);
                 
-                // Форматируем время в "10:30 AM"
                 let hours = startDateObj.getHours();
                 let minutes = startDateObj.getMinutes();
                 const ampm = hours >= 12 ? 'PM' : 'AM';
                 hours = hours % 12;
-                hours = hours ? hours : 12; // 0 часов -> 12
+                hours = hours ? hours : 12; 
                 const formattedTime = hours.toString().padStart(2, '0') + ':' + minutes.toString().padStart(2, '0') + ' ' + ampm;
 
-                // Парсим описание события, если оно есть, чтобы вытащить специфичные данные твоей CRM
                 const desc = event.description || '';
                 const phone = extractFromDescription(desc, 'Phone') || '';
                 const staff = extractFromDescription(desc, 'Staff') || 'Admin';
@@ -75,11 +64,10 @@ export default async function handler(req, res) {
                 const message = extractFromDescription(desc, 'Note') || '';
                 const length = extractFromDescription(desc, 'Duration') || '30 minutes';
 
-                // Возвращаем объект ровно в том виде, который ждет твой frontend
                 return {
-                    id: event.id, // Теперь ID - это буквенно-цифровой код Гугла (например "3j4k2l3j4k")
+                    id: event.id, 
                     client: event.summary || 'Unknown Client',
-                    dateStr: startDateObj.toDateString(), // "Fri Jul 31 2026"
+                    dateStr: startDateObj.toDateString(), 
                     timestamp: startDateObj.getTime(),
                     time: formattedTime,
                     location: event.location || '',
@@ -88,18 +76,14 @@ export default async function handler(req, res) {
                     service: service,
                     length: length,
                     message: message,
-                    // Дополнительные поля (оставляем дефолтными, если их нет в Гугле)
                     reminder: 'Text', 
                     language: 'ENG'
                 };
-            }).filter(item => item !== null); // Убираем пустые/сломанные события
+            }).filter(item => item !== null); 
 
             return res.status(200).json({ success: true, appointments: mappedAppointments });
         }
 
-        // ==========================================
-        // 2. ЗАПИСЬ (СОХРАНЕНИЕ) - ПОКА В ПОСТГРЕС
-        // ==========================================
         if (req.method === 'POST') {
             const { appointments } = req.body;
             
@@ -107,6 +91,8 @@ export default async function handler(req, res) {
                 return res.status(400).json({ success: false, error: 'No appointments data provided' });
             }
 
+            // Подключаем базу прямо внутри запроса, как было у тебя раньше
+            const postgres = await import('@vercel/postgres');
             const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
             const pool = postgres.createPool({ connectionString });
 
