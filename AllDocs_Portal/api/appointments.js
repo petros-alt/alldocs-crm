@@ -1,21 +1,26 @@
 import { google } from 'googleapis';
-// Подключаем базу данных, как у тебя и было
-import postgres from '@vercel/postgres'; 
+import postgres from '@vercel/postgres';
 
-// Настраиваем доступ к Гуглу через переменные окружения Vercel
 const SCOPES = ['https://www.googleapis.com/auth/calendar'];
 const auth = new google.auth.JWT(
     process.env.GOOGLE_CLIENT_EMAIL,
     null,
-    // Vercel иногда ломает переносы строк, эта команда .replace всё исправляет
     (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
     SCOPES
 );
 const calendar = google.calendar({ version: 'v3', auth });
-const calendarId = 'alldocsconsulting@gmail.com'; // Твой фиолетовый календарь
+const calendarId = 'alldocsconsulting@gmail.com';
+
+// Вспомогательная функция для парсинга описания (чтобы вытащить телефон, сотрудника и т.д.)
+function extractFromDescription(desc, fieldName) {
+    if (!desc) return '';
+    // Ищет строчку вида "Phone: +1 555-5555" или "Staff: Artak"
+    const regex = new RegExp(`${fieldName}:\\s*(.+)`, 'i');
+    const match = desc.match(regex);
+    return match ? match[1].trim() : '';
+}
 
 export default async function handler(req, res) {
-    // Настройка CORS для работы из браузера
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -28,31 +33,72 @@ export default async function handler(req, res) {
 
     try {
         // ==========================================
-        // 1. ОТДАЕМ КАЛЕНДАРЬ ФРОНТЕНДУ (GET) - ТЕПЕРЬ ИЗ GOOGLE!
+        // 1. ЧТЕНИЕ: БЕРЕМ ДАННЫЕ ИЗ GOOGLE И ПЕРЕВОДИМ
         // ==========================================
         if (req.method === 'GET') {
-            // Запрашиваем события от текущего момента и на 3 месяца вперед
             const now = new Date();
-            const future = new Date();
-            future.setMonth(now.getMonth() + 3);
+            // Берем на 1 месяц назад (чтобы была история) и на 6 месяцев вперед
+            const minDate = new Date(); minDate.setMonth(now.getMonth() - 1);
+            const maxDate = new Date(); maxDate.setMonth(now.getMonth() + 6);
 
             const response = await calendar.events.list({
                 calendarId: calendarId,
-                timeMin: now.toISOString(),
-                timeMax: future.toISOString(),
+                timeMin: minDate.toISOString(),
+                timeMax: maxDate.toISOString(),
                 singleEvents: true,
                 orderBy: 'startTime',
             });
 
-            // Массив всех встреч из Гугла
-            const events = response.data.items; 
+            const googleEvents = response.data.items || [];
             
-            // Отправляем их в твою форму
-            return res.status(200).json({ success: true, appointments: events });
+            // "ПЕРЕВОДЧИК" из формата Google в формат твоего календаря
+            const mappedAppointments = googleEvents.map(event => {
+                // Пытаемся получить дату начала
+                const startDateTime = event.start.dateTime || event.start.date;
+                if (!startDateTime) return null;
+
+                const startDateObj = new Date(startDateTime);
+                
+                // Форматируем время в "10:30 AM"
+                let hours = startDateObj.getHours();
+                let minutes = startDateObj.getMinutes();
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12; // 0 часов -> 12
+                const formattedTime = hours.toString().padStart(2, '0') + ':' + minutes.toString().padStart(2, '0') + ' ' + ampm;
+
+                // Парсим описание события, если оно есть, чтобы вытащить специфичные данные твоей CRM
+                const desc = event.description || '';
+                const phone = extractFromDescription(desc, 'Phone') || '';
+                const staff = extractFromDescription(desc, 'Staff') || 'Admin';
+                const service = extractFromDescription(desc, 'Service') || 'General Appointment';
+                const message = extractFromDescription(desc, 'Note') || '';
+                const length = extractFromDescription(desc, 'Duration') || '30 minutes';
+
+                // Возвращаем объект ровно в том виде, который ждет твой frontend
+                return {
+                    id: event.id, // Теперь ID - это буквенно-цифровой код Гугла (например "3j4k2l3j4k")
+                    client: event.summary || 'Unknown Client',
+                    dateStr: startDateObj.toDateString(), // "Fri Jul 31 2026"
+                    timestamp: startDateObj.getTime(),
+                    time: formattedTime,
+                    location: event.location || '',
+                    phone: phone,
+                    staff: staff,
+                    service: service,
+                    length: length,
+                    message: message,
+                    // Дополнительные поля (оставляем дефолтными, если их нет в Гугле)
+                    reminder: 'Text', 
+                    language: 'ENG'
+                };
+            }).filter(item => item !== null); // Убираем пустые/сломанные события
+
+            return res.status(200).json({ success: true, appointments: mappedAppointments });
         }
 
         // ==========================================
-        // 2. СОХРАНЯЕМ НОВЫЕ ЗАПИСИ (POST) - Пока оставляем старую логику
+        // 2. ЗАПИСЬ (СОХРАНЕНИЕ) - ПОКА В ПОСТГРЕС
         // ==========================================
         if (req.method === 'POST') {
             const { appointments } = req.body;
@@ -78,13 +124,13 @@ export default async function handler(req, res) {
                 SET data = EXCLUDED.data;
             `;
 
-            return res.status(200).json({ success: true, message: 'Appointments saved to DB (Google sync pending)' });
+            return res.status(200).json({ success: true, message: 'Saved successfully.' });
         }
 
         return res.status(405).json({ success: false, message: 'Method not allowed' });
 
     } catch (error) {
-        console.error('API Error:', error);
+        console.error('Appointments API Error:', error);
         return res.status(500).json({ success: false, error: error.message });
     }
 }
