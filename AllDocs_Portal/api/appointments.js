@@ -29,6 +29,7 @@ export default async function handler(req, res) {
     }
 
     try {
+        // --- ЧТЕНИЕ ИЗ ГУГЛ КАЛЕНДАРЯ ---
         if (req.method === 'GET') {
             const now = new Date();
             const minDate = new Date(); minDate.setMonth(now.getMonth() - 1);
@@ -49,7 +50,6 @@ export default async function handler(req, res) {
                 if (!startDateTime) return null;
 
                 const startDateObj = new Date(startDateTime);
-                
                 let hours = startDateObj.getHours();
                 let minutes = startDateObj.getMinutes();
                 const ampm = hours >= 12 ? 'PM' : 'AM';
@@ -58,12 +58,6 @@ export default async function handler(req, res) {
                 const formattedTime = hours.toString().padStart(2, '0') + ':' + minutes.toString().padStart(2, '0') + ' ' + ampm;
 
                 const desc = event.description || '';
-                const phone = extractFromDescription(desc, 'Phone') || '';
-                const staff = extractFromDescription(desc, 'Staff') || 'Admin';
-                const service = extractFromDescription(desc, 'Service') || 'General Appointment';
-                const message = extractFromDescription(desc, 'Note') || '';
-                const length = extractFromDescription(desc, 'Duration') || '30 minutes';
-
                 return {
                     id: event.id, 
                     client: event.summary || 'Unknown Client',
@@ -71,73 +65,68 @@ export default async function handler(req, res) {
                     timestamp: startDateObj.getTime(),
                     time: formattedTime,
                     location: event.location || '',
-                    phone: phone,
-                    staff: staff,
-                    service: service,
-                    length: length,
-                    message: message,
-                    reminder: 'Text', 
-                    language: 'ENG'
+                    phone: extractFromDescription(desc, 'Phone') || '',
+                    staff: extractFromDescription(desc, 'Staff') || 'Admin',
+                    service: extractFromDescription(desc, 'Service') || 'General Appointment',
+                    length: extractFromDescription(desc, 'Duration') || '1 hour',
+                    message: extractFromDescription(desc, 'Note') || '',
+                    isLead: (event.colorId === '11')
                 };
             }).filter(item => item !== null); 
 
             return res.status(200).json({ success: true, appointments: mappedAppointments });
         }
 
-        if (req.method === 'POST') {
-            const { appointments, newAppointment } = req.body;
+        // --- УДАЛЕНИЕ ИЗ ГУГЛ КАЛЕНДАРЯ ---
+        if (req.method === 'DELETE') {
+            const { id } = req.body;
+            if (!id) return res.status(400).json({ success: false, error: 'No ID provided' });
             
-            // 1. Сохраняем в Postgres (как у тебя и было)
-            if (appointments) {
-                const postgres = await import('@vercel/postgres');
-                const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
-                const pool = postgres.createPool({ connectionString });
+            await calendar.events.delete({ calendarId: calendarId, eventId: id });
+            return res.status(200).json({ success: true, message: 'Deleted successfully' });
+        }
 
-                await pool.sql`
-                    CREATE TABLE IF NOT EXISTS global_appointments (
-                        id INTEGER PRIMARY KEY,
-                        data JSONB
-                    );
-                `;
+        // --- СОЗДАНИЕ И РЕДАКТИРОВАНИЕ В ГУГЛ КАЛЕНДАРЕ ---
+        if (req.method === 'POST' || req.method === 'PUT') {
+            const { newAppointment } = req.body;
+            if (!newAppointment) return res.status(400).json({ success: false, error: 'No appointment data' });
 
-                await pool.sql`
-                    INSERT INTO global_appointments (id, data) 
-                    VALUES (1, ${JSON.stringify(appointments)})
-                    ON CONFLICT (id) DO UPDATE 
-                    SET data = EXCLUDED.data;
-                `;
+            const apptDate = new Date(newAppointment.timestamp);
+            const startTime = apptDate.toISOString();
+            
+            let durationMins = 60; 
+            if (newAppointment.length) {
+                let mins = 0;
+                const hrMatch = newAppointment.length.match(/(\d+)\s*hour/);
+                if (hrMatch) mins += parseInt(hrMatch[1], 10) * 60;
+                const minMatch = newAppointment.length.match(/(\d+)\s*minute/);
+                if (minMatch) mins += parseInt(minMatch[1], 10);
+                if (mins > 0) durationMins = mins;
             }
+            
+            const endDate = new Date(apptDate.getTime() + durationMins * 60000);
+            const endTime = endDate.toISOString();
 
-            // 2. Пушим новую встречу в Гугл Календарь
-            if (newAppointment) {
-                const apptDate = new Date(newAppointment.timestamp);
-                const startTime = apptDate.toISOString();
-                
-                let durationMins = 60; // По умолчанию 1 час
-                if (newAppointment.length) {
-                    let mins = 0;
-                    const hrMatch = newAppointment.length.match(/(\d+)\s*hour/);
-                    if (hrMatch) mins += parseInt(hrMatch[1], 10) * 60;
-                    const minMatch = newAppointment.length.match(/(\d+)\s*minute/);
-                    if (minMatch) mins += parseInt(minMatch[1], 10);
-                    if (mins > 0) durationMins = mins;
-                }
-                
-                const endDate = new Date(apptDate.getTime() + durationMins * 60000);
-                const endTime = endDate.toISOString();
+            const descText = `Phone: ${newAppointment.phone}\nService: ${newAppointment.service}\nStaff: ${newAppointment.staff}\nDuration: ${newAppointment.length}\nNote: ${newAppointment.message || ''}\n\nBooked via CRM.`;
 
-                // Форматируем строго под твой парсер extractFromDescription
-                const descText = `Phone: ${newAppointment.phone}\nService: ${newAppointment.service}\nStaff: ${newAppointment.staff}\nDuration: ${newAppointment.length}\nNote: ${newAppointment.message || ''}\n\nBooked via CRM.`;
+            const event = {
+                summary: `${newAppointment.client}`,
+                location: newAppointment.location,
+                description: descText,
+                start: { dateTime: startTime, timeZone: 'America/Los_Angeles' },
+                end: { dateTime: endTime, timeZone: 'America/Los_Angeles' },
+                colorId: newAppointment.isLead ? '11' : '9', 
+            };
 
-                const event = {
-                    summary: `${newAppointment.client}`,
-                    location: newAppointment.location,
-                    description: descText,
-                    start: { dateTime: startTime, timeZone: 'America/Los_Angeles' },
-                    end: { dateTime: endTime, timeZone: 'America/Los_Angeles' },
-                    colorId: newAppointment.isLead ? '11' : '9', // 11=Красный (Лиды), 9=Синий (Существующие)
-                };
-
+            if (req.method === 'PUT' && newAppointment.id) {
+                // Если передали ID - обновляем существующее (EDIT)
+                await calendar.events.update({
+                    calendarId: calendarId,
+                    eventId: newAppointment.id,
+                    requestBody: event,
+                });
+            } else {
+                // Если ID нет - создаем новое (CREATE)
                 await calendar.events.insert({
                     calendarId: calendarId,
                     requestBody: event,
