@@ -3132,7 +3132,164 @@ window.currentCrmNotifs = [];
                 btn.textContent = '💾 Save to CRM'; btn.disabled = false;
             }
         };
-    });    
+    });  
+    // === ПАТЧ ДЛЯ БУКВЕННЫХ ID ГУГЛА ===
+    window.renderMainCalendar = async function() {
+        await window.loadAppointments();
+        const view = document.getElementById('viewSelector').value; const area = document.getElementById('calendarContent'); area.innerHTML = ''; const title = document.getElementById('mainCalTitle');
+        const months = ['January','February','March','April','May','June','July','August','September','October','November','December']; const y = viewDate.getFullYear(); const m = viewDate.getMonth(); title.textContent = `${months[m]} ${y}`;
+        let records = window.globalAppointments || [];
+        
+        const staffF = document.getElementById('staffFilter').value; if(staffF !== 'All Staff') { records = records.filter(r => r.staff === staffF); }
+        const statusF = document.getElementById('statusFilter').value; if(statusF !== 'All Statuses') { records = records.filter(r => { const recStatus = r.clientStatus || (r.isLead ? 'Lead' : 'Existing Client'); return recStatus === statusF; }); }
+
+        if (view === 'agenda') {
+            let html = ''; let currentDate = ''; const sorted = records.sort((a,b) => a.timestamp - b.timestamp);
+            if(sorted.length === 0) { area.innerHTML = '<div style="padding:30px; text-align:center; color:var(--secondary-color);">No appointments found.</div>'; return; }
+            sorted.forEach(appt => {
+                const dObj = new Date(appt.timestamp); const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; const dateTitle = `${days[dObj.getDay()]}, ${dObj.getMonth()+1}/${dObj.getDate()}`;
+                if (dateTitle !== currentDate) { html += `<div class="agenda-date-header"><span style="font-size: 20px;">📅</span> ${dateTitle}</div>`; currentDate = dateTitle; }
+                let leadBadge = appt.isLead ? '<span style="background: #e65100; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; vertical-align: middle; font-weight: bold; letter-spacing: 0.5px;">🔥 LEAD</span>' : '';
+                html += `<div class="agenda-card" onclick="openPreviewModal('${appt.id}')"><div class="agenda-info"><div class="client-name">${appt.client} ${leadBadge}</div><div class="service-details">${appt.service} @ ${appt.location} <span style="font-size:11px;">WITH</span> ${appt.staff}</div></div><div class="agenda-time">${appt.time}</div></div>`;
+            });
+            area.innerHTML = html;
+        } else if (view === 'month-condensed' || view === 'month-full') {
+            const isCondensed = view === 'month-condensed'; let html = `<div class="month-grid">`;
+            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => { html += `<div class="mc-header">${d}</div>`; });
+            const firstDay = new Date(y, m, 1).getDay(); const daysInMonth = new Date(y, m + 1, 0).getDate();
+            const todayStr = new Date().toDateString(); 
+            for(let i=0; i<firstDay; i++) html += `<div class="mc-cell ${isCondensed ? 'condensed' : ''}" style="background:var(--surface-color);"></div>`; 
+            for(let i=1; i<=daysInMonth; i++) {
+                const cDateStr = new Date(y, m, i).toDateString(); 
+                const isToday = cDateStr === todayStr; 
+                const dayAppts = records.filter(a => new Date(a.timestamp).toDateString() === cDateStr); let content = '';
+                
+                if (isCondensed) { if (dayAppts.length > 0) { const word = dayAppts.length === 1 ? 'appt' : 'appts'; content = `<div class="mc-badge" onclick="openDayList('${cDateStr}')">${dayAppts.length} ${word}</div>`; } } 
+                else { dayAppts.forEach(appt => { let leadIcon = appt.isLead ? '🔥 ' : ''; content += `<div class="mini-appt" onclick="openPreviewModal('${appt.id}')">${appt.time} ${leadIcon}${appt.client.split(' ')[0]}</div>`; }); }
+                
+                html += `<div class="mc-cell ${isCondensed ? 'condensed' : ''} ${isToday ? 'is-today' : ''}"><div class="mc-date ${isToday ? 'is-today' : ''}">${i}</div>${content}</div>`;
+            }
+            html += '</div>'; area.innerHTML = html;
+        }
+    };
+
+    window.openDayList = async function(dateStr) {
+        await window.loadAppointments();
+        const records = window.globalAppointments || []; 
+        const dayAppts = records.filter(a => new Date(a.timestamp).toDateString() === dateStr);
+        const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; const dObj = new Date(dateStr);
+        document.getElementById('dayListTitle').textContent = `Appointments on ${days[dObj.getDay()]}, ${dObj.getMonth()+1}/${dObj.getDate()}`;
+        let html = ''; dayAppts.forEach(appt => { html += `<div class="agenda-card" onclick="openPreviewModal('${appt.id}')" style="padding: 10px 15px; margin-bottom: 8px;"><div class="agenda-info"><div class="client-name" style="font-size: 14px;">${appt.client}</div><div class="service-details" style="font-size: 12px;">${appt.service} with ${appt.staff}</div></div><div class="agenda-time" style="font-size: 13px;">${appt.time}</div></div>`; });
+        document.getElementById('dayListBody').innerHTML = html; document.getElementById('dayListModal').style.display = 'flex';
+    };
+
+    window.openCustomerDetails = async function(phone, name) {
+        document.getElementById('cdName').textContent = name;
+        document.getElementById('cdPhone').textContent = (phone && phone !== "No Phone" && phone !== "null") ? `📞 ${phone}` : '📞 No Phone Provided';
+        document.getElementById('cdAvatar').textContent = name.charAt(0).toUpperCase();
+
+        await window.loadAppointments();
+        const records = window.globalAppointments || [];
+        const appts = records.filter(a => {
+            const phoneMatch = (phone && phone !== "No Phone" && phone !== "null") ? (a.phone === phone) : true;
+            return a.client === name && phoneMatch;
+        }).sort((a,b) => b.timestamp - a.timestamp);
+        
+        const listDiv = document.getElementById('cdApptsList'); listDiv.innerHTML = '';
+
+        if (appts.length === 0) {
+            listDiv.innerHTML = '<div style="padding: 15px; color: #888; font-size: 13px; text-align: center;">No appointments found for this client.</div>';
+        } else {
+            const now = Date.now();
+            appts.forEach(a => {
+                const isPast = a.timestamp < now; 
+                const item = document.createElement('div'); item.className = 'cd-appt-item';
+                const btnHtml = isPast 
+                    ? `<button style="background:#f5f5f5; border:1px solid #ddd; color:#666; padding:4px 12px; border-radius:4px; font-weight:bold; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='#eee'" onmouseout="this.style.background='#f5f5f5'" onclick="openPreviewModal('${a.id}')">View</button>`
+                    : `<button style="background:#e3f2fd; border:none; color:#1976d2; padding:4px 12px; border-radius:4px; font-weight:bold; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='#bbdefb'" onmouseout="this.style.background='#e3f2fd'" onclick="openPreviewModal('${a.id}')">Edit</button>`;
+
+                item.innerHTML = `
+                    <div>
+                        <div class="dt" style="color: ${isPast ? '#888' : 'var(--primary-color)'};">${a.dateStr} at ${a.time}</div>
+                        <div class="svc" style="color: ${isPast ? '#aaa' : 'var(--secondary-color)'};">${a.service} with ${a.staff}</div>
+                    </div>
+                    ${btnHtml}
+                `;
+                listDiv.appendChild(item);
+            });
+        }
+        window._tempNewApptData = { name, phone: phone === "null" ? "" : phone }; document.getElementById('customerDetailsModal').style.display = 'flex';
+    };
+
+    window.openPreviewModal = async function(id) {
+        await window.loadAppointments();
+        const records = window.globalAppointments || []; 
+        const appt = records.find(a => String(a.id) === String(id)); if(!appt) return;
+        document.getElementById('dayListModal').style.display = 'none'; document.getElementById('customerDetailsModal').style.display = 'none';
+
+        let noteHtml = '';
+        if (appt.message && appt.message.trim() !== '') {
+            noteHtml = `<div style="margin-top: 15px; background: #fff3e0; border-left: 4px solid #ff9800; padding: 15px; border-radius: 8px;">
+                            <div style="color: #e65100; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px;">🔒 Internal Staff Note:</div>
+                            <div style="color: #3e2723; font-style: italic; font-size: 14px;">${appt.message}</div>
+                        </div>`;
+        }
+
+        const initial = appt.client.charAt(0).toUpperCase();
+
+        document.getElementById('previewBody').innerHTML = `
+            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
+                <div style="width: 55px; height: 55px; border-radius: 50%; background: var(--accent-color); color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; box-shadow: 0 4px 10px rgba(161, 104, 58, 0.3);">
+                    ${initial}
+                </div>
+                <div>
+                    <div style="font-size: 22px; font-weight: 800; color: var(--primary-color); line-height: 1.2;">${appt.client}</div>
+                    <a href="tel:${appt.phone}" style="color: var(--secondary-color); font-size: 14px; font-weight: 500; text-decoration: none; display: inline-block; margin-top: 4px; padding: 2px 8px; background: var(--surface-color); border-radius: 6px; border: 1px solid var(--border-color);">📞 ${appt.phone || 'No phone'}</a>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div style="background: var(--surface-color); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 11px; text-transform: uppercase; color: #888; font-weight: bold; margin-bottom: 8px;">Date & Time</div>
+                    <div style="font-size: 14.5px; font-weight: 700; color: var(--primary-color); margin-bottom: 5px;">📅 ${appt.dateStr}</div>
+                    <div style="font-size: 14.5px; font-weight: 700; color: var(--accent-color);">⏰ ${appt.time} <span style="font-size: 12px; font-weight: normal; color: var(--secondary-color);">(${appt.length})</span></div>
+                </div>
+                
+                <div style="background: var(--surface-color); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 11px; text-transform: uppercase; color: #888; font-weight: bold; margin-bottom: 8px;">Location</div>
+                    <div style="font-size: 13.5px; color: var(--primary-color); line-height: 1.5; font-weight: 500;">📍 ${appt.location}</div>
+                </div>
+            </div>
+
+            <div style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 0 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px dashed var(--border-color);">
+                    <span style="color: #888; font-size: 13px; font-weight: 600;">💼 Service:</span>
+                    <span style="font-weight: 700; color: var(--primary-color); font-size: 14px; text-align: right;">${appt.service}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px dashed var(--border-color);">
+                    <span style="color: #888; font-size: 13px; font-weight: 600;">👨‍💼 Staff:</span>
+                    <span style="font-weight: 700; color: var(--primary-color); font-size: 14px;">${appt.staff}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0;">
+                    <span style="color: #888; font-size: 13px; font-weight: 600;">📝 Booked By:</span>
+                    <span style="font-size: 13px; color: var(--secondary-color); font-weight: 500;">${appt.bookedBy || 'Admin / Front Desk'}</span>
+                </div>
+            </div>
+
+            ${noteHtml}
+        `;
+
+        const isPast = appt.timestamp < Date.now(); const btnContainer = document.getElementById('previewButtonsContainer');
+        if (isPast) {
+            btnContainer.innerHTML = ''; 
+        } else {
+            btnContainer.innerHTML = `
+                <button id="previewEditBtn" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; box-shadow: 0 2px 6px rgba(161,104,58,0.2);" onclick="document.getElementById('previewModal').style.display = 'none'; editAppointment('${id}');">✏️ Edit</button>
+                <button id="previewDelBtn" style="background: #fff0f0; color: #d32f2f; border: 1px solid #ffcdd2; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;" onclick="if(confirm('Are you sure you want to delete this appointment?')) deleteAppointment('${id}')">🗑️ Delete</button>
+            `;
+        }
+        document.getElementById('previewModal').style.display = 'flex';
+    };
 </script>
 </body>
 </html>
