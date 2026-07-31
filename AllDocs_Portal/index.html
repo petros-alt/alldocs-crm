@@ -2744,56 +2744,55 @@ window.currentCrmNotifs = [];
             document.getElementById('dayListBody').innerHTML = html; document.getElementById('dayListModal').style.display = 'flex';
         };
 
- window.renderMainCalendar = async function() {
-            await window.loadAppointments();
-            const view = document.getElementById('viewSelector').value; const area = document.getElementById('calendarContent'); area.innerHTML = ''; const title = document.getElementById('mainCalTitle');
-            const months = ['January','February','March','April','May','June','July','August','September','October','November','December']; const y = viewDate.getFullYear(); const m = viewDate.getMonth(); title.textContent = `${months[m]} ${y}`;
-            let records = window.globalAppointments || [];
+// === ФИНАЛЬНЫЙ КАЛЕНДАРЬ И МОДАЛКИ ===
+window.renderMainCalendar = async function() {
+    await window.loadAppointments();
+    const view = document.getElementById('viewSelector').value; const area = document.getElementById('calendarContent'); area.innerHTML = ''; const title = document.getElementById('mainCalTitle');
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December']; const y = viewDate.getFullYear(); const m = viewDate.getMonth(); title.textContent = `${months[m]} ${y}`;
+    let records = window.globalAppointments || [];
+    
+    const staffF = document.getElementById('staffFilter').value; if(staffF !== 'All Staff') { records = records.filter(r => r.staff === staffF); }
+    const statusF = document.getElementById('statusFilter').value; if(statusF !== 'All Statuses') { records = records.filter(r => { const recStatus = r.clientStatus || (r.isLead ? 'Lead' : 'Existing Client'); return recStatus === statusF; }); }
+
+    if (view === 'agenda') {
+        title.textContent = `${months[m]} ${y}`; 
+        let html = ''; let currentDate = ''; 
+        
+        const sorted = records.filter(a => {
+            const d = new Date(a.timestamp);
+            return d.getMonth() === m && d.getFullYear() === y;
+        }).sort((a,b) => a.timestamp - b.timestamp);
+
+        if(sorted.length === 0) { area.innerHTML = `<div style="padding:30px; text-align:center; color:var(--secondary-color);">No appointments found in ${months[m]} ${y}.</div>`; return; }
+        
+        sorted.forEach(appt => {
+            const dObj = new Date(appt.timestamp); const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; const dateTitle = `${days[dObj.getDay()]}, ${dObj.getMonth()+1}/${dObj.getDate()}`;
+            if (dateTitle !== currentDate) { html += `<div class="agenda-date-header"><span style="font-size: 20px;">📅</span> ${dateTitle}</div>`; currentDate = dateTitle; }
+            let leadBadge = appt.isLead ? '<span style="background: #e65100; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; vertical-align: middle; font-weight: bold; letter-spacing: 0.5px;">🔥 LEAD</span>' : '';
+            html += `<div class="agenda-card" onclick="openPreviewModal('${appt.id}')"><div class="agenda-info"><div class="client-name">${appt.client} ${leadBadge}</div><div class="service-details">${appt.service} @ ${appt.location} <span style="font-size:11px;">WITH</span> ${appt.staff}</div></div><div class="agenda-time">${appt.time}</div></div>`;
+        });
+        area.innerHTML = html;
+    } else if (view === 'month-condensed' || view === 'month-full') {
+        const isCondensed = view === 'month-condensed'; let html = `<div class="month-grid">`;
+        ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => { html += `<div class="mc-header">${d}</div>`; });
+        const firstDay = new Date(y, m, 1).getDay(); const daysInMonth = new Date(y, m + 1, 0).getDate();
+        const todayStr = new Date().toDateString(); 
+        for(let i=0; i<firstDay; i++) html += `<div class="mc-cell ${isCondensed ? 'condensed' : ''}" style="background:var(--surface-color);"></div>`; 
+        for(let i=1; i<=daysInMonth; i++) {
+            const cDateStr = new Date(y, m, i).toDateString(); 
+            const isToday = cDateStr === todayStr; 
+            const dayAppts = records.filter(a => new Date(a.timestamp).toDateString() === cDateStr); let content = '';
             
-            const staffF = document.getElementById('staffFilter').value; if(staffF !== 'All Staff') { records = records.filter(r => r.staff === staffF); }
-            const statusF = document.getElementById('statusFilter').value; if(statusF !== 'All Statuses') { records = records.filter(r => { const recStatus = r.clientStatus || (r.isLead ? 'Lead' : 'Existing Client'); return recStatus === statusF; }); }
-
-            if (view === 'agenda') {
-                // Возвращаем оригинальный заголовок, чтобы стрелочки показывали текущий месяц
-                title.textContent = `${months[m]} ${y}`; 
-                let html = ''; let currentDate = ''; 
-                
-                // Фильтруем события строго по тому месяцу, который ты выбрал стрелочками
-                const sorted = records.filter(a => {
-                    const d = new Date(a.timestamp);
-                    return d.getMonth() === m && d.getFullYear() === y;
-                }).sort((a,b) => a.timestamp - b.timestamp);
-
-                if(sorted.length === 0) { area.innerHTML = `<div style="padding:30px; text-align:center; color:var(--secondary-color);">No appointments found in ${months[m]} ${y}.</div>`; return; }
-                
-                sorted.forEach(appt => {
-                    const dObj = new Date(appt.timestamp); const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; const dateTitle = `${days[dObj.getDay()]}, ${dObj.getMonth()+1}/${dObj.getDate()}`;
-                    if (dateTitle !== currentDate) { html += `<div class="agenda-date-header"><span style="font-size: 20px;">📅</span> ${dateTitle}</div>`; currentDate = dateTitle; }
-                    let leadBadge = appt.isLead ? '<span style="background: #e65100; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; vertical-align: middle; font-weight: bold; letter-spacing: 0.5px;">🔥 LEAD</span>' : '';
-                    html += `<div class="agenda-card" onclick="openPreviewModal('${appt.id}')"><div class="agenda-info"><div class="client-name">${appt.client} ${leadBadge}</div><div class="service-details">${appt.service} @ ${appt.location} <span style="font-size:11px;">WITH</span> ${appt.staff}</div></div><div class="agenda-time">${appt.time}</div></div>`;
-                });
-                area.innerHTML = html;
-            } else if (view === 'month-condensed' || view === 'month-full') {
-                const isCondensed = view === 'month-condensed'; let html = `<div class="month-grid">`;
-                ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => { html += `<div class="mc-header">${d}</div>`; });
-                const firstDay = new Date(y, m, 1).getDay(); const daysInMonth = new Date(y, m + 1, 0).getDate();
-                const todayStr = new Date().toDateString(); 
-                for(let i=0; i<firstDay; i++) html += `<div class="mc-cell ${isCondensed ? 'condensed' : ''}" style="background:var(--surface-color);"></div>`; 
-                for(let i=1; i<=daysInMonth; i++) {
-                    const cDateStr = new Date(y, m, i).toDateString(); 
-                    const isToday = cDateStr === todayStr; 
-                    const dayAppts = records.filter(a => new Date(a.timestamp).toDateString() === cDateStr); let content = '';
-                    
-                    if (isCondensed) { if (dayAppts.length > 0) { const word = dayAppts.length === 1 ? 'appt' : 'appts'; content = `<div class="mc-badge" onclick="openDayList('${cDateStr}')">${dayAppts.length} ${word}</div>`; } } 
-                    else { dayAppts.forEach(appt => { let leadIcon = appt.isLead ? '🔥 ' : ''; content += `<div class="mini-appt" onclick="openPreviewModal('${appt.id}')">${appt.time} ${leadIcon}${appt.client.split(' ')[0]}</div>`; }); }
-                    
-                    html += `<div class="mc-cell ${isCondensed ? 'condensed' : ''} ${isToday ? 'is-today' : ''}"><div class="mc-date ${isToday ? 'is-today' : ''}">${i}</div>${content}</div>`;
-                }
-                html += '</div>'; area.innerHTML = html;
-            } else {
-                area.innerHTML = `<div style="text-align:center; padding: 50px; color: var(--secondary-color); font-size: 16px;"><span style="font-size: 40px;">⏳</span><br><br><strong>${view.toUpperCase()}</strong> view layout (hourly grid) will be implemented using Google Calendar integration data.</div>`;
-            }
-        };
+            if (isCondensed) { if (dayAppts.length > 0) { const word = dayAppts.length === 1 ? 'appt' : 'appts'; content = `<div class="mc-badge" onclick="openDayList('${cDateStr}')">${dayAppts.length} ${word}</div>`; } } 
+            else { dayAppts.forEach(appt => { let leadIcon = appt.isLead ? '🔥 ' : ''; content += `<div class="mini-appt" onclick="openPreviewModal('${appt.id}')">${appt.time} ${leadIcon}${appt.client.split(' ')[0]}</div>`; }); }
+            
+            html += `<div class="mc-cell ${isCondensed ? 'condensed' : ''} ${isToday ? 'is-today' : ''}"><div class="mc-date ${isToday ? 'is-today' : ''}">${i}</div>${content}</div>`;
+        }
+        html += '</div>'; area.innerHTML = html;
+    } else {
+        area.innerHTML = `<div style="text-align:center; padding: 50px; color: var(--secondary-color); font-size: 16px;"><span style="font-size: 40px;">⏳</span><br><br><strong>${view.toUpperCase()}</strong> view layout (hourly grid) will be implemented using Google Calendar integration data.</div>`;
+    }
+};
         const resolvedCheckbox = document.getElementById('resolvedByOpCheckbox'); const staffRow = document.getElementById('staffSelectionRow'); const briefDesc = document.getElementById('briefDescription');
         if (resolvedCheckbox) {
             resolvedCheckbox.addEventListener('change', function() {
