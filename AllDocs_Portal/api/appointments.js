@@ -1,6 +1,6 @@
 import { google } from 'googleapis';
 
-const SCOPES = ['https://www.googleapis.com/auth/calendar'];
+const SCOPES = ['https://www.googleapis.com/auth/calendar.events', 'https://www.googleapis.com/auth/calendar'];
 const auth = new google.auth.JWT(
     process.env.GOOGLE_CLIENT_EMAIL,
     null,
@@ -85,30 +85,64 @@ export default async function handler(req, res) {
         }
 
         if (req.method === 'POST') {
-            const { appointments } = req.body;
+            const { appointments, newAppointment } = req.body;
             
-            if (!appointments) {
-                return res.status(400).json({ success: false, error: 'No appointments data provided' });
+            // 1. Сохраняем в Postgres (как у тебя и было)
+            if (appointments) {
+                const postgres = await import('@vercel/postgres');
+                const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+                const pool = postgres.createPool({ connectionString });
+
+                await pool.sql`
+                    CREATE TABLE IF NOT EXISTS global_appointments (
+                        id INTEGER PRIMARY KEY,
+                        data JSONB
+                    );
+                `;
+
+                await pool.sql`
+                    INSERT INTO global_appointments (id, data) 
+                    VALUES (1, ${JSON.stringify(appointments)})
+                    ON CONFLICT (id) DO UPDATE 
+                    SET data = EXCLUDED.data;
+                `;
             }
 
-            // Подключаем базу прямо внутри запроса, как было у тебя раньше
-            const postgres = await import('@vercel/postgres');
-            const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
-            const pool = postgres.createPool({ connectionString });
+            // 2. Пушим новую встречу в Гугл Календарь
+            if (newAppointment) {
+                const apptDate = new Date(newAppointment.timestamp);
+                const startTime = apptDate.toISOString();
+                
+                let durationMins = 60; // По умолчанию 1 час
+                if (newAppointment.length) {
+                    let mins = 0;
+                    const hrMatch = newAppointment.length.match(/(\d+)\s*hour/);
+                    if (hrMatch) mins += parseInt(hrMatch[1], 10) * 60;
+                    const minMatch = newAppointment.length.match(/(\d+)\s*minute/);
+                    if (minMatch) mins += parseInt(minMatch[1], 10);
+                    if (mins > 0) durationMins = mins;
+                }
+                
+                const endDate = new Date(apptDate.getTime() + durationMins * 60000);
+                const endTime = endDate.toISOString();
 
-            await pool.sql`
-                CREATE TABLE IF NOT EXISTS global_appointments (
-                    id INTEGER PRIMARY KEY,
-                    data JSONB
-                );
-            `;
+                // Форматируем строго под твой парсер extractFromDescription
+                const descText = `Phone: ${newAppointment.phone}\nService: ${newAppointment.service}\nStaff: ${newAppointment.staff}\nDuration: ${newAppointment.length}\nNote: ${newAppointment.message || ''}\n\nBooked via CRM.`;
 
-            await pool.sql`
-                INSERT INTO global_appointments (id, data) 
-                VALUES (1, ${JSON.stringify(appointments)})
-                ON CONFLICT (id) DO UPDATE 
-                SET data = EXCLUDED.data;
-            `;
+                const event = {
+                    summary: `${newAppointment.client}`,
+                    location: newAppointment.location,
+                    description: descText,
+                    start: { dateTime: startTime, timeZone: 'America/Los_Angeles' },
+                    end: { dateTime: endTime, timeZone: 'America/Los_Angeles' },
+                    colorId: newAppointment.isLead ? '11' : '9', // 11=Красный (Лиды), 9=Синий (Существующие)
+                };
+
+                await calendar.events.insert({
+                    calendarId: calendarId,
+                    requestBody: event,
+                });
+            }
 
             return res.status(200).json({ success: true, message: 'Saved successfully.' });
         }
