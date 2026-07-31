@@ -3144,8 +3144,7 @@ window.currentCrmNotifs = [];
                 btn.textContent = '💾 Save to CRM'; btn.disabled = false;
             }
         };
-    });  
-    // === ПАТЧ ДЛЯ БУКВЕННЫХ ID ГУГЛА ===
+     // === ПАТЧ ДЛЯ БУКВЕННЫХ ID ГУГЛА ===
     window.renderMainCalendar = async function() {
         await window.loadAppointments();
         const view = document.getElementById('viewSelector').value; const area = document.getElementById('calendarContent'); area.innerHTML = ''; const title = document.getElementById('mainCalTitle');
@@ -3301,7 +3300,9 @@ window.currentCrmNotifs = [];
             `;
         }
         document.getElementById('previewModal').style.display = 'flex';
-    };
+    };     
+    });  
+    
 </script>
 </body>
 </html>
