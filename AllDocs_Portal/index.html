@@ -2303,8 +2303,7 @@ window.currentCrmNotifs = [];
             }
         }
 
-        // --- ЛОГИКА СОХРАНЕНИЯ КАЛЕНДАРЯ И ОТПРАВКИ СМС ---
-        window.saveAppointment = async function() {
+   window.saveAppointment = async function() {
             if (!selectedApptDate) { alert("Please select a date on the calendar."); return; }
             
             const editingId = document.getElementById('editingApptId').value;
@@ -2316,7 +2315,6 @@ window.currentCrmNotifs = [];
             const apptStaff = document.getElementById('modalApptStaff').value;
             const durationStr = document.getElementById('aDuration').value;
 
-            // --- ПРОВЕРКА НА ПРОШЕДШЕЕ ВРЕМЯ (Time Travel Prevention) ---
             let checkDate = new Date(selectedApptDate);
             let checkH = parseInt(h, 10);
             if (ampm === 'PM' && checkH !== 12) checkH += 12;
@@ -2326,26 +2324,25 @@ window.currentCrmNotifs = [];
             let isPast = checkDate < new Date();
             let isEditingPastAppt = false;
             
-            await window.loadAppointments(); // Убеждаемся что база свежая
+            await window.loadAppointments(); 
             let recs = window.globalAppointments || [];
 
             if (editingId) {
-                const existingAppt = recs.find(r => r.id === parseInt(editingId));
+                const existingAppt = recs.find(r => String(r.id) === String(editingId));
                 if (existingAppt && existingAppt.timestamp < Date.now()) { isEditingPastAppt = true; }
             }
 
             if (isPast && !isEditingPastAppt) {
-                alert("⚠️ INVALID TIME!\n\nYou cannot book an appointment in the past. Please select a future date and time.");
+                alert("⚠️ INVALID TIME!\n\nYou cannot book an appointment in the past.");
                 return;
             }
 
-            // --- ВАЛИДАЦИЯ DOUBLE BOOKING ---
             const newStartMins = parseTimeStrToMinutes(`${h}:${m} ${ampm.toUpperCase()}`);
             const newDurMins = parseDurationToMinutes(durationStr);
             const newEndMins = newStartMins + newDurMins;
             
             const conflict = recs.find(appt => {
-                if (editingId && appt.id === parseInt(editingId)) return false;
+                if (editingId && String(appt.id) === String(editingId)) return false;
                 if (appt.dateStr !== selectedApptDate.toDateString()) return false;
                 if (appt.staff !== apptStaff) return false;
                 
@@ -2357,13 +2354,13 @@ window.currentCrmNotifs = [];
 
             if (conflict) {
                 const conflictEndStr = formatMinutesToTimeStr(parseTimeStrToMinutes(conflict.time) + parseDurationToMinutes(conflict.length));
-                alert(`⚠️ TIME CONFLICT!\n\nStaff member ${apptStaff} already has an appointment scheduled from ${conflict.time} to ${conflictEndStr}.\n\nPlease choose a different time or assign another staff member.`);
+                alert(`⚠️ TIME CONFLICT!\n\nStaff member ${apptStaff} already has an appointment scheduled from ${conflict.time} to ${conflictEndStr}.`);
                 return;
             }
 
             const btn = document.getElementById('saveApptBtn'); btn.textContent = "Processing..."; btn.disabled = true;
 
-          const currentStatus = document.querySelector('input[name="clientStatus"]:checked')?.value || 'Existing Client'; 
+            const currentStatus = document.querySelector('input[name="clientStatus"]:checked')?.value || 'Existing Client'; 
             const isLead = currentStatus === 'Lead';
             const clientName = document.getElementById('modalApptName').value.trim() || (isLead ? "New Lead" : "Unknown Client");
             const phoneInput = document.getElementById('modalApptPhone').value.trim();
@@ -2371,8 +2368,9 @@ window.currentCrmNotifs = [];
             
             const reminderCheckboxes = document.querySelectorAll('.rem-checkbox input:checked');
             const selectedReminders = Array.from(reminderCheckboxes).map(cb => cb.value).join(',');
+            
             const appointmentData = {
-                id: editingId ? parseInt(editingId) : Date.now(), 
+                id: editingId ? editingId : null, 
                 client: clientName, 
                 phone: phoneInput, 
                 dateStr: selectedApptDate.toDateString(), 
@@ -2388,22 +2386,23 @@ window.currentCrmNotifs = [];
                 isLead: isLead, clientStatus: currentStatus
             };
 
-            if (editingId) {
-                const index = recs.findIndex(r => r.id === parseInt(editingId));
-                if(index !== -1) recs[index] = appointmentData;
-            } else {
-                recs.push(appointmentData); 
+            // ОТПРАВЛЯЕМ В ГУГЛ (POST если новый, PUT если редактируем)
+            try {
+                await fetch('/api/appointments', { 
+                    method: editingId ? 'PUT' : 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ newAppointment: appointmentData }) 
+                });
+                
+                // ВАЖНО: Сразу скачиваем свежие события из Гугла, чтобы получить настоящие ID!
+                await window.loadAppointments(); 
+            } catch(e) {
+                console.error("Save error", e);
             }
-            
-            // Сохраняем в новую общую базу данных
-           // Сохраняем в новую общую базу данных и пушим в Гугл
-            await saveAppointmentsDb(recs, editingId ? null : appointmentData);
 
-            // Логика Инбокса (Отправка SMS через ZAPIER)
+            // Отправка SMS через Zapier
             if (!editingId && (apptRemType === 'Text' || apptRemType === 'Both')) {
                 const smsText = document.getElementById('smsPreviewBubble').textContent;
-                
-                // === УМНОЕ ФОРМАТИРОВАНИЕ НОМЕРА ===
                 let formattedPhone = phoneInput.replace(/[^\d+]/g, ''); 
                 if (formattedPhone.length === 10 && !formattedPhone.startsWith('+')) {
                     formattedPhone = '+1' + formattedPhone;
@@ -2411,27 +2410,17 @@ window.currentCrmNotifs = [];
                     formattedPhone = '+' + formattedPhone;
                 }
                 
-               // === ОТПРАВКА СИГНАЛА В ZAPIER ===
                 const reminderMsg = "REMINDER:\n" + smsText;
                 const zapierUrl = `https://hooks.zapier.com/hooks/catch/28342465/44ft1ex/?phone=${encodeURIComponent(formattedPhone)}&message=${encodeURIComponent(smsText)}&reminders=${encodeURIComponent(selectedReminders)}&reminder_msg=${encodeURIComponent(reminderMsg)}&appt_timestamp=${checkDate.getTime()}`;
                 fetch(zapierUrl, { mode: 'no-cors' }).catch(e => console.log('Zapier webhook error:', e));
                 
-               // Запись в Inbox чат для истории (ОБЩАЯ БАЗА)
                 await window.loadMessages();
                 let msgs = window.globalMessages || [];
-                
-                // 1. Сохраняем главную отправленную SMS
                 msgs.push({
-                    phone: phoneInput || "No Phone",
-                    name: clientName,
-                    text: smsText,
-                    timestamp: Date.now(),
-                    direction: 'out' 
+                    phone: phoneInput || "No Phone", name: clientName, text: smsText, timestamp: Date.now(), direction: 'out' 
                 });
 
-                // 2. Если выбраны напоминания - кидаем системное сообщение в чат
                 if (selectedReminders) {
-                    // Делаем красивые названия для чата
                     let prettyReminders = selectedReminders.split(',').map(r => {
                         if(r==='1h') return '1 Hour'; if(r==='3h') return '3 Hours'; 
                         if(r==='6h') return '6 Hours'; if(r==='12h') return '12 Hours';
@@ -2439,38 +2428,27 @@ window.currentCrmNotifs = [];
                         if(r==='7d') return '7 Days'; if(r==='1m') return '1 Month';
                         return r;
                     }).join(', ');
-                    
                     msgs.push({
-                        phone: phoneInput || "No Phone",
-                        name: clientName,
-                        text: `🤖 [System Note]: Automated SMS reminders successfully scheduled for: ${prettyReminders} before the appointment.`,
-                        timestamp: Date.now() + 1000, // Добавляем 1 секунду, чтобы сообщение шло сразу ПОСЛЕ основного
-                        direction: 'out' 
+                        phone: phoneInput || "No Phone", name: clientName, text: `🤖 [System Note]: Automated SMS reminders scheduled for: ${prettyReminders} before appt.`, timestamp: Date.now() + 1000, direction: 'out' 
                     });
                 }
-
                 await window.saveMessagesDb(msgs);
             }
 
-            // Логика сохранения звонка в Журнал (Только если бронируем первый раз)
+            // Сохранение в Журнал
             if (!editingId) {
                 let finalDescription = isLead ? `[🔥 NEW LEAD APPOINTMENT]\nScheduled: ${selectedApptDate.toLocaleDateString()} at ${h}:${m} ${ampm}\nService: ${rawService}\nStaff: ${apptStaff}` : `[APPOINTMENT BOOKED]\nScheduled: ${selectedApptDate.toLocaleDateString()} at ${h}:${m} ${ampm}\nService: ${rawService}\nStaff: ${apptStaff}`;
                 const formData = {
                     clientId: document.getElementById('hiddenClientId').value || "", clientName: clientName, clientPhone: appointmentData.phone, matterTitle: "", program: "", 
-                    description: finalDescription, operatorName: loggedInStaff || "Unknown Operator", operatorId: myStaffId, assignedStaffName: apptStaff, assignedStaffId: "", 
+                    description: finalDescription, operatorName: localStorage.getItem('loggedInStaff') || "Unknown Operator", operatorId: localStorage.getItem('myStaffId') || "000", assignedStaffName: apptStaff, assignedStaffId: "", 
                     followUpNotes: "System: Appointment booked automatically.", 
                     status: "Resolved"
                 };
-
-                fetch('/api/save-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) })
-                    .then(response => response.json())
-                    .then(result => {
-                        if (!result.success) console.log(`❌ Call History Save Error`);
-                    }).catch(error => { console.log('Network error. Failed to save to CRM.'); });
+                fetch('/api/save-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) }).catch(e => {});
             }
 
             setTimeout(() => {
-                alert(editingId ? `✅ Appointment Updated!` : `✅ Appointment Saved & SMS Sent!`); 
+                alert(editingId ? `✅ Appointment Updated in Google Calendar!` : `✅ Appointment Saved to Google Calendar & SMS Sent!`); 
                 closeApptModal(); btn.textContent = "Save Appointment & Send SMS ✉️"; btn.disabled = false; 
                 
                 const isInboxActive = document.getElementById('btnNavInbox').classList.contains('active');
@@ -2482,15 +2460,12 @@ window.currentCrmNotifs = [];
                     renderMainCalendar(); 
                 }
                 
-                // Очистка формы звонка и обновление списка в фоне
                 if (!editingId && document.getElementById('tabFormContent').classList.contains('active')) {
                     clearClientData(); document.getElementById('fullName').value = ''; document.getElementById('phoneNumber').value = ''; document.getElementById('callForm').reset(); document.querySelector('input[name="clientStatus"][value="Existing Client"]').checked = true; setDateTime();
                 }
-                
-                // Автоматическое обновление Журнала без перезагрузки страницы
                 window.renderCallHistoryList();
-            }, 300);
-        }
+            }, 500);
+        };
 
         // --- ЛОГИКА ОТОБРАЖЕНИЯ INBOX / SMS ---
    window.renderInboxList = function() {
@@ -2722,15 +2697,24 @@ window.currentCrmNotifs = [];
             }
             document.getElementById('previewModal').style.display = 'flex';
         };
-        window.deleteAppointment = async function(id) {
-            await window.loadAppointments();
-            let records = window.globalAppointments || []; 
-            records = records.filter(a => a.id !== id); 
-            await saveAppointmentsDb(records);
-            
-            document.getElementById('previewModal').style.display = 'none';
-            const isInboxActive = document.getElementById('btnNavInbox').classList.contains('active'); 
-            if (isInboxActive) renderInboxList(); else renderMainCalendar(); 
+       window.deleteAppointment = async function(id) {
+            try {
+                // Отправляем команду DELETE в Гугл
+                await fetch('/api/appointments', { 
+                    method: 'DELETE', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ id: id }) 
+                });
+                
+                // Скачиваем свежий календарь без удаленной карточки
+                await window.loadAppointments();
+                document.getElementById('previewModal').style.display = 'none';
+                
+                const isInboxActive = document.getElementById('btnNavInbox').classList.contains('active'); 
+                if (isInboxActive) renderInboxList(); else renderMainCalendar(); 
+            } catch (e) {
+                alert('Error deleting appointment');
+            }
         };
 
         let viewDate = new Date(); window.changeViewDate = function(dir) { viewDate.setMonth(viewDate.getMonth() + dir); window.renderMainCalendar(); }
