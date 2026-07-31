@@ -2741,7 +2741,7 @@ window.currentCrmNotifs = [];
             document.getElementById('dayListBody').innerHTML = html; document.getElementById('dayListModal').style.display = 'flex';
         };
 
-      window.renderMainCalendar = async function() {
+ window.renderMainCalendar = async function() {
         await window.loadAppointments();
         const view = document.getElementById('viewSelector').value; const area = document.getElementById('calendarContent'); area.innerHTML = ''; const title = document.getElementById('mainCalTitle');
         const months = ['January','February','March','April','May','June','July','August','September','October','November','December']; const y = viewDate.getFullYear(); const m = viewDate.getMonth(); title.textContent = `${months[m]} ${y}`;
@@ -2751,19 +2751,16 @@ window.currentCrmNotifs = [];
         const statusF = document.getElementById('statusFilter').value; if(statusF !== 'All Statuses') { records = records.filter(r => { const recStatus = r.clientStatus || (r.isLead ? 'Lead' : 'Existing Client'); return recStatus === statusF; }); }
 
         if (view === 'agenda') {
+            title.textContent = "Upcoming Agenda"; // Меняем заголовок
             let html = ''; let currentDate = ''; 
             
-            // НОВАЯ МАГИЯ: Получаем начало сегодняшнего дня (полночь)
+            // Берем начало сегодняшнего дня
             const todayMsec = new Date().setHours(0,0,0,0); 
             
-            // Фильтруем записи: оставляем только выбранный месяц И только начиная с сегодня
-            const sorted = records.filter(a => {
-                const d = new Date(a.timestamp);
-                const isCurrentMonth = d.getMonth() === m && d.getFullYear() === y;
-                return isCurrentMonth && a.timestamp >= todayMsec;
-            }).sort((a,b) => a.timestamp - b.timestamp);
+            // БЕРЕМ ВСЕ БУДУЩИЕ СОБЫТИЯ (без привязки к месяцу)
+            const sorted = records.filter(a => a.timestamp >= todayMsec).sort((a,b) => a.timestamp - b.timestamp);
 
-            if(sorted.length === 0) { area.innerHTML = '<div style="padding:30px; text-align:center; color:var(--secondary-color);">No upcoming appointments found for this month.</div>'; return; }
+            if(sorted.length === 0) { area.innerHTML = '<div style="padding:30px; text-align:center; color:var(--secondary-color);">No upcoming appointments found.</div>'; return; }
             
             sorted.forEach(appt => {
                 const dObj = new Date(appt.timestamp); const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; const dateTitle = `${days[dObj.getDay()]}, ${dObj.getMonth()+1}/${dObj.getDate()}`;
