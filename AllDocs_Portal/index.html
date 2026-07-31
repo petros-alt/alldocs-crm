@@ -1013,11 +1013,11 @@
         lastKnownMessageCount = window.globalMessages.length;
     }
     
-    window.saveAppointmentsDb = async function(recs) {
+   window.saveAppointmentsDb = async function(recs, newAppointment = null) {
         window.globalAppointments = recs;
         localStorage.setItem('gr_db', JSON.stringify(recs));
         try {
-            await fetch('/api/appointments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ appointments: recs }) });
+            await fetch('/api/appointments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ appointments: recs, newAppointment: newAppointment }) });
         } catch (e) {}
     }
 
@@ -2396,7 +2396,8 @@ window.currentCrmNotifs = [];
             }
             
             // Сохраняем в новую общую базу данных
-            await saveAppointmentsDb(recs);
+           // Сохраняем в новую общую базу данных и пушим в Гугл
+            await saveAppointmentsDb(recs, editingId ? null : appointmentData);
 
             // Логика Инбокса (Отправка SMS через ZAPIER)
             if (!editingId && (apptRemType === 'Text' || apptRemType === 'Both')) {
