@@ -2581,7 +2581,7 @@ window.currentCrmNotifs = [];
             input.value = ''; openChat(phone, name, key);
         }
 
-      window.openCustomerDetails = async function(phone, name) {
+        window.openCustomerDetails = async function(phone, name) {
             document.getElementById('cdName').textContent = name;
             document.getElementById('cdPhone').textContent = (phone && phone !== "No Phone" && phone !== "null") ? `📞 ${phone}` : '📞 No Phone Provided';
             document.getElementById('cdAvatar').textContent = name.charAt(0).toUpperCase();
@@ -2603,8 +2603,8 @@ window.currentCrmNotifs = [];
                     const isPast = a.timestamp < now; 
                     const item = document.createElement('div'); item.className = 'cd-appt-item';
                     const btnHtml = isPast 
-                        ? `<button style="background:#f5f5f5; border:1px solid #ddd; color:#666; padding:4px 12px; border-radius:4px; font-weight:bold; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='#eee'" onmouseout="this.style.background='#f5f5f5'" onclick="openPreviewModal('${a.id}')">View</button>`
-                        : `<button style="background:#e3f2fd; border:none; color:#1976d2; padding:4px 12px; border-radius:4px; font-weight:bold; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='#bbdefb'" onmouseout="this.style.background='#e3f2fd'" onclick="openPreviewModal('${a.id}')">Edit</button>`;
+                        ? `<button style="background:#f5f5f5; border:1px solid #ddd; color:#666; padding:4px 12px; border-radius:4px; font-weight:bold; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='#eee'" onmouseout="this.style.background='#f5f5f5'" onclick="openPreviewModal(${a.id})">View</button>`
+                        : `<button style="background:#e3f2fd; border:none; color:#1976d2; padding:4px 12px; border-radius:4px; font-weight:bold; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='#bbdefb'" onmouseout="this.style.background='#e3f2fd'" onclick="openPreviewModal(${a.id})">Edit</button>`;
 
                     item.innerHTML = `
                         <div>
@@ -2617,16 +2617,16 @@ window.currentCrmNotifs = [];
                 });
             }
             window._tempNewApptData = { name, phone: phone === "null" ? "" : phone }; document.getElementById('customerDetailsModal').style.display = 'flex';
-        };
+        }
 
         window.createNewFromDetails = function() {
             document.getElementById('customerDetailsModal').style.display = 'none'; openApptModal(window._tempNewApptData.name, window._tempNewApptData.phone);
-        };
+        }
 
-        window.openPreviewModal = async function(id) {
+       window.openPreviewModal = async function(id) {
             await window.loadAppointments();
             const records = window.globalAppointments || []; 
-            const appt = records.find(a => String(a.id) === String(id)); if(!appt) return;
+            const appt = records.find(a => a.id === id); if(!appt) return;
             document.getElementById('dayListModal').style.display = 'none'; document.getElementById('customerDetailsModal').style.display = 'none';
 
             let noteHtml = '';
@@ -2637,9 +2637,12 @@ window.currentCrmNotifs = [];
                             </div>`;
             }
 
+            // Получаем первую букву имени для аватара
             const initial = appt.client.charAt(0).toUpperCase();
 
+            // Новый, красивый HTML дизайн для модалки
             document.getElementById('previewBody').innerHTML = `
+                <!-- Шапка с клиентом -->
                 <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 25px;">
                     <div style="width: 55px; height: 55px; border-radius: 50%; background: var(--accent-color); color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; box-shadow: 0 4px 10px rgba(161, 104, 58, 0.3);">
                         ${initial}
@@ -2650,6 +2653,7 @@ window.currentCrmNotifs = [];
                     </div>
                 </div>
 
+                <!-- Карточки Дата/Время и Место -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
                     <div style="background: var(--surface-color); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color);">
                         <div style="font-size: 11px; text-transform: uppercase; color: #888; font-weight: bold; margin-bottom: 8px;">Date & Time</div>
@@ -2663,6 +2667,7 @@ window.currentCrmNotifs = [];
                     </div>
                 </div>
 
+                <!-- Детали аппойнтмента -->
                 <div style="background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 0 15px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px dashed var(--border-color);">
                         <span style="color: #888; font-size: 13px; font-weight: 600;">💼 Service:</span>
@@ -2686,21 +2691,22 @@ window.currentCrmNotifs = [];
                 btnContainer.innerHTML = ''; 
             } else {
                 btnContainer.innerHTML = `
-                    <button id="previewEditBtn" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; box-shadow: 0 2px 6px rgba(161,104,58,0.2);" onclick="document.getElementById('previewModal').style.display = 'none'; editAppointment('${id}');">✏️ Edit</button>
-                    <button id="previewDelBtn" style="background: #fff0f0; color: #d32f2f; border: 1px solid #ffcdd2; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;" onclick="if(confirm('Are you sure you want to delete this appointment?')) deleteAppointment('${id}')">🗑️ Delete</button>
+                    <button id="previewEditBtn" style="background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; box-shadow: 0 2px 6px rgba(161,104,58,0.2);" onclick="document.getElementById('previewModal').style.display = 'none'; editAppointment(${id});">✏️ Edit</button>
+                    <button id="previewDelBtn" style="background: #fff0f0; color: #d32f2f; border: 1px solid #ffcdd2; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s;" onclick="if(confirm('Are you sure you want to delete this appointment?')) deleteAppointment(${id})">🗑️ Delete</button>
                 `;
             }
             document.getElementById('previewModal').style.display = 'flex';
         };
-
-        window.deleteAppointment = async function(id) {
+       window.deleteAppointment = async function(id) {
             try {
+                // Отправляем команду DELETE в Гугл
                 await fetch('/api/appointments', { 
                     method: 'DELETE', 
                     headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ id: id }) 
                 });
                 
+                // Скачиваем свежий календарь без удаленной карточки
                 await window.loadAppointments();
                 document.getElementById('previewModal').style.display = 'none';
                 
@@ -2711,56 +2717,435 @@ window.currentCrmNotifs = [];
             }
         };
 
-        window.editAppointment = function(id) {
+        let viewDate = new Date(); window.changeViewDate = function(dir) { viewDate.setMonth(viewDate.getMonth() + dir); window.renderMainCalendar(); }
+
+        window.openDayList = async function(dateStr) {
+            await window.loadAppointments();
             const records = window.globalAppointments || []; 
-            const appt = records.find(a => String(a.id) === String(id)); 
-            if(!appt) return;
-
-            document.getElementById('dayListModal').style.display = 'none'; 
-            document.getElementById('customerDetailsModal').style.display = 'none';
-            document.getElementById('previewModal').style.display = 'none';
-            document.getElementById('availabilityBox').style.display = 'none';
-
-            document.getElementById('editingApptId').value = appt.id;
-            document.getElementById('apptModalTitle').innerHTML = '✏️ Edit Appointment';
-
-            document.getElementById('modalApptName').value = appt.client;
-            document.getElementById('modalApptPhone').value = appt.phone || "";
-            
-            let serviceSelect = document.getElementById('modalApptService');
-            let matchedService = Array.from(serviceSelect.options).find(opt => opt.text.includes(appt.service) || opt.value.includes(appt.service));
-            if(matchedService) serviceSelect.value = matchedService.value;
-            
-            let locSelect = document.getElementById('modalApptLocation');
-            let matchedLoc = Array.from(locSelect.options).find(opt => opt.text === appt.location);
-            if(matchedLoc) locSelect.value = matchedLoc.value;
-
-            document.getElementById('modalApptStaff').value = appt.staff;
-            document.getElementById('aDuration').value = appt.length || "1 hour";
-            document.getElementById('modalApptMessage').value = appt.message || "";
-            
-            document.querySelectorAll('.rem-checkbox input').forEach(cb => cb.checked = false);
-            if(appt.smsReminders) {
-                appt.smsReminders.split(',').forEach(val => {
-                    const cb = document.querySelector(`.rem-checkbox input[value="${val}"]`);
-                    if(cb) cb.checked = true;
-                });
-            }
-
-            const timeMatch = appt.time.match(/(\d+):(\d+)\s+(AM|PM)/i);
-            if(timeMatch) {
-                document.getElementById('aTimeHour').value = timeMatch[1].padStart(2, '0');
-                document.getElementById('aTimeMinute').value = timeMatch[2];
-                document.getElementById('aTimeAMPM').value = timeMatch[3].toUpperCase();
-            }
-
-            selectedApptDate = new Date(appt.timestamp);
-            apptDate = new Date(appt.timestamp); 
-
-            document.getElementById('apptModal').style.display = 'flex';
-            renderApptCal();
-            updatePreview();
+            const dayAppts = records.filter(a => new Date(a.timestamp).toDateString() === dateStr);
+            const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; const dObj = new Date(dateStr);
+            document.getElementById('dayListTitle').textContent = `Appointments on ${days[dObj.getDay()]}, ${dObj.getMonth()+1}/${dObj.getDate()}`;
+            let html = ''; dayAppts.forEach(appt => { html += `<div class="agenda-card" onclick="openPreviewModal(${appt.id})" style="padding: 10px 15px; margin-bottom: 8px;"><div class="agenda-info"><div class="client-name" style="font-size: 14px;">${appt.client}</div><div class="service-details" style="font-size: 12px;">${appt.service} with ${appt.staff}</div></div><div class="agenda-time" style="font-size: 13px;">${appt.time}</div></div>`; });
+            document.getElementById('dayListBody').innerHTML = html; document.getElementById('dayListModal').style.display = 'flex';
         };
+
+// === ФИНАЛЬНЫЙ КАЛЕНДАРЬ И МОДАЛКИ ===
+window.renderMainCalendar = async function() {
+    await window.loadAppointments();
+    const view = document.getElementById('viewSelector').value; const area = document.getElementById('calendarContent'); area.innerHTML = ''; const title = document.getElementById('mainCalTitle');
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December']; const y = viewDate.getFullYear(); const m = viewDate.getMonth(); title.textContent = `${months[m]} ${y}`;
+    let records = window.globalAppointments || [];
+    
+    const staffF = document.getElementById('staffFilter').value; if(staffF !== 'All Staff') { records = records.filter(r => r.staff === staffF); }
+    const statusF = document.getElementById('statusFilter').value; if(statusF !== 'All Statuses') { records = records.filter(r => { const recStatus = r.clientStatus || (r.isLead ? 'Lead' : 'Existing Client'); return recStatus === statusF; }); }
+
+   if (view === 'agenda') {
+                title.textContent = `${months[m]} ${y}`; 
+                let html = ''; let currentDate = ''; 
+                
+                const sorted = records.filter(a => {
+                    const d = new Date(a.timestamp);
+                    return d.getMonth() === m && d.getFullYear() === y;
+                }).sort((a,b) => a.timestamp - b.timestamp);
+
+                if(sorted.length === 0) { area.innerHTML = `<div style="padding:30px; text-align:center; color:var(--secondary-color);">No appointments found in ${months[m]} ${y}.</div>`; return; }
+        
+        sorted.forEach(appt => {
+            const dObj = new Date(appt.timestamp); const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; const dateTitle = `${days[dObj.getDay()]}, ${dObj.getMonth()+1}/${dObj.getDate()}`;
+            if (dateTitle !== currentDate) { html += `<div class="agenda-date-header"><span style="font-size: 20px;">📅</span> ${dateTitle}</div>`; currentDate = dateTitle; }
+            let leadBadge = appt.isLead ? '<span style="background: #e65100; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; vertical-align: middle; font-weight: bold; letter-spacing: 0.5px;">🔥 LEAD</span>' : '';
+            html += `<div class="agenda-card" onclick="openPreviewModal('${appt.id}')"><div class="agenda-info"><div class="client-name">${appt.client} ${leadBadge}</div><div class="service-details">${appt.service} @ ${appt.location} <span style="font-size:11px;">WITH</span> ${appt.staff}</div></div><div class="agenda-time">${appt.time}</div></div>`;
+        });
+        area.innerHTML = html;
+    } else if (view === 'month-condensed' || view === 'month-full') {
+        const isCondensed = view === 'month-condensed'; let html = `<div class="month-grid">`;
+        ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => { html += `<div class="mc-header">${d}</div>`; });
+        const firstDay = new Date(y, m, 1).getDay(); const daysInMonth = new Date(y, m + 1, 0).getDate();
+        const todayStr = new Date().toDateString(); 
+        for(let i=0; i<firstDay; i++) html += `<div class="mc-cell ${isCondensed ? 'condensed' : ''}" style="background:var(--surface-color);"></div>`; 
+        for(let i=1; i<=daysInMonth; i++) {
+            const cDateStr = new Date(y, m, i).toDateString(); 
+            const isToday = cDateStr === todayStr; 
+            const dayAppts = records.filter(a => new Date(a.timestamp).toDateString() === cDateStr); let content = '';
+            
+            if (isCondensed) { if (dayAppts.length > 0) { const word = dayAppts.length === 1 ? 'appt' : 'appts'; content = `<div class="mc-badge" onclick="openDayList('${cDateStr}')">${dayAppts.length} ${word}</div>`; } } 
+            else { dayAppts.forEach(appt => { let leadIcon = appt.isLead ? '🔥 ' : ''; content += `<div class="mini-appt" onclick="openPreviewModal('${appt.id}')">${appt.time} ${leadIcon}${appt.client.split(' ')[0]}</div>`; }); }
+            
+            html += `<div class="mc-cell ${isCondensed ? 'condensed' : ''} ${isToday ? 'is-today' : ''}"><div class="mc-date ${isToday ? 'is-today' : ''}">${i}</div>${content}</div>`;
+        }
+        html += '</div>'; area.innerHTML = html;
+    } else {
+        area.innerHTML = `<div style="text-align:center; padding: 50px; color: var(--secondary-color); font-size: 16px;"><span style="font-size: 40px;">⏳</span><br><br><strong>${view.toUpperCase()}</strong> view layout (hourly grid) will be implemented using Google Calendar integration data.</div>`;
+    }
+};
+        const resolvedCheckbox = document.getElementById('resolvedByOpCheckbox'); const staffRow = document.getElementById('staffSelectionRow'); const briefDesc = document.getElementById('briefDescription');
+        if (resolvedCheckbox) {
+            resolvedCheckbox.addEventListener('change', function() {
+                if (this.checked) { staffRow.style.display = 'none'; briefDesc.removeAttribute('required'); } else { staffRow.style.display = 'flex'; briefDesc.setAttribute('required', 'true'); }
+            });
+        }
+
+        const statusRadios = document.querySelectorAll('input[name="clientStatus"]');
+        statusRadios.forEach(radio => {
+            radio.addEventListener('change', function(e) {
+                const mainPhoneInput = document.getElementById('phoneNumber'); const genPhoneInput = document.getElementById('genCallerPhone'); const firstRow = document.querySelector('.caller-row'); const unrecPhoneInput = firstRow ? firstRow.querySelector('.dyn-caller-phone') : null;
+                let currentPhone = mainPhoneInput.value || (unrecPhoneInput ? unrecPhoneInput.value : '') || genPhoneInput.value || '';
+
+                document.getElementById('unrecognizedCallerSection').style.display = 'none'; document.getElementById('generalInquirySection').style.display = 'none'; document.getElementById('briefDescription').setAttribute('required', 'true'); mainPhoneInput.setAttribute('required', 'true');
+                if (window.currentClient && window.currentClient.matters && window.currentClient.matters.length > 0) { document.getElementById('matterContainer').style.display = 'block'; } else { document.getElementById('matterContainer').style.display = 'none'; }
+
+                if (this.value === 'Lead') {
+                    if (window.currentClient) { e.preventDefault(); alert("❌ This client is already in the database. You cannot mark them as a New Lead."); document.querySelector('input[name="clientStatus"][value="Existing Client"]').checked = true; document.querySelector('input[name="clientStatus"][value="Existing Client"]').dispatchEvent(new Event('change')); return; }
+                    mainPhoneInput.value = currentPhone; if(unrecPhoneInput) unrecPhoneInput.value = ''; genPhoneInput.value = ''; openApptModal();
+                } else if (this.value === 'Existing Client') {
+                    if (window.currentClient && window.currentClient.phone) { mainPhoneInput.value = window.currentClient.phone; } else { mainPhoneInput.value = currentPhone; }
+                    if(unrecPhoneInput) unrecPhoneInput.value = ''; genPhoneInput.value = '';
+                } else if (this.value === 'Unrecognized Number (Existing Client)') {
+                    document.getElementById('unrecognizedCallerSection').style.display = 'block'; mainPhoneInput.removeAttribute('required');
+                    let prefillName = ""; let prefillRel = "";
+                    if (window._tempLinkedData) { currentPhone = window._tempLinkedData.phone; prefillName = window._tempLinkedData.name; prefillRel = window._tempLinkedData.relation; window._tempLinkedData = null; } 
+                    else if (window.currentClient && currentPhone === window.currentClient.phone) { currentPhone = ""; }
+                    window.renderCallerRows(currentPhone, prefillName, prefillRel); genPhoneInput.value = '';
+                    if (window.currentClient && window.currentClient.phone) { mainPhoneInput.value = window.currentClient.phone; } else { mainPhoneInput.value = ''; }
+                } else if (this.value === 'General Inquiry') {
+                    document.getElementById('generalInquirySection').style.display = 'block'; document.getElementById('matterContainer').style.display = 'none'; document.getElementById('briefDescription').removeAttribute('required'); mainPhoneInput.removeAttribute('required');
+                    genPhoneInput.value = currentPhone; mainPhoneInput.value = ''; if(unrecPhoneInput) unrecPhoneInput.value = '';
+                }
+            });
+        });
+
+        function clearClientData() {
+            document.getElementById('frequentCallerAlert').style.display = 'none';
+            window.currentClient = null; window._tempLinkedData = null; document.getElementById('hiddenClientId').value = ''; document.getElementById('displayClientId').textContent = ''; document.getElementById('clientBadge').style.display = 'none';
+            document.getElementById('matterSelect').innerHTML = '<option value="">-- Auto-detecting matters... --</option>'; document.getElementById('matterContainer').style.display = 'none'; document.getElementById('linkedContactsPanel').style.display = 'none'; window.renderCallerRows(); document.getElementById('unrecognizedCallerSection').style.display = 'none';
+            const assigneeTextDiv = document.getElementById('matterAssigneeText'); if (assigneeTextDiv) assigneeTextDiv.style.display = 'none';
+            if(resolvedCheckbox) resolvedCheckbox.checked = false; if(staffRow) staffRow.style.display = 'flex'; if(briefDesc) briefDesc.setAttribute('required', 'true');
+            const leadCard = document.getElementById('leadCardWrapper'); if (leadCard) { leadCard.classList.remove('disabled'); leadCard.querySelector('input').disabled = false; }
+            const urgentCb = document.getElementById('urgentCallCheckbox'); if(urgentCb) urgentCb.checked = false;
+        }
+
+       window.checkFrequentCaller = async function(phone) {
+            if (!phone || phone.length < 7) return;
+            const alertBox = document.getElementById('frequentCallerAlert');
+            const textContainer = document.getElementById('freqAlertText');
+            
+            try {
+                const cleanPhone = phone.replace(/[^\d+]/g, '');
+                const res = await fetch(`/api/get-journal?search=${encodeURIComponent(cleanPhone)}&t=${Date.now()}`, { cache: 'no-store' });
+                const data = await res.json();
+                
+                if (data.success && data.logs) {
+                    const todayStr = new Date().toLocaleDateString();
+                    const todayCalls = data.logs.filter(log => new Date(log.created_at).toLocaleDateString() === todayStr);
+                    
+                    if (todayCalls.length > 0) {
+                        const callNum = todayCalls.length + 1;
+                        let ordinal = 'th';
+                        if (callNum === 2) ordinal = 'nd';
+                        if (callNum === 3) ordinal = 'rd';
+                        
+                        textContainer.innerHTML = `<div style="font-size: 15px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase;">Frequent Caller Alert</div><div style="font-size: 14px; margin-top: 2px; opacity: 0.95;">This is the client's <b style="background: white; color: #e65100; padding: 2px 8px; border-radius: 8px; margin: 0 4px; font-size: 15px;">${callNum}${ordinal} call</b> today! Check notes.</div>`;
+                        
+                        alertBox.style.display = 'flex';
+                    } else {
+                        alertBox.style.display = 'none';
+                    }
+                }
+            } catch (e) { console.log('Freq check error', e); }
+        };
+
+        async function fetchDocketwiseData(query, isPhone) {
+            try { const type = isPhone ? 'phone' : 'name'; const res = await fetch(`/api/search?query=${encodeURIComponent(query)}&type=${type}`); const data = await res.json(); return data.success && data.clients ? data.clients : []; } catch (error) { return []; }
+        }
+
+        function debounce(func, delay = 500) { let t; return (...args) => { clearTimeout(t); t = setTimeout(() => func(...args), delay); }; }
+
+        function applyClientData(client) {
+            window.currentClient = client; document.getElementById('hiddenClientId').value = client.id || '';
+            if (client.id) { document.getElementById('displayClientId').textContent = client.id; document.getElementById('clientBadge').style.display = 'inline-block'; }
+            document.getElementById('fullName').value = client.name; document.getElementById('phoneNumber').value = client.phone || ''; window.updateLinkedContactsPanel();
+            const leadCard = document.getElementById('leadCardWrapper'); if (leadCard) { leadCard.classList.add('disabled'); leadCard.querySelector('input').disabled = true; }
+            
+            const currentStatus = document.querySelector('input[name="clientStatus"]:checked')?.value;
+            if (currentStatus === 'Unrecognized Number (Existing Client)') {
+                let fillPhone = "", fillName = "", fillRel = "";
+                if (window._tempLinkedData) { fillPhone = window._tempLinkedData.phone; fillName = window._tempLinkedData.name; fillRel = window._tempLinkedData.relation; window._tempLinkedData = null; }
+                window.renderCallerRows(fillPhone, fillName, fillRel); if (client.phone) document.getElementById('phoneNumber').value = client.phone;
+            } else { const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]'); if (existingRadio) { existingRadio.checked = true; } }
+            
+            const matterSelect = document.getElementById('matterSelect'); const assigneeTextDiv = document.getElementById('matterAssigneeText'); const assigneeSpan = document.getElementById('assigneeNameSpan'); matterSelect.innerHTML = '<option value="" data-assignee="">-- Please select a matter --</option>';
+            
+            if (client.matters && client.matters.length > 0) {
+                client.matters.forEach(m => { const opt = document.createElement('option'); opt.value = m.id; opt.textContent = m.title; const staffName = m.assignee_name || m.assignee || m.staff || m.user || ""; opt.setAttribute('data-assignee', staffName); matterSelect.appendChild(opt); });
+                matterSelect.selectedIndex = 1; const firstSelectedOpt = matterSelect.options[1]; const initialAssignee = firstSelectedOpt ? firstSelectedOpt.getAttribute('data-assignee') : "";
+                if (initialAssignee) { assigneeTextDiv.style.display = 'block'; assigneeSpan.textContent = initialAssignee; } else { assigneeTextDiv.style.display = 'none'; }
+            } else { assigneeTextDiv.style.display = 'none'; }
+            
+          document.getElementById('matterContainer').style.display = 'block';
+            matterSelect.onchange = function() { const selectedOpt = this.options[this.selectedIndex]; const assignedTo = selectedOpt ? selectedOpt.getAttribute('data-assignee') : ""; if (assignedTo) { assigneeTextDiv.style.display = 'block'; assigneeSpan.textContent = assignedTo; } else { assigneeTextDiv.style.display = 'none'; } };
+            
+            if (client.phone) { window.checkFrequentCaller(client.phone); }
+        }
+
+        const handleSearch = debounce(async (query, isPhone) => {
+            const list = isPhone ? document.getElementById('phoneList') : document.getElementById('clientList'); if (query.length < 3) { list.style.display = 'none'; return; }
+            const loader = isPhone ? document.getElementById('phoneLoader') : document.getElementById('nameLoader'); loader.style.display = 'inline-block'; 
+            try {
+                let results = await fetchDocketwiseData(query, isPhone);
+                if (isPhone && query.length >= 7) {
+                    const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
+                    for (let phone in linkedNumbers) {
+                        if (phone.includes(query)) {
+                            const alreadyExists = results.some(r => String(r.id) === String(linkedNumbers[phone].clientData.id));
+                            if (!alreadyExists) { results.unshift({ isLinkedMatch: true, callerPhone: phone, callerName: linkedNumbers[phone].callerName, relation: linkedNumbers[phone].relation, clientData: linkedNumbers[phone].clientData }); }
+                        }
+                    }
+                }
+                list.innerHTML = '';
+                if (results.length > 0) {
+                    const closeLi = document.createElement('li'); closeLi.innerHTML = `<span style="color:#d32f2f; font-weight:bold; float:right; cursor:pointer; font-size:13px;">✖ Close</span><div style="clear:both;"></div>`; closeLi.style.backgroundColor = "#f9f9f9"; closeLi.style.borderBottom = "2px solid #eaeaea"; closeLi.onmousedown = (e) => { e.preventDefault(); list.style.display = 'none'; }; list.appendChild(closeLi);
+                    results.forEach(client => {
+                        const li = document.createElement('li'); 
+                        if (client.isLinkedMatch) {
+                            let dispName = client.callerName === "Unknown Caller" ? "Unknown" : client.callerName; let dispRel = client.relation === "Unknown Relation" ? "Unknown" : client.relation;
+                            li.innerHTML = `<span class="client-name-list">${client.clientData.name} <span style="font-size:11px; color:#ff9800;">(via ${dispName} - ${dispRel})</span></span><span class="client-phone-list">${client.callerPhone}</span>`;
+                            li.onmousedown = (e) => { e.preventDefault(); list.style.display = 'none'; window._tempLinkedData = { phone: client.callerPhone, name: client.callerName === "Unknown Caller" ? "" : client.callerName, relation: client.relation === "Unknown Relation" ? "" : client.relation }; applyClientData(client.clientData); const unrecRadio = document.querySelector('input[name="clientStatus"][value="Unrecognized Number (Existing Client)"]'); if (unrecRadio) { unrecRadio.checked = true; unrecRadio.dispatchEvent(new Event('change')); } };
+                        } else {
+                            li.innerHTML = `<span class="client-name-list">${client.name}</span><span class="client-phone-list">${client.phone || ''}</span>`;
+                            li.onmousedown = (e) => { e.preventDefault(); list.style.display = 'none'; applyClientData(client); };
+                        }
+                        list.appendChild(li);
+                    });
+                    list.style.display = 'block';
+                } else { list.style.display = 'none'; }
+            } finally { loader.style.display = 'none'; }
+        }, 500);
+
+        document.getElementById('fullName').addEventListener('input', e => { const val = e.target.value.trim(); if (val === '') clearClientData(); handleSearch(val, false); });
+        document.getElementById('phoneNumber').addEventListener('input', e => { const val = e.target.value.replace(/\D/g, ''); if (val === '') clearClientData(); handleSearch(val, true); });
+        document.getElementById('phoneNumber').addEventListener('blur', e => { const val = e.target.value.replace(/[^\d+]/g, ''); if (val.length >= 7) window.checkFrequentCaller(val); });
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#autocompleteWrapper')) { const clientList = document.getElementById('clientList'); if (clientList) clientList.style.display = 'none'; }
+            if (!e.target.closest('#phoneAutocompleteWrapper')) { const phoneList = document.getElementById('phoneList'); if (phoneList) phoneList.style.display = 'none'; }
+        });
+
+        async function checkIncomingCall() {
+            await window.loadSharedContacts();
+            if (incomingPhone) {
+                let cleanedPhone = incomingPhone.replace(/[^\d+]/g, ''); if (cleanedPhone.length < 2) { document.getElementById('phoneNumber').value = incomingPhone; return; }
+                document.getElementById('phoneNumber').value = cleanedPhone;
+
+                if (loggedInStaff !== "Norayr Badalyan") {
+                    setTimeout(() => { fetch('/api/active-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: cleanedPhone }) }).catch(e => console.log("Broadcast err:", e)); }, 800); 
+                }
+
+                const loader = document.getElementById('phoneLoader'); if (loader) loader.style.display = 'inline-block';
+                try {
+                    const clients = await fetchDocketwiseData(cleanedPhone, true);
+                    if (clients && clients.length > 0) { 
+                        if (clients.length === 1) {
+                            applyClientData(clients[0]); 
+                            const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
+                            if (existingRadio) { existingRadio.checked = true; existingRadio.dispatchEvent(new Event('change')); }
+                        } else {
+                            document.getElementById('fullName').value = ''; 
+                            document.getElementById('fullName').placeholder = "⚠️ CHOOSE A CLIENT FROM THE LIST 👇";
+                            
+                            const list = document.getElementById('clientList');
+                            list.innerHTML = '';
+                            
+                            const infoLi = document.createElement('li');
+                            infoLi.innerHTML = `<span style="color:#e65100; font-weight:bold; font-size:13px;">⚠️ Multiple clients found (${clients.length})</span><span style="color:#d32f2f; font-weight:bold; float:right; cursor:pointer; font-size:13px;">✖ Close</span><div style="clear:both;"></div>`;
+                            infoLi.style.backgroundColor = "#fff3e0"; infoLi.style.borderBottom = "2px solid #ffe0b2";
+                            infoLi.onmousedown = (e) => { e.preventDefault(); list.style.display = 'none'; document.getElementById('fullName').placeholder = "Type name to search Docketwise..."; };
+                            list.appendChild(infoLi);
+
+                            clients.forEach(client => {
+                                const li = document.createElement('li'); 
+                                li.innerHTML = `<span class="client-name-list">${client.name}</span><span class="client-phone-list">${client.phone || ''}</span>`;
+                                li.onmousedown = (e) => { 
+                                    e.preventDefault(); list.style.display = 'none'; 
+                                    document.getElementById('fullName').placeholder = "Type name to search Docketwise...";
+                                    applyClientData(client); 
+                                    const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
+                                    if (existingRadio) { existingRadio.checked = true; existingRadio.dispatchEvent(new Event('change')); }
+                                };
+                                list.appendChild(li);
+                            });
+                            list.style.display = 'block';
+                            
+                            const existingRadio = document.querySelector('input[name="clientStatus"][value="Existing Client"]');
+                            if (existingRadio) { existingRadio.checked = true; existingRadio.dispatchEvent(new Event('change')); }
+                        }
+                        
+                        if (loader) loader.style.display = 'none'; return; 
+                    }
+                } catch(error) { console.error("Caller ID Error:", error); }
+                
+                const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
+                if (linkedNumbers[cleanedPhone]) {
+                    const linkInfo = linkedNumbers[cleanedPhone]; window._tempLinkedData = { phone: cleanedPhone, name: linkInfo.callerName === "Unknown Caller" ? "" : linkInfo.callerName, relation: linkInfo.relation === "Unknown Relation" ? "" : linkInfo.relation };
+                    if (linkInfo.clientData) { applyClientData(linkInfo.clientData); } const unrecRadio = document.querySelector('input[name="clientStatus"][value="Unrecognized Number (Existing Client)"]'); if (unrecRadio) { unrecRadio.checked = true; unrecRadio.dispatchEvent(new Event('change')); } if (loader) loader.style.display = 'none'; return; 
+                }
+                if (loader) loader.style.display = 'none';
+            }
+        }
+        checkIncomingCall();
+
+        let lastRadarPhone = incomingPhone || "";
+        if (loggedInStaff === "Norayr Badalyan") {
+            setInterval(async () => {
+                try {
+                    await window.loadSharedContacts(); 
+                    const res = await fetch('/api/active-call?t=' + new Date().getTime(), { cache: 'no-store' }); 
+                    if (!res.ok) return;
+                    const data = await res.json(); 
+                    if (data.success && data.phone && data.phone !== lastRadarPhone) { 
+                        lastRadarPhone = data.phone; 
+                        window.open(window.location.origin + window.location.pathname + '?phone=' + data.phone, '_blank'); 
+                    }
+                } catch (e) { console.error("Radar error:", e); }
+            }, 2000); 
+        }
+
+        const callForm = document.getElementById('callForm');
+        callForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const submitBtn = document.getElementById('submitBtn'); submitBtn.disabled = true; submitBtn.textContent = 'Saving to Internal Database...';
+
+            let finalDescription = document.getElementById('briefDescription').value;
+            const checkedStatus = document.querySelector('input[name="clientStatus"]:checked');
+            const isUnrecognized = checkedStatus?.value === 'Unrecognized Number (Existing Client)'; const isGeneral = checkedStatus?.value === 'General Inquiry';
+            
+            const isUrgent = document.getElementById('urgentCallCheckbox') && document.getElementById('urgentCallCheckbox').checked;
+            
+            let callerInfoBlock = ""; let finalClientName = document.getElementById('fullName').value || "Unknown Client"; let finalClientPhone = document.getElementById('phoneNumber').value || "";
+
+            if (isGeneral) {
+                finalClientName = document.getElementById('genCallerName').value.trim() || "General Caller"; finalClientPhone = document.getElementById('genCallerPhone').value.trim() || "";
+            } else if (isUnrecognized) {
+                let callerBlocks = []; const rows = document.querySelectorAll('.caller-row');
+                rows.forEach(row => {
+                    const cPhone = row.querySelector('.dyn-caller-phone').value.replace(/[^\d+]/g, ''); const cName = row.querySelector('.dyn-caller-name').value.trim() || "Unknown Caller"; const cRel = row.querySelector('.dyn-caller-relation').value.trim() || "Unknown Relation";
+                    if (cPhone) {
+                        callerBlocks.push(`[🗣️ CALLER: ${cName} (${cRel}) | Phone: ${cPhone}]`);
+                        if (window.currentClient) {
+                            const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {}; linkedNumbers[cPhone] = { callerName: cName, relation: cRel, clientData: window.currentClient }; window.saveSharedContacts(linkedNumbers);
+                        }
+                    }
+                });
+                if (callerBlocks.length > 0) { callerInfoBlock = callerBlocks.join('\n'); }
+            }
+
+            const statusText = checkedStatus ? `Status: ${checkedStatus.value}` : "";
+            let combinedDesc = []; 
+            if (isUrgent) combinedDesc.push("[🚨 URGENT]"); 
+            if (statusText) combinedDesc.push(statusText); 
+            if (callerInfoBlock) combinedDesc.push(callerInfoBlock); 
+            if (finalDescription) combinedDesc.push(finalDescription);
+            finalDescription = combinedDesc.join('\n\n');
+
+            const staffSelect = document.getElementById('assignedStaff'); const resolvedOpCheckbox = document.getElementById('resolvedByOpCheckbox');
+            let assignedStaffName = ""; let assignedStaffId = "";
+
+            if (resolvedOpCheckbox && resolvedOpCheckbox.checked) { assignedStaffName = "Resolved by Operator"; } 
+            else { assignedStaffName = staffSelect.options[staffSelect.selectedIndex]?.text || ""; assignedStaffId = staffSelect.value || ""; }
+
+            const formData = {
+                clientId: document.getElementById('hiddenClientId').value || "", clientName: finalClientName, clientPhone: finalClientPhone,
+                matterTitle: document.getElementById('matterSelect').options[document.getElementById('matterSelect').selectedIndex]?.text || "",
+                program: "", description: finalDescription, operatorName: loggedInStaff || "Unknown Operator", operatorId: myStaffId, assignedStaffName: assignedStaffName, assignedStaffId: assignedStaffId, followUpNotes: "", status: "Resolved"
+            };
+
+            try {
+                const response = await fetch('/api/save-call', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
+                const result = await response.json();
+                if (result.success) {
+                    alert(`✅ Call successfully saved! \n\n${assignedStaffName !== "-- Do not notify anyone --" && assignedStaffName !== "" && assignedStaffName !== "Resolved by Operator" ? "Staff member has been notified." : ""}`);
+                    clearClientData(); document.getElementById('fullName').value = ''; document.getElementById('phoneNumber').value = ''; document.getElementById('genCallerName').value = ''; document.getElementById('genCallerPhone').value = ''; callForm.reset(); document.querySelector('input[name="clientStatus"][value="Existing Client"]').checked = true; document.getElementById('generalInquirySection').style.display = 'none'; setDateTime(); 
+                    
+                    window.renderCallHistoryList();
+                } else { alert(`❌ Error saving call: ` + (result.error || "")); }
+            } catch (error) { alert('Network error. Failed to save.'); } 
+          finally { submitBtn.disabled = false; submitBtn.textContent = 'Save Call Log to Internal CRM'; }
+        });
+
+        window.renderCallerRows();
+        
+        // --- Восстановление вкладки при перезагрузке (F5) ---
+        const savedTab = localStorage.getItem('savedMainTab');
+        if (savedTab) {
+            switchMainTab(savedTab, null);
+            if (savedTab === 'tabCalendarContent') {
+                const savedView = localStorage.getItem('savedCalView');
+                if (savedView === 'inbox') {
+                    switchCalView('inbox');
+                }
+            }
+        }
+    // === АРХИВАЦИЯ ЧАТА В БАЗУ ДАННЫХ CRM ===
+        window.saveChatToJournal = async function(phone, name, key, event) {
+            const btn = event.target;
+            btn.textContent = 'Saving...'; btn.disabled = true;
+            
+            await window.loadMessages();
+            let msgs = window.globalMessages || [];
+            const thread = msgs.filter(m => `${m.name}_${m.phone || 'NoPhone'}` === key).sort((a,b) => a.timestamp - b.timestamp);
+            
+            if (thread.length === 0) {
+                alert("Нет сообщений для сохранения!");
+                btn.textContent = '💾 Save to CRM'; btn.disabled = false;
+                return;
+            }
+
+            // Формируем красивый текст переписки
+            let chatText = `[💬 SMS CHAT HISTORY ARCHIVE]\nSaved on: ${new Date().toLocaleString()}\n\n`;
+            thread.forEach(m => {
+                const timeStr = new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const sender = m.direction === 'out' ? "🏢 Us" : `👤 ${name}`;
+                chatText += `[${timeStr}] ${sender}: ${m.text}\n`;
+            });
+
+            const loggedInStaff = localStorage.getItem('loggedInStaff') || "Unknown Operator";
+            
+            // Формируем такой же объект, как при сохранении звонка
+            const formData = {
+                clientId: "", 
+                clientName: name, 
+                clientPhone: phone,
+                matterTitle: "", 
+                program: "", 
+                description: chatText, 
+                operatorName: loggedInStaff, 
+                operatorId: myStaffId, 
+                assignedStaffName: "Resolved by Operator", 
+                assignedStaffId: "", 
+                followUpNotes: "SMS Chat automatically archived to database.", 
+                status: "Resolved"
+            };
+
+            try {
+                // Отправляем на сервер в таблицу Журнала
+                const response = await fetch('/api/save-call', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(formData) 
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert("✅ Чат успешно навсегда сохранен в Internal Call History!");
+                    window.renderCallHistoryList();
+                } else {
+                    alert("❌ Ошибка при сохранении: " + (result.error || ""));
+                }
+            } catch (error) {
+                alert('Сбой соединения с сервером. Попробуйте еще раз.');
+            } finally {
+                btn.textContent = '💾 Save to CRM'; btn.disabled = false;
+            }
+        };
+    
 
     });  
 </script>
