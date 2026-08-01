@@ -2796,14 +2796,19 @@ window.renderMainCalendar = async function() {
     const statusF = document.getElementById('statusFilter').value; if(statusF !== 'All Statuses') { records = records.filter(r => { const recStatus = r.clientStatus || (r.isLead ? 'Lead' : 'Existing Client'); return recStatus === statusF; }); }
 
    if (view === 'agenda') {
-        title.textContent = "Upcoming Agenda"; 
+        title.textContent = `${months[m]} ${y}`; 
         let html = ''; let currentDate = ''; 
         const todayMsec = new Date().setHours(0,0,0,0);
         
-        // ИСПРАВЛЕНИЕ: Агенда теперь показывает только сегодняшние и будущие встречи
-        const sorted = records.filter(a => a.timestamp >= todayMsec).sort((a,b) => a.timestamp - b.timestamp);
+        // ИСПРАВЛЕНИЕ: Фильтруем строго по выбранному месяцу (для стрелок) И отсекаем прошедшие
+        const sorted = records.filter(a => {
+            const d = new Date(a.timestamp);
+            const isThisMonth = d.getMonth() === m && d.getFullYear() === y;
+            const isFuture = a.timestamp >= todayMsec;
+            return isThisMonth && isFuture;
+        }).sort((a,b) => a.timestamp - b.timestamp);
 
-        if(sorted.length === 0) { area.innerHTML = `<div style="padding:30px; text-align:center; color:var(--secondary-color);">No upcoming appointments found.</div>`; return; }
+        if(sorted.length === 0) { area.innerHTML = `<div style="padding:30px; text-align:center; color:var(--secondary-color);">No upcoming appointments found in ${months[m]} ${y}.</div>`; return; }
         
         sorted.forEach(appt => {
             const dObj = new Date(appt.timestamp); const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; const dateTitle = `${days[dObj.getDay()]}, ${dObj.getMonth()+1}/${dObj.getDate()}`;
