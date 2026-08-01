@@ -8,7 +8,10 @@ const auth = new google.auth.JWT(
     SCOPES
 );
 const calendar = google.calendar({ version: 'v3', auth });
-const calendarId = 'alldocsconsulting@gmail.com';
+const mainCalendarId = 'alldocsconsulting@gmail.com';
+
+// 🛑 ВСТАВЬ СКОПИРОВАННЫЙ ID КАЛЕНДАРЯ GOREMINDERS МЕЖДУ КАВЫЧЕК НИЖЕ:
+const goRemindersCalendarId = '7e8083f42a108266dd9aafe7cc4cdad45578530f1d198fdbe7018013c1692d26@group.calendar.google.com';
 
 function extractFromDescription(desc, fieldName) {
     if (!desc) return '';
@@ -29,23 +32,40 @@ export default async function handler(req, res) {
     }
 
     try {
-        // --- ЧТЕНИЕ ИЗ ГУГЛ КАЛЕНДАРЯ ---
+        // --- ЧТЕНИЕ ИЗ 2-Х КАЛЕНДАРЕЙ ОДНОВРЕМЕННО ---
         if (req.method === 'GET') {
             const now = new Date();
             const minDate = new Date(); minDate.setMonth(now.getMonth() - 1);
             const maxDate = new Date(); maxDate.setMonth(now.getMonth() + 6);
 
-            const response = await calendar.events.list({
-                calendarId: calendarId,
-                timeMin: minDate.toISOString(),
-                timeMax: maxDate.toISOString(),
-                singleEvents: true,
-                orderBy: 'startTime',
-            });
-
-            const googleEvents = response.data.items || [];
+            let allEvents = [];
+            const calendarsToFetch = [mainCalendarId];
             
-            const mappedAppointments = googleEvents.map(event => {
+            // Если ID GoReminders вставлен, добавляем его в очередь скачивания
+            if (goRemindersCalendarId && goRemindersCalendarId !== '7e8083f42a108266dd9aafe7cc4cdad45578530f1d198fdbe7018013c1692d26@group.calendar.google.com') {
+                calendarsToFetch.push(goRemindersCalendarId);
+            }
+
+            // Скачиваем события из обоих календарей
+            for (const calId of calendarsToFetch) {
+                try {
+                    const response = await calendar.events.list({
+                        calendarId: calId,
+                        timeMin: minDate.toISOString(),
+                        timeMax: maxDate.toISOString(),
+                        singleEvents: true,
+                        orderBy: 'startTime',
+                    });
+                    const items = response.data.items || [];
+                    
+                    // Помечаем, из какого календаря пришло событие
+                    allEvents.push(...items.map(ev => ({ ...ev, _isGoReminders: calId === goRemindersCalendarId })));
+                } catch (err) {
+                    console.error(`Ошибка при чтении календаря ${calId}:`, err);
+                }
+            }
+            
+            const mappedAppointments = allEvents.map(event => {
                 const startDateTime = event.start.dateTime || event.start.date;
                 if (!startDateTime) return null;
 
@@ -58,6 +78,8 @@ export default async function handler(req, res) {
                 const formattedTime = hours.toString().padStart(2, '0') + ':' + minutes.toString().padStart(2, '0') + ' ' + ampm;
 
                 const desc = event.description || '';
+                
+                // Если событие из GoReminders и у него другой формат текста, подставляем дефолтные значения
                 return {
                     id: event.id, 
                     client: event.summary || 'Unknown Client',
@@ -66,27 +88,35 @@ export default async function handler(req, res) {
                     time: formattedTime,
                     location: event.location || '',
                     phone: extractFromDescription(desc, 'Phone') || '',
-                    staff: extractFromDescription(desc, 'Staff') || 'Admin',
-                    service: extractFromDescription(desc, 'Service') || 'General Appointment',
+                    staff: extractFromDescription(desc, 'Staff') || (event._isGoReminders ? 'GoReminders' : 'Admin'),
+                    service: extractFromDescription(desc, 'Service') || (event._isGoReminders ? 'GoReminders Appt' : 'General Appointment'),
                     length: extractFromDescription(desc, 'Duration') || '1 hour',
-                    message: extractFromDescription(desc, 'Note') || '',
+                    message: extractFromDescription(desc, 'Note') || (event._isGoReminders ? desc.substring(0, 150) : ''),
                     isLead: (event.colorId === '11')
                 };
             }).filter(item => item !== null); 
 
+            // Сортируем все слитые вместе встречи по времени
+            mappedAppointments.sort((a, b) => a.timestamp - b.timestamp);
+
             return res.status(200).json({ success: true, appointments: mappedAppointments });
         }
 
-        // --- УДАЛЕНИЕ ИЗ ГУГЛ КАЛЕНДАРЯ ---
+        // --- УДАЛЕНИЕ ---
         if (req.method === 'DELETE') {
             const { id } = req.body;
             if (!id) return res.status(400).json({ success: false, error: 'No ID provided' });
             
-            await calendar.events.delete({ calendarId: calendarId, eventId: id });
+            // Пытаемся удалить сначала в основном, если ошибка - игнорируем (так как это мог быть GoReminders)
+            try { await calendar.events.delete({ calendarId: mainCalendarId, eventId: id }); } catch(e) {}
+            if (goRemindersCalendarId && goRemindersCalendarId !== 'ВСТАВЬ_СЮДА_ID_GOREMINDERS') {
+                try { await calendar.events.delete({ calendarId: goRemindersCalendarId, eventId: id }); } catch(e) {}
+            }
+            
             return res.status(200).json({ success: true, message: 'Deleted successfully' });
         }
 
-        // --- СОЗДАНИЕ И РЕДАКТИРОВАНИЕ В ГУГЛ КАЛЕНДАРЕ ---
+        // --- СОЗДАНИЕ И РЕДАКТИРОВАНИЕ ---
         if (req.method === 'POST' || req.method === 'PUT') {
             const { newAppointment } = req.body;
             if (!newAppointment) return res.status(400).json({ success: false, error: 'No appointment data' });
@@ -118,19 +148,17 @@ export default async function handler(req, res) {
                 colorId: newAppointment.isLead ? '11' : '9', 
             };
 
+            // Новые карточки из CRM всегда создаем в основном календаре
             if (req.method === 'PUT' && newAppointment.id) {
-                // Если передали ID - обновляем существующее (EDIT)
-                await calendar.events.update({
-                    calendarId: calendarId,
-                    eventId: newAppointment.id,
-                    requestBody: event,
-                });
+                try {
+                    await calendar.events.update({ calendarId: mainCalendarId, eventId: newAppointment.id, requestBody: event });
+                } catch (e) {
+                    if (goRemindersCalendarId && goRemindersCalendarId !== 'ВСТАВЬ_СЮДА_ID_GOREMINDERS') {
+                        try { await calendar.events.update({ calendarId: goRemindersCalendarId, eventId: newAppointment.id, requestBody: event }); } catch(err) {}
+                    }
+                }
             } else {
-                // Если ID нет - создаем новое (CREATE)
-                await calendar.events.insert({
-                    calendarId: calendarId,
-                    requestBody: event,
-                });
+                await calendar.events.insert({ calendarId: mainCalendarId, requestBody: event });
             }
 
             return res.status(200).json({ success: true, message: 'Saved successfully.' });
