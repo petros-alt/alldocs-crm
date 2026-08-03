@@ -2920,16 +2920,16 @@ window.renderMainCalendar = async function() {
             return eventsHtml;
         };
 
-    let cssHtml = `
+   let cssHtml = `
         <style>
-            .gv-container { display: flex; border: 1px solid var(--border-color); border-radius: 12px; background: white; overflow-y: auto; overflow-x: auto; height: 600px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); position: relative; scroll-behavior: smooth; }
-            .gv-time-col { width: 70px; flex-shrink: 0; background: var(--surface-color); border-right: 1px solid var(--border-color); position: sticky; left: 0; z-index: 100; }
+            .gv-container { display: flex; align-items: flex-start; border: 1px solid var(--border-color); border-radius: 12px; background: white; overflow: auto; height: 600px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); position: relative; scroll-behavior: smooth; }
+            .gv-time-col { width: 70px; flex-shrink: 0; background: var(--surface-color); border-right: 1px solid var(--border-color); position: sticky; left: 0; z-index: 100; min-height: 100%; height: max-content; }
             .gv-time-header { height: 50px; background: var(--surface-color); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 105; }
             .gv-time-slot { height: 60px; position: relative; border-bottom: 1px solid transparent; box-sizing: border-box; }
             .gv-time-label { position: absolute; top: -8px; right: 10px; font-size: 11px; color: var(--secondary-color); font-weight: 700; }
             
-            .gv-days-wrap { display: flex; flex: 1; min-width: ${isWeek ? '800px' : '300px'}; background: white; }
-            .gv-day-col { flex: 1; border-right: 1px solid var(--border-color); position: relative; min-width: 110px; }
+            .gv-days-wrap { display: flex; flex: 1; min-width: ${isWeek ? '1050px' : '100%'}; background: white; height: max-content; }
+            .gv-day-col { flex: 1; border-right: 1px solid var(--border-color); position: relative; min-width: ${isWeek ? '145px' : '100%'}; }
             .gv-day-col:last-child { border-right: none; }
             
             .gv-day-header { height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fffcf9; border-bottom: 1px solid var(--border-color); font-weight: 800; font-size: 13.5px; color: var(--primary-color); position: sticky; top: 0; z-index: 90; box-sizing: border-box; }
@@ -2939,15 +2939,17 @@ window.renderMainCalendar = async function() {
             
             .gv-grid { position: relative; height: 780px; background-image: linear-gradient(to bottom, var(--border-color) 1px, transparent 1px); background-size: 100% 60px; background-position: 0 -1px; }
             
-            .gv-appt { position: absolute; border-radius: 6px; padding: 6px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; transition: 0.2s; z-index: 10; display: flex; flex-direction: column; gap: 3px; box-sizing: border-box; border: 1px solid rgba(0,0,0,0.05); }
+            .gv-appt { position: absolute; border-radius: 6px; padding: 4px 6px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; transition: 0.2s; z-index: 10; display: flex; flex-direction: column; gap: 2px; box-sizing: border-box; border: 1px solid rgba(0,0,0,0.05); }
             .gv-appt:hover { z-index: 50; transform: scale(1.02); box-shadow: 0 8px 25px rgba(0,0,0,0.2); min-height: max-content !important; height: auto !important; border-color: rgba(0,0,0,0.1); }
             
-            .gv-appt-reg { background: #f0f7ff; border-left: 4px solid #1976d2; }
-            .gv-appt-lead { background: #fff3e0; border-left: 4px solid #e65100; }
+            .gv-appt-reg { background: #f0f7ff; border-left: 3px solid #1976d2; }
+            .gv-appt-lead { background: #fff3e0; border-left: 3px solid #e65100; }
             
-            .gv-appt-time { font-size: 10px; font-weight: 700; color: var(--secondary-color); background: rgba(255,255,255,0.6); padding: 2px 5px; border-radius: 4px; width: fit-content; }
-            .gv-appt-title { font-weight: 800; color: var(--primary-color); line-height: 1.2; font-size: 12.5px; word-wrap: break-word; }
-            .gv-appt-service { font-size: 10.5px; color: var(--secondary-color); opacity: 0.9; word-wrap: break-word; line-height: 1.2;}
+            .gv-appt-time { font-size: 9.5px; font-weight: 700; color: var(--secondary-color); background: rgba(255,255,255,0.6); padding: 1px 4px; border-radius: 4px; width: fit-content; white-space: nowrap; }
+            .gv-appt-title { font-weight: 800; color: var(--primary-color); line-height: 1.1; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+            .gv-appt-service { font-size: 10px; color: var(--secondary-color); opacity: 0.9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            
+            .gv-appt:hover .gv-appt-title, .gv-appt:hover .gv-appt-service { white-space: normal; }
         </style>
         <div class="gv-container">
             <div class="gv-time-col">
