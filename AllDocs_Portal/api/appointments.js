@@ -41,6 +41,7 @@ export default async function handler(req, res) {
             const calendarsToFetch = [mainCalendarId, goRemindersCalendarId];
 
             for (const calId of calendarsToFetch) {
+                if(!calId) continue;
                 try {
                     const response = await calendar.events.list({
                         calendarId: calId,
@@ -52,7 +53,7 @@ export default async function handler(req, res) {
                     const items = response.data.items || [];
                     allEvents.push(...items.map(ev => ({ ...ev, _isGoReminders: calId === goRemindersCalendarId })));
                 } catch (err) {
-                    console.error(`Ошибка чтения календаря ${calId}:`, err);
+                    console.error(`Ошибка при чтении календаря ${calId}:`, err);
                 }
             }
             
@@ -60,9 +61,15 @@ export default async function handler(req, res) {
                 const startDateTime = event.start.dateTime || event.start.date;
                 if (!startDateTime) return null;
 
+                // Получаем оригинальное время
                 const startDateObj = new Date(startDateTime);
-                let hours = startDateObj.getHours();
-                let minutes = startDateObj.getMinutes();
+                
+                // ЖЕСТКО переводим время в часовой пояс Лос-Анджелеса
+                const laDateStr = startDateObj.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' });
+                const laDate = new Date(laDateStr);
+
+                let hours = laDate.getHours();
+                let minutes = laDate.getMinutes();
                 const ampm = hours >= 12 ? 'PM' : 'AM';
                 hours = hours % 12;
                 hours = hours ? hours : 12; 
@@ -73,7 +80,7 @@ export default async function handler(req, res) {
                 return {
                     id: event.id, 
                     client: event.summary || 'Unknown Client',
-                    dateStr: startDateObj.toDateString(), 
+                    dateStr: laDate.toDateString(), // Берем дату Лос-Анджелеса, чтобы не было сдвигов на день
                     timestamp: startDateObj.getTime(),
                     time: formattedTime,
                     location: event.location || '',
@@ -87,6 +94,7 @@ export default async function handler(req, res) {
             }).filter(item => item !== null); 
 
             mappedAppointments.sort((a, b) => a.timestamp - b.timestamp);
+
             return res.status(200).json({ success: true, appointments: mappedAppointments });
         }
 
