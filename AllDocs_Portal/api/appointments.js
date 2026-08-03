@@ -58,10 +58,10 @@ export default async function handler(req, res) {
             }
             
             const mappedAppointments = allEvents.map(event => {
-                const startDateTime = event.start.dateTime || event.start.date;
+                const startDateTime = event.start?.dateTime || event.start?.date;
+                const endDateTime = event.end?.dateTime || event.end?.date;
                 if (!startDateTime) return null;
 
-                // Получаем оригинальное время
                 const startDateObj = new Date(startDateTime);
                 
                 // ЖЕСТКО переводим время в часовой пояс Лос-Анджелеса
@@ -77,18 +77,65 @@ export default async function handler(req, res) {
 
                 const desc = event.description || '';
                 
+                // ВЫЧИСЛЯЕМ ТОЧНУЮ ДЛИТЕЛЬНОСТЬ
+                let calcLength = extractFromDescription(desc, 'Duration');
+                if (!calcLength && startDateTime && endDateTime) {
+                    const diffMs = new Date(endDateTime).getTime() - new Date(startDateTime).getTime();
+                    const diffMins = Math.round(diffMs / 60000);
+                    if (diffMins < 60) {
+                        calcLength = `${diffMins} minutes`;
+                    } else {
+                        const hrs = Math.floor(diffMins / 60);
+                        const rmins = diffMins % 60;
+                        calcLength = `${hrs} hour${hrs > 1 ? 's' : ''}`;
+                        if (rmins > 0) calcLength += ` ${rmins} minutes`;
+                    }
+                }
+                if (!calcLength) calcLength = '1 hour';
+
+                let clientName = event.summary || 'Unknown Client';
+                let staffName = extractFromDescription(desc, 'Staff') || 'Admin';
+                let serviceName = extractFromDescription(desc, 'Service') || 'General Appointment';
+                let phoneNum = extractFromDescription(desc, 'Phone') || '';
+                let noteMsg = extractFromDescription(desc, 'Note') || '';
+                let loc = event.location || '';
+
+                // УМНЫЙ ПАРСЕР ДЛЯ GOREMINDERS
+                if (event._isGoReminders && event.summary) {
+                    const summary = event.summary;
+                    
+                    const nMatch = summary.match(/^(.*?)(?:\s*@\s*|$)/);
+                    if (nMatch) clientName = nMatch[1].trim();
+
+                    const lMatch = summary.match(/@\s*(.*?)(?:\s*with\s*|$)/);
+                    if (lMatch) loc = lMatch[1].trim() || loc;
+
+                    const sMatch = summary.match(/with\s*(.*?)(?:\s*for\s*|$)/);
+                    if (sMatch) staffName = sMatch[1].trim();
+
+                    const srvMatch = summary.match(/for\s*(.*?)(?:\s*Customer Phone:|$)/);
+                    if (srvMatch) serviceName = srvMatch[1].trim();
+
+                    const phMatch = summary.match(/Customer Phone:\s*([\d\-\(\)\s]+)/);
+                    if (phMatch) phoneNum = phMatch[1].trim();
+
+                    const ntMatch = summary.match(/Appointment Notes:\s*(.*)$/i);
+                    if (ntMatch) noteMsg = ntMatch[1].trim();
+                    else if (desc && !noteMsg) noteMsg = desc; 
+                }
+
                 return {
                     id: event.id, 
-                    client: event.summary || 'Unknown Client',
-                    dateStr: laDate.toDateString(), // Берем дату Лос-Анджелеса, чтобы не было сдвигов на день
+                    client: clientName,
+                    dateStr: laDate.toDateString(), 
                     timestamp: startDateObj.getTime(),
                     time: formattedTime,
-                    location: event.location || '',
-                    phone: extractFromDescription(desc, 'Phone') || '',
-                    staff: extractFromDescription(desc, 'Staff') || (event._isGoReminders ? 'GoReminders' : 'Admin'),
-                    service: extractFromDescription(desc, 'Service') || (event._isGoReminders ? 'GoReminders Appt' : 'General Appointment'),
-                    length: extractFromDescription(desc, 'Duration') || '1 hour',
-                    message: extractFromDescription(desc, 'Note') || (event._isGoReminders ? desc.substring(0, 150) : ''),
+                    location: loc,
+                    phone: phoneNum,
+                    staff: staffName,
+                    service: serviceName,
+                    length: calcLength,
+                    message: noteMsg,
                     isLead: (event.colorId === '11')
                 };
             }).filter(item => item !== null); 
