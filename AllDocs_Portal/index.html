@@ -2772,9 +2772,8 @@ window.currentCrmNotifs = [];
             updatePreview();
         };
 
-      let viewDate = new Date(); 
+let viewDate = new Date(); 
         
-        // УМНЫЕ СТРЕЛКИ (переключают Дни, Недели или Месяцы в зависимости от вида)
         window.changeViewDate = function(dir) { 
             const view = document.getElementById('viewSelector').value;
             if (view === 'week') { viewDate.setDate(viewDate.getDate() + dir * 7); }
@@ -2812,7 +2811,6 @@ window.renderMainCalendar = async function() {
     const staffF = document.getElementById('staffFilter').value; if(staffF !== 'All Staff') { records = records.filter(r => r.staff === staffF); }
     const statusF = document.getElementById('statusFilter').value; if(statusF !== 'All Statuses') { records = records.filter(r => { const recStatus = r.clientStatus || (r.isLead ? 'Lead' : 'Existing Client'); return recStatus === statusF; }); }
 
-    // МЕНЯЕМ ЗАГОЛОВОК В ЗАВИСИМОСТИ ОТ ВИДА
     if (view === 'day') {
         title.textContent = `${months[viewDate.getMonth()]} ${viewDate.getDate()}, ${viewDate.getFullYear()}`;
     } else if (view === 'week') {
@@ -2871,86 +2869,115 @@ window.renderMainCalendar = async function() {
         html += '</div>'; area.innerHTML = html;
 
     } else if (view === 'day' || view === 'week') {
-        // === ЛОГИКА ДЛЯ НЕДЕЛИ И ДНЯ ===
         const isWeek = view === 'week';
         
-        // Помощник для рисования блоков встреч на сетке
         const renderDayGrid = (targetDateObj) => {
             const dStr = targetDateObj.toDateString();
-            const dayAppts = records.filter(a => new Date(a.timestamp).toDateString() === dStr);
+            const dayAppts = records.filter(a => new Date(a.timestamp).toDateString() === dStr).sort((a,b) => parseTimeStrToMinutes(a.time) - parseTimeStrToMinutes(b.time));
             
             let eventsHtml = '';
             dayAppts.forEach(appt => {
                 let startMins = parseTimeStrToMinutes(appt.time);
                 let durMins = parseDurationToMinutes(appt.length) || 60;
-                let endTimeStr = formatMinutesToTimeStr(startMins + durMins);
+                let endMins = startMins + durMins;
+                let endTimeStr = formatMinutesToTimeStr(endMins);
                 
-                // Ограничиваем начало сетки 7:00 AM (420 минут от начала дня)
-                if(startMins < 420) startMins = 420;
+                let startOffset = 8 * 60; // Шкала начинается с 8:00 AM
+                let topPx = startMins - startOffset;
+                if (topPx < 0) topPx = 0; 
                 
-                // Вычисляем координаты (1 минута = 1 пиксель для идеальной пропорции)
-                let topPx = (startMins - 420); 
                 let heightPx = durMins;
-                if(heightPx < 30) heightPx = 30; // Минимальная высота, чтобы текст влез
+                if (heightPx < 30) heightPx = 30; // Мин. высота чтобы влез текст
                 
-                let leadClass = appt.isLead ? 'lead' : '';
+                // Умная математика пересечений
+                let overlapping = dayAppts.filter(other => {
+                    if(String(other.id) === String(appt.id)) return false;
+                    let oStart = parseTimeStrToMinutes(other.time);
+                    let oEnd = oStart + (parseDurationToMinutes(other.length) || 60);
+                    return (startMins < oEnd && endMins > oStart);
+                });
+                
+                let leftStyle = "4px";
+                let widthStyle = "calc(100% - 8px)";
+                if (overlapping.length > 0) {
+                    let cluster = [appt, ...overlapping].sort((a,b) => parseTimeStrToMinutes(a.time) - parseTimeStrToMinutes(b.time) || String(a.id).localeCompare(String(b.id)));
+                    let myIndex = cluster.findIndex(x => String(x.id) === String(appt.id));
+                    let widthPct = 100 / cluster.length;
+                    leftStyle = `calc(${myIndex * widthPct}% + 2px)`;
+                    widthStyle = `calc(${widthPct}% - 4px)`;
+                }
+
+                let leadClass = appt.isLead ? 'gv-appt-lead' : 'gv-appt-reg';
                 let leadIcon = appt.isLead ? '🔥 ' : '';
                 
                 eventsHtml += `
-                    <div class="grid-appt ${leadClass}" style="top: ${topPx}px; height: ${heightPx}px;" onclick="openPreviewModal('${appt.id}')">
-                        <span class="grid-appt-time">${appt.time} - ${endTimeStr}</span>
-                        <span class="grid-appt-title">${leadIcon}${appt.client.split(' ')[0]}</span>
-                        <span style="font-size:9.5px; color:var(--secondary-color); display:block; margin-top:2px;">${appt.service}</span>
+                    <div class="gv-appt ${leadClass}" style="top: ${topPx}px; height: ${heightPx}px; left: ${leftStyle}; width: ${widthStyle};" onclick="openPreviewModal('${appt.id}')">
+                        <div class="gv-appt-time">${appt.time} - ${endTimeStr}</div>
+                        <div class="gv-appt-title">${leadIcon}${appt.client}</div>
+                        <div class="gv-appt-service">${appt.service} with ${appt.staff}</div>
                     </div>
                 `;
             });
             return eventsHtml;
         };
 
-        // Встраиваем стили сетки (в стиле CRM)
         let cssHtml = `
         <style>
-            .grid-view-container { display: flex; border: 1px solid var(--border-color); border-radius: 12px; background: white; overflow-y: auto; height: 600px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
-            .time-col { width: 65px; border-right: 1px solid var(--border-color); background: var(--surface-color); display: flex; flex-direction: column; flex-shrink: 0; padding-top: 41px; }
-            .time-slot-label { height: 60px; box-sizing: border-box; border-bottom: 1px solid var(--border-color); font-size: 11px; color: var(--secondary-color); text-align: right; padding: 5px 8px 0 0; font-weight: bold;}
-            .days-container { display: flex; flex: 1; min-width: 600px; }
-            .day-col { flex: 1; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
-            .day-col:last-child { border-right: none; }
-            .day-header { text-align: center; height: 40px; border-bottom: 1px solid var(--border-color); font-weight: bold; background: #fffcf9; font-size: 13px; color: var(--primary-color); display: flex; align-items: center; justify-content: center; position: sticky; top: 0; z-index: 50;}
-            .day-header.is-today { color: var(--accent-color); background: #fdfaf6; border-bottom: 2px solid var(--accent-color); }
-            .day-grid { position: relative; height: 840px; background-image: repeating-linear-gradient(to bottom, transparent, transparent 59px, #f0ebe1 59px, #f0ebe1 60px); background-size: 100% 60px; }
-            .grid-appt { position: absolute; left: 3px; right: 3px; background: #e8f4fd; border-left: 4px solid #1976d2; border-radius: 6px; padding: 6px; font-size: 11px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s; z-index: 10; line-height: 1.2; box-sizing: border-box;}
-            .grid-appt:hover { z-index: 20; transform: scale(1.02) translateX(2px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); border-left-width: 6px;}
-            .grid-appt.lead { background: #fff3e0; border-left-color: #e65100; }
-            .grid-appt-title { font-weight: 800; color: var(--primary-color); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; margin-top:2px;}
-            .grid-appt-time { font-size: 10px; color: var(--secondary-color); font-weight: 600; display: block; background: rgba(255,255,255,0.6); padding: 2px 4px; border-radius: 4px; display: inline-block;}
+            .gv-container { display: flex; border: 1px solid var(--border-color); border-radius: 12px; background: white; overflow-y: auto; overflow-x: auto; height: 600px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); position: relative; scroll-behavior: smooth; }
+            .gv-time-col { width: 70px; flex-shrink: 0; background: var(--surface-color); border-right: 1px solid var(--border-color); position: sticky; left: 0; z-index: 100; }
+            .gv-time-header { height: 50px; background: var(--surface-color); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 105; }
+            .gv-time-slot { height: 60px; position: relative; border-bottom: 1px solid transparent; box-sizing: border-box; }
+            .gv-time-label { position: absolute; top: -8px; right: 10px; font-size: 11px; color: var(--secondary-color); font-weight: 700; }
+            
+            .gv-days-wrap { display: flex; flex: 1; min-width: ${isWeek ? '800px' : '300px'}; background: white; }
+            .gv-day-col { flex: 1; border-right: 1px solid var(--border-color); position: relative; min-width: 110px; }
+            .gv-day-col:last-child { border-right: none; }
+            
+            .gv-day-header { height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #fffcf9; border-bottom: 1px solid var(--border-color); font-weight: 800; font-size: 13.5px; color: var(--primary-color); position: sticky; top: 0; z-index: 90; box-sizing: border-box; }
+            .gv-day-header.today { background: #fdfaf6; color: var(--accent-color); border-bottom: 3px solid var(--accent-color); }
+            .gv-day-header-day { font-size: 11px; text-transform: uppercase; color: var(--secondary-color); font-weight: 700; }
+            .today .gv-day-header-day { color: var(--accent-color); }
+            
+            .gv-grid { position: relative; height: 780px; background-image: linear-gradient(to bottom, var(--border-color) 1px, transparent 1px); background-size: 100% 60px; background-position: 0 -1px; }
+            
+            .gv-appt { position: absolute; border-radius: 6px; padding: 6px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; transition: 0.2s; z-index: 10; display: flex; flex-direction: column; gap: 3px; box-sizing: border-box; border: 1px solid rgba(0,0,0,0.05); }
+            .gv-appt:hover { z-index: 50; transform: scale(1.02); box-shadow: 0 8px 25px rgba(0,0,0,0.2); min-height: max-content !important; height: auto !important; border-color: rgba(0,0,0,0.1); }
+            
+            .gv-appt-reg { background: #f0f7ff; border-left: 4px solid #1976d2; }
+            .gv-appt-lead { background: #fff3e0; border-left: 4px solid #e65100; }
+            
+            .gv-appt-time { font-size: 10px; font-weight: 700; color: var(--secondary-color); background: rgba(255,255,255,0.6); padding: 2px 5px; border-radius: 4px; width: fit-content; }
+            .gv-appt-title { font-weight: 800; color: var(--primary-color); line-height: 1.2; font-size: 12.5px; word-wrap: break-word; }
+            .gv-appt-service { font-size: 10.5px; color: var(--secondary-color); opacity: 0.9; word-wrap: break-word; line-height: 1.2;}
         </style>
-        <div class="grid-view-container">
-            <div class="time-col">
+        <div class="gv-container">
+            <div class="gv-time-col">
+                <div class="gv-time-header"></div>
         `;
         
-        // Рисуем колонку со временем (С 7 AM до 8 PM)
-        for(let h=7; h<=20; h++) {
+        for(let h=8; h<=20; h++) {
             let ampm = h >= 12 ? 'PM' : 'AM';
             let h12 = h % 12 || 12;
-            cssHtml += `<div class="time-slot-label">${h12} ${ampm}</div>`;
+            cssHtml += `<div class="gv-time-slot"><span class="gv-time-label">${h12} ${ampm}</span></div>`;
         }
-        cssHtml += `</div><div class="days-container">`;
+        cssHtml += `</div><div class="gv-days-wrap">`;
 
-        // РЕНДЕР СЕТКИ
         if (isWeek) {
             const wStart = new Date(viewDate); wStart.setDate(viewDate.getDate() - viewDate.getDay());
             const todayStr = new Date().toDateString();
-            const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+            const daysShort = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
             
             for(let i=0; i<7; i++) {
                 let curD = new Date(wStart); curD.setDate(wStart.getDate() + i);
                 let isToday = curD.toDateString() === todayStr;
                 
                 cssHtml += `
-                    <div class="day-col">
-                        <div class="day-header ${isToday ? 'is-today' : ''}">${days[i]}, ${curD.getMonth()+1}/${curD.getDate()}</div>
-                        <div class="day-grid">
+                    <div class="gv-day-col">
+                        <div class="gv-day-header ${isToday ? 'today' : ''}">
+                            <span class="gv-day-header-day">${daysShort[i]}</span>
+                            <span>${months[curD.getMonth()].substring(0,3)} ${curD.getDate()}</span>
+                        </div>
+                        <div class="gv-grid">
                             ${renderDayGrid(curD)}
                         </div>
                     </div>
@@ -2959,12 +2986,15 @@ window.renderMainCalendar = async function() {
         } else {
             const todayStr = new Date().toDateString();
             const isToday = viewDate.toDateString() === todayStr;
-            const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+            const daysFull = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
             
             cssHtml += `
-                <div class="day-col">
-                    <div class="day-header ${isToday ? 'is-today' : ''}">${days[viewDate.getDay()]}, ${months[viewDate.getMonth()]} ${viewDate.getDate()}</div>
-                    <div class="day-grid">
+                <div class="gv-day-col">
+                    <div class="gv-day-header ${isToday ? 'today' : ''}">
+                        <span class="gv-day-header-day">${daysFull[viewDate.getDay()]}</span>
+                        <span>${months[viewDate.getMonth()]} ${viewDate.getDate()}</span>
+                    </div>
+                    <div class="gv-grid">
                         ${renderDayGrid(viewDate)}
                     </div>
                 </div>
