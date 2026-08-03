@@ -2811,14 +2811,27 @@ window.renderMainCalendar = async function() {
     const staffF = document.getElementById('staffFilter').value; if(staffF !== 'All Staff') { records = records.filter(r => r.staff === staffF); }
     const statusF = document.getElementById('statusFilter').value; if(statusF !== 'All Statuses') { records = records.filter(r => { const recStatus = r.clientStatus || (r.isLead ? 'Lead' : 'Existing Client'); return recStatus === statusF; }); }
 
+   // Делаем заголовок двухстрочным (чтобы не распирало верстку)
+    title.style.display = 'flex';
+    title.style.flexDirection = 'column';
+    title.style.alignItems = 'center';
+    title.style.lineHeight = '1.1';
+
     if (view === 'day') {
-        title.textContent = `${months[viewDate.getMonth()]} ${viewDate.getDate()}, ${viewDate.getFullYear()}`;
+        title.innerHTML = `${months[viewDate.getMonth()]} ${viewDate.getDate()}<span style="font-size: 14px; color: var(--secondary-color); margin-top: 4px;">${viewDate.getFullYear()}</span>`;
     } else if (view === 'week') {
         const wStart = new Date(viewDate); wStart.setDate(viewDate.getDate() - viewDate.getDay());
         const wEnd = new Date(wStart); wEnd.setDate(wStart.getDate() + 6);
-        title.textContent = `${months[wStart.getMonth()]} ${wStart.getDate()} - ${months[wEnd.getMonth()]} ${wEnd.getDate()}, ${wStart.getFullYear()}`;
+        
+        if (wStart.getMonth() === wEnd.getMonth()) {
+            // Если неделя в одном месяце (например: August 2 - 8)
+            title.innerHTML = `${months[wStart.getMonth()]} ${wStart.getDate()} - ${wEnd.getDate()}<span style="font-size: 14px; color: var(--secondary-color); margin-top: 4px;">${wStart.getFullYear()}</span>`;
+        } else {
+            // Если неделя пересекает месяцы (например: Jul 28 - Aug 3)
+            title.innerHTML = `${months[wStart.getMonth()].substring(0,3)} ${wStart.getDate()} - ${months[wEnd.getMonth()].substring(0,3)} ${wEnd.getDate()}<span style="font-size: 14px; color: var(--secondary-color); margin-top: 4px;">${wStart.getFullYear()}</span>`;
+        }
     } else {
-        title.textContent = `${months[m]} ${y}`;
+        title.innerHTML = `${months[m]} ${y}`;
     }
 
     if (view === 'agenda') {
