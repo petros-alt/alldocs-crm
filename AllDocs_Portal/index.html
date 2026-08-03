@@ -2868,7 +2868,7 @@ window.renderMainCalendar = async function() {
         }
         html += '</div>'; area.innerHTML = html;
 
-    } else if (view === 'day' || view === 'week') {
+   } else if (view === 'day' || view === 'week') {
         const isWeek = view === 'week';
         
         const renderDayGrid = (targetDateObj) => {
@@ -2882,14 +2882,13 @@ window.renderMainCalendar = async function() {
                 let endMins = startMins + durMins;
                 let endTimeStr = formatMinutesToTimeStr(endMins);
                 
-                let startOffset = 8 * 60; // Шкала начинается с 8:00 AM
+                let startOffset = 8 * 60; // 8:00 AM
                 let topPx = startMins - startOffset;
                 if (topPx < 0) topPx = 0; 
                 
                 let heightPx = durMins;
-                if (heightPx < 30) heightPx = 30; // Мин. высота чтобы влез текст
+                if (heightPx < 30) heightPx = 30;
                 
-                // Умная математика пересечений
                 let overlapping = dayAppts.filter(other => {
                     if(String(other.id) === String(appt.id)) return false;
                     let oStart = parseTimeStrToMinutes(other.time);
@@ -2923,13 +2922,13 @@ window.renderMainCalendar = async function() {
 
         let cssHtml = `
         <style>
-            .gv-container { display: flex; border: 1px solid var(--border-color); border-radius: 12px; background: white; overflow-y: auto; overflow-x: auto; height: 600px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); position: relative; scroll-behavior: smooth; }
-            .gv-time-col { width: 70px; flex-shrink: 0; background: var(--surface-color); border-right: 1px solid var(--border-color); position: sticky; left: 0; z-index: 100; }
+            .gv-container { display: flex; align-items: flex-start; border: 1px solid var(--border-color); border-radius: 12px; background: white; overflow-y: auto; overflow-x: auto; height: 600px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); position: relative; scroll-behavior: smooth; }
+            .gv-time-col { width: 70px; flex-shrink: 0; background: var(--surface-color); border-right: 1px solid var(--border-color); position: sticky; left: 0; z-index: 100; min-height: 100%; height: max-content; }
             .gv-time-header { height: 50px; background: var(--surface-color); border-bottom: 1px solid var(--border-color); position: sticky; top: 0; z-index: 105; }
             .gv-time-slot { height: 60px; position: relative; border-bottom: 1px solid transparent; box-sizing: border-box; }
             .gv-time-label { position: absolute; top: -8px; right: 10px; font-size: 11px; color: var(--secondary-color); font-weight: 700; }
             
-            .gv-days-wrap { display: flex; flex: 1; min-width: ${isWeek ? '800px' : '300px'}; background: white; }
+            .gv-days-wrap { display: flex; flex: 1; min-width: ${isWeek ? '800px' : '300px'}; background: white; height: max-content; }
             .gv-day-col { flex: 1; border-right: 1px solid var(--border-color); position: relative; min-width: 110px; }
             .gv-day-col:last-child { border-right: none; }
             
