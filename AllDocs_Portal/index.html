@@ -2772,9 +2772,18 @@ window.currentCrmNotifs = [];
             updatePreview();
         };
 
-        let viewDate = new Date(); window.changeViewDate = function(dir) { viewDate.setMonth(viewDate.getMonth() + dir); window.renderMainCalendar(); }
+      let viewDate = new Date(); 
+        
+        // УМНЫЕ СТРЕЛКИ (переключают Дни, Недели или Месяцы в зависимости от вида)
+        window.changeViewDate = function(dir) { 
+            const view = document.getElementById('viewSelector').value;
+            if (view === 'week') { viewDate.setDate(viewDate.getDate() + dir * 7); }
+            else if (view === 'day') { viewDate.setDate(viewDate.getDate() + dir); }
+            else { viewDate.setMonth(viewDate.getMonth() + dir); }
+            window.renderMainCalendar(); 
+        };
 
-    window.openDayList = async function(dateStr) {
+        window.openDayList = async function(dateStr) {
             await window.loadAppointments();
             const records = window.globalAppointments || []; 
             const dayAppts = records.filter(a => new Date(a.timestamp).toDateString() === dateStr);
@@ -2782,7 +2791,6 @@ window.currentCrmNotifs = [];
             document.getElementById('dayListTitle').textContent = `Appointments on ${days[dObj.getDay()]}, ${dObj.getMonth()+1}/${dObj.getDate()}`;
             
             let html = ''; dayAppts.forEach(appt => { 
-                // ВЫЧИСЛЯЕМ ВРЕМЯ ОКОНЧАНИЯ ДЛЯ МОДАЛКИ ДНЯ
                 let endTimeStr = "";
                 if (appt.time && appt.length) {
                     let startMins = parseTimeStrToMinutes(appt.time);
@@ -2794,18 +2802,28 @@ window.currentCrmNotifs = [];
             document.getElementById('dayListBody').innerHTML = html; document.getElementById('dayListModal').style.display = 'flex';
         };
 
-// === ФИНАЛЬНЫЙ КАЛЕНДАРЬ И МОДАЛКИ ===
+// === ФИНАЛЬНЫЙ КАЛЕНДАРЬ И ВСЕ ВИДЫ (MONTH, WEEK, DAY, AGENDA) ===
 window.renderMainCalendar = async function() {
     await window.loadAppointments();
     const view = document.getElementById('viewSelector').value; const area = document.getElementById('calendarContent'); area.innerHTML = ''; const title = document.getElementById('mainCalTitle');
-    const months = ['January','February','March','April','May','June','July','August','September','October','November','December']; const y = viewDate.getFullYear(); const m = viewDate.getMonth(); title.textContent = `${months[m]} ${y}`;
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December']; const y = viewDate.getFullYear(); const m = viewDate.getMonth(); 
     let records = window.globalAppointments || [];
     
     const staffF = document.getElementById('staffFilter').value; if(staffF !== 'All Staff') { records = records.filter(r => r.staff === staffF); }
     const statusF = document.getElementById('statusFilter').value; if(statusF !== 'All Statuses') { records = records.filter(r => { const recStatus = r.clientStatus || (r.isLead ? 'Lead' : 'Existing Client'); return recStatus === statusF; }); }
 
-   if (view === 'agenda') {
-        title.textContent = `${months[m]} ${y}`; 
+    // МЕНЯЕМ ЗАГОЛОВОК В ЗАВИСИМОСТИ ОТ ВИДА
+    if (view === 'day') {
+        title.textContent = `${months[viewDate.getMonth()]} ${viewDate.getDate()}, ${viewDate.getFullYear()}`;
+    } else if (view === 'week') {
+        const wStart = new Date(viewDate); wStart.setDate(viewDate.getDate() - viewDate.getDay());
+        const wEnd = new Date(wStart); wEnd.setDate(wStart.getDate() + 6);
+        title.textContent = `${months[wStart.getMonth()]} ${wStart.getDate()} - ${months[wEnd.getMonth()]} ${wEnd.getDate()}, ${wStart.getFullYear()}`;
+    } else {
+        title.textContent = `${months[m]} ${y}`;
+    }
+
+    if (view === 'agenda') {
         let html = ''; let currentDate = ''; 
         const todayMsec = new Date().setHours(0,0,0,0);
         
@@ -2823,7 +2841,6 @@ window.renderMainCalendar = async function() {
             if (dateTitle !== currentDate) { html += `<div class="agenda-date-header"><span style="font-size: 20px;">📅</span> ${dateTitle}</div>`; currentDate = dateTitle; }
             let leadBadge = appt.isLead ? '<span style="background: #e65100; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; vertical-align: middle; font-weight: bold; letter-spacing: 0.5px;">🔥 LEAD</span>' : '';
             
-            // ВЫЧИСЛЯЕМ ВРЕМЯ ОКОНЧАНИЯ ДЛЯ АГЕНДЫ
             let endTimeStr = "";
             if (appt.time && appt.length) {
                 let startMins = parseTimeStrToMinutes(appt.time);
@@ -2834,6 +2851,7 @@ window.renderMainCalendar = async function() {
             html += `<div class="agenda-card" onclick="openPreviewModal('${appt.id}')"><div class="agenda-info"><div class="client-name">${appt.client} ${leadBadge}</div><div class="service-details">${appt.service} @ ${appt.location} <span style="font-size:11px;">WITH</span> ${appt.staff}</div></div><div class="agenda-time" style="font-size: 14px; text-align: center;">${appt.time}${endTimeStr}</div></div>`;
         });
         area.innerHTML = html;
+
     } else if (view === 'month-condensed' || view === 'month-full') {
         const isCondensed = view === 'month-condensed'; let html = `<div class="month-grid">`;
         ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => { html += `<div class="mc-header">${d}</div>`; });
@@ -2851,8 +2869,110 @@ window.renderMainCalendar = async function() {
             html += `<div class="mc-cell ${isCondensed ? 'condensed' : ''} ${isToday ? 'is-today' : ''}"><div class="mc-date ${isToday ? 'is-today' : ''}">${i}</div>${content}</div>`;
         }
         html += '</div>'; area.innerHTML = html;
-    } else {
-        area.innerHTML = `<div style="text-align:center; padding: 50px; color: var(--secondary-color); font-size: 16px;"><span style="font-size: 40px;">⏳</span><br><br><strong>${view.toUpperCase()}</strong> view layout (hourly grid) will be implemented using Google Calendar integration data.</div>`;
+
+    } else if (view === 'day' || view === 'week') {
+        // === ЛОГИКА ДЛЯ НЕДЕЛИ И ДНЯ ===
+        const isWeek = view === 'week';
+        
+        // Помощник для рисования блоков встреч на сетке
+        const renderDayGrid = (targetDateObj) => {
+            const dStr = targetDateObj.toDateString();
+            const dayAppts = records.filter(a => new Date(a.timestamp).toDateString() === dStr);
+            
+            let eventsHtml = '';
+            dayAppts.forEach(appt => {
+                let startMins = parseTimeStrToMinutes(appt.time);
+                let durMins = parseDurationToMinutes(appt.length) || 60;
+                let endTimeStr = formatMinutesToTimeStr(startMins + durMins);
+                
+                // Ограничиваем начало сетки 7:00 AM (420 минут от начала дня)
+                if(startMins < 420) startMins = 420;
+                
+                // Вычисляем координаты (1 минута = 1 пиксель для идеальной пропорции)
+                let topPx = (startMins - 420); 
+                let heightPx = durMins;
+                if(heightPx < 30) heightPx = 30; // Минимальная высота, чтобы текст влез
+                
+                let leadClass = appt.isLead ? 'lead' : '';
+                let leadIcon = appt.isLead ? '🔥 ' : '';
+                
+                eventsHtml += `
+                    <div class="grid-appt ${leadClass}" style="top: ${topPx}px; height: ${heightPx}px;" onclick="openPreviewModal('${appt.id}')">
+                        <span class="grid-appt-time">${appt.time} - ${endTimeStr}</span>
+                        <span class="grid-appt-title">${leadIcon}${appt.client.split(' ')[0]}</span>
+                        <span style="font-size:9.5px; color:var(--secondary-color); display:block; margin-top:2px;">${appt.service}</span>
+                    </div>
+                `;
+            });
+            return eventsHtml;
+        };
+
+        // Встраиваем стили сетки (в стиле CRM)
+        let cssHtml = `
+        <style>
+            .grid-view-container { display: flex; border: 1px solid var(--border-color); border-radius: 12px; background: white; overflow-y: auto; height: 600px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+            .time-col { width: 65px; border-right: 1px solid var(--border-color); background: var(--surface-color); display: flex; flex-direction: column; flex-shrink: 0; padding-top: 41px; }
+            .time-slot-label { height: 60px; box-sizing: border-box; border-bottom: 1px solid var(--border-color); font-size: 11px; color: var(--secondary-color); text-align: right; padding: 5px 8px 0 0; font-weight: bold;}
+            .days-container { display: flex; flex: 1; min-width: 600px; }
+            .day-col { flex: 1; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
+            .day-col:last-child { border-right: none; }
+            .day-header { text-align: center; height: 40px; border-bottom: 1px solid var(--border-color); font-weight: bold; background: #fffcf9; font-size: 13px; color: var(--primary-color); display: flex; align-items: center; justify-content: center; position: sticky; top: 0; z-index: 50;}
+            .day-header.is-today { color: var(--accent-color); background: #fdfaf6; border-bottom: 2px solid var(--accent-color); }
+            .day-grid { position: relative; height: 840px; background-image: repeating-linear-gradient(to bottom, transparent, transparent 59px, #f0ebe1 59px, #f0ebe1 60px); background-size: 100% 60px; }
+            .grid-appt { position: absolute; left: 3px; right: 3px; background: #e8f4fd; border-left: 4px solid #1976d2; border-radius: 6px; padding: 6px; font-size: 11px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; transition: 0.2s; z-index: 10; line-height: 1.2; box-sizing: border-box;}
+            .grid-appt:hover { z-index: 20; transform: scale(1.02) translateX(2px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); border-left-width: 6px;}
+            .grid-appt.lead { background: #fff3e0; border-left-color: #e65100; }
+            .grid-appt-title { font-weight: 800; color: var(--primary-color); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; margin-top:2px;}
+            .grid-appt-time { font-size: 10px; color: var(--secondary-color); font-weight: 600; display: block; background: rgba(255,255,255,0.6); padding: 2px 4px; border-radius: 4px; display: inline-block;}
+        </style>
+        <div class="grid-view-container">
+            <div class="time-col">
+        `;
+        
+        // Рисуем колонку со временем (С 7 AM до 8 PM)
+        for(let h=7; h<=20; h++) {
+            let ampm = h >= 12 ? 'PM' : 'AM';
+            let h12 = h % 12 || 12;
+            cssHtml += `<div class="time-slot-label">${h12} ${ampm}</div>`;
+        }
+        cssHtml += `</div><div class="days-container">`;
+
+        // РЕНДЕР СЕТКИ
+        if (isWeek) {
+            const wStart = new Date(viewDate); wStart.setDate(viewDate.getDate() - viewDate.getDay());
+            const todayStr = new Date().toDateString();
+            const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+            
+            for(let i=0; i<7; i++) {
+                let curD = new Date(wStart); curD.setDate(wStart.getDate() + i);
+                let isToday = curD.toDateString() === todayStr;
+                
+                cssHtml += `
+                    <div class="day-col">
+                        <div class="day-header ${isToday ? 'is-today' : ''}">${days[i]}, ${curD.getMonth()+1}/${curD.getDate()}</div>
+                        <div class="day-grid">
+                            ${renderDayGrid(curD)}
+                        </div>
+                    </div>
+                `;
+            }
+        } else {
+            const todayStr = new Date().toDateString();
+            const isToday = viewDate.toDateString() === todayStr;
+            const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+            
+            cssHtml += `
+                <div class="day-col">
+                    <div class="day-header ${isToday ? 'is-today' : ''}">${days[viewDate.getDay()]}, ${months[viewDate.getMonth()]} ${viewDate.getDate()}</div>
+                    <div class="day-grid">
+                        ${renderDayGrid(viewDate)}
+                    </div>
+                </div>
+            `;
+        }
+        
+        cssHtml += `</div></div>`;
+        area.innerHTML = cssHtml;
     }
 };
         const resolvedCheckbox = document.getElementById('resolvedByOpCheckbox'); const staffRow = document.getElementById('staffSelectionRow'); const briefDesc = document.getElementById('briefDescription');
