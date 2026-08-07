@@ -380,7 +380,13 @@
                 <div style="font-size: 11px; margin-top: 3px;">Logged by: <span id="jmOperator"></span></div>
             </div>
         </div>
-        
+        <div style="margin-top: 20px; border-top: 1px dashed var(--border-color); padding-top: 15px;">
+            <button id="jmToggleHistoryBtn" onclick="toggleClientCallHistory()" style="background: transparent; color: var(--accent-color); border: 2px solid var(--accent-color); padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s;">
+                🕒 View Call History
+            </button>
+            <div id="jmClientHistoryContainer" style="display: none; margin-top: 15px; max-height: 250px; overflow-y: auto; padding-right: 5px; border-radius: 8px; background: #fafafa; border: 1px solid var(--border-color); padding: 10px;">
+            </div>
+        </div>
         <div id="jmResolveSection" style="display: none; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
             <div style="font-size: 12px; color: #2e7d32; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">✍️ Resolve this pending task:</div>
             <textarea id="jmResolveNote" placeholder="e.g., Called client back, question resolved..." style="width: 100%; border: 2px solid #c8e6c9; background: #f1f8e9; padding: 12px; border-radius: 8px; margin-bottom: 10px; min-height: 60px; font-family: inherit; font-size: 14.5px; box-sizing: border-box; outline: none;"></textarea>
@@ -1293,6 +1299,12 @@
     };
 
     window.openJournalModal = function(client, phone, date, op, st, color, notes, reply, trackingBadgeHTML, logId, assignedStaff, isResolved, clientId) {
+       window.currentJmPhone = phone;
+        window.currentJmLogId = logId;
+        const historyContainer = document.getElementById('jmClientHistoryContainer');
+        if(historyContainer) { historyContainer.style.display = 'none'; historyContainer.innerHTML = ''; }
+        const historyBtn = document.getElementById('jmToggleHistoryBtn');
+        if(historyBtn) historyBtn.innerHTML = '🕒 View Call History';
         const clientEl = document.getElementById('jmClient');
         if (phone && phone !== '--') {
             const safeClientName = client ? client.replace(/'/g, "\\'") : 'Unknown';
@@ -1381,7 +1393,103 @@
             document.getElementById('dwMattersList').innerHTML = '<div style="color: #d32f2f; font-size: 14px; text-align: center; padding: 10px;">Connection error. Please try again.</div>';
         }
     };
+// === НОВАЯ ФУНКЦИЯ: ЗАГРУЗКА ИСТОРИИ КЛИЕНТА ВНУТРИ КАРТОЧКИ ===
+    window.toggleClientCallHistory = async function() {
+        const container = document.getElementById('jmClientHistoryContainer');
+        const btn = document.getElementById('jmToggleHistoryBtn');
 
+        if (container.style.display === 'block') {
+            container.style.display = 'none';
+            btn.innerHTML = '🕒 View Call History';
+            return;
+        }
+
+        if (!window.currentJmPhone || window.currentJmPhone === '--') {
+            container.innerHTML = '<div style="text-align:center; color:#888; font-size: 13px; padding: 10px;">No phone number associated with this record to search.</div>';
+            container.style.display = 'block';
+            btn.innerHTML = '📂 Hide Call History';
+            return;
+        }
+
+        btn.innerHTML = '⏳ Loading History...';
+        
+        try {
+            // Очищаем номер и ищем 15 последних звонков
+            const cleanPhone = window.currentJmPhone.replace(/\D/g, '');
+            const response = await fetch(`/api/get-journal?search=${encodeURIComponent(cleanPhone)}&limit=15&t=${Date.now()}`, { cache: 'no-store' });
+            const result = await response.json();
+
+            if (result.success && result.logs && result.logs.length > 0) {
+                // Исключаем текущий звонок (на который мы сейчас смотрим)
+                const otherLogs = result.logs.filter(l => String(l.id) !== String(window.currentJmLogId));
+                
+                if (otherLogs.length === 0) {
+                    container.innerHTML = '<div style="text-align:center; color:#888; font-size: 13px; padding: 10px;">No previous calls found for this client.</div>';
+                } else {
+                    let html = '<div style="font-size: 12px; color: var(--accent-color); font-weight: bold; margin-bottom: 10px; text-transform: uppercase;">Past Calls & Notes:</div>';
+                    
+                    otherLogs.forEach(log => {
+                        const d = new Date(log.created_at);
+                        const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                        
+                        let rawDesc = log.call_description || '';
+                        let manualNote = rawDesc;
+                        let transferInfo = '';
+                        
+                        // 1. Ищем информацию о трансфере
+                        const transferMatch = manualNote.match(/Call Transferred to:\s*(.*)/i);
+                        if (transferMatch) {
+                            transferInfo = transferMatch[1].trim();
+                            manualNote = manualNote.replace(transferMatch[0], ''); // Удаляем из текста
+                        }
+
+                        // 2. Очищаем от автоматических системных сообщений
+                        manualNote = manualNote.replace(/\[🚨 URGENT\]/ig, '');
+                        manualNote = manualNote.replace(/\[🔥 NEW LEAD APPOINTMENT\]/ig, '');
+                        manualNote = manualNote.replace(/\[APPOINTMENT BOOKED\]/ig, '');
+                        manualNote = manualNote.replace(/Scheduled:.*?\n/ig, '');
+                        manualNote = manualNote.replace(/Service:.*?\n/ig, '');
+                        manualNote = manualNote.replace(/Staff:.*?\n?/ig, '');
+                        manualNote = manualNote.replace(/\[Status:.*?\]/ig, '');
+                        manualNote = manualNote.replace(/Status:.*/ig, '');
+                        manualNote = manualNote.replace(/\[🗣️ CALLER:.*?\]/ig, '');
+                        
+                        // 3. Проверяем, осталось ли что-то
+                        manualNote = manualNote.trim();
+                        if (!manualNote) {
+                            manualNote = '<span style="color:#a59d99; font-style:italic; font-size: 12px;">No manual notes provided.</span>';
+                        }
+
+                        let statusColor = log.status === 'Resolved' ? '#2e7d32' : '#e65100';
+                        let statusText = log.status || 'Resolved';
+
+                        html += `
+                        <div style="background: white; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px dashed #f0ebe1; padding-bottom: 6px;">
+                                <div style="font-size: 11.5px; color: #888; font-weight: bold;">${dateStr}</div>
+                                <div style="font-size: 10px; background: ${statusColor}; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;">${statusText}</div>
+                            </div>
+                            <div style="font-size: 13.5px; color: var(--primary-color); margin-bottom: 8px; white-space: pre-wrap; line-height: 1.4;">${manualNote}</div>
+                            
+                            <div style="display: flex; justify-content: space-between; align-items: flex-end; font-size: 11px; color: var(--secondary-color);">
+                                <div><strong>Op:</strong> ${log.operator_name || 'Unknown'}</div>
+                                ${transferInfo ? `<div style="color: #1976d2; font-weight: bold; background: #e3f2fd; padding: 2px 6px; border-radius: 4px;">🔀 Tr: ${transferInfo}</div>` : ''}
+                            </div>
+                        </div>`;
+                    });
+                    container.innerHTML = html;
+                }
+            } else {
+                container.innerHTML = '<div style="text-align:center; color:#888; font-size: 13px; padding: 10px;">No call history found.</div>';
+            }
+            container.style.display = 'block';
+            btn.innerHTML = '📂 Hide Call History';
+        } catch (error) {
+            container.innerHTML = '<div style="text-align:center; color:#d32f2f; font-size: 13px; padding: 10px;">Connection error.</div>';
+            container.style.display = 'block';
+            btn.innerHTML = '📂 Hide Call History';
+        }
+    };
  window.resolveFromJournal = async function(logId, clientName, assignedStaff) {
         let extraNote = document.getElementById('jmResolveNote').value.trim();
         if (extraNote === "") { extraNote = "Task closed without comments"; }
