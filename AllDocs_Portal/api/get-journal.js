@@ -5,16 +5,21 @@ export default async function handler(req, res) {
         const pool = postgres.createPool({ connectionString });
 
         const search = req.query.search || '';
-        const staff = req.query.staff || 'All'; // Ловим фильтр сотрудника
+        const staff = req.query.staff || 'All'; 
+        
+        // Ловим параметры пагинации (по умолчанию берем 30 карточек и начинаем с самого начала)
+        const limit = parseInt(req.query.limit) || 30;
+        const offset = parseInt(req.query.offset) || 0;
+        
         let rows;
 
-        // Если есть поиск ИЛИ выбран конкретный сотрудник — ищем по всей базе без лимита дней!
         if (search || staff !== 'All') {
             const likeSearch = search ? `%${search}%` : '%';
             const cleanPhone = search ? search.replace(/\D/g, '') : '';
             const phoneSearch = cleanPhone ? `%${cleanPhone}%` : 'IMPOSSIBLE_MATCH';
             const staffMatch = staff !== 'All' ? staff : '%';
 
+            // При поиске тоже применяем лимиты, чтобы не перегружать сеть
             const result = await pool.sql`
                 SELECT * FROM call_logs 
                 WHERE 
@@ -30,15 +35,16 @@ export default async function handler(req, res) {
                         OR ${staff} = 'All'
                     )
                 ORDER BY created_at DESC
-                LIMIT 200;
+                LIMIT ${limit} OFFSET ${offset};
             `;
             rows = result.rows;
         } else {
-            // Если всё пусто — грузим только последние 30 дней для скорости
+            // ГЛАВНАЯ ОПТИМИЗАЦИЯ: Убрали привязку ко времени.
+            // Теперь грузим строго по лимиту (30 штук) и делаем отступ, если оператор листает вниз.
             const result = await pool.sql`
                 SELECT * FROM call_logs 
-                WHERE created_at > NOW() - INTERVAL '30 days'
-                ORDER BY created_at DESC;
+                ORDER BY created_at DESC
+                LIMIT ${limit} OFFSET ${offset};
             `;
             rows = result.rows;
         }
