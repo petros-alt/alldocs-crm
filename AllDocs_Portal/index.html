@@ -937,6 +937,9 @@
             <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                 <input type="text" id="historySearchInput" placeholder="🔍 Search client by name or phone..." style="flex: 2; padding: 14px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 14.5px; outline: none; background-color: var(--surface-color);">
                 
+                <!-- НОВОЕ: Поле для выбора даты -->
+                <input type="date" id="historyDateFilter" title="Select a specific date" style="flex: 1; padding: 14px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 14.5px; outline: none; background: white; cursor: pointer; color: var(--primary-color);">
+                
                 <select id="historyStaffDropdown" style="flex: 1.5; padding: 14px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 14.5px; outline: none; background: white; cursor: pointer;">
                     <option value="All">👨‍💼 All Staff</option>
                     <option value="Mariam Djaradjian">Mariam Djaradjian</option>
@@ -1445,6 +1448,7 @@
         const loadMoreBtn = document.getElementById('loadMoreBtn');
         const searchQuery = document.getElementById('historySearchInput').value.trim();
         const staffQuery = document.getElementById('historyStaffDropdown').value;
+        const dateQuery = document.getElementById('historyDateFilter').value;
 
         // Если это новый поиск или обновление вкладки — начинаем отсчет с нуля
         if (!isLoadMore) {
@@ -1454,7 +1458,7 @@
         try {
             if (!isLoadMore) {
                 noCallsMessage.style.display = 'block'; 
-                noCallsMessage.innerText = (searchQuery || staffQuery !== 'All') ? "🔍 Searching database..." : "Loading recent call history...";
+                noCallsMessage.innerText = (searchQuery || staffQuery !== 'All' || dateQuery) ? "🔍 Searching database..." : "Loading recent call history...";
                 tableContainer.style.display = 'none';
                 if (loadMoreBtn) loadMoreBtn.style.display = 'none';
             } else {
@@ -1464,10 +1468,11 @@
                 }
             }
 
-            // Добавляем limit и offset в запрос к серверу
+            // Добавляем limit, offset и дату в запрос к серверу
             let url = `/api/get-journal?limit=${journalLimit}&offset=${journalOffset}&t=${new Date().getTime()}`;
             if (searchQuery) url += '&search=' + encodeURIComponent(searchQuery);
             if (staffQuery !== 'All') url += '&staff=' + encodeURIComponent(staffQuery);
+            if (dateQuery) url += '&date=' + encodeURIComponent(dateQuery);
 
             const response = await fetch(url, { cache: 'no-store' });
             const result = await response.json();
@@ -1637,6 +1642,8 @@
     document.getElementById('historyStaffDropdown').addEventListener('change', () => { window.renderCallHistoryList(); });
     document.getElementById('historyStatusFilter').addEventListener('change', applyHistoryFilters);
     document.getElementById('historyTypeFilter').addEventListener('change', applyHistoryFilters);
+    // Срабатывает при выборе или очистке даты:
+    document.getElementById('historyDateFilter').addEventListener('change', () => { window.renderCallHistoryList(); });
 
     window.testBrowserPush = function() {
         if (!window.Notification) {
