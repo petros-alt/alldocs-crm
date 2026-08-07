@@ -6,20 +6,20 @@ export default async function handler(req, res) {
 
         const search = req.query.search || '';
         const staff = req.query.staff || 'All'; 
+        const dateFilter = req.query.date || ''; // Ловим выбранную дату
         
-        // Ловим параметры пагинации (по умолчанию берем 30 карточек и начинаем с самого начала)
-        const limit = parseInt(req.query.limit) || 30;
+        const limit = parseInt(req.query.limit) || 50; // По умолчанию отдаем 50
         const offset = parseInt(req.query.offset) || 0;
         
         let rows;
 
-        if (search || staff !== 'All') {
+        // Если есть хоть один фильтр (поиск, сотрудник ИЛИ дата)
+        if (search || staff !== 'All' || dateFilter) {
             const likeSearch = search ? `%${search}%` : '%';
             const cleanPhone = search ? search.replace(/\D/g, '') : '';
             const phoneSearch = cleanPhone ? `%${cleanPhone}%` : 'IMPOSSIBLE_MATCH';
             const staffMatch = staff !== 'All' ? staff : '%';
 
-            // При поиске тоже применяем лимиты, чтобы не перегружать сеть
             const result = await pool.sql`
                 SELECT * FROM call_logs 
                 WHERE 
@@ -34,13 +34,16 @@ export default async function handler(req, res) {
                         OR operator_name ILIKE ${staffMatch}
                         OR ${staff} = 'All'
                     )
+                    AND (
+                        TO_CHAR(created_at AT TIME ZONE 'America/Los_Angeles', 'YYYY-MM-DD') = ${dateFilter}
+                        OR ${dateFilter} = ''
+                    )
                 ORDER BY created_at DESC
                 LIMIT ${limit} OFFSET ${offset};
             `;
             rows = result.rows;
         } else {
-            // ГЛАВНАЯ ОПТИМИЗАЦИЯ: Убрали привязку ко времени.
-            // Теперь грузим строго по лимиту (30 штук) и делаем отступ, если оператор листает вниз.
+            // Если фильтров нет, просто грузим историю порциями
             const result = await pool.sql`
                 SELECT * FROM call_logs 
                 ORDER BY created_at DESC
