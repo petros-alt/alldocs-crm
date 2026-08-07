@@ -6,20 +6,27 @@ export default async function handler(req, res) {
 
         const search = req.query.search || '';
         const staff = req.query.staff || 'All'; 
-        const dateFilter = req.query.date || ''; // Ловим выбранную дату
+        const dateFilter = req.query.date || ''; 
         
-        const limit = parseInt(req.query.limit) || 50; // По умолчанию отдаем 50
-        const offset = parseInt(req.query.offset) || 0;
+        // Меняем const на let, чтобы иметь возможность перезаписать лимит
+        let limit = parseInt(req.query.limit) || 50; 
+        let offset = parseInt(req.query.offset) || 0;
+
+        // 🎯 ГЛАВНАЯ ФИШКА: Если выбрана дата, отключаем лимит в 50 и грузим ВСЕ звонки за день!
+        if (dateFilter !== '') {
+            limit = 1000; // Грузим до 1000 звонков (по сути - все за день)
+            offset = 0;   // Отступ сбрасываем
+        }
         
         let rows;
 
-        // Если есть хоть один фильтр (поиск, сотрудник ИЛИ дата)
         if (search || staff !== 'All' || dateFilter) {
             const likeSearch = search ? `%${search}%` : '%';
             const cleanPhone = search ? search.replace(/\D/g, '') : '';
             const phoneSearch = cleanPhone ? `%${cleanPhone}%` : 'IMPOSSIBLE_MATCH';
             const staffMatch = staff !== 'All' ? staff : '%';
 
+            // 🕰️ Учим базу данных переводить своё UTC-время в время Лос-Анджелеса перед сравнением!
             const result = await pool.sql`
                 SELECT * FROM call_logs 
                 WHERE 
@@ -35,7 +42,7 @@ export default async function handler(req, res) {
                         OR ${staff} = 'All'
                     )
                     AND (
-                        TO_CHAR(created_at AT TIME ZONE 'America/Los_Angeles', 'YYYY-MM-DD') = ${dateFilter}
+                        TO_CHAR(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Los_Angeles', 'YYYY-MM-DD') = ${dateFilter}
                         OR ${dateFilter} = ''
                     )
                 ORDER BY created_at DESC
@@ -43,7 +50,6 @@ export default async function handler(req, res) {
             `;
             rows = result.rows;
         } else {
-            // Если фильтров нет, просто грузим историю порциями
             const result = await pool.sql`
                 SELECT * FROM call_logs 
                 ORDER BY created_at DESC
