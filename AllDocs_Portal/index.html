@@ -934,6 +934,7 @@
         </div>
 
         <div id="tabHistoryContent" class="tab-content">
+       
             <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                 <input type="text" id="historySearchInput" placeholder="🔍 Search client by name or phone..." style="flex: 2; padding: 14px; border: 2px solid var(--border-color); border-radius: 8px; font-size: 14.5px; outline: none; background-color: var(--surface-color);">
                 
@@ -990,7 +991,7 @@
     let currentActiveNotifId = null; 
     let apptRemType = 'Text';
     let journalOffset = 0;       // ДОБАВЛЕНО: Отступ для пагинации
-    const journalLimit = 40;     // ДОБАВЛЕНО: Грузим по 30 звонков
+    const journalLimit = 50;     // ДОБАВЛЕНО: Грузим по 30 звонков
     let apptLang = 'ENG';
     let globalCallLogs = []; 
     let currentChatKey = null;
