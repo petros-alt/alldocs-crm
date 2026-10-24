@@ -11,6 +11,52 @@
 
 <style>
     /* =====================================================================
+       🛡️ ФИКС СЛОЕВ (Z-INDEX): ПОИСКОВИК DOCKETWISE ВСЕГДА ПОВЕРХ 3D-КНОПОК
+       ===================================================================== */
+    .input-with-button-wrap {
+        position: relative !important;
+        z-index: 500 !important; /* Поднимаем весь блок поиска выше карточек Client Status! */
+    }
+    #autocompleteWrapper, #phoneAutocompleteWrapper {
+        position: relative !important;
+        z-index: 600 !important;
+    }
+    .category-grid {
+        position: relative !important;
+        z-index: 10 !important; /* Опускаем карточки статусов на слой ниже поисковика */
+    }
+    .description-box {
+        position: relative !important;
+        z-index: 5 !important;
+    }
+
+    /* Делаем сам выпадающий список найденных клиентов плотным и объемным в 3D */
+    .autocomplete-list {
+        z-index: 9999 !important;
+        background: linear-gradient(165deg, #ffffff 0%, #faf6f0 100%) !important;
+        border: 1.5px solid rgba(184, 115, 51, 0.35) !important;
+        border-radius: 18px !important;
+        padding: 8px !important;
+        box-shadow: 
+            0 25px 60px rgba(44, 26, 20, 0.28),
+            0 8px 20px rgba(44, 26, 20, 0.14),
+            inset 0 2px 2px #ffffff !important;
+    }
+    .autocomplete-list li {
+        border-radius: 12px !important;
+        padding: 12px 16px !important;
+        margin-bottom: 4px !important;
+        border-bottom: 1px solid rgba(184, 115, 51, 0.1) !important;
+        background: #ffffff !important;
+        transition: all 0.2s ease !important;
+    }
+    .autocomplete-list li:hover {
+        background: linear-gradient(90deg, #fff8f0 0%, #f5ebe0 100%) !important;
+        transform: translateX(4px) !important;
+        box-shadow: 0 4px 12px rgba(184, 115, 51, 0.12) !important;
+        border-left: 4px solid var(--accent-color) !important;
+    }
+    /* =====================================================================
        👑 3D UPGRADE: КАРТОЧКА ЗВОНКА КЛИЕНТА (#journalViewModal) И ПРОФИЛЬ DOCKETWISE
        ===================================================================== */
 
