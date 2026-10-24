@@ -5178,10 +5178,9 @@ window.renderMainCalendar = async function() {
         })();
     }
 
-    // 4. МИКРОФОН (ГОЛОСОВОЙ ВВОД С ВЫБОРОМ ЯЗЫКА) + 3D-ВАЛИДАЦИЯ ПОЛЯ ОПИСАНИЯ
+   // 4. МИКРОФОН (НЕПРЕРЫВНЫЙ ГОЛОСОВОЙ ВВОД В РЕАЛЬНОМ ВРЕМЕНИ) + 3D-ВАЛИДАЦИЯ
     const descArea = document.getElementById('briefDescription');
     if (descArea) {
-        // Красивая 3D-подсказка при пустом поле
         descArea.addEventListener('invalid', function(e) {
             e.preventDefault();
             descArea.classList.remove('input-3d-error');
@@ -5204,7 +5203,6 @@ window.renderMainCalendar = async function() {
             if (oldTip) oldTip.remove();
         });
 
-        // Добавляем 3D-микрофон напротив заголовка "Call Description / Note Text:"
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const labelEl = descArea.parentNode.querySelector('label');
         if (SpeechRecognition && labelEl && !document.getElementById('voiceToolbar3D')) {
@@ -5221,10 +5219,10 @@ window.renderMainCalendar = async function() {
             controlsWrap.innerHTML = `
                 <select id="voiceLangSelect" class="voice-lang-select" title="Select dictation language">
                     <option value="hy-AM">🇦🇲 HY</option>
-                    <option value="en-US">🇺🇸 EN</option>
+                    <option value="en-US" selected>🇺🇸 EN</option>
                     <option value="ru-RU">🇷🇺 RU</option>
                 </select>
-                <button type="button" id="voiceDictateBtn" class="voice-dictate-btn" title="Click and speak">
+                <button type="button" id="voiceDictateBtn" class="voice-dictate-btn" title="Click to start/stop dictation">
                     🎙️ Dictate
                 </button>
             `;
@@ -5232,46 +5230,79 @@ window.renderMainCalendar = async function() {
 
             const voiceBtn = document.getElementById('voiceDictateBtn');
             const langSelect = document.getElementById('voiceLangSelect');
-            let recognition = new SpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = false;
-
+            let recognition = null;
             let isRecording = false;
+            let baseText = '';
+
             voiceBtn.onclick = () => {
-                if (isRecording) {
+                // Если уже идет запись — останавливаем по клику пользователя
+                if (isRecording && recognition) {
+                    isRecording = false;
                     recognition.stop();
+                    voiceBtn.classList.remove('recording');
+                    voiceBtn.innerHTML = '🎙️ Dictate';
                     return;
                 }
+
                 try {
+                    recognition = new SpeechRecognition();
                     recognition.lang = langSelect.value;
+                    recognition.continuous = true;      // НЕ выключаться при паузах!
+                    recognition.interimResults = true;  // Печатать текст прямо во время речи!
+
+                    baseText = descArea.value.trim();
                     isRecording = true;
                     voiceBtn.classList.add('recording');
-                    voiceBtn.innerHTML = '🔴 Listening...';
+                    voiceBtn.innerHTML = '🔴 Stop';
+                    descArea.focus();
+
+                    recognition.onresult = (event) => {
+                        let sessionTranscript = '';
+                        for (let i = 0; i < event.results.length; i++) {
+                            sessionTranscript += event.results[i][0].transcript;
+                        }
+                        descArea.value = baseText ? (baseText + ' ' + sessionTranscript) : sessionTranscript;
+                        descArea.dispatchEvent(new Event('input'));
+                    };
+
+                    recognition.onerror = (event) => {
+                        console.warn('Speech error:', event.error);
+                        if (event.error === 'network') {
+                            isRecording = false;
+                            voiceBtn.classList.remove('recording');
+                            voiceBtn.innerHTML = '🎙️ Dictate';
+                            alert('⚠️ Ваш браузер (Brave) блокирует облачный сервис распознавания речи Google!\n\nЧтобы кнопка микрофона работала:\n1. Откройте портал в обычном Google Chrome, ИЛИ\n2. Нажмите дважды клавишу Fn (🌐) на клавиатуре вашего Mac для системной диктовки Apple!');
+                        } else if (event.error === 'not-allowed') {
+                            isRecording = false;
+                            voiceBtn.classList.remove('recording');
+                            voiceBtn.innerHTML = '🎙️ Dictate';
+                            alert('⚠️ Доступ к микрофону запрещен в настройках браузера.');
+                        }
+                    };
+
+                    recognition.onend = () => {
+                        // Если пользователь сам не нажал Stop, поддерживаем микрофон активным
+                        if (isRecording) {
+                            try {
+                                baseText = descArea.value.trim();
+                                recognition.start();
+                            } catch (e) {
+                                isRecording = false;
+                                voiceBtn.classList.remove('recording');
+                                voiceBtn.innerHTML = '🎙️ Dictate';
+                            }
+                        } else {
+                            voiceBtn.classList.remove('recording');
+                            voiceBtn.innerHTML = '🎙️ Dictate';
+                        }
+                    };
+
                     recognition.start();
                 } catch (err) {
                     isRecording = false;
                     voiceBtn.classList.remove('recording');
                     voiceBtn.innerHTML = '🎙️ Dictate';
                 }
-            };
-
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                descArea.value = descArea.value.trim() ? (descArea.value.trim() + ' ' + transcript) : transcript;
-                descArea.dispatchEvent(new Event('input'));
-                descArea.focus();
-            };
-
-            recognition.onerror = () => {
-                isRecording = false;
-                voiceBtn.classList.remove('recording');
-                voiceBtn.innerHTML = '🎙️ Dictate';
-            };
-
-            recognition.onend = () => {
-                isRecording = false;
-                voiceBtn.classList.remove('recording');
-                voiceBtn.innerHTML = '🎙️ Dictate';
             };
         }
     }
