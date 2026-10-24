@@ -4814,10 +4814,52 @@ window.renderMainCalendar = async function() {
 
     });  
 </script>
-<!-- Подключаем Three.js и активируем 3D-модель Микки Мауса + Dark/Light Mode + 3D Select -->
+<!-- Подключаем Three.js и активируем 3D-модель Микки Мауса + Dark/Light Mode + 3D Staff Select -->
+<style>
+    /* Делаем сам родной список #assignedStaff объемным 3D-блоком (он никогда не исчезнет!) */
+    #assignedStaff, #transferStaffSelect {
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        -moz-appearance: none !important;
+        height: 51px !important;
+        padding: 0 46px 0 18px !important;
+        background-color: #ffffff !important;
+        background-image: 
+            url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b87333' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"),
+            linear-gradient(145deg, #ffffff 0%, #f4efe6 100%) !important;
+        background-repeat: no-repeat, no-repeat !important;
+        background-position: right 16px center, 0 0 !important;
+        background-size: 18px, 100% 100% !important;
+        border: 1.5px solid rgba(184, 115, 51, 0.32) !important;
+        border-bottom: 4px solid rgba(161, 104, 58, 0.45) !important;
+        border-radius: 14px !important;
+        font-weight: 700 !important;
+        font-size: 14.5px !important;
+        color: var(--primary-color) !important;
+        cursor: pointer !important;
+        box-shadow: 0 8px 20px rgba(44, 26, 20, 0.06), inset 0 2px 2px #ffffff !important;
+        transition: all 0.25s ease !important;
+    }
+    #assignedStaff:hover, #transferStaffSelect:hover {
+        border-color: var(--accent-color) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 14px 28px rgba(184, 115, 51, 0.18), inset 0 2px 2px #ffffff !important;
+    }
+    #assignedStaff:focus, #transferStaffSelect:focus {
+        border-color: var(--accent-color) !important;
+        box-shadow: 0 0 0 4px var(--accent-glow), 0 12px 25px rgba(44, 26, 20, 0.1) !important;
+    }
+</style>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function initAllDocs3DAndTheme() {
+    // На всякий случай принудительно делаем #assignedStaff видимым!
+    const staffSelectEl = document.getElementById('assignedStaff');
+    if (staffSelectEl) {
+        staffSelectEl.style.display = 'block';
+    }
+
     // 1. КНОПКА ПЕРЕКЛЮЧЕНИЯ ТЕМЫ (🌙 / ☀️) РЯДОМ С КОЛОКОЛЬЧИКОМ
     const notifContainer = document.getElementById('notificationContainer');
     if (notifContainer && !document.querySelector('.theme-toggle-btn')) {
@@ -4837,7 +4879,7 @@ window.renderMainCalendar = async function() {
         notifContainer.insertBefore(themeBtn, notifContainer.firstChild);
     }
 
-    // 2. ИНТЕРАКТИВНЫЙ 3D МИККИ МАУС В САЙДБАРЕ (ЗОЛОТОЙ ТАЛИСМАН ОПЕРАТОРА)
+    // 2. ИНТЕРАКТИВНЫЙ 3D МИККИ МАУС В САЙДБАРЕ
     const sidebar = document.querySelector('.sidebar');
     const navMenu = document.querySelector('.nav-menu');
     if (sidebar && navMenu && typeof THREE !== 'undefined' && !document.getElementById('sidebar-3d-widget')) {
@@ -5001,118 +5043,32 @@ window.renderMainCalendar = async function() {
         })();
     }
 
-    // 4. КАСТОМНЫЙ 3D DROPDOWN С АВАТАРКАМИ СОТРУДНИКОВ И 3D-ПОДСКАЗКА
-    setTimeout(function initCustom3DSelectAndValidation() {
-        const selectEl = document.getElementById('assignedStaff');
-        if (selectEl && !document.getElementById('custom3dAssignedStaff')) {
-            selectEl.style.display = 'none';
+    // 4. 3D-БЕЙДЖ ПРИ ПУСТОМ ПОЛЕ ОПИСАНИЯ (ВМЕСТО СЕРОЙ ТАБЛИЧКИ БРАУЗЕРА)
+    const descArea = document.getElementById('briefDescription');
+    if (descArea) {
+        descArea.addEventListener('invalid', function(e) {
+            e.preventDefault();
+            descArea.classList.remove('input-3d-error');
+            void descArea.offsetWidth;
+            descArea.classList.add('input-3d-error');
+            descArea.focus();
 
-            const wrap = document.createElement('div');
-            wrap.className = 'custom-3d-select-wrap';
-            wrap.id = 'custom3dAssignedStaff';
+            let oldTip = descArea.parentNode.querySelector('.custom-3d-tooltip');
+            if (oldTip) oldTip.remove();
 
-            const trigger = document.createElement('div');
-            trigger.className = 'custom-3d-trigger';
-            trigger.innerHTML = `<span id="custom3dSelectedText">🔕 -- Do not notify anyone --</span><span class="custom-3d-arrow">▼</span>`;
+            const tip = document.createElement('div');
+            tip.className = 'custom-3d-tooltip';
+            tip.innerHTML = '⚠️ Please enter call description / notes';
+            descArea.parentNode.appendChild(tip);
 
-            const optionsList = document.createElement('div');
-            optionsList.className = 'custom-3d-options';
-
-            function buildOptions() {
-                optionsList.innerHTML = '';
-                Array.from(selectEl.options).forEach((opt, idx) => {
-                    const item = document.createElement('div');
-                    item.className = 'custom-3d-option' + (selectEl.selectedIndex === idx ? ' selected' : '');
-
-                    let avatarHtml = '';
-                    if (!opt.value) {
-                        avatarHtml = `<div class="staff-mini-avatar" style="background:#e2e8f0; color:#64748b;">🔕</div>`;
-                    } else {
-                        const initials = opt.text.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-                        avatarHtml = `<div class="staff-mini-avatar">${initials}</div>`;
-                    }
-
-                    item.innerHTML = `${avatarHtml}<span>${opt.text}</span>`;
-                    item.onclick = (e) => {
-                        e.stopPropagation();
-                        selectEl.selectedIndex = idx;
-                        selectEl.dispatchEvent(new Event('change'));
-                        updateTriggerText();
-                        optionsList.classList.remove('show');
-                        trigger.classList.remove('open');
-                    };
-                    optionsList.appendChild(item);
-                });
-            }
-
-            function updateTriggerText() {
-                const selOpt = selectEl.options[selectEl.selectedIndex];
-                if (!selOpt || !selOpt.value) {
-                    document.getElementById('custom3dSelectedText').innerHTML = `🔕 -- Do not notify anyone --`;
-                } else {
-                    const initials = selOpt.text.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
-                    document.getElementById('custom3dSelectedText').innerHTML = `<span style="display:inline-flex;align-items:center;gap:10px;"><span class="staff-mini-avatar" style="width:26px;height:26px;font-size:10px;">${initials}</span> ${selOpt.text}</span>`;
-                }
-                Array.from(optionsList.children).forEach((child, i) => {
-                    child.classList.toggle('selected', i === selectEl.selectedIndex);
-                });
-            }
-
-            buildOptions();
-            updateTriggerText();
-
-            trigger.onclick = (e) => {
-                e.stopPropagation();
-                buildOptions();
-                optionsList.classList.toggle('show');
-                trigger.classList.toggle('open');
-            };
-
-            document.addEventListener('click', () => {
-                optionsList.classList.remove('show');
-                trigger.classList.remove('open');
-            });
-
-            const transferSelect = document.getElementById('transferStaffSelect');
-            if (transferSelect) {
-                transferSelect.addEventListener('change', () => setTimeout(updateTriggerText, 50));
-            }
-            const callForm = document.getElementById('callForm');
-            if (callForm) {
-                callForm.addEventListener('reset', () => setTimeout(updateTriggerText, 50));
-            }
-
-            selectEl.parentNode.insertBefore(wrap, selectEl);
-            wrap.appendChild(trigger);
-            wrap.appendChild(optionsList);
-        }
-
-        const descArea = document.getElementById('briefDescription');
-        if (descArea) {
-            descArea.addEventListener('invalid', function(e) {
-                e.preventDefault();
-                descArea.classList.remove('input-3d-error');
-                void descArea.offsetWidth;
-                descArea.classList.add('input-3d-error');
-                descArea.focus();
-
-                let oldTip = descArea.parentNode.querySelector('.custom-3d-tooltip');
-                if (oldTip) oldTip.remove();
-
-                const tip = document.createElement('div');
-                tip.className = 'custom-3d-tooltip';
-                tip.innerHTML = '⚠️ Please enter call description / notes';
-                descArea.parentNode.appendChild(tip);
-
-                setTimeout(() => { if (tip) tip.remove(); }, 3500);
-            });
-            descArea.addEventListener('input', function() {
-                descArea.classList.remove('input-3d-error');
-                let oldTip = descArea.parentNode.querySelector('.custom-3d-tooltip');
-                if (oldTip) oldTip.remove();
-            });
-        }
-    }, 400);
+            setTimeout(() => { if (tip) tip.remove(); }, 3500);
+        });
+        descArea.addEventListener('input', function() {
+            descArea.classList.remove('input-3d-error');
+            let oldTip = descArea.parentNode.querySelector('.custom-3d-tooltip');
+            if (oldTip) oldTip.remove();
+        });
+    }
 })();
 </script>
 </body>
