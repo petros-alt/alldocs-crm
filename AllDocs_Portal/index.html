@@ -10,6 +10,266 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 
 <style>
+    /* =====================================================================
+       💎 ULTRA 3D UPGRADE: ФОРМА ОПЕРАТОРА + МЕНЮ ИСТОРИИ ЗВОНКОВ (КАПСУЛЫ)
+       ===================================================================== */
+
+    /* 1. 3D-РЕЛЬЕФ ДЛЯ ГЛАВНОГО ОКНА И СЕКЦИЙ ФОРМЫ */
+    .container {
+        background: linear-gradient(165deg, rgba(255, 255, 255, 0.96) 0%, rgba(249, 245, 238, 0.92) 100%) !important;
+        box-shadow: 
+            0 30px 80px rgba(44, 26, 20, 0.14),
+            0 10px 25px rgba(44, 26, 20, 0.06),
+            inset 0 2px 3px rgba(255, 255, 255, 1),
+            inset 0 -2px 6px rgba(184, 115, 51, 0.08) !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.9) !important;
+    }
+
+    /* 3D-переключатель главных вкладок (New Call Log / Master Calendar / History) */
+    .tab-navigation {
+        background: linear-gradient(180deg, #ede5d8 0%, #f5f0e6 100%) !important;
+        padding: 8px !important;
+        border-radius: 20px !important;
+        box-shadow: 
+            inset 0 3px 7px rgba(44, 26, 20, 0.12),
+            0 2px 0 rgba(255, 255, 255, 0.9) !important;
+        border: 1px solid rgba(161, 104, 58, 0.18) !important;
+    }
+    .tab-btn.active {
+        background: linear-gradient(145deg, #c88240 0%, #8f5322 100%) !important;
+        border-radius: 14px !important;
+        box-shadow: 
+            0 10px 22px rgba(154, 91, 34, 0.4),
+            0 3px 6px rgba(0, 0, 0, 0.15),
+            inset 0 1.5px 2px rgba(255, 255, 255, 0.45) !important;
+        transform: translateY(-2px) scale(1.01) !important;
+    }
+
+    /* 2. 3D-КАПСУЛЫ ДЛЯ БЛОКОВ ФОРМЫ ОПЕРАТОРА (Поиск клиента + Описание) */
+    .input-with-button-wrap, .description-box {
+        background: linear-gradient(145deg, #ffffff 0%, #f7f2ea 100%) !important;
+        border-radius: 22px !important;
+        padding: 26px !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+        box-shadow: 
+            0 16px 35px rgba(44, 26, 20, 0.06),
+            0 4px 10px rgba(44, 26, 20, 0.03),
+            inset 0 2px 2px rgba(255, 255, 255, 1),
+            inset 0 -2px 4px rgba(184, 115, 51, 0.06) !important;
+        transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+    }
+    .input-with-button-wrap:hover, .description-box:hover {
+        transform: translateY(-2px);
+        box-shadow: 
+            0 22px 45px rgba(44, 26, 20, 0.09),
+            0 6px 14px rgba(44, 26, 20, 0.04),
+            inset 0 2px 2px rgba(255, 255, 255, 1) !important;
+    }
+
+    /* 3D-глубина для всех полей ввода (Inputs, Selects, Textarea) */
+    input[type="text"], input[type="tel"], input[type="date"], input[type="time"], select, textarea {
+        background: linear-gradient(180deg, #f3ede3 0%, #faf7f2 100%) !important;
+        border: 1.5px solid rgba(161, 104, 58, 0.22) !important;
+        border-radius: 14px !important;
+        box-shadow: 
+            inset 0 2px 5px rgba(44, 26, 20, 0.06),
+            0 1px 0 rgba(255, 255, 255, 0.9) !important;
+        font-weight: 500 !important;
+    }
+    input:focus, select:focus, textarea:focus {
+        background: #ffffff !important;
+        border-color: var(--accent-color) !important;
+        box-shadow: 
+            0 10px 25px rgba(184, 115, 51, 0.18),
+            0 0 0 4px rgba(184, 115, 51, 0.12),
+            inset 0 1px 2px rgba(255, 255, 255, 1) !important;
+        transform: translateY(-2px) !important;
+    }
+
+    /* 3. ФИЗИЧЕСКИЕ 3D-КАРТОЧКИ ВЫБОРА СТАТУСА (Client Status) */
+    .category-card span {
+        background: linear-gradient(145deg, #ffffff 0%, #f4efe6 100%) !important;
+        border: 1.5px solid rgba(184, 115, 51, 0.22) !important;
+        border-bottom: 4px solid rgba(161, 104, 58, 0.35) !important;
+        border-radius: 18px !important;
+        box-shadow: 
+            0 10px 20px rgba(44, 26, 20, 0.06),
+            inset 0 2px 2px rgba(255, 255, 255, 1) !important;
+    }
+    .category-card:hover span {
+        transform: translateY(-5px) rotateX(6deg) !important;
+        box-shadow: 0 18px 32px rgba(44, 26, 20, 0.12) !important;
+    }
+    #card-existing input:checked + span {
+        background: linear-gradient(145deg, #3e2723 0%, #24140e 100%) !important;
+        border-color: #d48c46 !important;
+        border-bottom: 4px solid #8b552b !important;
+        box-shadow: 
+            0 14px 30px rgba(44, 26, 20, 0.38),
+            inset 0 1px 2px rgba(255, 255, 255, 0.25) !important;
+        transform: translateY(-4px) scale(1.02) !important;
+    }
+    #card-lead input:checked + span {
+        background: linear-gradient(145deg, #fff1f2 0%, #ffe4e6 100%) !important;
+        border-bottom: 4px solid #e11d48 !important;
+        box-shadow: 0 14px 30px rgba(225, 29, 72, 0.25) !important;
+    }
+    #card-unrecognized input:checked + span {
+        background: linear-gradient(145deg, #fffbeb 0%, #fef3c7 100%) !important;
+        border-bottom: 4px solid #d97706 !important;
+        box-shadow: 0 14px 30px rgba(217, 119, 6, 0.25) !important;
+    }
+    #card-general input:checked + span {
+        background: linear-gradient(145deg, #eff6ff 0%, #dbeafe 100%) !important;
+        border-bottom: 4px solid #2563eb !important;
+        box-shadow: 0 14px 30px rgba(37, 99, 235, 0.25) !important;
+    }
+
+    /* 4. 3D-КНОПКИ С ЭФФЕКТОМ НАЖАТИЯ (Book Appt, Transfer Call, Save Log) */
+    .book-appt-btn {
+        background: linear-gradient(145deg, #10b981 0%, #047857 100%) !important;
+        border-bottom: 4px solid #065f46 !important;
+        border-radius: 14px !important;
+        box-shadow: 
+            0 10px 22px rgba(16, 185, 129, 0.35),
+            inset 0 1.5px 2px rgba(255, 255, 255, 0.4) !important;
+    }
+    .book-appt-btn:active { transform: translateY(2px) !important; border-bottom-width: 1px !important; }
+
+    #transferCallBtn {
+        background: linear-gradient(145deg, #ffffff 0%, #f5efe6 100%) !important;
+        border: 2px solid var(--accent-color) !important;
+        border-bottom: 4px solid #8b552b !important;
+        border-radius: 14px !important;
+        box-shadow: 0 8px 20px rgba(184, 115, 51, 0.15), inset 0 1px 1px #fff !important;
+        transition: all 0.25s ease !important;
+    }
+    #transferCallBtn:hover {
+        background: linear-gradient(145deg, var(--accent-color) 0%, #8b552b 100%) !important;
+        color: #ffffff !important;
+        transform: translateY(-3px) !important;
+        box-shadow: 0 14px 28px var(--accent-glow) !important;
+    }
+
+    .submit-btn {
+        background: linear-gradient(145deg, #c88240 0%, #8b552b 100%) !important;
+        border-bottom: 5px solid #5d3618 !important;
+        border-radius: 16px !important;
+        box-shadow: 
+            0 14px 32px rgba(154, 91, 34, 0.38),
+            inset 0 2px 2px rgba(255, 255, 255, 0.4) !important;
+    }
+    .submit-btn:hover:not(:disabled) {
+        transform: translateY(-4px) !important;
+        box-shadow: 0 20px 42px rgba(154, 91, 34, 0.5), inset 0 2px 2px rgba(255, 255, 255, 0.5) !important;
+    }
+    .submit-btn:active:not(:disabled) { transform: translateY(2px) !important; border-bottom-width: 2px !important; }
+
+    /* 3D-плашки URGENT и Resolved by Operator */
+    .urgent-box {
+        background: linear-gradient(145deg, #fff1f2 0%, #ffe4e6 100%) !important;
+        border: 1.5px solid #fecdd3 !important;
+        border-left: 6px solid #dc2626 !important;
+        border-radius: 14px !important;
+        box-shadow: 0 8px 20px rgba(220, 38, 38, 0.1), inset 0 1px 1px #fff !important;
+    }
+    #standardCallSection div[style*="#e8f5e9"] {
+        background: linear-gradient(145deg, #ecfdf5 0%, #d1fae5 100%) !important;
+        border: 1.5px solid #a7f3d0 !important;
+        border-left: 6px solid #059669 !important;
+        border-radius: 14px !important;
+        padding: 15px 18px !important;
+        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.1), inset 0 1px 1px #fff !important;
+    }
+
+    /* =====================================================================
+       5. МЕНЮ ИСТОРИИ ЗВОНКОВ (INTERNAL CALL HISTORY) — ПАРЯЩИЕ 3D-КАРТОЧКИ
+       ===================================================================== */
+
+    /* Панель фильтров сверху истории звонков */
+    #tabHistoryContent > div:first-child {
+        background: linear-gradient(145deg, #ffffff 0%, #f6f1e8 100%);
+        padding: 16px;
+        border-radius: 20px;
+        border: 1px solid rgba(184, 115, 51, 0.2);
+        box-shadow: 0 12px 30px rgba(44, 26, 20, 0.06), inset 0 1px 1px #fff;
+        margin-bottom: 26px !important;
+        align-items: center;
+    }
+
+    /* Превращаем таблицу в список объемных 3D-капсул */
+    .history-table {
+        border-collapse: separate !important;
+        border-spacing: 0 12px !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+        padding: 0 4px !important;
+    }
+
+    /* Шапка таблицы */
+    .history-table thead tr th {
+        background: linear-gradient(180deg, #ede5d8 0%, #e4dacb 100%) !important;
+        color: var(--primary-color) !important;
+        padding: 15px 20px !important;
+        font-size: 12px !important;
+        letter-spacing: 1px !important;
+        border: none !important;
+        box-shadow: inset 0 1px 1px rgba(255,255,255,0.8), 0 4px 10px rgba(44, 26, 20, 0.05);
+    }
+    .history-table thead tr th:first-child { border-radius: 14px 0 0 14px !important; }
+    .history-table thead tr th:last-child { border-radius: 0 14px 14px 0 !important; }
+
+    /* Каждая строка звонка — 3D карточка */
+    .history-table tr.journal-row {
+        background: linear-gradient(145deg, #ffffff 0%, #faf6f0 100%) !important;
+        box-shadow: 
+            0 8px 20px rgba(44, 26, 20, 0.06),
+            0 2px 5px rgba(44, 26, 20, 0.04) !important;
+        transition: all 0.28s cubic-bezier(0.23, 1, 0.32, 1) !important;
+        transform-origin: center;
+    }
+    .history-table tr.journal-row td {
+        border-top: 1px solid rgba(184, 115, 51, 0.16) !important;
+        border-bottom: 2px solid rgba(184, 115, 51, 0.22) !important;
+        padding: 18px 20px !important;
+        background: transparent !important;
+    }
+    .history-table tr.journal-row td:first-child {
+        border-left: 5px solid var(--accent-color) !important;
+        border-radius: 16px 0 0 16px !important;
+    }
+    .history-table tr.journal-row td:last-child {
+        border-right: 1px solid rgba(184, 115, 51, 0.16) !important;
+        border-radius: 0 16px 16px 0 !important;
+    }
+
+    /* Эффект 3D-всплытия строки при наведении мыши */
+    .history-table tr.journal-row:hover {
+        transform: translateY(-4px) scale(1.01) !important;
+        background: linear-gradient(145deg, #ffffff 0%, #fffbf5 100%) !important;
+        box-shadow: 
+            0 18px 36px rgba(184, 115, 51, 0.18),
+            0 5px 12px rgba(44, 26, 20, 0.08) !important;
+    }
+    .history-table tr.journal-row:hover td:first-child {
+        border-left-color: #d97706 !important;
+    }
+
+    /* 3D-бейджи внутри таблицы (Existing Client, URGENT, Resolved, Pending) */
+    .badge-status {
+        padding: 5px 11px !important;
+        border-radius: 20px !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    }
+    .history-table td:last-child span {
+        border-radius: 12px !important;
+        padding: 8px 12px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), inset 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+        border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    }
      /* ==========================================================
        🚀 3D UPGRADE: КОЛОКОЛЬЧИК, КАРТОЧКИ ОПОВЕЩЕНИЙ И МОДАЛКИ
        ========================================================== */
