@@ -4814,13 +4814,13 @@ window.renderMainCalendar = async function() {
 
     });  
 </script>
-<!-- Подключаем Three.js и активируем 3D-модель Микки Мауса + Dark/Light Mode -->
+<!-- Подключаем Three.js и активируем 3D-модель Микки Мауса + Dark/Light Mode + 3D Select -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function initAllDocs3DAndTheme() {
     // 1. КНОПКА ПЕРЕКЛЮЧЕНИЯ ТЕМЫ (🌙 / ☀️) РЯДОМ С КОЛОКОЛЬЧИКОМ
     const notifContainer = document.getElementById('notificationContainer');
-    if (notifContainer) {
+    if (notifContainer && !document.querySelector('.theme-toggle-btn')) {
         const themeBtn = document.createElement('button');
         themeBtn.className = 'theme-toggle-btn';
         themeBtn.title = 'Switch Light / Dark Theme';
@@ -4840,7 +4840,7 @@ window.renderMainCalendar = async function() {
     // 2. ИНТЕРАКТИВНЫЙ 3D МИККИ МАУС В САЙДБАРЕ (ЗОЛОТОЙ ТАЛИСМАН ОПЕРАТОРА)
     const sidebar = document.querySelector('.sidebar');
     const navMenu = document.querySelector('.nav-menu');
-    if (sidebar && navMenu && typeof THREE !== 'undefined') {
+    if (sidebar && navMenu && typeof THREE !== 'undefined' && !document.getElementById('sidebar-3d-widget')) {
         const widgetBox = document.createElement('div');
         widgetBox.id = 'sidebar-3d-widget';
         widgetBox.title = 'Click or drag Mickey!';
@@ -4859,7 +4859,6 @@ window.renderMainCalendar = async function() {
         const mickeyGroup = new THREE.Group();
         scene.add(mickeyGroup);
 
-        // Премиальные материалы (Золото, Эспрессо и Глянец)
         const goldMat = new THREE.MeshStandardMaterial({
             color: 0xd48c46,
             metalness: 0.75,
@@ -4870,21 +4869,15 @@ window.renderMainCalendar = async function() {
             metalness: 0.6,
             roughness: 0.22
         });
-        constwireMat = new THREE.MeshStandardMaterial({
-            color: 0xf5cba7,
-            wireframe: true,
-            transparent: true,
-            opacity: 0.25
-        });
 
         // Голова Микки
         const headGeo = new THREE.SphereGeometry(0.82, 32, 32);
         const headMesh = new THREE.Mesh(headGeo, goldMat);
         mickeyGroup.add(headMesh);
 
-        // Левое и правое ухо Микки
+        // Ушки Микки
         const earGeo = new THREE.SphereGeometry(0.50, 32, 32);
-        earGeo.scale(1, 1, 0.55); // Слегка уплощаем ушки как у классического Микки
+        earGeo.scale(1, 1, 0.55);
 
         const leftEar = new THREE.Mesh(earGeo, goldMat);
         leftEar.position.set(-0.72, 0.74, 0);
@@ -4896,7 +4889,7 @@ window.renderMainCalendar = async function() {
         rightEar.rotation.z = -0.45;
         mickeyGroup.add(rightEar);
 
-        // Глазки и носик (чтобы при вращении было видно милое лицо)
+        // Глазки и носик
         const eyeGeo = new THREE.SphereGeometry(0.09, 16, 16);
         eyeGeo.scale(0.8, 1.35, 0.6);
         const leftEye = new THREE.Mesh(eyeGeo, darkGoldMat);
@@ -4913,7 +4906,7 @@ window.renderMainCalendar = async function() {
         noseMesh.position.set(0, -0.06, 0.88);
         mickeyGroup.add(noseMesh);
 
-        // Волшебное золотое орбитальное кольцо вокруг Микки
+        // Золотое орбитальное кольцо
         const ringGeo = new THREE.TorusGeometry(1.52, 0.025, 16, 64);
         const ringMat = new THREE.MeshBasicMaterial({ color: 0xf5cba7, transparent: true, opacity: 0.55 });
         const ringMesh = new THREE.Mesh(ringGeo, ringMat);
@@ -4929,7 +4922,6 @@ window.renderMainCalendar = async function() {
         pLight2.position.set(-4, -3, 3);
         scene.add(pLight2);
 
-        // Интерактивное вращение мышкой + Прыжок при клике!
         let isDragging = false, prevX = 0, prevY = 0;
         let jumpBoost = 0, spinBoost = 0;
 
@@ -4947,7 +4939,6 @@ window.renderMainCalendar = async function() {
             prevY = e.clientY;
         });
 
-        // При клике Микки радостно подпрыгивает и крутится!
         widgetBox.addEventListener('click', () => {
             jumpBoost = 0.28;
             spinBoost = 0.22;
@@ -4957,25 +4948,20 @@ window.renderMainCalendar = async function() {
         (function animateMickey3D() {
             requestAnimationFrame(animateMickey3D);
             clock += 0.035;
-
             if (!isDragging) {
-                // Плавное покачивание и вращение
                 mickeyGroup.rotation.y += 0.008 + spinBoost;
                 mickeyGroup.rotation.x += (Math.sin(clock * 0.5) * 0.1 - mickeyGroup.rotation.x) * 0.05;
                 mickeyGroup.position.y = Math.sin(clock) * 0.12 + jumpBoost;
             }
             ringMesh.rotation.z += 0.012;
-
-            // Плавное затухание прыжка
             jumpBoost *= 0.92;
             spinBoost *= 0.93;
-
             renderer.render(scene, camera);
         })();
     }
 
     // 3. ФОНОВЫЕ 3D-ЧАСТИЦЫ
-    if (typeof THREE !== 'undefined') {
+    if (typeof THREE !== 'undefined' && !document.getElementById('webgl-bg-canvas')) {
         const bgCanvas = document.createElement('canvas');
         bgCanvas.id = 'webgl-bg-canvas';
         document.body.insertBefore(bgCanvas, document.body.firstChild);
@@ -5014,14 +5000,11 @@ window.renderMainCalendar = async function() {
             bgRenderer.render(bgScene, bgCam);
         })();
     }
-})();
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-    // Даем 300мс, чтобы основной скрипт заполнил список сотрудников в #assignedStaff
+
+    // 4. КАСТОМНЫЙ 3D DROPDOWN С АВАТАРКАМИ СОТРУДНИКОВ И 3D-ПОДСКАЗКА
     setTimeout(function initCustom3DSelectAndValidation() {
         const selectEl = document.getElementById('assignedStaff');
         if (selectEl && !document.getElementById('custom3dAssignedStaff')) {
-            // Прячем системный серый select, но оставляем его в DOM для работы всей логики!
             selectEl.style.display = 'none';
 
             const wrap = document.createElement('div');
@@ -5030,7 +5013,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
             const trigger = document.createElement('div');
             trigger.className = 'custom-3d-trigger';
-            trigger.innerHTML = `<span id="custom3dSelectedText">🔔 -- Do not notify anyone --</span><span class="custom-3d-arrow">▼</span>`;
+            trigger.innerHTML = `<span id="custom3dSelectedText">🔕 -- Do not notify anyone --</span><span class="custom-3d-arrow">▼</span>`;
 
             const optionsList = document.createElement('div');
             optionsList.className = 'custom-3d-options';
@@ -5090,7 +5073,6 @@ document.addEventListener("DOMContentLoaded", function() {
                 trigger.classList.remove('open');
             });
 
-            // Если сотрудник выбран через кнопку "🔀 Transfer Call", обновляем 3D-плашку автоматически!
             const transferSelect = document.getElementById('transferStaffSelect');
             if (transferSelect) {
                 transferSelect.addEventListener('change', () => setTimeout(updateTriggerText, 50));
@@ -5105,13 +5087,12 @@ document.addEventListener("DOMContentLoaded", function() {
             wrap.appendChild(optionsList);
         }
 
-        // 2. ЗАМЕНЯЕМ СТАНДАРТНУЮ СЕРУЮ ПОДСКАЗКУ "Please fill out this field" НА 3D-БЕЙДЖ
         const descArea = document.getElementById('briefDescription');
         if (descArea) {
             descArea.addEventListener('invalid', function(e) {
-                e.preventDefault(); // Отключаем скучный серый тултип браузера
+                e.preventDefault();
                 descArea.classList.remove('input-3d-error');
-                void descArea.offsetWidth; // Перезапуск 3D-анимации
+                void descArea.offsetWidth;
                 descArea.classList.add('input-3d-error');
                 descArea.focus();
 
@@ -5131,8 +5112,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (oldTip) oldTip.remove();
             });
         }
-    }, 300);
-});
+    }, 400);
+})();
 </script>
 </body>
 </html>
