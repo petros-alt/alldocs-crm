@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-     
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>All Docs Consulting - CRM Portal</title>
    <!-- Подключаем премиальный шрифт Plus Jakarta Sans & Inter -->
@@ -10,6 +10,241 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 
 <style>
+     /* ==========================================================
+       🚀 3D UPGRADE: КОЛОКОЛЬЧИК, КАРТОЧКИ ОПОВЕЩЕНИЙ И МОДАЛКИ
+       ========================================================== */
+    @keyframes dropdown3DIn {
+        0% { opacity: 0; transform: perspective(1000px) rotateX(-18deg) translateY(-15px) scale(0.94); }
+        70% { opacity: 1; transform: perspective(1000px) rotateX(3deg) translateY(2px) scale(1.01); }
+        100% { opacity: 1; transform: perspective(1000px) rotateX(0deg) translateY(0) scale(1); }
+    }
+    @keyframes bell3DRing {
+        0%, 100% { transform: rotate(0deg) scale(1); }
+        15% { transform: rotate(14deg) scale(1.08); }
+        30% { transform: rotate(-12deg) scale(1.08); }
+        45% { transform: rotate(9deg) scale(1.05); }
+        60% { transform: rotate(-6deg) scale(1.03); }
+        75% { transform: rotate(3deg) scale(1.01); }
+    }
+    @keyframes badge3DPulse {
+        0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7), 0 4px 12px rgba(220, 38, 38, 0.5); }
+        70% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0), 0 4px 12px rgba(220, 38, 38, 0.5); }
+        100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0), 0 4px 12px rgba(220, 38, 38, 0.5); }
+    }
+    @keyframes modal3DPop {
+        0% { opacity: 0; transform: perspective(1200px) rotateX(15deg) translateY(30px) scale(0.9); }
+        100% { opacity: 1; transform: perspective(1200px) rotateX(0deg) translateY(0) scale(1); }
+    }
+
+    /* 1. 3D Кнопка Колокольчика */
+    #notificationBell {
+        background: linear-gradient(145deg, #ffffff, #f3ece2) !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.9) !important;
+        box-shadow: 
+            0 14px 28px rgba(44, 26, 20, 0.16),
+            0 4px 8px rgba(44, 26, 20, 0.08),
+            inset 0 2px 4px rgba(255, 255, 255, 1),
+            inset 0 -3px 6px rgba(184, 115, 51, 0.15) !important;
+        width: 64px !important;
+        height: 64px !important;
+    }
+    body.dark-theme #notificationBell {
+        background: linear-gradient(145deg, #2b1e19, #1b120f) !important;
+        border-color: rgba(212, 140, 70, 0.35) !important;
+        box-shadow: 0 14px 30px rgba(0,0,0,0.6), inset 0 1px 2px rgba(255,255,255,0.12) !important;
+    }
+    #notificationBell:hover {
+        animation: bell3DRing 0.7s ease-in-out;
+        transform: translateY(-4px) scale(1.06) !important;
+    }
+
+    /* 3D Бейдж счетчика с радарной волной */
+    .badge {
+        background: linear-gradient(135deg, #ff4b2b 0%, #d32f2f 100%) !important;
+        border: 2.5px solid #ffffff !important;
+        animation: badge3DPulse 2s infinite !important;
+        padding: 4px 9px !important;
+        font-size: 12.5px !important;
+        top: -4px !important;
+        right: -4px !important;
+    }
+
+    /* 2. Само Выпадающее 3D-окно (Incoming Tasks) */
+    #notificationDropdown {
+        width: 420px !important;
+        top: 78px !important;
+        background: linear-gradient(165deg, rgba(255, 255, 255, 0.96) 0%, rgba(250, 245, 238, 0.92) 100%) !important;
+        backdrop-filter: blur(28px) saturate(180%) !important;
+        -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+        border-radius: 24px !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.85) !important;
+        box-shadow: 
+            0 30px 70px rgba(44, 26, 20, 0.25),
+            0 10px 25px rgba(44, 26, 20, 0.12),
+            inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+        transform-origin: top right;
+        animation: dropdown3DIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+        padding-bottom: 8px !important;
+    }
+    body.dark-theme #notificationDropdown {
+        background: linear-gradient(165deg, rgba(38, 27, 22, 0.96) 0%, rgba(22, 15, 12, 0.95) 100%) !important;
+        border-color: rgba(212, 140, 70, 0.3) !important;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75) !important;
+    }
+
+    /* Шапка внутри выпадающего окна */
+    .dropdown-header {
+        background: linear-gradient(90deg, rgba(184, 115, 51, 0.1) 0%, rgba(255, 255, 255, 0) 100%) !important;
+        padding: 20px 24px 16px !important;
+        border-bottom: 1px solid rgba(184, 115, 51, 0.15) !important;
+    }
+    .dropdown-header h4 {
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        font-size: 13.5px !important;
+        letter-spacing: 1.2px !important;
+        color: var(--primary-color) !important;
+        text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+    }
+    #closeDropdownBtn {
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: rgba(184, 115, 51, 0.1);
+        font-weight: bold;
+        transition: all 0.25s ease !important;
+    }
+    #closeDropdownBtn:hover {
+        background: #fee2e2;
+        color: #dc2626 !important;
+        transform: rotate(90deg) scale(1.1);
+    }
+
+    /* Контейнер списка задач — делаем отступы для 3D-капсул */
+    #notifList {
+        padding: 14px 16px !important;
+        background: transparent !important;
+        max-height: 430px !important;
+        perspective: 1000px;
+    }
+
+    /* 3. Обычные и SMS 3D-карточки уведомлений */
+    .notif-item-modern {
+        margin-bottom: 14px !important;
+        border-radius: 18px !important;
+        padding: 18px 20px !important;
+        background: linear-gradient(145deg, #ffffff 0%, #f9f6f0 100%) !important;
+        border: 1px solid rgba(184, 115, 51, 0.2) !important;
+        border-left: 5px solid var(--accent-color) !important;
+        box-shadow: 
+            0 10px 25px rgba(44, 26, 20, 0.07),
+            0 2px 6px rgba(44, 26, 20, 0.04),
+            inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1) !important;
+        transform-style: preserve-3d;
+        position: relative;
+    }
+    .notif-item-modern:last-child, .notif-item-urgent:last-child { margin-bottom: 4px !important; }
+    .notif-item-modern:hover {
+        transform: translateY(-4px) scale(1.015) rotateX(2deg) !important;
+        box-shadow: 
+            0 18px 35px rgba(184, 115, 51, 0.18),
+            0 4px 10px rgba(44, 26, 20, 0.06) !important;
+        border-color: var(--accent-color) !important;
+    }
+
+    /* 4. СРОЧНАЯ (🚨 URGENT) 3D-карточка уведомления */
+    .notif-item-urgent {
+        margin-bottom: 14px !important;
+        border-radius: 18px !important;
+        padding: 18px 20px !important;
+        background: linear-gradient(145deg, #fff5f5 0%, #ffe4e6 100%) !important;
+        border: 1px solid rgba(239, 68, 68, 0.35) !important;
+        border-left: 6px solid #dc2626 !important;
+        box-shadow: 
+            0 12px 28px rgba(220, 38, 38, 0.15),
+            0 3px 8px rgba(220, 38, 38, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1) !important;
+        position: relative;
+        overflow: hidden;
+    }
+    .notif-item-urgent:hover {
+        transform: translateY(-5px) scale(1.02) !important;
+        box-shadow: 0 20px 40px rgba(220, 38, 38, 0.25) !important;
+    }
+    body.dark-theme .notif-item-modern {
+        background: linear-gradient(145deg, #2b1f1a 0%, #211713 100%) !important;
+    }
+    body.dark-theme .notif-item-urgent {
+        background: linear-gradient(145deg, rgba(127, 29, 29, 0.45) 0%, rgba(69, 10, 10, 0.6) 100%) !important;
+    }
+
+    /* Внутренний блок текста (Preview) с эффектом 3D-углубления */
+    .notif-preview {
+        background: rgba(255, 255, 255, 0.75) !important;
+        border-radius: 12px !important;
+        padding: 12px 14px !important;
+        border: 1px solid rgba(44, 26, 20, 0.08) !important;
+        box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.04) !important;
+        font-size: 13.5px !important;
+        font-weight: 500;
+        color: var(--primary-color) !important;
+        margin-top: 8px;
+    }
+    body.dark-theme .notif-preview {
+        background: rgba(0, 0, 0, 0.28) !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    /* Объемные 3D-бейджи URGENT и NEW */
+    .urgent-tag {
+        background: linear-gradient(135deg, #ff416c 0%, #dc2626 100%) !important;
+        padding: 5px 11px !important;
+        border-radius: 20px !important;
+        font-size: 10.5px !important;
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4), inset 0 1px 1px rgba(255,255,255,0.4) !important;
+        border: 1px solid rgba(255,255,255,0.3);
+    }
+    .new-tag {
+        background: linear-gradient(135deg, var(--accent-color) 0%, #8b552b 100%) !important;
+        padding: 5px 11px !important;
+        border-radius: 20px !important;
+        font-size: 10.5px !important;
+        box-shadow: 0 4px 10px var(--accent-glow), inset 0 1px 1px rgba(255,255,255,0.4) !important;
+    }
+
+    /* 5. Всплывающее модальное окно задачи (#notifModal & #smsReplyModal) в 3D */
+    #notifModal .modal-content, #smsReplyModal .modal-content {
+        background: linear-gradient(160deg, #ffffff 0%, #f8f4ec 100%) !important;
+        border-radius: 28px !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.9) !important;
+        box-shadow: 
+            0 35px 90px rgba(28, 16, 12, 0.45),
+            0 10px 30px rgba(28, 16, 12, 0.2),
+            inset 0 2px 3px rgba(255, 255, 255, 1) !important;
+        animation: modal3DPop 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+        padding: 38px !important;
+    }
+    #modalMessage, #qsMessageText {
+        background: #ffffff !important;
+        border-radius: 16px !important;
+        padding: 22px !important;
+        border: 1px solid rgba(184, 115, 51, 0.22) !important;
+        border-left: 6px solid var(--accent-color) !important;
+        box-shadow: 0 8px 25px rgba(44, 26, 20, 0.06), inset 0 1px 2px rgba(0,0,0,0.02) !important;
+    }
+    #showInJournalBtn {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+        box-shadow: 0 8px 20px rgba(37, 99, 235, 0.35), inset 0 1px 1px rgba(255,255,255,0.3) !important;
+        border-radius: 12px !important;
+    }
+    #showInJournalBtn:hover {
+        transform: translateY(-3px) scale(1.02) !important;
+        box-shadow: 0 12px 28px rgba(37, 99, 235, 0.5) !important;
+    }
     @keyframes slideBounce { 0% { transform: translateY(-15px); opacity: 0; } 60% { transform: translateY(5px); opacity: 1; } 100% { transform: translateY(0); opacity: 1; } }
     @keyframes shine { 0% { left: -100%; } 20% { left: 200%; } 100% { left: 200%; } }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
