@@ -4117,7 +4117,7 @@ window.renderMainCalendar = async function() {
 
     });  
 </script>
-<!-- Подключаем Three.js и активируем 3D-модель + Dark/Light Mode -->
+<!-- Подключаем Three.js и активируем 3D-модель Микки Мауса + Dark/Light Mode -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function initAllDocs3DAndTheme() {
@@ -4140,66 +4140,139 @@ window.renderMainCalendar = async function() {
         notifContainer.insertBefore(themeBtn, notifContainer.firstChild);
     }
 
-    // 2. ИНТЕРАКТИВНАЯ 3D-МОДЕЛЬ В САЙДБАРЕ
+    // 2. ИНТЕРАКТИВНЫЙ 3D МИККИ МАУС В САЙДБАРЕ (ЗОЛОТОЙ ТАЛИСМАН ОПЕРАТОРА)
     const sidebar = document.querySelector('.sidebar');
     const navMenu = document.querySelector('.nav-menu');
     if (sidebar && navMenu && typeof THREE !== 'undefined') {
         const widgetBox = document.createElement('div');
         widgetBox.id = 'sidebar-3d-widget';
-        widgetBox.innerHTML = '<div class="widget-3d-label">✨ 3D Interactive Core</div>';
+        widgetBox.title = 'Click or drag Mickey!';
+        widgetBox.innerHTML = '<div class="widget-3d-label">✨ 3D Mickey Assistant</div>';
         sidebar.insertBefore(widgetBox, navMenu);
 
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(45, widgetBox.clientWidth / widgetBox.clientHeight, 0.1, 100);
-        camera.position.z = 4.2;
+        const camera = new THREE.PerspectiveCamera(42, widgetBox.clientWidth / widgetBox.clientHeight, 0.1, 100);
+        camera.position.z = 4.6;
 
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(widgetBox.clientWidth, widgetBox.clientHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         widgetBox.insertBefore(renderer.domElement, widgetBox.firstChild);
 
-        const group = new THREE.Group();
-        scene.add(group);
+        const mickeyGroup = new THREE.Group();
+        scene.add(mickeyGroup);
 
-        const outerMesh = new THREE.Mesh(
-            new THREE.IcosahedronGeometry(1.25, 1),
-            new THREE.MeshStandardMaterial({ color: 0xd48c46, wireframe: true, metalness: 0.8, roughness: 0.2 })
-        );
-        group.add(outerMesh);
+        // Премиальные материалы (Золото, Эспрессо и Глянец)
+        const goldMat = new THREE.MeshStandardMaterial({
+            color: 0xd48c46,
+            metalness: 0.75,
+            roughness: 0.18
+        });
+        const darkGoldMat = new THREE.MeshStandardMaterial({
+            color: 0x3e2723,
+            metalness: 0.6,
+            roughness: 0.22
+        });
+        constwireMat = new THREE.MeshStandardMaterial({
+            color: 0xf5cba7,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.25
+        });
 
-        const innerMesh = new THREE.Mesh(
-            new THREE.OctahedronGeometry(0.78, 0),
-            new THREE.MeshStandardMaterial({ color: 0xa1683a, metalness: 0.6, roughness: 0.25, flatShading: true })
-        );
-        group.add(innerMesh);
+        // Голова Микки
+        const headGeo = new THREE.SphereGeometry(0.82, 32, 32);
+        const headMesh = new THREE.Mesh(headGeo, goldMat);
+        mickeyGroup.add(headMesh);
 
-        const ringMesh = new THREE.Mesh(
-            new THREE.TorusGeometry(1.55, 0.025, 16, 64),
-            new THREE.MeshBasicMaterial({ color: 0xf5cba7, transparent: true, opacity: 0.5 })
-        );
-        ringMesh.rotation.x = Math.PI / 2.5;
-        group.add(ringMesh);
+        // Левое и правое ухо Микки
+        const earGeo = new THREE.SphereGeometry(0.50, 32, 32);
+        earGeo.scale(1, 1, 0.55); // Слегка уплощаем ушки как у классического Микки
 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-        const pLight1 = new THREE.PointLight(0xffd7aa, 1.8, 15); pLight1.position.set(3, 3, 4); scene.add(pLight1);
-        const pLight2 = new THREE.PointLight(0xa1683a, 1.2, 15); pLight2.position.set(-3, -2, 2); scene.add(pLight2);
+        const leftEar = new THREE.Mesh(earGeo, goldMat);
+        leftEar.position.set(-0.72, 0.74, 0);
+        leftEar.rotation.z = 0.45;
+        mickeyGroup.add(leftEar);
 
+        const rightEar = new THREE.Mesh(earGeo, goldMat);
+        rightEar.position.set(0.72, 0.74, 0);
+        rightEar.rotation.z = -0.45;
+        mickeyGroup.add(rightEar);
+
+        // Глазки и носик (чтобы при вращении было видно милое лицо)
+        const eyeGeo = new THREE.SphereGeometry(0.09, 16, 16);
+        eyeGeo.scale(0.8, 1.35, 0.6);
+        const leftEye = new THREE.Mesh(eyeGeo, darkGoldMat);
+        leftEye.position.set(-0.22, 0.12, 0.78);
+        mickeyGroup.add(leftEye);
+
+        const rightEye = new THREE.Mesh(eyeGeo, darkGoldMat);
+        rightEye.position.set(0.22, 0.12, 0.78);
+        mickeyGroup.add(rightEye);
+
+        const noseGeo = new THREE.SphereGeometry(0.14, 16, 16);
+        noseGeo.scale(1.1, 0.8, 0.9);
+        const noseMesh = new THREE.Mesh(noseGeo, darkGoldMat);
+        noseMesh.position.set(0, -0.06, 0.88);
+        mickeyGroup.add(noseMesh);
+
+        // Волшебное золотое орбитальное кольцо вокруг Микки
+        const ringGeo = new THREE.TorusGeometry(1.52, 0.025, 16, 64);
+        const ringMat = new THREE.MeshBasicMaterial({ color: 0xf5cba7, transparent: true, opacity: 0.55 });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        ringMesh.rotation.x = Math.PI / 2.3;
+        mickeyGroup.add(ringMesh);
+
+        // Освещение
+        scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+        const pLight1 = new THREE.PointLight(0xffe0b2, 2.2, 15);
+        pLight1.position.set(3, 4, 5);
+        scene.add(pLight1);
+        const pLight2 = new THREE.PointLight(0xd48c46, 1.5, 15);
+        pLight2.position.set(-4, -3, 3);
+        scene.add(pLight2);
+
+        // Интерактивное вращение мышкой + Прыжок при клике!
         let isDragging = false, prevX = 0, prevY = 0;
-        widgetBox.addEventListener('mousedown', (e) => { isDragging = true; prevX = e.clientX; prevY = e.clientY; });
+        let jumpBoost = 0, spinBoost = 0;
+
+        widgetBox.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            prevX = e.clientX;
+            prevY = e.clientY;
+        });
         window.addEventListener('mouseup', () => { isDragging = false; });
         window.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
-            group.rotation.y += (e.clientX - prevX) * 0.012;
-            group.rotation.x += (e.clientY - prevY) * 0.012;
-            prevX = e.clientX; prevY = e.clientY;
+            mickeyGroup.rotation.y += (e.clientX - prevX) * 0.014;
+            mickeyGroup.rotation.x += (e.clientY - prevY) * 0.014;
+            prevX = e.clientX;
+            prevY = e.clientY;
         });
 
-        (function animateSidebar3D() {
-            requestAnimationFrame(animateSidebar3D);
+        // При клике Микки радостно подпрыгивает и крутится!
+        widgetBox.addEventListener('click', () => {
+            jumpBoost = 0.28;
+            spinBoost = 0.22;
+        });
+
+        let clock = 0;
+        (function animateMickey3D() {
+            requestAnimationFrame(animateMickey3D);
+            clock += 0.035;
+
             if (!isDragging) {
-                outerMesh.rotation.y += 0.006; outerMesh.rotation.x += 0.003;
-                innerMesh.rotation.y -= 0.01; ringMesh.rotation.z += 0.008;
+                // Плавное покачивание и вращение
+                mickeyGroup.rotation.y += 0.008 + spinBoost;
+                mickeyGroup.rotation.x += (Math.sin(clock * 0.5) * 0.1 - mickeyGroup.rotation.x) * 0.05;
+                mickeyGroup.position.y = Math.sin(clock) * 0.12 + jumpBoost;
             }
+            ringMesh.rotation.z += 0.012;
+
+            // Плавное затухание прыжка
+            jumpBoost *= 0.92;
+            spinBoost *= 0.93;
+
             renderer.render(scene, camera);
         })();
     }
