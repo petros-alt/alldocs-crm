@@ -1740,7 +1740,10 @@
 
 
 
+
+
 (000) 000-0000
+
 
 
 
@@ -2428,7 +2431,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -7298,5 +7304,381 @@ window.renderMainCalendar = async function() {
         border-radius: 10px !important;
     }
 </style>
+    <!-- 💬 3D LUXURY MESSENGER UPGRADE: INBOX / SMS + QUICK REPLIES + COMPACT BUBBLES -->
+<style>
+    /* 1. Главный 3D-корпус мессенджера (#inboxWrapper) */
+    #inboxWrapper {
+        height: 680px !important;
+        border-radius: 26px !important;
+        border: 2px solid #ffffff !important;
+        border-bottom: 6px solid rgba(184, 115, 51, 0.32) !important;
+        box-shadow: 
+            0 25px 60px rgba(44, 26, 20, 0.12),
+            0 6px 18px rgba(44, 26, 20, 0.06),
+            inset 0 2px 4px #ffffff !important;
+        overflow: hidden !important;
+        background: #faf6f0 !important;
+    }
+
+    /* 2. Левая колонка контактов — Dark Espresso 3D Sidebar */
+    #inboxWrapper .inbox-sidebar {
+        width: 345px !important;
+        background: linear-gradient(165deg, #382317 0%, #1e110b 100%) !important;
+        border-right: 1.5px solid rgba(212, 140, 70, 0.35) !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    /* Поле поиска контактов */
+    #inboxWrapper .inbox-search-wrap {
+        padding: 18px 18px 12px 18px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+    #inboxSearch {
+        background: linear-gradient(180deg, #160c07 0%, #25150d 100%) !important;
+        color: #fff8f0 !important;
+        border: 1.5px solid rgba(212, 140, 70, 0.5) !important;
+        border-bottom: 3px solid #b87333 !important;
+        border-radius: 14px !important;
+        padding: 11px 15px !important;
+        font-size: 13.5px !important;
+        font-weight: 700 !important;
+        box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.6) !important;
+    }
+    #inboxSearch::placeholder {
+        color: rgba(245, 203, 167, 0.55) !important;
+    }
+
+    /* Строка сортировки (Message Sort в одну ровную линию без переноса!) */
+    #inboxWrapper .inbox-filters {
+        padding: 10px 18px !important;
+        background: rgba(0, 0, 0, 0.2) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        color: #f5cba7 !important;
+        font-size: 11.5px !important;
+        font-weight: 800 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.6px !important;
+        white-space: nowrap !important;
+        gap: 10px !important;
+    }
+    #inboxSort {
+        width: auto !important;
+        min-width: 130px !important;
+        padding: 6px 28px 6px 12px !important;
+        border-radius: 10px !important;
+        background-color: #24140c !important;
+        background-image: 
+            url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f5cba7' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"),
+            linear-gradient(180deg, #1b0f0a 0%, #2b1810 100%) !important;
+        background-repeat: no-repeat, no-repeat !important;
+        background-position: right 8px center, 0 0 !important;
+        background-size: 13px, 100% 100% !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(212, 140, 70, 0.45) !important;
+        font-size: 12px !important;
+        font-weight: 800 !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
+    }
+
+    /* Список карточек диалогов */
+    #inboxContactList {
+        padding: 12px !important;
+    }
+    #inboxWrapper .contact-item {
+        background: linear-gradient(145deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.03) 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-bottom: 3px solid rgba(0, 0, 0, 0.45) !important;
+        border-radius: 16px !important;
+        padding: 13px 15px !important;
+        margin-bottom: 8px !important;
+        transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    }
+    #inboxWrapper .contact-item:hover {
+        background: rgba(212, 140, 70, 0.18) !important;
+        border-color: rgba(245, 203, 167, 0.4) !important;
+        transform: translateY(-2px) translateX(3px) !important;
+    }
+    #inboxWrapper .contact-item.active {
+        background: linear-gradient(135deg, #c88240 0%, #8b552b 100%) !important;
+        border: 1px solid #f5cba7 !important;
+        border-bottom: 3.5px solid #4a2a12 !important;
+        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.35) !important;
+        transform: translateY(-2px) !important;
+    }
+    #inboxWrapper .contact-item .c-avatar {
+        background: linear-gradient(145deg, #2c1a14, #180d09) !important;
+        color: #f5cba7 !important;
+        border: 1.5px solid rgba(212, 140, 70, 0.5) !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3) !important;
+    }
+    #inboxWrapper .contact-item.active .c-avatar {
+        background: #ffffff !important;
+        color: #8b552b !important;
+        border-color: #ffffff !important;
+    }
+    #inboxWrapper .contact-item .c-name {
+        color: #fff8f0 !important;
+        font-size: 14px !important;
+    }
+    #inboxWrapper .contact-item .c-time {
+        color: #f5cba7 !important;
+        font-weight: 700 !important;
+    }
+    #inboxWrapper .contact-item.active .c-time {
+        color: #ffffff !important;
+    }
+    #inboxWrapper .contact-item .c-preview {
+        color: rgba(255, 248, 240, 0.68) !important;
+        font-size: 12.5px !important;
+    }
+    #inboxWrapper .contact-item.active .c-preview {
+        color: rgba(255, 255, 255, 0.92) !important;
+    }
+
+    /* 3. Правая область чата (#inboxChatArea) */
+    #inboxChatArea {
+        background: 
+            radial-gradient(circle at 85% 20%, rgba(212, 140, 70, 0.08) 0%, transparent 45%),
+            linear-gradient(180deg, #faf6f0 0%, #f1e9dd 100%) !important;
+    }
+
+    /* Шапка открытого диалога */
+    #inboxChatArea .chat-header {
+        background: linear-gradient(180deg, #ffffff 0%, #f7f2ea 100%) !important;
+        padding: 15px 24px !important;
+        border-bottom: 1.5px solid rgba(184, 115, 51, 0.22) !important;
+        box-shadow: 0 6px 18px rgba(44, 26, 20, 0.05) !important;
+        z-index: 10 !important;
+    }
+    .chat-hdr-btn {
+        background: linear-gradient(180deg, #ffffff 0%, #f3ece0 100%);
+        border: 1.5px solid rgba(184, 115, 51, 0.32);
+        border-bottom: 3px solid rgba(161, 104, 58, 0.45);
+        color: #2c1a14;
+        padding: 7px 14px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 10px rgba(44, 26, 20, 0.05);
+    }
+    .chat-hdr-btn:hover {
+        background: linear-gradient(135deg, #d48c46 0%, #8b552b 100%);
+        color: #ffffff;
+        border-color: #f5cba7;
+        transform: translateY(-2px);
+    }
+
+    /* 4. Пузырьки сообщений (Компактные, без лишних пустых отступов!) */
+    @keyframes msgPop3D {
+        from { opacity: 0; transform: translateY(8px) scale(0.97); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    #inboxChatArea .chat-messages {
+        padding: 22px 26px !important;
+        gap: 14px !important;
+    }
+    #inboxChatArea .chat-bubble {
+        max-width: 64% !important;
+        width: fit-content !important;
+        padding: 12px 16px !important;
+        border-radius: 20px !important;
+        font-size: 13.5px !important;
+        font-weight: 600 !important;
+        line-height: 1.48 !important;
+        animation: msgPop3D 0.25s ease forwards !important;
+        position: relative !important;
+    }
+    /* Исходящие сообщения (от нас) */
+    #inboxChatArea .chat-bubble.out {
+        background: linear-gradient(145deg, #b87b42 0%, #834f22 100%) !important;
+        color: #ffffff !important;
+        border: 1px solid rgba(255, 224, 178, 0.4) !important;
+        border-bottom: 3.5px solid #4d2c10 !important;
+        border-bottom-right-radius: 5px !important;
+        box-shadow: 
+            0 10px 24px rgba(139, 85, 43, 0.28),
+            inset 0 1px 2px rgba(255, 255, 255, 0.35) !important;
+    }
+    /* Входящие сообщения (от клиента) */
+    #inboxChatArea .chat-bubble.in {
+        background: linear-gradient(180deg, #ffffff 0%, #f8f3eb 100%) !important;
+        color: #24140e !important;
+        border: 1.5px solid rgba(184, 115, 51, 0.28) !important;
+        border-bottom: 3.5px solid rgba(161, 104, 58, 0.38) !important;
+        border-bottom-left-radius: 5px !important;
+        box-shadow: 
+            0 8px 20px rgba(44, 26, 20, 0.07),
+            inset 0 2px 2px #ffffff !important;
+    }
+    #inboxChatArea .chat-meta {
+        font-size: 10px !important;
+        font-weight: 700 !important;
+        margin-top: 6px !important;
+        opacity: 0.85 !important;
+    }
+
+    /* 5. Панель быстрых шаблонов (Quick Replies) и нижняя 3D-капсула отправки */
+    .quick-sms-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 22px 4px 22px;
+        background: linear-gradient(180deg, rgba(250, 246, 240, 0) 0%, #f5efe6 100%);
+        overflow-x: auto;
+    }
+    .quick-sms-chip {
+        background: linear-gradient(180deg, #ffffff 0%, #f3ece0 100%);
+        border: 1px solid rgba(184, 115, 51, 0.32);
+        border-bottom: 2.5px solid rgba(161, 104, 58, 0.45);
+        color: #4a352b;
+        padding: 6px 12px;
+        border-radius: 16px;
+        font-size: 11.5px;
+        font-weight: 800;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: all 0.18s ease;
+        box-shadow: 0 3px 8px rgba(44, 26, 20, 0.05);
+    }
+    .quick-sms-chip:hover {
+        background: linear-gradient(135deg, #d48c46 0%, #8b552b 100%);
+        color: #ffffff;
+        border-color: #f5cba7;
+        transform: translateY(-2px);
+    }
+
+    #inboxChatArea .chat-input-area {
+        background: #f5efe6 !important;
+        padding: 12px 22px 18px 22px !important;
+        border-top: 1px solid rgba(184, 115, 51, 0.18) !important;
+        gap: 12px !important;
+    }
+    #manualSmsInput {
+        background: #ffffff !important;
+        border: 1.5px solid rgba(184, 115, 51, 0.35) !important;
+        border-bottom: 3.5px solid rgba(161, 104, 58, 0.48) !important;
+        border-radius: 24px !important;
+        padding: 13px 20px !important;
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        color: #24140e !important;
+        box-shadow: 0 6px 16px rgba(44, 26, 20, 0.06), inset 0 2px 3px rgba(0,0,0,0.03) !important;
+    }
+    #inboxChatArea .chat-send-btn {
+        background: linear-gradient(145deg, #c88240 0%, #8b552b 100%) !important;
+        border: 1px solid #f5cba7 !important;
+        border-bottom: 4px solid #4a2a12 !important;
+        height: 48px !important;
+        padding: 0 26px !important;
+        border-radius: 24px !important;
+        font-size: 13.5px !important;
+        font-weight: 800 !important;
+        box-shadow: 0 10px 22px rgba(154, 91, 34, 0.35), inset 0 1px 2px rgba(255,255,255,0.4) !important;
+        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    }
+    #inboxChatArea .chat-send-btn:hover {
+        transform: translateY(-2px) scale(1.03) !important;
+        box-shadow: 0 14px 28px rgba(154, 91, 34, 0.48) !important;
+    }
+</style>
+
+<script>
+(function init3DMessengerUpgrade() {
+    // Быстрая вставка шаблона в строку ввода SMS
+    window.insertQuickSmsChip = function(text) {
+        const inp = document.getElementById('manualSmsInput');
+        if (!inp) return;
+        inp.value = text;
+        inp.focus();
+    };
+
+    function upgradeOpenChatFunction() {
+        if (typeof window.openChat !== 'function' || window.openChat._upgraded3D) return;
+
+        window.openChat = async function(phone, name, key) {
+            currentChatKey = key;
+            await window.loadMessages();
+            window.renderInboxList();
+
+            const area = document.getElementById('inboxChatArea');
+            let msgs = window.globalMessages || [];
+            const thread = msgs.filter(m => `${m.name}_${m.phone || 'NoPhone'}` === key).sort((a,b) => a.timestamp - b.timestamp);
+
+            const initial = name ? name.charAt(0).toUpperCase() : '👤';
+            const cleanPhone = (phone && phone !== 'No Phone' && phone !== 'null') ? phone : 'No Phone';
+            const safeName = (name || 'Client').replace(/'/g, "\\'");
+
+            let chatHtml = `
+                <div class="chat-header">
+                    <div style="display:flex; align-items:center; gap:14px;">
+                        <div style="width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg, #c88240, #8b552b); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:17px; box-shadow:0 4px 12px rgba(139,85,43,0.3); border:2px solid #fff;">
+                            ${initial}
+                        </div>
+                        <div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <h3 style="margin:0; font-size:17px; font-weight:800; color:#24140e;">${name}</h3>
+                                <span style="background:#dcfce7; color:#15803d; border:1px solid #86efac; font-size:10px; font-weight:800; padding:2px 8px; border-radius:10px;">● SMS Active</span>
+                            </div>
+                            <div style="font-size:12px; color:#6e5549; font-weight:700; margin-top:2px;">📞 ${cleanPhone}</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <button type="button" class="chat-hdr-btn" onclick="saveChatToJournal('${phone}', '${safeName}', '${key}', event)" title="Archive this SMS thread to Internal Call History">
+                            💾 Save to CRM
+                        </button>
+                        <button type="button" class="chat-hdr-btn" onclick="openCustomerDetails('${phone}', '${safeName}')" title="View Customer Appointments & Details">
+                            👤 Client Info
+                        </button>
+                    </div>
+                </div>
+                <div class="chat-messages">
+            `;
+
+            thread.forEach(m => {
+                const d = new Date(m.timestamp);
+                const timeStr = d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                const bubbleClass = m.direction === 'out' ? 'out' : 'in';
+                // Убираем лишние пустые переносы строк, чтобы короткие сообщения ("ok") были компактными!
+                const cleanText = (m.text || '').replace(/\n[ \t]*\n[ \t]*\n+/g, '\n\n').trim();
+                const statusIcon = m.direction === 'out' ? '✓✓ SMS Sent' : '📥 Received';
+                chatHtml += `<div class="chat-bubble ${bubbleClass}">${cleanText}<div class="chat-meta">${timeStr} • ${statusIcon}</div></div>`;
+            });
+
+            chatHtml += `
+                </div>
+                <div class="quick-sms-bar">
+                    <span style="font-size:10px; font-weight:800; color:#8b552b; text-transform:uppercase; letter-spacing:0.6px; margin-right:2px;">⚡ Quick:</span>
+                    <button type="button" class="quick-sms-chip" onclick="window.insertQuickSmsChip('Thank you! Your appointment with All Docs Consulting is confirmed. 👍')">👍 Confirmed</button>
+                    <button type="button" class="quick-sms-chip" onclick="window.insertQuickSmsChip('Please remember to bring your ID, passport, and all relevant documents to your appointment. 📄')">📄 Bring ID & Docs</button>
+                    <button type="button" class="quick-sms-chip" onclick="window.insertQuickSmsChip('Our office address is: 400 W Colorado St, Suite 202, Glendale, CA 91204. 📍')">📍 Office Address</button>
+                    <button type="button" class="quick-sms-chip" onclick="window.insertQuickSmsChip('Hello! We received your message and our specialist will call you back shortly. 📞')">📞 Will Call Shortly</button>
+                </div>
+                <div class="chat-input-area">
+                    <input type="text" id="manualSmsInput" placeholder="Type an SMS message to ${name}..." onkeypress="if(event.key === 'Enter') sendManualMessage('${phone}', '${safeName}', '${key}')">
+                    <button class="chat-send-btn" onclick="sendManualMessage('${phone}', '${safeName}', '${key}')">Send ✈️</button>
+                </div>
+            `;
+
+            area.innerHTML = chatHtml;
+            const msgsDiv = area.querySelector('.chat-messages');
+            if (msgsDiv) msgsDiv.scrollTop = msgsDiv.scrollHeight;
+            setTimeout(() => document.getElementById('manualSmsInput')?.focus(), 50);
+        };
+
+        window.openChat._upgraded3D = true;
+    }
+
+    upgradeOpenChatFunction();
+    setTimeout(upgradeOpenChatFunction, 400);
+    setTimeout(upgradeOpenChatFunction, 1200);
+})();
+</script>
 </body>
 </html>
