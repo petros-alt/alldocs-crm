@@ -5037,13 +5037,120 @@ window.renderMainCalendar = async function() {
         notifContainer.insertBefore(themeBtn, notifContainer.firstChild);
     }
 
-    // 2. ИНТЕРАКТИВНЫЙ 3D МИККИ МАУС В САЙДБАРЕ
+   // 2. ИНТЕРАКТИВНЫЙ 3D МИККИ МАУС В САЙДБАРЕ + 3D ГОЛОГРАФИЧЕСКИЕ КОМПЛИМЕНТЫ
     const sidebar = document.querySelector('.sidebar');
     const navMenu = document.querySelector('.nav-menu');
     if (sidebar && navMenu && typeof THREE !== 'undefined' && !document.getElementById('sidebar-3d-widget')) {
+        // Внедряем премиальные 3D-стили для парящего облачка цитат Микки
+        if (!document.getElementById('mickey-quote-styles')) {
+            const mqStyle = document.createElement('style');
+            mqStyle.id = 'mickey-quote-styles';
+            mqStyle.textContent = `
+                @keyframes mickeyBubbleIn {
+                    0% { opacity: 0; transform: perspective(900px) rotateY(-28deg) rotateX(10deg) translateX(-24px) scale(0.82); }
+                    65% { opacity: 1; transform: perspective(900px) rotateY(4deg) rotateX(-2deg) translateX(4px) scale(1.03); }
+                    100% { opacity: 1; transform: perspective(900px) rotateY(0deg) rotateX(0deg) translateX(0) scale(1); }
+                }
+                @keyframes mickeyBubbleOut {
+                    0% { opacity: 1; transform: perspective(900px) scale(1) translateX(0); }
+                    100% { opacity: 0; transform: perspective(900px) rotateY(18deg) translateX(15px) scale(0.88); }
+                }
+                @keyframes mickeyProgress {
+                    from { width: 100%; }
+                    to { width: 0%; }
+                }
+                @keyframes mickeySparkle {
+                    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+                    100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+                }
+                .mickey-3d-speech {
+                    position: fixed;
+                    left: 258px;
+                    top: 175px;
+                    width: 295px;
+                    padding: 16px 20px 18px 20px;
+                    background: linear-gradient(145deg, rgba(36, 20, 14, 0.96) 0%, rgba(20, 11, 8, 0.98) 100%);
+                    backdrop-filter: blur(24px);
+                    -webkit-backdrop-filter: blur(24px);
+                    border: 1.5px solid rgba(212, 140, 70, 0.65);
+                    border-radius: 22px;
+                    box-shadow: 
+                        0 25px 60px rgba(0, 0, 0, 0.55),
+                        0 0 28px rgba(212, 140, 70, 0.35),
+                        inset 0 1.5px 2px rgba(255, 255, 255, 0.25);
+                    color: #fff8f0;
+                    z-index: 99999;
+                    pointer-events: none;
+                    transform-origin: left center;
+                    animation: mickeyBubbleIn 0.48s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+                    overflow: hidden;
+                }
+                .mickey-3d-speech.hiding {
+                    animation: mickeyBubbleOut 0.32s ease forwards;
+                }
+                .mickey-3d-speech::before {
+                    content: '';
+                    position: absolute;
+                    top: 0; left: -120%; width: 65%; height: 100%;
+                    background: linear-gradient(90deg, transparent, rgba(255, 224, 178, 0.18), transparent);
+                    transform: skewX(-25deg);
+                    animation: shine 2.8s infinite;
+                }
+                .mickey-speech-header {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 10.5px;
+                    font-weight: 800;
+                    text-transform: uppercase;
+                    letter-spacing: 1.4px;
+                    color: #f5cba7;
+                    margin-bottom: 7px;
+                }
+                .mickey-speech-badge {
+                    background: linear-gradient(135deg, #d48c46, #8b552b);
+                    color: #fff;
+                    padding: 2px 8px;
+                    border-radius: 10px;
+                    font-size: 9.5px;
+                    box-shadow: 0 2px 8px rgba(212, 140, 70, 0.4);
+                }
+                .mickey-speech-text {
+                    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+                    font-size: 14.5px;
+                    font-weight: 700;
+                    line-height: 1.45;
+                    color: #ffffff;
+                    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+                    min-height: 22px;
+                }
+                .mickey-speech-bar {
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    height: 3.5px;
+                    background: linear-gradient(90deg, #ffd8a8, #d48c46, #ff9800);
+                    box-shadow: 0 0 10px #d48c46;
+                    animation: mickeyProgress 4.5s linear forwards;
+                }
+                .mickey-sparkle-dot {
+                    position: fixed;
+                    width: 7px;
+                    height: 7px;
+                    border-radius: 50%;
+                    background: radial-gradient(circle, #ffffff 0%, #ffd54f 60%, #d48c46 100%);
+                    box-shadow: 0 0 10px #ffd54f;
+                    pointer-events: none;
+                    z-index: 100000;
+                    animation: mickeySparkle 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+            `;
+            document.head.appendChild(mqStyle);
+        }
+
         const widgetBox = document.createElement('div');
         widgetBox.id = 'sidebar-3d-widget';
-        widgetBox.title = 'Click or drag Mickey!';
+        widgetBox.title = 'Click or spin Mickey for a positivity boost!';
         widgetBox.innerHTML = '<div class="widget-3d-label">✨ 3D Mickey Assistant</div>';
         sidebar.insertBefore(widgetBox, navMenu);
 
@@ -5111,16 +5218,193 @@ window.renderMainCalendar = async function() {
         pLight2.position.set(-4, -3, 3);
         scene.add(pLight2);
 
-        let isDragging = false, prevX = 0, prevY = 0, jumpBoost = 0, spinBoost = 0;
-        widgetBox.addEventListener('mousedown', (e) => { isDragging = true; prevX = e.clientX; prevY = e.clientY; });
+        // === БАЗА ИЗ 55 ПОЗИТИВНЫХ ФРАЗ НА АНГЛИЙСКОМ (С КОЛОДОЙ БЕЗ ПОВТОРОВ) ===
+        const rawQuotes = [
+            "🌟 You are the best employee on Earth! Keep shining!",
+            "🚀 Have an amazing day! You're crushing it today!",
+            "👑 Absolute legend! This office runs on your magic!",
+            "✨ Your positive energy makes every client smile!",
+            "🏆 Employee of the Universe right here! You rock!",
+            "💎 Pure excellence! Every call you take is gold!",
+            "🔥 You're on fire today! Nothing can stop you!",
+            "🌈 Wishing you the happiest, smoothest shift ever!",
+            "⚡ Superstar alert! You handle everything like a pro!",
+            "🎉 You're doing a phenomenal job! Proud of you!",
+            "☀️ Your smile can be heard through the phone!",
+            "💪 Unstoppable! You make the hardest tasks look easy!",
+            "🌟 World-class professionalism! You're simply the best!",
+            "🍀 May your coffee be strong and your calls be easy!",
+            "🎯 10 out of 10! You're the heartbeat of All Docs!",
+            "✨ Magic happens when you're at the desk!",
+            "🥇 Gold medal for customer care goes straight to you!",
+            "💫 You're not just good — you're extraordinary!",
+            "🚀 Sky is the limit for someone as talented as you!",
+            "🌻 Have a wonderful, stress-free, and joyful day!",
+            "💎 Certified MVP of the team! Keep being awesome!",
+            "🌟 Every client is lucky to speak with you today!",
+            "🔥 Top-tier focus, top-tier kindness! You're a star!",
+            "✨ Sending you a giant wave of good vibes and luck!",
+            "👑 Royalty at work! You set the gold standard here!",
+            "🎊 Another call, another victory! You're amazing!",
+            "☀️ You bring sunshine into this office every single day!",
+            "⚡ Fast, smart, and brilliant — nobody does it like you!",
+            "🏆 If there were an Oscar for best operator, it's yours!",
+            "💫 Believe in yourself — you're doing miracles today!",
+            "🌟 Your dedication is inspiring! Have a blessed day!",
+            "🚀 High five from Mickey! You're an absolute rockstar!",
+            "💎 Smooth routing, sharp notes — pure perfection!",
+            "🌈 Good things are coming your way today! Keep smiling!",
+            "🔥 You turn busy days into masterpieces!",
+            "✨ Simply irreplaceable! The team loves having you!",
+            "🥇 Number One on the planet! Keep up the great spirit!",
+            "🌻 Take a deep breath — you're handling everything brilliantly!",
+            "⚡ Superpower unlocked: making every client feel valued!",
+            "👑 Hats off to the hardest-working pro in the building!",
+            "🎉 Today is YOUR day to shine brighter than ever!",
+            "💫 Effortless grace and 100% professionalism!",
+            "🌟 You're a magnet for success and good news today!",
+            "🚀 Mickey says: You deserve all the applause today!",
+            "💎 Precision, warmth, and speed — you've got it all!",
+            "☀️ May the rest of your shift be super easy and fun!",
+            "🏆 Champion mindset! You're making a real difference!",
+            "✨ Keep that awesome energy flowing — you're a gem!",
+            "🔥 Boss-level multitasking! How do you do it so well?!",
+            "🌟 Thank you for being the brightest part of our team!",
+            "🍀 Sending you 100% luck and zero difficult calls today!",
+            "👑 Legend status: CONFIRMED! Have a fantastic day!",
+            "⚡ Your work ethic is out of this world!",
+            "🎉 Smile! You're doing ten times better than you think!",
+            "💎 Pure gold, just like me! You're the best!"
+        ];
+
+        let shuffledDeck = [];
+        function getNextUniqueQuote() {
+            if (shuffledDeck.length === 0) {
+                shuffledDeck = [...rawQuotes];
+                for (let i = shuffledDeck.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffledDeck[i], shuffledDeck[j]] = [shuffledDeck[j], shuffledDeck[i]];
+                }
+            }
+            let quote = shuffledDeck.pop();
+            const staffFull = localStorage.getItem('loggedInStaff') || '';
+            const firstName = staffFull.split(' ')[0];
+            // В 30% случаев персонализируем комплимент именем сотрудника!
+            if (firstName && Math.random() < 0.32) {
+                quote = quote.replace(/^(🌟|🚀|👑|✨|🏆|💎|🔥|🌈|⚡|🎉|☀️|💪|🍀|🎯|🥇|💫|🌻|🎊)\s*/, `$1 ${firstName}, `);
+            }
+            return quote;
+        }
+
+        let activeBubble = null;
+        let bubbleTimer = null;
+        let typeTimer = null;
+        let lastQuoteTime = 0;
+
+        function spawnGoldenSparkles(x, y) {
+            for (let i = 0; i < 12; i++) {
+                const sp = document.createElement('div');
+                sp.className = 'mickey-sparkle-dot';
+                const angle = (Math.PI * 2 * i) / 12 + (Math.random() - 0.5) * 0.4;
+                const dist = 35 + Math.random() * 55;
+                sp.style.left = x + 'px';
+                sp.style.top = y + 'px';
+                sp.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+                sp.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+                document.body.appendChild(sp);
+                setTimeout(() => sp.remove(), 750);
+            }
+        }
+
+        function triggerMickeyQuote(forceNow = false) {
+            const now = Date.now();
+            // При вращении не спамим чаще чем раз в 2.2 секунды, а при клике — мгновенно!
+            if (!forceNow && now - lastQuoteTime < 2200) return;
+            lastQuoteTime = now;
+
+            if (activeBubble) {
+                activeBubble.remove();
+                clearTimeout(bubbleTimer);
+                clearInterval(typeTimer);
+            }
+
+            const rect = widgetBox.getBoundingClientRect();
+            spawnGoldenSparkles(rect.right - 10, rect.top + rect.height / 2);
+
+            // Делаем золотую вспышку света на самом 3D-Микки
+            pLight1.intensity = 4.5;
+            setTimeout(() => { pLight1.intensity = 2.2; }, 350);
+
+            const bubble = document.createElement('div');
+            bubble.className = 'mickey-3d-speech';
+            bubble.style.top = Math.max(20, rect.top + 15) + 'px';
+            bubble.style.left = (rect.right + 14) + 'px';
+
+            const fullText = getNextUniqueQuote();
+            bubble.innerHTML = `
+                <div class="mickey-speech-header">
+                    <span>🐭 Mickey's Boost</span>
+                    <span class="mickey-speech-badge">3D LIVE</span>
+                </div>
+                <div class="mickey-speech-text" id="mickeyLiveText"></div>
+                <div class="mickey-speech-bar"></div>
+            `;
+            document.body.appendChild(bubble);
+            activeBubble = bubble;
+
+            // Динамический эффект быстрой печати букв
+            const textEl = bubble.querySelector('#mickeyLiveText');
+            const chars = Array.from(fullText);
+            let idx = 0;
+            typeTimer = setInterval(() => {
+                if (idx < chars.length) {
+                    textEl.textContent += chars[idx];
+                    idx++;
+                } else {
+                    clearInterval(typeTimer);
+                }
+            }, 14);
+
+            bubbleTimer = setTimeout(() => {
+                if (activeBubble === bubble) {
+                    bubble.classList.add('hiding');
+                    setTimeout(() => { if (bubble.parentNode) bubble.remove(); }, 320);
+                }
+            }, 4500);
+        }
+
+        let isDragging = false, prevX = 0, prevY = 0, dragDistance = 0, jumpBoost = 0, spinBoost = 0;
+
+        widgetBox.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            dragDistance = 0;
+            prevX = e.clientX;
+            prevY = e.clientY;
+        });
         window.addEventListener('mouseup', () => { isDragging = false; });
         window.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
-            mickeyGroup.rotation.y += (e.clientX - prevX) * 0.014;
-            mickeyGroup.rotation.x += (e.clientY - prevY) * 0.014;
-            prevX = e.clientX; prevY = e.clientY;
+            const dx = e.clientX - prevX;
+            const dy = e.clientY - prevY;
+            dragDistance += Math.abs(dx) + Math.abs(dy);
+
+            mickeyGroup.rotation.y += dx * 0.015;
+            mickeyGroup.rotation.x += dy * 0.015;
+            prevX = e.clientX;
+            prevY = e.clientY;
+
+            // Если оператор покрутил Микки мышкой — выдаем позитивную фразу!
+            if (dragDistance > 42) {
+                triggerMickeyQuote(false);
+                dragDistance = 0;
+            }
         });
-        widgetBox.addEventListener('click', () => { jumpBoost = 0.28; spinBoost = 0.22; });
+
+        widgetBox.addEventListener('click', () => {
+            jumpBoost = 0.28;
+            spinBoost = 0.22;
+            triggerMickeyQuote(true);
+        });
 
         let clock = 0;
         (function animateMickey3D() {
@@ -5132,11 +5416,11 @@ window.renderMainCalendar = async function() {
                 mickeyGroup.position.y = Math.sin(clock) * 0.12 + jumpBoost;
             }
             ringMesh.rotation.z += 0.012;
-            jumpBoost *= 0.92; spinBoost *= 0.93;
+            jumpBoost *= 0.92;
+            spinBoost *= 0.93;
             renderer.render(scene, camera);
         })();
     }
-
    // 3. ULTRA-HD 3D ПЛАНЕТЫ 2026 (ПРОЦЕДУРНЫЕ ТЕКСТУРЫ, КРАТЕРЫ, ШЕЙДЕР АТМОСФЕРЫ И КОЛЬЦА)
     if (typeof THREE !== 'undefined' && !document.getElementById('webgl-bg-canvas')) {
         const bgCanvas = document.createElement('canvas');
