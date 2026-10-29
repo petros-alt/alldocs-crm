@@ -1736,7 +1736,10 @@
 
 
 
+
+
 (000) 000-0000
+
 
 
 
@@ -2414,7 +2417,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -2441,7 +2447,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -5965,7 +5974,7 @@ window.renderMainCalendar = async function() {
     }
 })();
 </script>
-<!-- 👑 ЕДИНЫЙ БЛОК: 3D BOOK APPOINTMENT + НОВАЯ ПРАВАЯ КАРТОЧКА РЕЗЮМЕ + НАРЕЗКА СЛОТОВ AM/PM -->
+<!-- 👑 ЕДИНЫЙ БЛОК: 3D BOOK APPOINTMENT + ВОЗДУШНОЕ ДИНАМИЧНОЕ ПРЕВЬЮ В СТИЛЕ САЙТА + СЛОТЫ AM/PM -->
 <style>
     /* 1. Главное полотно модального окна */
     #apptModal .modal-content.large {
@@ -6019,21 +6028,21 @@ window.renderMainCalendar = async function() {
         z-index: 20 !important;
     }
 
-    /* 3. Все 3 колонки в едином ровном 3D-стиле (БЕЗ кривого телефона!) */
+    /* 3. Все 3 колонки в едином воздушном 3D-стиле сайта */
     #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child,
     #apptModal .modal-content.large > div[style*="display: flex"] > div:nth-child(2),
     #apptModal .phone-preview-wrapper {
-        background: linear-gradient(165deg, #ffffff 0%, #f5efe6 100%) !important;
+        background: linear-gradient(165deg, #ffffff 0%, #f6f0e6 100%) !important;
         padding: 58px 24px 24px 24px !important;
         border-radius: 28px !important;
         border: 2px solid #ffffff !important;
         border-bottom: 6px solid rgba(184, 115, 51, 0.32) !important;
-        box-shadow: 0 22px 48px rgba(44, 26, 20, 0.09), inset 0 2px 4px #ffffff !important;
+        box-shadow: 0 22px 48px rgba(44, 26, 20, 0.08), inset 0 2px 4px #ffffff !important;
         position: relative !important;
-        transform: none !important; /* Убираем кривой наклон! */
+        transform: none !important;
     }
 
-    /* Бейджи STEP 01, STEP 02, STEP 03 сверху каждой из трех колонок */
+    /* Верхние бейджи STEP 01, STEP 02, STEP 03 */
     #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child::before,
     #apptModal .modal-content.large > div[style*="display: flex"] > div:nth-child(2)::before,
     #apptModal .phone-preview-wrapper::before {
@@ -6062,13 +6071,13 @@ window.renderMainCalendar = async function() {
         content: '🗓️ STEP 02 — DATE & TIME SLOTS';
     }
     #apptModal .phone-preview-wrapper::before {
-        content: '🎫 STEP 03 — SUMMARY & SMS DISPATCH';
+        content: '✨ STEP 03 — LIVE PREVIEW';
     }
 
-    /* 4. ПРАВАЯ КОЛОНКА: Превращаем старый телефон в современную 3D-панель резюме и SMS */
+    /* 4. ПРАВАЯ КОЛОНКА: Простой, воздушный и динамичный 3D-дизайн в цветах сайта */
     #apptModal .phone-preview-wrapper {
         flex: 1.15 !important;
-        min-width: 280px !important;
+        min-width: 285px !important;
         width: auto !important;
         align-items: stretch !important;
     }
@@ -6076,107 +6085,175 @@ window.renderMainCalendar = async function() {
         background: transparent !important;
         border-radius: 0 !important;
         overflow: visible !important;
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100% !important;
     }
-    #apptModal .phone-header {
-        display: none !important; /* Прячем старую шапку телефона */
-    }
+    #apptModal .phone-header { display: none !important; }
     #apptModal .phone-body {
         background: transparent !important;
         padding: 0 !important;
         overflow: visible !important;
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 !important;
     }
 
-    /* Визуальный 3D-билет встречи над текстом SMS */
-    .exec-summary-card {
-        background: linear-gradient(135deg, #24140e 0%, #3e2723 100%);
-        border-radius: 20px;
-        padding: 16px 18px;
-        color: #ffffff;
-        margin-bottom: 16px;
-        border: 1px solid rgba(245, 203, 167, 0.35);
-        border-bottom: 4px solid #140a07;
-        box-shadow: 0 14px 28px rgba(36, 20, 14, 0.22), inset 0 1px 2px rgba(255,255,255,0.18);
+    /* Анимация динамичного отклика при смене времени/даты */
+    @keyframes dynamicPulse3D {
+        0% { transform: scale(1); }
+        40% { transform: scale(1.03) translateY(-2px); box-shadow: 0 14px 28px rgba(184, 115, 51, 0.25); }
+        100% { transform: scale(1); }
     }
-    .exec-summary-top {
+    .pulse-on-change {
+        animation: dynamicPulse3D 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Верхняя светлая 3D-капсула с отрывным календариком и временем */
+    .clean-Booking-hero {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        border-bottom: 1px dashed rgba(245, 203, 167, 0.25);
-        padding-bottom: 10px;
-        margin-bottom: 12px;
+        gap: 14px;
+        background: linear-gradient(145deg, #ffffff 0%, #faf4eb 100%);
+        border: 1.5px solid rgba(184, 115, 51, 0.28);
+        border-bottom: 4px solid rgba(161, 104, 58, 0.4);
+        border-radius: 22px;
+        padding: 14px 16px;
+        margin-bottom: 16px;
+        box-shadow: 0 10px 24px rgba(44, 26, 20, 0.06), inset 0 2px 2px #ffffff;
+        transition: all 0.25s ease;
     }
-    .exec-summary-client {
+
+    /* 3D-иконка календаря слева (Месяц + Число) */
+    .clean-cal-badge {
+        width: 56px;
+        height: 60px;
+        border-radius: 16px;
+        background: linear-gradient(180deg, #ffffff 0%, #f3ece2 100%);
+        border: 1.5px solid rgba(184, 115, 51, 0.35);
+        border-bottom: 3.5px solid #9a5b22;
+        box-shadow: 0 6px 14px rgba(44, 26, 20, 0.1), inset 0 1px 1px #ffffff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+    .clean-cal-month {
+        width: 100%;
+        background: linear-gradient(135deg, #c88240 0%, #8b552b 100%);
+        color: #ffffff;
+        font-size: 10px;
+        font-weight: 900;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 3px 0;
+    }
+    .clean-cal-day {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 22px;
+        font-weight: 800;
+        color: #2c1a14;
+        line-height: 1.2;
+        margin-top: 2px;
+    }
+
+    /* Информация справа от календарика */
+    .clean-hero-info {
+        flex: 1;
+        min-width: 0;
+    }
+    .clean-hero-client {
         font-size: 15.5px;
         font-weight: 800;
+        color: #2c1a14;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 5px;
+    }
+    .clean-hero-time-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: linear-gradient(135deg, #2c1a14 0%, #4e342e 100%);
         color: #f5cba7;
-    }
-    .exec-summary-badge {
-        background: rgba(16, 185, 129, 0.2);
-        color: #6ee7b7;
-        border: 1px solid rgba(110, 231, 183, 0.4);
-        padding: 3px 9px;
+        padding: 4px 11px;
         border-radius: 12px;
-        font-size: 10px;
+        font-size: 12px;
         font-weight: 800;
-        text-transform: uppercase;
+        box-shadow: 0 4px 10px rgba(44, 26, 20, 0.2);
     }
-    .exec-summary-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-    }
-    .exec-summary-item {
-        background: rgba(255, 255, 255, 0.07);
-        padding: 8px 11px;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    .exec-summary-lbl {
-        font-size: 9.5px;
-        text-transform: uppercase;
-        letter-spacing: 0.7px;
-        color: #d48c46;
-        font-weight: 800;
-    }
-    .exec-summary-val {
-        font-size: 12.5px;
+    .clean-hero-meta {
+        font-size: 11.5px;
         font-weight: 700;
-        color: #ffffff;
-        margin-top: 2px;
+        color: #6e5549;
+        margin-top: 6px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
-    /* Красивое светлое 3D-окошко самого SMS-сообщения */
-    .sms-box-label {
-        font-size: 11px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.7px;
-        color: #5c4338;
-        margin-bottom: 8px;
+    /* Заголовок над блоком SMS */
+    .clean-sms-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        margin-bottom: 8px;
+        padding: 0 4px;
     }
-    #smsPreviewBubble {
-        background: linear-gradient(180deg, #f3ede2 0%, #ffffff 100%) !important;
-        color: #24140e !important;
-        border-radius: 18px !important;
-        padding: 16px 18px !important;
-        font-size: 12.5px !important;
-        font-weight: 600 !important;
-        line-height: 1.5 !important;
-        border: 1.5px solid rgba(184, 115, 51, 0.28) !important;
-        border-left: 5px solid #10b981 !important;
-        box-shadow: inset 0 2px 5px rgba(44, 26, 20, 0.06), 0 6px 16px rgba(44, 26, 20, 0.04) !important;
-        max-height: 290px !important;
-        overflow-y: auto !important;
-        white-space: pre-wrap !important;
+    .clean-sms-title {
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        color: #6e5549;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .live-dot {
+        width: 8px;
+        height: 8px;
+        background: #10b981;
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 8px #10b981;
+    }
+    .clean-sms-lang-tag {
+        background: rgba(184, 115, 51, 0.14);
+        color: #8b552b;
+        border: 1px solid rgba(184, 115, 51, 0.3);
+        padding: 2px 9px;
+        border-radius: 10px;
+        font-size: 10.5px;
+        font-weight: 800;
     }
 
-    /* 5. Поля, Селекты, Календарь и Переключатели */
+    /* Само окно текста SMS — простое, светлое, в фирменном 3D-стиле сайта */
+    #smsPreviewBubble {
+        background: linear-gradient(180deg, #f5efe6 0%, #ffffff 100%) !important;
+        color: #2c1a14 !important;
+        border-radius: 20px !important;
+        padding: 18px 20px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        line-height: 1.55 !important;
+        border: 1.5px solid rgba(184, 115, 51, 0.28) !important;
+        border-left: 5px solid var(--accent-color) !important;
+        box-shadow: 
+            inset 0 2px 6px rgba(44, 26, 20, 0.05),
+            0 10px 24px rgba(44, 26, 20, 0.05) !important;
+        flex: 1 !important;
+        max-height: 330px !important;
+        overflow-y: auto !important;
+        white-space: pre-wrap !important;
+        transition: all 0.25s ease !important;
+    }
+
+    /* 5. Остальные элементы (Поля, Селекты, Календарь и Слоты в 1 строчку) */
     #apptModal label {
         font-size: 11.5px !important;
         font-weight: 800 !important;
@@ -6251,7 +6328,7 @@ window.renderMainCalendar = async function() {
         font-weight: 900 !important;
     }
 
-    /* Идеальная сетка переключателей ENG / RUSS / ARM */
+    /* Сетка переключателей ENG / RUSS / ARM */
     #remTypeControl {
         display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 6px !important; padding: 6px !important;
         background: linear-gradient(180deg, #e5dccf 0%, #f1ebe0 100%) !important; border-radius: 16px !important;
@@ -6273,7 +6350,7 @@ window.renderMainCalendar = async function() {
         background: linear-gradient(145deg, #d48c46 0%, #8b552b 100%) !important; color: #ffffff !important;
     }
 
-    /* Кнопка и чипсы слотов AM/PM */
+    /* Кнопка и чипсы слотов AM/PM (В ОДНУ СТРОЧКУ БЕЗ ПЕРЕНОСА!) */
     button[onclick="checkStaffAvailability()"] {
         outline: none !important;
         background: linear-gradient(145deg, #10b981 0%, #047857 100%) !important;
@@ -6289,7 +6366,7 @@ window.renderMainCalendar = async function() {
     #availabilityBox {
         background: linear-gradient(180deg, #e8dfd1 0%, #f4efe6 100%) !important;
         border-radius: 18px !important;
-        padding: 14px !important;
+        padding: 12px !important;
         border: 1.5px solid rgba(161, 104, 58, 0.28) !important;
         max-height: 230px !important;
         overflow-y: auto !important;
@@ -6299,10 +6376,11 @@ window.renderMainCalendar = async function() {
         border: 1.5px solid #86efac;
         border-bottom: 3.5px solid #16a34a;
         color: #14532d;
-        padding: 9px 6px;
+        padding: 9px 4px;
         border-radius: 12px;
-        font-size: 11.5px;
+        font-size: 10.8px;
         font-weight: 800;
+        white-space: nowrap;
         cursor: pointer;
         text-align: center;
         box-shadow: 0 4px 10px rgba(22, 101, 52, 0.08);
@@ -6324,48 +6402,39 @@ window.renderMainCalendar = async function() {
 </style>
 
 <script>
-(function initExecutiveApptAndUSSlots() {
-    // 1. Встраиваем 3D-карточку резюме встречи (Live Summary Ticket) в правую колонку над SMS
+(function initCleanDynamicPreviewAndSlots() {
+    // 1. Создаем легкий, воздушный и динамичный 3D-виджет в правой колонке
     const phoneBody = document.querySelector('#apptModal .phone-body');
     const smsBubble = document.getElementById('smsPreviewBubble');
-    if (phoneBody && smsBubble && !document.getElementById('execSummaryCard')) {
-        const summaryCard = document.createElement('div');
-        summaryCard.id = 'execSummaryCard';
-        summaryCard.className = 'exec-summary-card';
-        summaryCard.innerHTML = `
-            <div class="exec-summary-top">
-                <span class="exec-summary-client" id="execSumClient">👤 Client Name</span>
-                <span class="exec-summary-badge">⚡ Ready</span>
+    if (phoneBody && smsBubble && !document.getElementById('cleanBookingHero')) {
+        const hero = document.createElement('div');
+        hero.id = 'cleanBookingHero';
+        hero.className = 'clean-Booking-hero';
+        hero.innerHTML = `
+            <div class="clean-cal-badge" id="cleanCalBadge">
+                <div class="clean-cal-month" id="cleanCalMonth">OCT</div>
+                <div class="clean-cal-day" id="cleanCalDay">29</div>
             </div>
-            <div class="exec-summary-grid">
-                <div class="exec-summary-item">
-                    <div class="exec-summary-lbl">📅 Date</div>
-                    <div class="exec-summary-val" id="execSumDate">---</div>
-                </div>
-                <div class="exec-summary-item">
-                    <div class="exec-summary-lbl">⏰ Time & Duration</div>
-                    <div class="exec-summary-val" id="execSumTime">---</div>
-                </div>
-                <div class="exec-summary-item">
-                    <div class="exec-summary-lbl">👨‍💼 Specialist</div>
-                    <div class="exec-summary-val" id="execSumStaff">---</div>
-                </div>
-                <div class="exec-summary-item">
-                    <div class="exec-summary-lbl">💼 Service</div>
-                    <div class="exec-summary-val" id="execSumService">---</div>
-                </div>
+            <div class="clean-hero-info">
+                <div class="clean-hero-client" id="cleanHeroClient">Client Name</div>
+                <div class="clean-hero-time-pill" id="cleanHeroTime">⏰ 12:00 PM • 1h</div>
+                <div class="clean-hero-meta" id="cleanHeroMeta">👨‍💼 Staff • Service</div>
             </div>
         `;
-        const smsLabel = document.createElement('div');
-        smsLabel.className = 'sms-box-label';
-        smsLabel.innerHTML = `<span>💬 Outgoing SMS Message</span><span style="color:#059669;">✓ Auto-Formatted</span>`;
 
-        phoneBody.insertBefore(summaryCard, smsBubble);
-        phoneBody.insertBefore(smsLabel, smsBubble);
+        const smsHeader = document.createElement('div');
+        smsHeader.className = 'clean-sms-header';
+        smsHeader.innerHTML = `
+            <span class="clean-sms-title"><span class="live-dot"></span> SMS Message Preview</span>
+            <span class="clean-sms-lang-tag" id="cleanSmsLangTag">🇺🇸 ENG</span>
+        `;
+
+        phoneBody.insertBefore(hero, smsBubble);
+        phoneBody.insertBefore(smsHeader, smsBubble);
     }
 
-    // Функция очистки огромных пробелов в SMS и обновления 3D-карточки резюме справа
-    function cleanSmsAndRefreshSummary() {
+    let lastSignature = '';
+    function refreshCleanPreview() {
         if (typeof smsTemplates !== 'undefined') {
             Object.keys(smsTemplates).forEach(lang => {
                 smsTemplates[lang] = smsTemplates[lang].replace(/\n[ \t]*\n[ \t]*\n+/g, '\n\n');
@@ -6375,26 +6444,48 @@ window.renderMainCalendar = async function() {
             smsBubble.textContent = smsBubble.textContent.replace(/\n[ \t]*\n[ \t]*\n+/g, '\n\n');
         }
 
-        // Обновляем плашки резюме встречи
-        const cName = document.getElementById('modalApptName')?.value || 'New Client';
+        const cName = document.getElementById('modalApptName')?.value.trim() || 'New Client';
         const staff = document.getElementById('modalApptStaff')?.value || 'Staff';
         const rawSvc = document.getElementById('modalApptService')?.value || '';
         const cleanSvc = rawSvc.replace(/^\d+\s*-\s*/, '').trim();
-        const dur = document.getElementById('aDuration')?.value || '';
+        const dur = (document.getElementById('aDuration')?.value || '1 hour')
+            .replace(' minutes', 'm').replace(' minute', 'm').replace(' hours', 'h').replace(' hour', 'h');
         const h = document.getElementById('aTimeHour')?.value || '12';
         const m = document.getElementById('aTimeMinute')?.value || '00';
         const ap = document.getElementById('aTimeAMPM')?.value || 'PM';
-        const myTxt = document.getElementById('aMonthYear')?.textContent || '';
-        const selDay = document.querySelector('#aCalDates .cal-btn.selected')?.textContent || '';
+        const myTxt = document.getElementById('aMonthYear')?.textContent.trim() || 'Oct 2026';
+        const selDay = document.querySelector('#aCalDates .cal-btn.selected')?.textContent.trim() || new Date().getDate();
 
-        if (document.getElementById('execSumClient')) document.getElementById('execSumClient').textContent = '👤 ' + cName;
-        if (document.getElementById('execSumDate')) document.getElementById('execSumDate').textContent = selDay ? `${myTxt.split(' ')[0]} ${selDay}, ${myTxt.split(' ')[1] || ''}` : 'Today';
-        if (document.getElementById('execSumTime')) document.getElementById('execSumTime').textContent = `${h}:${m} ${ap} (${dur.replace(' minutes','m').replace(' hour','h')})`;
-        if (document.getElementById('execSumStaff')) document.getElementById('execSumStaff').textContent = staff;
-        if (document.getElementById('execSumService')) document.getElementById('execSumService').textContent = cleanSvc;
+        const monthShort = myTxt.split(' ')[0] || 'OCT';
+
+        if (document.getElementById('cleanCalMonth')) document.getElementById('cleanCalMonth').textContent = monthShort;
+        if (document.getElementById('cleanCalDay')) document.getElementById('cleanCalDay').textContent = selDay;
+        if (document.getElementById('cleanHeroClient')) document.getElementById('cleanHeroClient').textContent = cName;
+        if (document.getElementById('cleanHeroTime')) document.getElementById('cleanHeroTime').textContent = `⏰ ${h}:${m} ${ap} • ${dur}`;
+        if (document.getElementById('cleanHeroMeta')) document.getElementById('cleanHeroMeta').textContent = `${staff.split(' ')[0]} • ${cleanSvc}`;
+
+        // Индикатор выбранного языка SMS
+        const activeLangBtn = document.querySelector('#langControl .seg-btn.active-lang');
+        const langCode = activeLangBtn ? activeLangBtn.textContent.trim() : 'ENG';
+        const flagMap = { 'ENG': '🇺🇸 ENG', 'RUSS': '🇷🇺 RUSS', 'ARM': '🇦🇲 ARM' };
+        if (document.getElementById('cleanSmsLangTag')) {
+            document.getElementById('cleanSmsLangTag').textContent = flagMap[langCode] || langCode;
+        }
+
+        // Динамический 3D-импульс при любом изменении данных
+        const currentSig = `${cName}_${monthShort}_${selDay}_${h}_${m}_${ap}_${dur}_${staff}_${cleanSvc}_${langCode}`;
+        if (lastSignature && lastSignature !== currentSig) {
+            const heroEl = document.getElementById('cleanBookingHero');
+            if (heroEl) {
+                heroEl.classList.remove('pulse-on-change');
+                void heroEl.offsetWidth;
+                heroEl.classList.add('pulse-on-change');
+            }
+        }
+        lastSignature = currentSig;
     }
 
-    // 2. Американский формат времени (AM/PM) и нарезка слотов по выбранному интервалу!
+    // 2. Американский формат времени (AM/PM) и нарезка слотов по выбранному интервалу
     function minsToUS12h(mins) {
         let h = Math.floor(mins / 60);
         let m = mins % 60;
@@ -6417,7 +6508,7 @@ window.renderMainCalendar = async function() {
 
         const availBox = document.getElementById('availabilityBox');
         if (typeof window.updatePreview === 'function') window.updatePreview();
-        cleanSmsAndRefreshSummary();
+        refreshCleanPreview();
         if (availBox) availBox.style.display = 'block';
 
         document.querySelectorAll('.us-slot-chip').forEach(el => el.classList.remove('active-slot'));
@@ -6528,18 +6619,18 @@ window.renderMainCalendar = async function() {
             const origPrev = window.updatePreview;
             const wrappedPrev = function() {
                 origPrev.apply(this, arguments);
-                cleanSmsAndRefreshSummary();
+                refreshCleanPreview();
             };
             wrappedPrev._wrapped = true;
             window.updatePreview = wrappedPrev;
         }
-        cleanSmsAndRefreshSummary();
+        refreshCleanPreview();
     }
 
     lockEverything();
     setTimeout(lockEverything, 500);
     setTimeout(lockEverything, 1200);
-    setInterval(cleanSmsAndRefreshSummary, 1000);
+    setInterval(refreshCleanPreview, 800);
 })();
 </script>
 </body>
