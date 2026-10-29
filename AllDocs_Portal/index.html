@@ -6496,38 +6496,55 @@ window.renderMainCalendar = async function() {
         white-space: pre-wrap !important;
     }
 
-    /* Кнопки Cancel и Save Appointment внизу справа (как на фото!) */
+   /* Идеальное размещение кнопок Cancel и Save строго внутри 3-й колонки без обрезки! */
     #apptModal .modal-actions {
-        margin-top: 16px !important;
+        margin-top: 14px !important;
         padding-top: 0 !important;
         border-top: none !important;
         display: flex !important;
-        justify-content: flex-end !important;
-        gap: 12px !important;
+        align-items: stretch !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
     #apptModal .btn-cancel {
-        flex: 0 0 auto !important;
-        padding: 12px 24px !important;
-        border-radius: 22px !important;
+        flex: 0 0 84px !important;
+        padding: 11px 8px !important;
+        border-radius: 16px !important;
         background: linear-gradient(180deg, #ffffff 0%, #efe8dc 100%) !important;
         border: 1.5px solid rgba(161, 104, 58, 0.35) !important;
         border-bottom: 3.5px solid rgba(161, 104, 58, 0.5) !important;
         color: #24140e !important;
-        font-size: 13.5px !important;
+        font-size: 12.5px !important;
         font-weight: 800 !important;
+        text-align: center !important;
+        white-space: nowrap !important;
         box-shadow: 0 6px 14px rgba(44, 26, 20, 0.07) !important;
     }
     #saveApptBtn {
-        flex: 0 0 auto !important;
-        padding: 12px 26px !important;
-        border-radius: 22px !important;
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        padding: 11px 10px !important;
+        border-radius: 16px !important;
         background: linear-gradient(145deg, #9c7147 0%, #6e4720 100%) !important;
         border: 1px solid #d4a373 !important;
         border-bottom: 4px solid #3d250e !important;
         color: #ffffff !important;
-        font-size: 13.5px !important;
+        font-size: 12px !important;
         font-weight: 800 !important;
+        text-align: center !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
         box-shadow: 0 10px 22px rgba(110, 71, 32, 0.35) !important;
+    }
+
+    /* Бонус: фиксируем ровно 4 кнопки в ряд для Automated SMS Reminders в STEP 01 */
+    #apptModal div[style*="flex-wrap: wrap"] {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 7px !important;
     }
 </style>
 
