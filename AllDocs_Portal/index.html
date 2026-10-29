@@ -5037,7 +5037,7 @@ window.renderMainCalendar = async function() {
         notifContainer.insertBefore(themeBtn, notifContainer.firstChild);
     }
 
-   // 2. ИНТЕРАКТИВНЫЙ 3D МИККИ МАУС В САЙДБАРЕ + 3D ГОЛОГРАФИЧЕСКИЕ КОМПЛИМЕНТЫ
+  // 2. ИНТЕРАКТИВНЫЙ 3D МИККИ МАУС В САЙДБАРЕ + 3D ГОЛОГРАФИЧЕСКИЕ КОМПЛИМЕНТЫ (15 СЕКУНД)
     const sidebar = document.querySelector('.sidebar');
     const navMenu = document.querySelector('.nav-menu');
     if (sidebar && navMenu && typeof THREE !== 'undefined' && !document.getElementById('sidebar-3d-widget')) {
@@ -5131,7 +5131,7 @@ window.renderMainCalendar = async function() {
                     height: 3.5px;
                     background: linear-gradient(90deg, #ffd8a8, #d48c46, #ff9800);
                     box-shadow: 0 0 10px #d48c46;
-                    animation: mickeyProgress 4.5s linear forwards;
+                    animation: mickeyProgress 15s linear forwards;
                 }
                 .mickey-sparkle-dot {
                     position: fixed;
@@ -5298,6 +5298,7 @@ window.renderMainCalendar = async function() {
 
         let activeBubble = null;
         let bubbleTimer = null;
+        let lightTimer = null;
         let typeTimer = null;
         let lastQuoteTime = 0;
 
@@ -5325,15 +5326,16 @@ window.renderMainCalendar = async function() {
             if (activeBubble) {
                 activeBubble.remove();
                 clearTimeout(bubbleTimer);
+                clearTimeout(lightTimer);
                 clearInterval(typeTimer);
             }
 
             const rect = widgetBox.getBoundingClientRect();
             spawnGoldenSparkles(rect.right - 10, rect.top + rect.height / 2);
 
-            // Делаем золотую вспышку света на самом 3D-Микки
+            // Делаем золотое свечение на самом 3D-Микки на все 15 секунд
             pLight1.intensity = 4.5;
-            setTimeout(() => { pLight1.intensity = 2.2; }, 350);
+            lightTimer = setTimeout(() => { pLight1.intensity = 2.2; }, 15000);
 
             const bubble = document.createElement('div');
             bubble.className = 'mickey-3d-speech';
@@ -5365,12 +5367,13 @@ window.renderMainCalendar = async function() {
                 }
             }, 14);
 
+            // Держим облачко с цитатой ровно 15 секунд (15000 мс)
             bubbleTimer = setTimeout(() => {
                 if (activeBubble === bubble) {
                     bubble.classList.add('hiding');
                     setTimeout(() => { if (bubble.parentNode) bubble.remove(); }, 320);
                 }
-            }, 4500);
+            }, 15000);
         }
 
         let isDragging = false, prevX = 0, prevY = 0, dragDistance = 0, jumpBoost = 0, spinBoost = 0;
