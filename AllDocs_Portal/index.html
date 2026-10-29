@@ -2421,7 +2421,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -6950,6 +6953,89 @@ window.renderMainCalendar = async function() {
         border: 1px solid #f5cba7 !important;
         border-bottom: 3.5px solid #4a280d !important;
         box-shadow: 0 10px 22px rgba(184, 115, 51, 0.35), inset 0 1px 1px rgba(255,255,255,0.35) !important;
+    }
+</style>
+    <!-- 👑 3D POLISH: INTERNAL CALL HISTORY (DARK FILTER BAR + ТАБЛИЦА И СТАТУСЫ) -->
+<style>
+    /* 1. Հեռացնում ենք կապույտ շրջանակը ներդիրների վրա սեղմելիս */
+    .tab-btn, .tab-btn:focus, .tab-btn:active {
+        outline: none !important;
+        border: none !important;
+    }
+
+    /* 2. Ֆիլտրերի վահանակը դարձնում ենք Dark Espresso 3D Command Bar */
+    #tabHistoryContent > div[style*="display: flex"] {
+        background: linear-gradient(155deg, #3a2419 0%, #22130c 100%) !important;
+        padding: 16px 20px !important;
+        border-radius: 22px !important;
+        border: 1.5px solid rgba(212, 140, 70, 0.48) !important;
+        border-bottom: 5px solid #120905 !important;
+        box-shadow: 
+            0 18px 40px rgba(36, 20, 14, 0.25),
+            inset 0 1px 2px rgba(255, 255, 255, 0.15) !important;
+        gap: 12px !important;
+    }
+
+    /* Դաշտերը ֆիլտրերի վահանակի ներսում */
+    #historySearchInput,
+    #historyDateFilter,
+    #historyStaffDropdown,
+    #historyStatusFilter,
+    #historyTypeFilter {
+        background: linear-gradient(180deg, #1b0f0a 0%, #2b1810 100%) !important;
+        color: #fff8f0 !important;
+        border: 1.5px solid rgba(212, 140, 70, 0.55) !important;
+        border-bottom: 3px solid #b87333 !important;
+        border-radius: 13px !important;
+        padding: 11px 14px !important;
+        font-size: 13.5px !important;
+        font-weight: 700 !important;
+        box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5) !important;
+        color-scheme: dark;
+    }
+    #historySearchInput::placeholder {
+        color: rgba(245, 203, 167, 0.65) !important;
+    }
+
+    /* 3. Աղյուսակի գլխամասը՝ առանց "TO" բառի տողադարձի */
+    .history-table thead tr th {
+        background: linear-gradient(180deg, #e8dfd1 0%, #dfd3c0 100%) !important;
+        color: #2c1a14 !important;
+        font-size: 11.5px !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.8px !important;
+        white-space: nowrap !important;
+        padding: 14px 18px !important;
+        border-bottom: 2px solid rgba(161, 104, 58, 0.3) !important;
+    }
+    .history-table thead tr th:last-child {
+        width: 175px !important;
+        text-align: right !important;
+    }
+    .history-table tr.journal-row td:last-child {
+        text-align: right !important;
+    }
+
+    /* 4. Զանգերի տողերի ավելի արտահայտիչ 3D դիզայն և URGENT շեշտադրում */
+    .history-table tr.journal-row td {
+        padding: 16px 20px !important;
+        background: linear-gradient(145deg, #ffffff 0%, #faf6ef 100%) !important;
+    }
+    /* Եթե տողում կա URGENT նշան՝ ամբողջ քարտը ստանում է նուրբ կարմիր 3D եզրագիծ */
+    .history-table tr.journal-row:has([style*="#d32f2f"]) td:first-child {
+        border-left: 6px solid #dc2626 !important;
+    }
+    .history-table tr.journal-row:has([style*="#d32f2f"]) td {
+        background: linear-gradient(145deg, #fffafa 0%, #fff1f2 100%) !important;
+        border-top-color: rgba(220, 38, 38, 0.25) !important;
+        border-bottom-color: rgba(220, 38, 38, 0.35) !important;
+    }
+
+    /* Հեռախոսահամարի 3D պատիճ աղյուսակի ներսում */
+    .history-table tr.journal-row td:nth-child(3) {
+        font-weight: 800 !important;
+        color: #2c1a14 !important;
+        white-space: nowrap !important;
     }
 </style>
 </body>
