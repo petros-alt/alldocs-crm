@@ -5137,47 +5137,142 @@ window.renderMainCalendar = async function() {
         })();
     }
 
-    // 3. ФОНОВЫЕ 3D-ЧАСТИЦЫ
+   // 3. ФОНОВЫЕ 3D-ПЛАНЕТЫ С КОЛЬЦАМИ И СПУТНИКАМИ (ВМЕСТО КВАДРАТИКОВ)
     if (typeof THREE !== 'undefined' && !document.getElementById('webgl-bg-canvas')) {
         const bgCanvas = document.createElement('canvas');
         bgCanvas.id = 'webgl-bg-canvas';
         document.body.insertBefore(bgCanvas, document.body.firstChild);
 
         const bgScene = new THREE.Scene();
-        const bgCam = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-        bgCam.position.z = 12;
+        const bgCam = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+        bgCam.position.z = 16;
 
         const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, alpha: true, antialias: true });
         bgRenderer.setSize(window.innerWidth, window.innerHeight);
-        bgRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+        bgRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-        const posArray = new Float32Array(55 * 3);
-        for (let i = 0; i < posArray.length; i++) posArray[i] = (Math.random() - 0.5) * 28;
-        const partGeo = new THREE.BufferGeometry();
-        partGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-        const partMesh = new THREE.Points(partGeo, new THREE.PointsMaterial({ size: 0.12, color: 0xb87333, transparent: true, opacity: 0.45 }));
-        bgScene.add(partMesh);
+        // Мягкое 3D-освещение для объема планет
+        bgScene.add(new THREE.AmbientLight(0xffffff, 0.85));
+        const sunLight = new THREE.DirectionalLight(0xffe0b2, 1.8);
+        sunLight.position.set(10, 15, 12);
+        bgScene.add(sunLight);
+
+        const backLight = new THREE.PointLight(0xd48c46, 1.4, 40);
+        backLight.position.set(-12, -10, 8);
+        bgScene.add(backLight);
+
+        // Палитра планет в фирменных тонах портала (Золото, Бронза, Крем, Терракота, Эспрессо)
+        const planetColors = [0xd48c46, 0xb87333, 0x8b552b, 0xe6b88a, 0x5c3a21, 0xc88240];
+        const planets = [];
+        const sphereGeo = new THREE.SphereGeometry(1, 32, 32);
+
+        for (let i = 0; i < 18; i++) {
+            const planetGroup = new THREE.Group();
+
+            // Размер планеты
+            const radius = 0.22 + Math.random() * 0.55;
+            const mat = new THREE.MeshStandardMaterial({
+                color: planetColors[i % planetColors.length],
+                metalness: 0.45,
+                roughness: 0.28
+            });
+
+            const planetMesh = new THREE.Mesh(sphereGeo, mat);
+            planetMesh.scale.set(radius, radius, radius);
+            planetGroup.add(planetMesh);
+
+            // Каждой третьей планете добавляем 3D-кольцо (как у Сатурна)
+            if (i % 3 === 0) {
+                const ringGeo = new THREE.TorusGeometry(radius * 1.75, radius * 0.07, 16, 64);
+                const ringMat = new THREE.MeshStandardMaterial({
+                    color: 0xf5cba7,
+                    metalness: 0.6,
+                    roughness: 0.3,
+                    transparent: true,
+                    opacity: 0.7
+                });
+                const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+                ringMesh.rotation.x = Math.PI / 2.2 + (Math.random() - 0.5) * 0.4;
+                ringMesh.rotation.y = (Math.random() - 0.5) * 0.4;
+                planetGroup.add(ringMesh);
+            }
+
+            // Некоторым крупным планетам добавляем маленький спутник на орбите
+            let moonPivot = null;
+            if (i % 4 === 1) {
+                moonPivot = new THREE.Group();
+                const moonMesh = new THREE.Mesh(
+                    sphereGeo,
+                    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 })
+                );
+                const moonRadius = radius * 0.26;
+                moonMesh.scale.set(moonRadius, moonRadius, moonRadius);
+                moonMesh.position.set(radius * 2.1, 0, 0);
+                moonPivot.add(moonMesh);
+                planetGroup.add(moonPivot);
+            }
+
+            // Располагаем планеты преимущественно в свободном пространстве слева и справа от формы
+            const side = i % 2 === 0 ? -1 : 1;
+            const posX = side * (6.5 + Math.random() * 8.5);
+            const posY = (Math.random() - 0.5) * 18;
+            const posZ = (Math.random() - 0.5) * 8 - 2;
+
+            planetGroup.position.set(posX, posY, posZ);
+
+            planets.push({
+                group: planetGroup,
+                moonPivot: moonPivot,
+                baseY: posY,
+                baseX: posX,
+                floatSpeed: 0.4 + Math.random() * 0.8,
+                floatOffset: Math.random() * Math.PI * 2,
+                rotSpeedX: (Math.random() - 0.5) * 0.012,
+                rotSpeedY: 0.005 + Math.random() * 0.012
+            });
+
+            bgScene.add(planetGroup);
+        }
 
         let mouseX = 0, mouseY = 0;
         document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / window.innerWidth - 0.5) * 1.2;
-            mouseY = (e.clientY / window.innerHeight - 0.5) * 1.2;
+            mouseX = (e.clientX / window.innerWidth - 0.5) * 2.2;
+            mouseY = (e.clientY / window.innerHeight - 0.5) * 2.2;
         });
+
         window.addEventListener('resize', () => {
             bgCam.aspect = window.innerWidth / window.innerHeight;
             bgCam.updateProjectionMatrix();
             bgRenderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        (function animateBg() {
-            requestAnimationFrame(animateBg);
-            partMesh.rotation.y += 0.0008;
-            bgCam.position.x += (mouseX - bgCam.position.x) * 0.03;
-            bgCam.position.y += (-mouseY - bgCam.position.y) * 0.03;
+        let clock = 0;
+        (function animateBgPlanets() {
+            requestAnimationFrame(animateBgPlanets);
+            clock += 0.015;
+
+            planets.forEach(p => {
+                // Вращение самой планеты и полет вверх-вниз по синусоиде
+                p.group.rotation.y += p.rotSpeedY;
+                p.group.rotation.x += p.rotSpeedX;
+                p.group.position.y = p.baseY + Math.sin(clock * p.floatSpeed + p.floatOffset) * 0.65;
+                p.group.position.x = p.baseX + Math.cos(clock * p.floatSpeed * 0.7 + p.floatOffset) * 0.35;
+
+                // Вращение спутника вокруг планеты
+                if (p.moonPivot) {
+                    p.moonPivot.rotation.y += 0.025;
+                    p.moonPivot.rotation.z = 0.3;
+                }
+            });
+
+            // Плавный 3D-параллакс камеры при движении мыши
+            bgCam.position.x += (mouseX - bgCam.position.x) * 0.035;
+            bgCam.position.y += (-mouseY - bgCam.position.y) * 0.035;
+            bgCam.lookAt(0, 0, 0);
+
             bgRenderer.render(bgScene, bgCam);
         })();
     }
-
    // 4. МИКРОФОН (НЕПРЕРЫВНЫЙ ГОЛОСОВОЙ ВВОД В РЕАЛЬНОМ ВРЕМЕНИ) + 3D-ВАЛИДАЦИЯ
     const descArea = document.getElementById('briefDescription');
     if (descArea) {
