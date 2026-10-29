@@ -5974,100 +5974,84 @@ window.renderMainCalendar = async function() {
     }
 })();
 </script>
-<!-- 👑 ЕДИНЫЙ БЛОК: ИДЕАЛЬНАЯ ИНТЕГРАЦИЯ STEP 01 + СВЕТЛЫЙ 3D-КАЛЕНДАРЬ STEP 02 + РАСТЯНУТОЕ ПРЕВЬЮ STEP 03 -->
+<!-- 👑 ДИЗАЙН 1-В-1 КАК НА ФОТО-МАКЕТЕ: DARK ESPRESSO STEP 01 + LIGHT 3D CALENDAR STEP 02 + LIVE PREVIEW STEP 03 -->
 <style>
-    /* 1. Главное полотно модального окна */
+    /* 1. Главное окно Book Appointment — светлый теплый фон */
     #apptModal .modal-content.large {
-        background: 
-            radial-gradient(circle at 12% 15%, rgba(212, 140, 70, 0.12) 0%, transparent 45%),
-            linear-gradient(160deg, #faf6f0 0%, #eae0d2 100%) !important;
-        border-radius: 34px !important;
-        padding: 32px 36px !important;
-        max-width: 1160px !important;
+        background: linear-gradient(180deg, #faf7f2 0%, #efe9df 100%) !important;
+        border-radius: 28px !important;
+        padding: 28px 34px 32px 34px !important;
+        max-width: 1180px !important;
         border: 2px solid #ffffff !important;
-        box-shadow: 0 50px 120px rgba(18, 10, 7, 0.55), inset 0 3px 6px #ffffff !important;
+        box-shadow: 0 45px 110px rgba(18, 10, 7, 0.55), inset 0 2px 4px #ffffff !important;
     }
 
-    /* 2. Шапка "📅 Book Appointment" */
+    /* Шапка "📅 Book Appointment" — чистая и светлая, как на фото */
     #apptModalTitle {
-        background: linear-gradient(135deg, #2c1a14 0%, #4a2c20 60%, #6e4223 100%) !important;
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
-        padding: 18px 26px !important;
-        border-radius: 22px !important;
-        border: 1.5px solid rgba(245, 203, 167, 0.35) !important;
-        border-bottom: 4px solid #1a0f0a !important;
-        margin: -4px 0 24px 0 !important;
-        font-size: 23px !important;
+        background: transparent !important;
+        color: #24140e !important;
+        -webkit-text-fill-color: #24140e !important;
+        padding: 0 0 16px 0 !important;
+        margin: 0 0 20px 0 !important;
+        border: none !important;
+        border-bottom: 1.5px solid rgba(161, 104, 58, 0.2) !important;
+        border-radius: 0 !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        font-size: 26px !important;
         font-weight: 800 !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
         display: flex !important;
         align-items: center !important;
         justify-content: space-between !important;
-        box-shadow: 0 16px 34px rgba(44, 26, 20, 0.25), inset 0 2px 3px rgba(255, 255, 255, 0.2) !important;
     }
-    #apptModalTitle::after {
-        content: '⚡ LIVE 3D SCHEDULER';
-        font-size: 10.5px;
-        font-weight: 800;
-        letter-spacing: 1.4px;
-        background: linear-gradient(135deg, #d48c46 0%, #9a5b22 100%);
-        color: #fff;
-        padding: 6px 14px;
-        border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.35);
-        margin-right: 38px;
-    }
+    #apptModalTitle::after { display: none !important; }
+
     #apptModal > .modal-content.large > .modal-close {
-        top: 42px !important;
-        right: 50px !important;
+        top: 26px !important;
+        right: 32px !important;
         width: 36px !important;
         height: 36px !important;
-        background: rgba(255, 255, 255, 0.14) !important;
-        color: #f5cba7 !important;
-        border: 1px solid rgba(255, 255, 255, 0.25) !important;
-        z-index: 20 !important;
+        background: #e9e0d4 !important;
+        color: #4a352b !important;
+        border: 1px solid rgba(161, 104, 58, 0.25) !important;
     }
 
-    /* 3. Три главные колонки одинаковой высоты (Flex Stretch) */
+    /* Сетка трех колонок */
     #apptModal .modal-content.large > div[style*="display: flex"] {
         display: flex !important;
         align-items: stretch !important;
-        gap: 22px !important;
+        gap: 24px !important;
     }
+
+    /* Заголовки STEP 01, STEP 02, STEP 03 НАД карточками */
     #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child,
     #apptModal .modal-content.large > div[style*="display: flex"] > div:nth-child(2),
     #apptModal .phone-preview-wrapper {
-        background: linear-gradient(165deg, #ffffff 0%, #f6f0e6 100%) !important;
-        padding: 56px 22px 22px 22px !important;
-        border-radius: 26px !important;
-        border: 2px solid #ffffff !important;
-        border-bottom: 5px solid rgba(184, 115, 51, 0.3) !important;
-        box-shadow: 0 20px 44px rgba(44, 26, 20, 0.08), inset 0 2px 4px #ffffff !important;
         position: relative !important;
+        margin-top: 34px !important;
         transform: none !important;
         display: flex !important;
         flex-direction: column !important;
         box-sizing: border-box !important;
     }
-
-    /* Бейджи STEP 01, STEP 02, STEP 03 сверху каждой колонки */
     #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child::before,
     #apptModal .modal-content.large > div[style*="display: flex"] > div:nth-child(2)::before,
     #apptModal .phone-preview-wrapper::before {
-        position: absolute;
-        top: 15px;
-        left: 20px;
-        right: 20px;
-        background: linear-gradient(90deg, #fdf8f2 0%, #f3e8d8 100%);
-        color: #8b552b;
-        font-size: 11px;
-        font-weight: 800;
-        letter-spacing: 1px;
-        padding: 7px 14px;
-        border-radius: 12px;
-        border: 1px solid rgba(184, 115, 51, 0.25);
-        border-left: 4px solid #b87333;
-        box-shadow: 0 3px 8px rgba(44, 26, 20, 0.04);
+        position: absolute !important;
+        top: -32px !important;
+        left: 4px !important;
+        right: auto !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        font-size: 13.5px !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.6px !important;
+        color: #24140e !important;
+        text-transform: uppercase !important;
     }
     #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child::before {
         content: '👤 STEP 01 — CLIENT & SERVICE';
@@ -6080,490 +6064,515 @@ window.renderMainCalendar = async function() {
     }
 
     /* =====================================================================
-       4. STEP 01 (ЛЕВАЯ КОЛОНКА): ДИНАМИЧНАЯ МОДУЛЬНАЯ ИНТЕГРАЦИЯ
+       2. STEP 01 (ЛЕВАЯ КОЛОНКА): ТЕМНО-ЭСПРЕССО 3D-ПАНЕЛЬ КАК НА ФОТО
        ===================================================================== */
+    #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child {
+        flex: 1.35 !important;
+        background: linear-gradient(165deg, #432c1d 0%, #2b1a10 100%) !important;
+        padding: 22px !important;
+        border-radius: 24px !important;
+        border: 2px solid rgba(212, 140, 70, 0.45) !important;
+        border-bottom: 6px solid #1a0f09 !important;
+        box-shadow: 
+            0 22px 45px rgba(28, 16, 12, 0.35),
+            inset 0 2px 3px rgba(255, 255, 255, 0.15) !important;
+    }
+
+    /* Разделительные линии между секциями внутри темной панели STEP 01 */
     #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child .form-row {
         gap: 12px !important;
-        margin-bottom: 12px !important;
-        background: linear-gradient(145deg, #faf6f0 0%, #f2ebe0 100%);
-        padding: 12px 14px !important;
-        border-radius: 18px !important;
-        border: 1px solid rgba(184, 115, 51, 0.16);
-        box-shadow: inset 0 1px 2px #ffffff, 0 4px 10px rgba(44, 26, 20, 0.03);
+        margin-bottom: 14px !important;
+        padding-bottom: 14px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
     }
     #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child .form-group {
         margin-bottom: 0 !important;
     }
 
-    /* Блок Automated SMS Reminders — ровная сетка 4x2 (8 кнопок в 2 идеальных ряда!) */
-    #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child > .form-group:nth-of-type(1) {
-        background: linear-gradient(145deg, #faf6f0 0%, #f2ebe0 100%);
-        padding: 12px 14px !important;
+    /* Светлые подписи полей в темной панели STEP 01 */
+    #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child label {
+        color: #f5ebe0 !important;
+        font-size: 10.5px !important;
+        font-weight: 800 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.8px !important;
+        margin-bottom: 6px !important;
+    }
+
+    /* Темно-шоколадные 3D-поля ввода и списки с золотистой рамкой в STEP 01 */
+    #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child input[type="text"],
+    #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child select {
+        background-color: #26170e !important;
+        background-image: linear-gradient(180deg, #23140c 0%, #311e13 100%) !important;
+        color: #fff8f0 !important;
+        border: 1.5px solid rgba(212, 140, 70, 0.55) !important;
+        border-radius: 12px !important;
+        padding: 11px 14px !important;
+        font-size: 13.5px !important;
+        font-weight: 700 !important;
+        box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5), 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    }
+    #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child select {
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        background-image: 
+            url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f5cba7' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"),
+            linear-gradient(180deg, #23140c 0%, #311e13 100%) !important;
+        background-repeat: no-repeat, no-repeat !important;
+        background-position: right 12px center, 0 0 !important;
+        background-size: 14px, 100% 100% !important;
+        padding-right: 34px !important;
+    }
+    #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child input::placeholder {
+        color: rgba(245, 235, 224, 0.6) !important;
+    }
+
+    /* Переключатели Email/Text/Both/None и ENG/RUSS/ARM как светлые капсулы с коричневой активной кнопкой */
+    #remTypeControl, #langControl {
+        background: #f4eee6 !important;
+        padding: 4px !important;
+        border-radius: 22px !important;
+        border: 1.5px solid rgba(212, 140, 70, 0.5) !important;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.12) !important;
+         gap: 4px !important;
+    }
+    #remTypeControl { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; }
+    #langControl { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; }
+
+    #remTypeControl .seg-btn, #langControl .seg-btn {
+        height: 32px !important;
         border-radius: 18px !important;
-        border: 1px solid rgba(184, 115, 51, 0.16);
-        box-shadow: inset 0 1px 2px #ffffff, 0 4px 10px rgba(44, 26, 20, 0.03);
-        margin-bottom: 12px !important;
+        font-size: 11.5px !important;
+        font-weight: 800 !important;
+        background: transparent !important;
+        color: #2c1a14 !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    #remTypeControl .seg-btn.active-rem,
+    #langControl .seg-btn.active-lang {
+        background: linear-gradient(145deg, #b88655 0%, #8b5a2b 100%) !important;
+        color: #ffffff !important;
+        box-shadow: 0 3px 8px rgba(44, 26, 20, 0.35), inset 0 1px 1px rgba(255,255,255,0.4) !important;
+    }
+
+    /* Кнопки Automated SMS Reminders — 2 ряда по 4 белые 3D-капсулы */
+    #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child > .form-group:nth-of-type(1) {
+        margin-bottom: 14px !important;
+        padding-bottom: 14px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background: transparent !important;
     }
     #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child > .form-group:nth-of-type(1) > div {
         display: grid !important;
         grid-template-columns: repeat(4, 1fr) !important;
-        gap: 7px !important;
-        margin-top: 6px !important;
-    }
-    #apptModal .rem-checkbox {
-        width: 100% !important;
-        display: block !important;
+        gap: 8px !important;
+        margin-top: 8px !important;
     }
     #apptModal .rem-checkbox span {
         width: 100% !important;
         box-sizing: border-box !important;
         text-align: center !important;
-        padding: 7px 4px !important;
-        font-size: 11px !important;
+        padding: 8px 4px !important;
+        font-size: 11.5px !important;
         font-weight: 800 !important;
-        border-radius: 11px !important;
-        background: linear-gradient(145deg, #ffffff 0%, #f4eee4 100%) !important;
-        border: 1px solid rgba(184, 115, 51, 0.25) !important;
-        border-bottom: 2.5px solid rgba(161, 104, 58, 0.38) !important;
-        color: #4a352b !important;
-        box-shadow: 0 2px 5px rgba(44, 26, 20, 0.04) !important;
-        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-    }
-    #apptModal .rem-checkbox:hover span {
-        transform: translateY(-2px) !important;
-        border-color: var(--accent-color) !important;
-        background: #ffffff !important;
+        border-radius: 10px !important;
+        background: linear-gradient(180deg, #ffffff 0%, #efe8dc 100%) !important;
+        color: #24140e !important;
+        border: 1px solid #ffffff !important;
+        border-bottom: 3px solid #bfa890 !important;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25) !important;
     }
     #apptModal .rem-checkbox input:checked + span {
-        background: linear-gradient(135deg, #d48c46 0%, #8b552b 100%) !important;
+        background: linear-gradient(145deg, #c89664 0%, #9a6838 100%) !important;
         color: #ffffff !important;
         border-color: #f5cba7 !important;
-        border-bottom: 2.5px solid #5d3618 !important;
-        box-shadow: 0 6px 14px rgba(184, 115, 51, 0.35) !important;
-        transform: translateY(-2px) !important;
+        border-bottom: 3px solid #5d3618 !important;
     }
 
-    /* Блок Internal Note растягивается до самого низа левой колонки */
+    /* Поле Internal Note внизу STEP 01 — светлое кремовое окошко внутри темной панели */
     #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child > .form-group:last-child {
-        background: linear-gradient(145deg, #faf6f0 0%, #f2ebe0 100%);
-        padding: 12px 14px !important;
-        border-radius: 18px !important;
-        border: 1px solid rgba(184, 115, 51, 0.16);
+        background: transparent !important;
+        padding: 0 !important;
         display: flex !important;
         flex-direction: column !important;
         flex: 1 !important;
     }
     #modalApptMessage {
+        background: linear-gradient(180deg, #f5efe6 0%, #efe7db 100%) !important;
+        color: #24140e !important;
+        border: 2px solid rgba(212, 140, 70, 0.55) !important;
+        border-radius: 14px !important;
+        padding: 12px 14px !important;
+        font-weight: 600 !important;
         flex: 1 !important;
-        min-height: 68px !important;
-        resize: none !important;
-    }
-
-    /* Поля и выпадающие списки внутри STEP 01 и STEP 02 */
-    #apptModal label {
-        font-size: 10.5px !important;
-        font-weight: 800 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.7px !important;
-        color: #6e5549 !important;
-        margin-bottom: 5px !important;
-    }
-    #apptModal input[type="text"], #apptModal textarea {
-        background: #ffffff !important;
-        border: 1.5px solid rgba(184, 115, 51, 0.26) !important;
-        border-bottom: 3px solid rgba(161, 104, 58, 0.4) !important;
-        border-radius: 12px !important;
-        padding: 10px 13px !important;
-        font-size: 13.5px !important;
-        font-weight: 700 !important;
-        color: #24140e !important;
-        box-shadow: 0 3px 8px rgba(44, 26, 20, 0.04), inset 0 1px 2px #ffffff !important;
-    }
-    #apptModal select {
-        appearance: none !important;
-        -webkit-appearance: none !important;
-        background-color: #ffffff !important;
-        background-image: 
-            url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b87333' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"),
-            linear-gradient(145deg, #ffffff 0%, #f9f5ef 100%) !important;
-        background-repeat: no-repeat, no-repeat !important;
-        background-position: right 10px center, 0 0 !important;
-        background-size: 14px, 100% 100% !important;
-        padding: 10px 30px 10px 12px !important;
-        border: 1.5px solid rgba(184, 115, 51, 0.28) !important;
-        border-bottom: 3px solid rgba(161, 104, 58, 0.44) !important;
-        border-radius: 12px !important;
-        font-size: 13px !important;
-        font-weight: 800 !important;
-        color: #24140e !important;
-        cursor: pointer !important;
-        box-shadow: 0 4px 10px rgba(44, 26, 20, 0.04) !important;
-    }
-
-    /* Переключатели Reminder Type & Message Language */
-    #remTypeControl {
-        display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 5px !important; padding: 5px !important;
-        background: linear-gradient(180deg, #e5dccf 0%, #efe8dc 100%) !important; border-radius: 13px !important;
-        border: 1px solid rgba(161, 104, 58, 0.22) !important;
-    }
-    #langControl {
-        display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 5px !important; padding: 5px !important;
-        background: linear-gradient(180deg, #e5dccf 0%, #efe8dc 100%) !important; border-radius: 13px !important;
-        border: 1px solid rgba(161, 104, 58, 0.22) !important;
-    }
-    #remTypeControl .seg-btn, #langControl .seg-btn {
-        width: 100% !important; height: 34px !important; margin: 0 !important; padding: 0 2px !important;
-        display: flex !important; align-items: center !important; justify-content: center !important;
-        border-radius: 9px !important; font-size: 11.5px !important; font-weight: 800 !important;
-        background: rgba(255, 255, 255, 0.75) !important; color: #5c4338 !important;
-        border: 1px solid rgba(255, 255, 255, 0.9) !important;
-        border-bottom: 2px solid rgba(161, 104, 58, 0.22) !important;
-    }
-    #remTypeControl .seg-btn.active-rem {
-        background: linear-gradient(145deg, #0ea5e9 0%, #0284c7 100%) !important; color: #ffffff !important;
-        border-color: #7dd3fc !important; border-bottom: 2.5px solid #0369a1 !important;
-        box-shadow: 0 4px 10px rgba(2, 132, 199, 0.35) !important;
-    }
-    #langControl .seg-btn.active-lang {
-        background: linear-gradient(145deg, #d48c46 0%, #8b552b 100%) !important; color: #ffffff !important;
-        border-color: #f5cba7 !important; border-bottom: 2.5px solid #5d3618 !important;
-        box-shadow: 0 4px 10px rgba(154, 91, 34, 0.35) !important;
+        min-height: 75px !important;
+        box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.15) !important;
     }
 
     /* =====================================================================
-       5. STEP 02 (ЦЕНТРАЛЬНАЯ КОЛОНКА): СВЕТЛЫЙ ПЕРЛАМУТРОВЫЙ 3D-КАЛЕНДАРЬ!
+       3. STEP 02 (ЦЕНТРАЛЬНАЯ КОЛОНКА): СВЕТЛЫЙ КАЛЕНДАРЬ С ТЕМНОЙ ШАПКОЙ МЕСЯЦА
        ===================================================================== */
-    #apptModal .calendar-widget {
-        background: linear-gradient(155deg, #faf6f0 0%, #efe6d8 100%) !important;
-        border-radius: 22px !important;
-        padding: 16px !important;
-        border: 1.5px solid rgba(184, 115, 51, 0.28) !important;
-        border-bottom: 4px solid rgba(161, 104, 58, 0.42) !important;
-        box-shadow: 
-            0 12px 28px rgba(44, 26, 20, 0.08),
-            inset 0 2px 3px #ffffff !important;
+    #apptModal .modal-content.large > div[style*="display: flex"] > div:nth-child(2) {
+        flex: 1.15 !important;
+        background: linear-gradient(180deg, #faf6f0 0%, #f1eae0 100%) !important;
+        padding: 20px !important;
+        border-radius: 24px !important;
+        border: 2px solid #ffffff !important;
+        border-bottom: 5px solid rgba(184, 115, 51, 0.28) !important;
+        box-shadow: 0 18px 40px rgba(44, 26, 20, 0.08), inset 0 2px 4px #ffffff !important;
     }
-    /* Красивая плашка месяца сверху календаря */
+
+    #apptModal .calendar-widget {
+        background: linear-gradient(180deg, #f3ece0 0%, #ebe1d2 100%) !important;
+        border-radius: 18px !important;
+        padding: 12px !important;
+        border: 1.5px solid rgba(184, 115, 51, 0.25) !important;
+        box-shadow: inset 0 2px 5px rgba(44, 26, 20, 0.06), 0 4px 12px rgba(44, 26, 20, 0.04) !important;
+    }
+    /* Темно-коричневая 3D-шапка месяца "Nov 2026" как на фото */
     #apptModal .cal-header {
-        background: linear-gradient(135deg, #ffffff 0%, #f5efe6 100%) !important;
-        padding: 8px 12px !important;
-        border-radius: 14px !important;
-        border: 1px solid rgba(184, 115, 51, 0.22) !important;
-        box-shadow: 0 4px 10px rgba(44, 26, 20, 0.04) !important;
-        color: #2c1a14 !important;
-        font-size: 15px !important;
-        font-weight: 800 !important;
+        background: linear-gradient(135deg, #3a2314 0%, #24140b 100%) !important;
+        color: #ffffff !important;
+        padding: 7px 10px !important;
+        border-radius: 12px !important;
         margin-bottom: 12px !important;
+        font-size: 14px !important;
+        font-weight: 800 !important;
+        box-shadow: 0 4px 10px rgba(36, 20, 11, 0.25) !important;
     }
     #apptModal .cal-header button {
-        background: linear-gradient(145deg, #f5efe6 0%, #e6dccb 100%) !important;
-        border: 1px solid rgba(161, 104, 58, 0.3) !important;
-        border-bottom: 2.5px solid rgba(161, 104, 58, 0.45) !important;
-        color: #8b552b !important;
-        border-radius: 10px !important;
-        width: 30px !important;
-        height: 30px !important;
+        background: transparent !important;
+        border: none !important;
+        color: #f5cba7 !important;
+        font-size: 15px !important;
         font-weight: 900 !important;
-        transition: all 0.2s ease !important;
+        width: 28px !important;
+        height: 28px !important;
     }
-    #apptModal .cal-header button:hover {
-        background: linear-gradient(135deg, #d48c46 0%, #8b552b 100%) !important;
-        color: #ffffff !important;
-        transform: scale(1.08) !important;
-    }
-    /* Дни недели S M T W T F S */
     #apptModal .cal-days {
-        color: #9a5b22 !important;
+        color: #2c1a14 !important;
         font-weight: 800 !important;
         font-size: 11px !important;
         margin-bottom: 8px !important;
     }
-    /* Выпуклые светлые 3D-клавиши дат */
-    #aCalDates { gap: 6px !important; }
+    #aCalDates { gap: 5px !important; }
     #aCalDates .cal-btn {
-        background: linear-gradient(145deg, #ffffff 0%, #f4eee4 100%) !important;
-        border: 1px solid rgba(184, 115, 51, 0.2) !important;
-        border-bottom: 3px solid rgba(161, 104, 58, 0.35) !important;
-        border-radius: 11px !important;
-        padding: 7px 0 !important;
-        color: #2c1a14 !important;
+        background: linear-gradient(180deg, #ffffff 0%, #f5efe6 100%) !important;
+        border: 1px solid rgba(184, 115, 51, 0.22) !important;
+        border-bottom: 2.5px solid rgba(161, 104, 58, 0.35) !important;
+        border-radius: 9px !important;
+        padding: 6px 0 !important;
+        color: #24140e !important;
         font-weight: 800 !important;
-        font-size: 12.5px !important;
-        box-shadow: 0 3px 6px rgba(44, 26, 20, 0.05), inset 0 1px 0 #ffffff !important;
-        transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-    }
-    #aCalDates .cal-btn:hover {
-        background: #ffffff !important;
-        border-color: var(--accent-color) !important;
-        transform: translateY(-2px) scale(1.06) !important;
-        box-shadow: 0 6px 12px rgba(184, 115, 51, 0.18) !important;
-    }
-    #aCalDates .cal-btn.today-btn {
-        border: 2px solid #0284c7 !important;
-        color: #0284c7 !important;
+        font-size: 12px !important;
+        box-shadow: 0 2px 4px rgba(44, 26, 20, 0.05) !important;
     }
     #aCalDates .cal-btn.selected {
-        background: linear-gradient(135deg, #d48c46 0%, #8b552b 100%) !important;
+        background: linear-gradient(145deg, #b88655 0%, #8b5a2b 100%) !important;
         color: #ffffff !important;
-        border: 1px solid #f5cba7 !important;
-        border-bottom: 3px solid #5d3618 !important;
-        box-shadow: 0 6px 15px rgba(184, 115, 51, 0.45), inset 0 1px 1px rgba(255,255,255,0.4) !important;
-        transform: translateY(-2px) scale(1.08) !important;
+        border-color: #f5cba7 !important;
+        border-bottom: 2.5px solid #4a2c11 !important;
+        box-shadow: 0 5px 12px rgba(139, 90, 43, 0.4) !important;
+        transform: translateY(-1px) scale(1.05) !important;
     }
 
-    /* Кнопка и слоты времени */
+    /* Селекты времени и Duration в центральной колонке */
+    #apptModal .modal-content.large > div[style*="display: flex"] > div:nth-child(2) select {
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        background-color: #f5efe6 !important;
+        background-image: 
+            url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235c4338' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"),
+            linear-gradient(180deg, #ffffff 0%, #f1eae0 100%) !important;
+        background-repeat: no-repeat, no-repeat !important;
+        background-position: right 10px center, 0 0 !important;
+        background-size: 13px, 100% 100% !important;
+        padding: 9px 28px 9px 12px !important;
+        border: 1.5px solid rgba(161, 104, 58, 0.28) !important;
+        border-bottom: 3px solid rgba(161, 104, 58, 0.4) !important;
+        border-radius: 11px !important;
+        font-size: 13px !important;
+        font-weight: 800 !important;
+        color: #24140e !important;
+    }
+
+    /* Изумрудная кнопка "✅ Find Available Slots" и слоты */
     button[onclick="checkStaffAvailability()"] {
         outline: none !important;
-        background: linear-gradient(145deg, #10b981 0%, #047857 100%) !important;
+        background: linear-gradient(145deg, #1f8a65 0%, #146c4e 100%) !important;
         color: #ffffff !important;
         border: 1px solid #6ee7b7 !important;
-        border-bottom: 4.5px solid #064e3b !important;
-        padding: 13px 18px !important;
-        border-radius: 15px !important;
-        font-size: 14px !important;
+        border-bottom: 4px solid #0b4632 !important;
+        padding: 12px 16px !important;
+        border-radius: 22px !important;
+        font-size: 13.5px !important;
         font-weight: 800 !important;
-        box-shadow: 0 10px 22px rgba(16, 185, 129, 0.32) !important;
+        box-shadow: 0 8px 18px rgba(20, 108, 78, 0.3) !important;
     }
     #availabilityBox {
-        background: linear-gradient(180deg, #e8dfd1 0%, #f4efe6 100%) !important;
-        border-radius: 18px !important;
-        padding: 12px !important;
-        border: 1.5px solid rgba(161, 104, 58, 0.28) !important;
-        max-height: 215px !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 6px 0 0 0 !important;
+        max-height: 195px !important;
         overflow-y: auto !important;
     }
     .us-slot-chip {
-        background: linear-gradient(145deg, #ffffff 0%, #f0fdf4 100%);
-        border: 1.5px solid #86efac;
-        border-bottom: 3px solid #16a34a;
+        background: linear-gradient(180deg, #dcfce7 0%, #bbf7d0 100%);
+        border: 1px solid #86efac;
+        border-bottom: 2.5px solid #4ade80;
         color: #14532d;
         padding: 8px 4px;
-        border-radius: 11px;
-        font-size: 10.8px;
+        border-radius: 10px;
+        font-size: 10.5px;
         font-weight: 800;
         white-space: nowrap;
         cursor: pointer;
         text-align: center;
-        box-shadow: 0 4px 10px rgba(22, 101, 52, 0.08);
-        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transition: all 0.18s ease;
         user-select: none;
     }
     .us-slot-chip:hover {
-        background: linear-gradient(145deg, #10b981 0%, #059669 100%);
-        color: #ffffff;
-        transform: translateY(-2px) scale(1.03);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(22, 101, 52, 0.15);
     }
+    /* Выбранный слот — коричнево-золотой как на фото */
     .us-slot-chip.active-slot {
-        background: linear-gradient(145deg, #d48c46 0%, #8b552b 100%) !important;
+        background: linear-gradient(145deg, #a67c52 0%, #7c532b 100%) !important;
         color: #ffffff !important;
-        border-color: #f5cba7 !important;
-        border-bottom: 3px solid #5d3618 !important;
-        transform: translateY(-2px) scale(1.03);
+        border-color: #d4a373 !important;
+        border-bottom: 2.5px solid #4a2e14 !important;
+        box-shadow: 0 5px 12px rgba(124, 83, 43, 0.35) !important;
     }
 
     /* =====================================================================
-       6. STEP 03 (ПРАВАЯ КОЛОНКА): РАСТЯГИВАЕМ ПРЕВЬЮ SMS ДО САМОГО КОНЦА ОКНА!
+       4. STEP 03 (ПРАВАЯ КОЛОНКА): LIVE PREVIEW + КНОПКИ ВНИЗУ СПРАВА
        ===================================================================== */
     #apptModal .phone-preview-wrapper {
-        flex: 1.15 !important;
-        min-width: 285px !important;
+        flex: 1.2 !important;
+        min-width: 300px !important;
         width: auto !important;
-        align-items: stretch !important;
+        background: linear-gradient(180deg, #faf6f0 0%, #f1eae0 100%) !important;
+        padding: 20px !important;
+        border-radius: 24px !important;
+        border: 2px solid #ffffff !important;
+        border-bottom: 5px solid rgba(184, 115, 51, 0.28) !important;
+        box-shadow: 0 18px 40px rgba(44, 26, 20, 0.08), inset 0 2px 4px #ffffff !important;
     }
-    #apptModal .phone-screen {
+    #apptModal .phone-screen, #apptModal .phone-body {
         background: transparent !important;
         border-radius: 0 !important;
-        overflow: visible !important;
+        padding: 0 !important;
         display: flex !important;
         flex-direction: column !important;
         flex: 1 !important;
         height: 100% !important;
     }
     #apptModal .phone-header { display: none !important; }
-    #apptModal .phone-body {
-        background: transparent !important;
-        padding: 0 !important;
-        overflow: visible !important;
-        display: flex !important;
-        flex-direction: column !important;
-        flex: 1 !important;
-        height: 100% !important;
-    }
 
-    @keyframes dynamicPulse3D {
-        0% { transform: scale(1); }
-        40% { transform: scale(1.025) translateY(-2px); box-shadow: 0 14px 28px rgba(184, 115, 51, 0.22); }
-        100% { transform: scale(1); }
-    }
-    .pulse-on-change { animation: dynamicPulse3D 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); }
-
+    /* Карточка с отрывным календариком на кольцах */
     .clean-Booking-hero {
         display: flex;
         align-items: center;
-        gap: 14px;
-        background: linear-gradient(145deg, #faf6f0 0%, #f2ebe0 100%);
-        border: 1.5px solid rgba(184, 115, 51, 0.26);
-        border-bottom: 3.5px solid rgba(161, 104, 58, 0.38);
-        border-radius: 20px;
-        padding: 13px 15px;
-        margin-bottom: 14px;
-        box-shadow: 0 8px 20px rgba(44, 26, 20, 0.05), inset 0 2px 2px #ffffff;
-        flex-shrink: 0;
+        gap: 16px;
+        background: linear-gradient(180deg, #ffffff 0%, #f6f0e6 100%);
+        border: 1.5px solid rgba(184, 115, 51, 0.25);
+        border-bottom: 3px solid rgba(161, 104, 58, 0.35);
+        border-radius: 18px;
+        padding: 16px;
+        margin-bottom: 16px;
+        box-shadow: 0 8px 20px rgba(44, 26, 20, 0.05);
     }
     .clean-cal-badge {
-        width: 54px;
-        height: 58px;
-        border-radius: 15px;
-        background: linear-gradient(180deg, #ffffff 0%, #f3ece2 100%);
+        width: 60px;
+        height: 64px;
+        border-radius: 14px;
+        background: #ffffff;
         border: 1.5px solid rgba(184, 115, 51, 0.35);
-        border-bottom: 3.5px solid #9a5b22;
-        box-shadow: 0 6px 14px rgba(44, 26, 20, 0.1), inset 0 1px 1px #ffffff;
+        border-bottom: 4px solid #bfa890;
+        box-shadow: 0 6px 14px rgba(44, 26, 20, 0.12);
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        overflow: hidden;
+        justify-content: flex-start;
+        position: relative;
         flex-shrink: 0;
     }
+    /* Кольца отрывного календаря сверху */
+    .clean-cal-badge::before, .clean-cal-badge::after {
+        content: '';
+        position: absolute;
+        top: -5px;
+        width: 6px;
+        height: 10px;
+        background: #7c532b;
+        border-radius: 4px;
+        box-shadow: 0 2px 3px rgba(0,0,0,0.3);
+    }
+    .clean-cal-badge::before { left: 14px; }
+    .clean-cal-badge::after { right: 14px; }
+
     .clean-cal-month {
         width: 100%;
-        background: linear-gradient(135deg, #c88240 0%, #8b552b 100%);
+        background: linear-gradient(135deg, #9a6b3e 0%, #7c532b 100%);
         color: #ffffff;
-        font-size: 9.5px;
+        font-size: 10px;
         font-weight: 900;
         text-align: center;
         text-transform: uppercase;
         letter-spacing: 1px;
-        padding: 3px 0;
+        padding: 5px 0 3px 0;
+        border-radius: 12px 12px 0 0;
     }
     .clean-cal-day {
         font-family: 'Plus Jakarta Sans', sans-serif;
-        font-size: 21px;
+        font-size: 24px;
         font-weight: 800;
-        color: #2c1a14;
-        line-height: 1.2;
-        margin-top: 2px;
+        color: #24140e;
+        line-height: 1.35;
     }
-    .clean-hero-info { flex: 1; min-width: 0; }
-    .clean-hero-client {
-        font-size: 15px;
+    .clean-hero-Client-title {
+        font-size: 18px;
         font-weight: 800;
-        color: #2c1a14;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin-bottom: 4px;
+        color: #24140e;
+        margin-bottom: 6px;
     }
     .clean-hero-time-pill {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        background: linear-gradient(135deg, #2c1a14 0%, #4e342e 100%);
-        color: #f5cba7;
-        padding: 3.5px 10px;
-        border-radius: 10px;
-        font-size: 11.5px;
-        font-weight: 800;
-    }
-    .clean-hero-meta {
-        font-size: 11px;
+        background: #2b1d16;
+        color: #ffffff;
+        padding: 5px 12px;
+        border-radius: 18px;
+        font-size: 12px;
         font-weight: 700;
-        color: #6e5549;
-        margin-top: 5px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
     }
 
+    /* Заголовок SMS MESSAGE PREVIEW */
     .clean-sms-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 8px;
-        padding: 0 4px;
-        flex-shrink: 0;
+        margin-bottom: 10px;
+        padding: 0 2px;
     }
     .clean-sms-title {
-        font-size: 10.5px;
+        font-size: 11px;
         font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 0.8px;
-        color: #6e5549;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-    .live-dot {
-        width: 8px; height: 8px; background: #10b981; border-radius: 50%;
-        display: inline-block; box-shadow: 0 0 8px #10b981;
+        letter-spacing: 0.7px;
+        color: #24140e;
     }
     .clean-sms-lang-tag {
-        background: rgba(184, 115, 51, 0.14);
-        color: #8b552b;
-        border: 1px solid rgba(184, 115, 51, 0.3);
-        padding: 2px 9px;
-        border-radius: 10px;
-        font-size: 10px;
+        background: #ffffff;
+        color: #24140e;
+        border: 1px solid rgba(161, 104, 58, 0.3);
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 11px;
         font-weight: 800;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.04);
     }
 
-    /* Окошко SMS растянуто ровно до самого низа колонки без обрезки! */
+    /* Светлое окно SMS Preview до конца колонки */
     #smsPreviewBubble {
-        background: linear-gradient(180deg, #faf6f0 0%, #ffffff 100%) !important;
-        color: #2c1a14 !important;
-        border-radius: 20px !important;
+        background: linear-gradient(180deg, #ffffff 0%, #f8f4ec 100%) !important;
+        color: #24140e !important;
+        border-radius: 18px !important;
         padding: 18px 20px !important;
         font-size: 13px !important;
         font-weight: 600 !important;
-        line-height: 1.52 !important;
-        border: 1.5px solid rgba(184, 115, 51, 0.28) !important;
-        border-bottom: 3.5px solid rgba(161, 104, 58, 0.4) !important;
-        border-left: 5px solid var(--accent-color) !important;
-        box-shadow: 
-            inset 0 2px 6px rgba(44, 26, 20, 0.04),
-            0 8px 20px rgba(44, 26, 20, 0.04) !important;
+        line-height: 1.55 !important;
+        border: 1.5px solid rgba(184, 115, 51, 0.25) !important;
+        box-shadow: 0 8px 22px rgba(44, 26, 20, 0.05), inset 0 2px 4px #ffffff !important;
         flex: 1 1 auto !important;
-        height: 100% !important;
-        max-height: none !important; /* Убираем обрезку по высоте! */
+        max-height: none !important;
         overflow-y: auto !important;
         white-space: pre-wrap !important;
-        margin: 0 !important;
-        box-sizing: border-box !important;
+    }
+
+    /* Кнопки Cancel и Save Appointment внизу справа (как на фото!) */
+    #apptModal .modal-actions {
+        margin-top: 16px !important;
+        padding-top: 0 !important;
+        border-top: none !important;
+        display: flex !important;
+        justify-content: flex-end !important;
+        gap: 12px !important;
+    }
+    #apptModal .btn-cancel {
+        flex: 0 0 auto !important;
+        padding: 12px 24px !important;
+        border-radius: 22px !important;
+        background: linear-gradient(180deg, #ffffff 0%, #efe8dc 100%) !important;
+        border: 1.5px solid rgba(161, 104, 58, 0.35) !important;
+        border-bottom: 3.5px solid rgba(161, 104, 58, 0.5) !important;
+        color: #24140e !important;
+        font-size: 13.5px !important;
+        font-weight: 800 !important;
+        box-shadow: 0 6px 14px rgba(44, 26, 20, 0.07) !important;
+    }
+    #saveApptBtn {
+        flex: 0 0 auto !important;
+        padding: 12px 26px !important;
+        border-radius: 22px !important;
+        background: linear-gradient(145deg, #9c7147 0%, #6e4720 100%) !important;
+        border: 1px solid #d4a373 !important;
+        border-bottom: 4px solid #3d250e !important;
+        color: #ffffff !important;
+        font-size: 13.5px !important;
+        font-weight: 800 !important;
+        box-shadow: 0 10px 22px rgba(110, 71, 32, 0.35) !important;
     }
 </style>
 
 <script>
-(function initCleanDynamicPreviewAndSlots() {
+(function initPhotoMatchApptModal() {
     const phoneBody = document.querySelector('#apptModal .phone-body');
     const smsBubble = document.getElementById('smsPreviewBubble');
+    const modalActions = document.querySelector('#apptModal .modal-actions');
+
     if (phoneBody && smsBubble && !document.getElementById('cleanBookingHero')) {
+        const topLbl = document.createElement('div');
+        topLbl.style.cssText = 'font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.7px; color:#24140e; margin-bottom:6px;';
+        topLbl.textContent = 'DYNAMIC BOOKING HERO';
+
         const hero = document.createElement('div');
         hero.id = 'cleanBookingHero';
         hero.className = 'clean-Booking-hero';
         hero.innerHTML = `
             <div class="clean-cal-badge" id="cleanCalBadge">
-                <div class="clean-cal-month" id="cleanCalMonth">OCT</div>
-                <div class="clean-cal-day" id="cleanCalDay">29</div>
+                <div class="clean-cal-month" id="cleanCalMonth">NOV</div>
+                <div class="clean-cal-day" id="cleanCalDay">4</div>
             </div>
             <div class="clean-hero-info">
-                <div class="clean-hero-client" id="cleanHeroClient">Client Name</div>
-                <div class="clean-hero-time-pill" id="cleanHeroTime">⏰ 12:00 PM • 1h</div>
-                <div class="clean-hero-meta" id="cleanHeroMeta">👨‍💼 Staff • Service</div>
+                <div class="clean-hero-Client-title" id="cleanHeroClient">Client Name</div>
+                <div class="clean-hero-time-pill" id="cleanHeroTime">🕒 12:45 PM • 30m</div>
             </div>
         `;
 
         const smsHeader = document.createElement('div');
         smsHeader.className = 'clean-sms-header';
         smsHeader.innerHTML = `
-            <span class="clean-sms-title"><span class="live-dot"></span> SMS Message Preview</span>
+            <span class="clean-sms-title">💬 SMS MESSAGE PREVIEW</span>
             <span class="clean-sms-lang-tag" id="cleanSmsLangTag">🇺🇸 ENG</span>
         `;
 
+        phoneBody.insertBefore(topLbl, smsBubble);
         phoneBody.insertBefore(hero, smsBubble);
         phoneBody.insertBefore(smsHeader, smsBubble);
+
+        // Переносим кнопки Cancel и Save внутрь правой колонки в самый низ, точно как на фото-макете!
+        if (modalActions) {
+            phoneBody.appendChild(modalActions);
+        }
     }
 
-    let lastSignature = '';
     function refreshCleanPreview() {
         if (typeof smsTemplates !== 'undefined') {
             Object.keys(smsTemplates).forEach(lang => {
@@ -6574,25 +6583,21 @@ window.renderMainCalendar = async function() {
             smsBubble.textContent = smsBubble.textContent.replace(/\n[ \t]*\n[ \t]*\n+/g, '\n\n');
         }
 
-        const cName = document.getElementById('modalApptName')?.value.trim() || 'New Client';
-        const staff = document.getElementById('modalApptStaff')?.value || 'Staff';
-        const rawSvc = document.getElementById('modalApptService')?.value || '';
-        const cleanSvc = rawSvc.replace(/^\d+\s*-\s*/, '').trim();
-        const dur = (document.getElementById('aDuration')?.value || '1 hour')
+        const cName = document.getElementById('modalApptName')?.value.trim() || 'Client Name';
+        const dur = (document.getElementById('aDuration')?.value || '30 minutes')
             .replace(' minutes', 'm').replace(' minute', 'm').replace(' hours', 'h').replace(' hour', 'h');
         const h = document.getElementById('aTimeHour')?.value || '12';
-        const m = document.getElementById('aTimeMinute')?.value || '00';
+        const m = document.getElementById('aTimeMinute')?.value || '45';
         const ap = document.getElementById('aTimeAMPM')?.value || 'PM';
-        const myTxt = document.getElementById('aMonthYear')?.textContent.trim() || 'Oct 2026';
+        const myTxt = document.getElementById('aMonthYear')?.textContent.trim() || 'Nov 2026';
         const selDay = document.querySelector('#aCalDates .cal-btn.selected')?.textContent.trim() || new Date().getDate();
 
-        const monthShort = myTxt.split(' ')[0] || 'OCT';
+        const monthShort = myTxt.split(' ')[0] || 'NOV';
 
         if (document.getElementById('cleanCalMonth')) document.getElementById('cleanCalMonth').textContent = monthShort;
         if (document.getElementById('cleanCalDay')) document.getElementById('cleanCalDay').textContent = selDay;
         if (document.getElementById('cleanHeroClient')) document.getElementById('cleanHeroClient').textContent = cName;
-        if (document.getElementById('cleanHeroTime')) document.getElementById('cleanHeroTime').textContent = `⏰ ${h}:${m} ${ap} • ${dur}`;
-        if (document.getElementById('cleanHeroMeta')) document.getElementById('cleanHeroMeta').textContent = `${staff.split(' ')[0]} • ${cleanSvc}`;
+        if (document.getElementById('cleanHeroTime')) document.getElementById('cleanHeroTime').textContent = `🕒 ${h}:${m} ${ap} • ${dur}`;
 
         const activeLangBtn = document.querySelector('#langControl .seg-btn.active-lang');
         const langCode = activeLangBtn ? activeLangBtn.textContent.trim() : 'ENG';
@@ -6600,17 +6605,6 @@ window.renderMainCalendar = async function() {
         if (document.getElementById('cleanSmsLangTag')) {
             document.getElementById('cleanSmsLangTag').textContent = flagMap[langCode] || langCode;
         }
-
-        const currentSig = `${cName}_${monthShort}_${selDay}_${h}_${m}_${ap}_${dur}_${staff}_${cleanSvc}_${langCode}`;
-        if (lastSignature && lastSignature !== currentSig) {
-            const heroEl = document.getElementById('cleanBookingHero');
-            if (heroEl) {
-                heroEl.classList.remove('pulse-on-change');
-                void heroEl.offsetWidth;
-                heroEl.classList.add('pulse-on-change');
-            }
-        }
-        lastSignature = currentSig;
     }
 
     function minsToUS12h(mins) {
@@ -6716,10 +6710,10 @@ window.renderMainCalendar = async function() {
             const curM = parseInt(document.getElementById('aTimeMinute').value, 10);
             const curAP = document.getElementById('aTimeAMPM').value;
             const selectedTotalMins = ((curH % 12) + (curAP === 'PM' ? 12 : 0)) * 60 + curM;
+            const shortDur = durationStr.replace(' minutes', 'm').replace(' hour', 'h');
 
-            let html = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
-                <span style="font-size: 11px; font-weight: 800; color: #14532d; text-transform: uppercase;">🎯 Click a Slot (${durationStr}):</span>
-                <span style="background:#dcfce7; color:#15803d; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:10px;">${individualSlots.length} slots</span>
+            let html = `<div style="margin-bottom: 8px;">
+                <span style="font-size: 11px; font-weight: 800; color: #24140e; text-transform: uppercase;">🎯 CLICK A SLOT (${shortDur}): ${individualSlots.length} slots</span>
             </div>`;
             html += `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">`;
             individualSlots.forEach(slot => {
