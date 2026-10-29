@@ -2407,7 +2407,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -2428,7 +2431,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -2450,7 +2456,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -5944,76 +5953,163 @@ window.renderMainCalendar = async function() {
     }
 })();
 </script>
-    <!-- 💎 3D UPGRADE ОКНА BOOK APPOINTMENT + АМЕРИКАНСКИЙ ФОРМАТ СЛОТОВ (AM/PM) С НАРЕЗКОЙ ПО ИНТЕРВАЛАМ -->
+  <!-- 💎 FINAL 3D BOOK APPOINTMENT + ТОЧНОЕ ВЫРАВНИВАНИЕ ARM + НАРЕЗКА СВОБОДНЫХ СЛОТОВ AM/PM -->
 <style>
-    /* 1. 3D-оформление самого модального окна Book Appointment */
+    /* 1. Глубокий 3D-дизайн самого окна Book Appointment */
     #apptModal .modal-content.large {
-        background: linear-gradient(160deg, #faf7f2 0%, #f0e9df 100%) !important;
-        border-radius: 30px !important;
+        background: linear-gradient(160deg, #f8f4ec 0%, #ede4d6 100%) !important;
+        border-radius: 32px !important;
         padding: 36px 40px !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.95) !important;
+        border: 2px solid #ffffff !important;
         box-shadow: 
-            0 40px 100px rgba(28, 16, 12, 0.45),
-            0 12px 35px rgba(28, 16, 12, 0.2),
+            0 45px 110px rgba(28, 16, 12, 0.55),
+            0 15px 40px rgba(28, 16, 12, 0.25),
+            inset 0 3px 6px #ffffff !important;
+    }
+
+    /* Красивая 3D-шапка "📅 Book Appointment" */
+    #apptModalTitle {
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        font-size: 26px !important;
+        font-weight: 800 !important;
+        color: #2c1a14 !important;
+        background: linear-gradient(90deg, rgba(184, 115, 51, 0.14) 0%, rgba(255, 255, 255, 0) 100%);
+        padding: 14px 22px !important;
+        border-radius: 18px !important;
+        border-left: 6px solid var(--accent-color) !important;
+        border-bottom: none !important;
+        margin-bottom: 26px !important;
+        box-shadow: 0 6px 18px rgba(44, 26, 20, 0.05), inset 0 1px 1px #ffffff;
+    }
+
+    /* Левая и центральная 3D-панели с выраженным рельефом */
+    #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child,
+    #apptModal .modal-content.large > div[style*="display: flex"] > div:nth-child(2) {
+        background: linear-gradient(155deg, #ffffff 0%, #f6f0e6 100%) !important;
+        padding: 26px !important;
+        border-radius: 26px !important;
+        border: 1.5px solid #ffffff !important;
+        border-bottom: 5px solid rgba(161, 104, 58, 0.28) !important;
+        box-shadow: 
+            0 20px 45px rgba(44, 26, 20, 0.09),
+            0 5px 15px rgba(44, 26, 20, 0.04),
             inset 0 2px 3px #ffffff !important;
     }
 
-    /* Левая и центральная колонки как 3D-капсулы */
-    #apptModal .modal-content.large > div[style*="display: flex"] > div:first-child {
-        background: linear-gradient(145deg, #ffffff 0%, #f8f4ec 100%);
-        padding: 26px !important;
-        border-radius: 24px !important;
-        border: 1.5px solid #ffffff;
-        box-shadow: 0 14px 32px rgba(44, 26, 20, 0.06), inset 0 2px 2px #ffffff;
-    }
-    #apptModal .modal-content.large > div[style*="display: flex"] > div:nth-child(2) {
-        background: linear-gradient(145deg, #ffffff 0%, #f8f4ec 100%) !important;
-        padding: 24px !important;
-        border-radius: 24px !important;
-        border: 1.5px solid #ffffff !important;
-        box-shadow: 0 14px 32px rgba(44, 26, 20, 0.06), inset 0 2px 2px #ffffff !important;
-    }
-
-    /* 3D-переключатели Reminder Type & Message Language */
-    #remTypeControl, #langControl {
-        background: linear-gradient(180deg, #e6dec8 0%, #f3ede2 100%) !important;
-        padding: 5px !important;
+    /* 3D-поля и выпадающие списки внутри окна записи */
+    #apptModal input[type="text"],
+    #apptModal select,
+    #apptModal textarea {
+        background: linear-gradient(180deg, #f1ebe0 0%, #faf7f2 100%) !important;
+        border: 1.5px solid rgba(161, 104, 58, 0.28) !important;
+        border-bottom: 3px solid rgba(161, 104, 58, 0.4) !important;
         border-radius: 14px !important;
-        border: 1px solid rgba(161, 104, 58, 0.2) !important;
-        box-shadow: inset 0 2px 5px rgba(44, 26, 20, 0.12), 0 1px 0 #fff !important;
-    }
-    .seg-btn { border-radius: 10px !important; font-weight: 800 !important; transition: all 0.22s ease !important; }
-    .seg-btn.active-rem {
-        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
-        box-shadow: 0 5px 12px rgba(2, 132, 199, 0.35), inset 0 1px 1px rgba(255,255,255,0.4) !important;
-        transform: translateY(-1px);
-    }
-    .seg-btn.active-lang {
-        background: linear-gradient(135deg, #c88240 0%, #8b552b 100%) !important;
-        box-shadow: 0 5px 12px rgba(154, 91, 34, 0.35), inset 0 1px 1px rgba(255,255,255,0.4) !important;
-        transform: translateY(-1px);
-    }
-
-    /* 3D-капсулы времени напоминаний (1 Hour, 3 Hours...) */
-    .rem-checkbox span {
-        background: linear-gradient(145deg, #ffffff 0%, #f3ede3 100%) !important;
-        border: 1px solid rgba(184, 115, 51, 0.25) !important;
-        border-bottom: 3px solid rgba(161, 104, 58, 0.35) !important;
-        border-radius: 16px !important;
-        padding: 7px 14px !important;
         font-weight: 700 !important;
-        box-shadow: 0 4px 10px rgba(44, 26, 20, 0.05), inset 0 1px 0 #fff !important;
+        color: #2c1a14 !important;
+        box-shadow: inset 0 2px 4px rgba(44, 26, 20, 0.06), 0 2px 4px rgba(255,255,255,0.9) !important;
     }
-    .rem-checkbox input:checked + span {
-        background: linear-gradient(135deg, var(--accent-color) 0%, #8b552b 100%) !important;
-        border-color: transparent !important;
-        border-bottom: 3px solid #5d3618 !important;
-        color: #fff !important;
-        box-shadow: 0 8px 16px var(--accent-glow) !important;
-        transform: translateY(-2px);
+    #apptModal input[type="text"]:focus,
+    #apptModal select:focus,
+    #apptModal textarea:focus {
+        background: #ffffff !important;
+        border-color: var(--accent-color) !important;
+        box-shadow: 0 8px 20px rgba(184, 115, 51, 0.2), 0 0 0 3px rgba(184, 115, 51, 0.15) !important;
     }
 
-    /* 3D-кнопка "✅ Find Available Slots" (убираем синюю системную рамку!) */
+    /* 2. ИДЕАЛЬНОЕ ВЫРАВНИВАНИЕ КНОПОК ENG / RUSS / ARM и Email / Text / Both / None */
+    #remTypeControl {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 6px !important;
+        padding: 6px !important;
+        background: linear-gradient(180deg, #e5dccf 0%, #f1ebe0 100%) !important;
+        border-radius: 16px !important;
+        border: 1px solid rgba(161, 104, 58, 0.25) !important;
+        box-shadow: inset 0 3px 6px rgba(44, 26, 20, 0.14), 0 1px 0 #ffffff !important;
+        align-items: center !important;
+    }
+    #langControl {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 6px !important;
+        padding: 6px !important;
+        background: linear-gradient(180deg, #e5dccf 0%, #f1ebe0 100%) !important;
+        border-radius: 16px !important;
+        border: 1px solid rgba(161, 104, 58, 0.25) !important;
+        box-shadow: inset 0 3px 6px rgba(44, 26, 20, 0.14), 0 1px 0 #ffffff !important;
+        align-items: center !important;
+    }
+    #remTypeControl .seg-btn, #langControl .seg-btn {
+        width: 100% !important;
+        height: 36px !important;
+        margin: 0 !important;
+        padding: 0 4px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        border-radius: 11px !important;
+        font-size: 12.5px !important;
+        font-weight: 800 !important;
+        background: rgba(255, 255, 255, 0.55) !important;
+        color: #5c4338 !important;
+        border: 1px solid rgba(255, 255, 255, 0.7) !important;
+        border-bottom: 2px solid rgba(161, 104, 58, 0.25) !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04) !important;
+        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    }
+    #remTypeControl .seg-btn:hover, #langControl .seg-btn:hover {
+        background: #ffffff !important;
+        transform: translateY(-1px) !important;
+    }
+    #remTypeControl .seg-btn.active-rem {
+        background: linear-gradient(145deg, #0ea5e9 0%, #0284c7 100%) !important;
+        color: #ffffff !important;
+        border-color: #38bdf8 !important;
+        border-bottom: 3px solid #0369a1 !important;
+        box-shadow: 0 6px 14px rgba(2, 132, 199, 0.38), inset 0 1px 1px rgba(255,255,255,0.45) !important;
+        transform: translateY(-1px) !important;
+    }
+    #langControl .seg-btn.active-lang {
+        background: linear-gradient(145deg, #d48c46 0%, #8b552b 100%) !important;
+        color: #ffffff !important;
+        border-color: #f5cba7 !important;
+        border-bottom: 3px solid #5d3618 !important;
+        box-shadow: 0 6px 14px rgba(154, 91, 34, 0.38), inset 0 1px 1px rgba(255,255,255,0.45) !important;
+        transform: translateY(-1px) !important;
+    }
+
+    /* 3. Выпуклые 3D-кнопки дат внутри мини-календаря */
+    #apptModal .calendar-widget {
+        background: linear-gradient(180deg, #efe8dc 0%, #f7f3eb 100%) !important;
+        border-radius: 20px !important;
+        padding: 16px !important;
+        border: 1px solid rgba(161, 104, 58, 0.22) !important;
+        box-shadow: inset 0 3px 7px rgba(44, 26, 20, 0.09), 0 1px 0 #ffffff !important;
+    }
+    #aCalDates { gap: 6px !important; }
+    #aCalDates .cal-btn {
+        background: linear-gradient(145deg, #ffffff 0%, #f3ece0 100%) !important;
+        border: 1px solid rgba(184, 115, 51, 0.18) !important;
+        border-bottom: 3px solid rgba(161, 104, 58, 0.35) !important;
+        border-radius: 10px !important;
+        padding: 7px 0 !important;
+        font-weight: 800 !important;
+        box-shadow: 0 3px 6px rgba(44, 26, 20, 0.05) !important;
+    }
+    #aCalDates .cal-btn:hover {
+        transform: translateY(-2px) scale(1.06) !important;
+        border-color: var(--accent-color) !important;
+    }
+    #aCalDates .cal-btn.selected {
+        background: linear-gradient(145deg, #d48c46 0%, #8b552b 100%) !important;
+        color: #ffffff !important;
+        border-color: #f5cba7 !important;
+        border-bottom: 3px solid #5d3618 !important;
+        box-shadow: 0 6px 15px rgba(184, 115, 51, 0.45) !important;
+        transform: translateY(-2px) scale(1.06) !important;
+    }
+
+    /* 4. Кнопка "✅ Find Available Slots" и 3D-сетка слотов */
     button[onclick="checkStaffAvailability()"] {
         outline: none !important;
         background: linear-gradient(145deg, #10b981 0%, #059669 100%) !important;
@@ -6024,35 +6120,24 @@ window.renderMainCalendar = async function() {
         border-radius: 14px !important;
         font-size: 14px !important;
         font-weight: 800 !important;
-        letter-spacing: 0.3px !important;
-        box-shadow: 0 10px 22px rgba(16, 185, 129, 0.3), inset 0 1.5px 2px rgba(255, 255, 255, 0.4) !important;
-        transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        box-shadow: 0 10px 22px rgba(16, 185, 129, 0.32), inset 0 1.5px 2px rgba(255, 255, 255, 0.45) !important;
+        transition: all 0.22s ease !important;
     }
-    button[onclick="checkStaffAvailability()"]:hover {
-        transform: translateY(-3px) scale(1.01) !important;
-        box-shadow: 0 15px 28px rgba(16, 185, 129, 0.42), inset 0 1.5px 2px rgba(255, 255, 255, 0.5) !important;
-    }
-    button[onclick="checkStaffAvailability()"]:active {
-        transform: translateY(1px) !important;
-        border-bottom-width: 2px !important;
-    }
-
-    /* Контейнер и 3D-чипсы нарезанных слотов времени (AM/PM) */
     #availabilityBox {
-        background: linear-gradient(180deg, #ede5d8 0%, #f5f0e6 100%) !important;
-        border-radius: 16px !important;
+        background: linear-gradient(180deg, #eae1d3 0%, #f4efe6 100%) !important;
+        border-radius: 18px !important;
         padding: 14px !important;
-        border: 1px solid rgba(161, 104, 58, 0.22) !important;
-        box-shadow: inset 0 3px 7px rgba(44, 26, 20, 0.08) !important;
-        max-height: 215px !important;
+        border: 1.5px solid rgba(161, 104, 58, 0.25) !important;
+        box-shadow: inset 0 3px 8px rgba(44, 26, 20, 0.1) !important;
+        max-height: 235px !important;
         overflow-y: auto !important;
     }
     .us-slot-chip {
         background: linear-gradient(145deg, #ffffff 0%, #f0fdf4 100%);
-        border: 1px solid #86efac;
-        border-bottom: 3px solid #22c55e;
-        color: #166534;
-        padding: 8px 10px;
+        border: 1.5px solid #86efac;
+        border-bottom: 3.5px solid #16a34a;
+        color: #14532d;
+        padding: 9px 6px;
         border-radius: 12px;
         font-size: 11.5px;
         font-weight: 800;
@@ -6063,75 +6148,44 @@ window.renderMainCalendar = async function() {
         user-select: none;
     }
     .us-slot-chip:hover {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        background: linear-gradient(145deg, #10b981 0%, #059669 100%);
         color: #ffffff;
         border-color: #047857;
         transform: translateY(-3px) scale(1.03);
-        box-shadow: 0 8px 18px rgba(16, 185, 129, 0.32);
+        box-shadow: 0 8px 18px rgba(16, 185, 129, 0.35);
     }
     .us-slot-chip.active-slot {
-        background: linear-gradient(135deg, var(--accent-color) 0%, #8b552b 100%) !important;
+        background: linear-gradient(145deg, #d48c46 0%, #8b552b 100%) !important;
         color: #ffffff !important;
-        border-color: #5d3618 !important;
-        box-shadow: 0 8px 18px var(--accent-glow) !important;
-        transform: translateY(-2px);
+        border-color: #f5cba7 !important;
+        border-bottom: 3.5px solid #5d3618 !important;
+        box-shadow: 0 8px 18px rgba(184, 115, 51, 0.4) !important;
+        transform: translateY(-2px) scale(1.03);
     }
 
-    /* Улучшенный 3D iPhone справа с островком Dynamic Island */
-    .phone-preview-wrapper {
-        background: linear-gradient(145deg, #323236 0%, #111113 100%) !important;
-        border-radius: 44px !important;
-        padding: 13px !important;
-        box-shadow: 
-            0 30px 65px rgba(28, 16, 12, 0.4),
-            0 10px 20px rgba(0, 0, 0, 0.25),
-            inset 0 0 0 2px rgba(255, 255, 255, 0.22),
-            inset 0 0 10px rgba(0, 0, 0, 0.8) !important;
+    /* 5. Нижние кнопки Cancel и Save Appointment в 3D */
+    #apptModal .btn-cancel {
+        background: linear-gradient(145deg, #ffffff 0%, #f1ebe0 100%) !important;
+        border: 1.5px solid rgba(161, 104, 58, 0.3) !important;
+        border-bottom: 4px solid rgba(161, 104, 58, 0.45) !important;
+        border-radius: 16px !important;
+        font-size: 15px !important;
+        font-weight: 800 !important;
+        color: #2c1a14 !important;
+        box-shadow: 0 8px 18px rgba(44, 26, 20, 0.06), inset 0 2px 2px #ffffff !important;
     }
-    .phone-screen {
-        border-radius: 33px !important;
-        position: relative;
-    }
-    .phone-header {
-        padding-top: 32px !important;
-        position: relative;
-        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%) !important;
-    }
-    /* Dynamic Island на экране iPhone */
-    .phone-header::before {
-        content: '';
-        position: absolute;
-        top: 8px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 76px;
-        height: 18px;
-        background: #0f0f12;
-        border-radius: 20px;
-        box-shadow: inset 0 1px 2px rgba(255,255,255,0.15);
-    }
-    .sms-bubble {
-        background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%) !important;
-        border-radius: 20px 20px 20px 6px !important;
-        padding: 15px 17px !important;
-        font-size: 12.5px !important;
-        line-height: 1.5 !important;
-        color: #1e293b !important;
-        border: 1px solid #e2e8f0 !important;
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08), inset 0 1px 0 #ffffff !important;
+    #saveApptBtn {
+        background: linear-gradient(145deg, #d48c46 0%, #8b552b 100%) !important;
+        border-bottom: 5px solid #5d3618 !important;
+        border-radius: 16px !important;
+        font-size: 15.5px !important;
+        box-shadow: 0 14px 30px rgba(154, 91, 34, 0.4), inset 0 2px 2px rgba(255, 255, 255, 0.45) !important;
     }
 </style>
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    // 1. Убираем огромные пустые пробелы вокруг номера телефона в шаблонах SMS
-    if (typeof smsTemplates !== 'undefined') {
-        Object.keys(smsTemplates).forEach(lang => {
-            smsTemplates[lang] = smsTemplates[lang].replace(/\n\s*\n\s*\n+/g, '\n\n');
-        });
-    }
-
-    // Вспомогательная функция: минуты (например, 900) -> Американский формат "3:00 PM"
+(function initUS3DSlotsOverride() {
+    // Превращаем минуты (например 900) в американский формат "3:00 PM"
     function minsToUS12h(mins) {
         let h = Math.floor(mins / 60);
         let m = mins % 60;
@@ -6141,7 +6195,7 @@ document.addEventListener("DOMContentLoaded", function() {
         return `${h}:${String(m).padStart(2, '0')} ${ampm}`;
     }
 
-    // Функция установки выбранного слота в селекты Часов / Минут / AM-PM
+    // При клике оператора на любой слот — выставляем его время и обновляем экран iPhone
     window.selectUSTimeSlot = function(startMins, chipEl) {
         let h24 = Math.floor(startMins / 60);
         let m = startMins % 60;
@@ -6153,36 +6207,42 @@ document.addEventListener("DOMContentLoaded", function() {
         document.getElementById('aTimeMinute').value = String(m).padStart(2, '0');
         document.getElementById('aTimeAMPM').value = ampm;
 
-        // Обновляем только текст на экране iPhone, НЕ скрывая список слотов!
         const availBox = document.getElementById('availabilityBox');
         if (typeof window.updatePreview === 'function') {
             window.updatePreview();
         }
+        // Оставляем список слотов открытым, чтобы оператор видел свой выбор!
         if (availBox) availBox.style.display = 'block';
 
-        // Подсвечиваем выбранный 3D-слот
         document.querySelectorAll('.us-slot-chip').forEach(el => el.classList.remove('active-slot'));
         if (chipEl) chipEl.classList.add('active-slot');
     };
 
-    // 2. Переопределяем поиск свободного времени: нарезка по любым интервалам (5, 10, 15, 30 мин, 1 ч 15 мин и т.д.) в формате AM/PM!
-    window.checkStaffAvailability = async function() {
+    // Новая функция нарезки ВСЕХ свободных слотов по выбранной длительности
+    async function renderSlicedUSSlots() {
         const staff = document.getElementById('modalApptStaff').value;
         const durationStr = document.getElementById('aDuration').value;
         const durationMins = parseDurationToMinutes(durationStr) || 30;
         const box = document.getElementById('availabilityBox');
 
-        // Определяем выбранную дату в мини-календаре
+        // Точное считывание выбранного дня из мини-календаря
         const monthYearText = document.getElementById('aMonthYear').textContent.trim();
         const selBtn = document.querySelector('#aCalDates .cal-btn.selected');
         let targetDate = new Date();
         if (selBtn && monthYearText) {
-            targetDate = new Date(`${monthYearText} ${selBtn.textContent.trim()}`);
+            const parts = monthYearText.split(' ');
+            const monthsShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const mIdx = monthsShort.indexOf(parts[0]);
+            const yr = parseInt(parts[1], 10);
+            const dy = parseInt(selBtn.textContent.trim(), 10);
+            if (mIdx !== -1 && !isNaN(yr) && !isNaN(dy)) {
+                targetDate = new Date(yr, mIdx, dy);
+            }
         }
         const dateStr = targetDate.toDateString();
 
         box.style.display = 'block';
-        box.innerHTML = '<div style="text-align:center; color:#6e5549; font-size: 13px; font-weight:700; padding: 10px;">⏳ Slicing available US time slots...</div>';
+        box.innerHTML = '<div style="text-align:center; color:#6e5549; font-size: 13px; font-weight:800; padding: 12px;">⏳ Loading individual time slots...</div>';
 
         await window.loadAppointments();
         const records = window.globalAppointments || [];
@@ -6193,81 +6253,110 @@ document.addEventListener("DOMContentLoaded", function() {
 
         const workStart = 10 * 60; // 10:00 AM
         const workEnd = 19 * 60;   // 7:00 PM
-        let currentMin = workStart;
+        let startMin = workStart;
 
         const now = new Date();
         if (now.toDateString() === dateStr) {
             const nowMins = now.getHours() * 60 + now.getMinutes();
             if (nowMins > workStart) {
-                // Гибкое округление под любой выбранный интервал (5, 10, 15, 25, 30 мин и т.д.)
                 const stepRound = (durationMins % 10 === 0) ? 10 : ((durationMins % 5 === 0) ? 5 : 15);
-                currentMin = Math.ceil(nowMins / stepRound) * stepRound;
+                startMin = Math.ceil(nowMins / stepRound) * stepRound;
             }
         }
 
-        if (currentMin >= workEnd) {
-            box.innerHTML = `<div style="color: #dc2626; font-size: 13px; text-align: center; font-weight: 800; padding: 8px;">Working hours are over for this date.</div>`;
+        if (startMin >= workEnd) {
+            box.innerHTML = `<div style="color: #dc2626; font-size: 13px; text-align: center; font-weight: 800; padding: 10px;">Working hours are over for today.</div>`;
             return;
         }
 
-        // Сначала находим свободные окна между занятыми встречами
-        let freeWindows = [];
-        dayAppts.forEach(appt => {
-            let apptStart = parseTimeStrToMinutes(appt.time);
-            let apptDur = parseDurationToMinutes(appt.length) || 60;
-            let apptEnd = apptStart + apptDur;
-
-            if (apptStart - currentMin >= durationMins) {
-                freeWindows.push({ start: currentMin, end: apptStart });
-            }
-            currentMin = Math.max(currentMin, apptEnd);
+        // Проверяем каждый конкретный слот от начала до конца рабочего дня без склеивания в длинные куски!
+        let busyIntervals = dayAppts.map(appt => {
+            const s = parseTimeStrToMinutes(appt.time);
+            const d = parseDurationToMinutes(appt.length) || 60;
+            return { start: s, end: s + d };
         });
 
-        if (workEnd - currentMin >= durationMins) {
-            freeWindows.push({ start: currentMin, end: workEnd });
+        let individualSlots = [];
+        let cursor = startMin;
+
+        while (cursor + durationMins <= workEnd) {
+            const slotEnd = cursor + durationMins;
+            // Проверяем, пересекается ли этот слот с какой-либо существующей записью
+            const conflict = busyIntervals.find(b => (cursor < b.end && slotEnd > b.start));
+
+            if (!conflict) {
+                individualSlots.push({ start: cursor, end: slotEnd });
+                cursor += durationMins; // Шагаем ровно на выбранную длительность (например, +30 мин или +1 час)
+            } else {
+                // Если время занято, перепрыгиваем сразу в конец занятой встречи!
+                cursor = conflict.end;
+            }
         }
 
-        // Нарезаем каждое свободное окно ровно по выбранной длительности (durationMins)
-        let exactSlots = [];
-        freeWindows.forEach(win => {
-            let slotStart = win.start;
-            while (slotStart + durationMins <= win.end) {
-                exactSlots.push({
-                    start: slotStart,
-                    end: slotStart + durationMins
-                });
-                slotStart += durationMins;
-            }
-        });
-
-        if (exactSlots.length === 0) {
-            box.innerHTML = `<div style="background: #fef2f2; color: #dc2626; padding: 12px; border-radius: 10px; font-size: 13px; text-align: center; border: 1px solid #fecaca; font-weight: 700;">🚫 No available ${durationStr} slots left on this date.</div>`;
+        if (individualSlots.length === 0) {
+            box.innerHTML = `<div style="background: #fef2f2; color: #dc2626; padding: 12px; border-radius: 12px; font-size: 13px; text-align: center; border: 1px solid #fecaca; font-weight: 800;">🚫 No available ${durationStr} slots on this date.</div>`;
         } else {
-            let html = `<div style="font-size: 11.5px; font-weight: 800; color: #166534; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">✅ Click a slot to book (${durationStr}):</div>`;
+            // Проверяем, какой час/минута сейчас выбраны в селектах, чтобы сразу подсветить активный слот
+            const curH = parseInt(document.getElementById('aTimeHour').value, 10);
+            const curM = parseInt(document.getElementById('aTimeMinute').value, 10);
+            const curAP = document.getElementById('aTimeAMPM').value;
+            const selectedTotalMins = ((curH % 12) + (curAP === 'PM' ? 12 : 0)) * 60 + curM;
+
+            let html = `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+                <span style="font-size: 11px; font-weight: 800; color: #14532d; text-transform: uppercase; letter-spacing: 0.5px;">🎯 Select a Slot (${durationStr}):</span>
+                <span style="background:#dcfce7; color:#15803d; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:10px;">${individualSlots.length} available</span>
+            </div>`;
             html += `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">`;
-            exactSlots.forEach(slot => {
+            individualSlots.forEach(slot => {
                 const sUS = minsToUS12h(slot.start);
                 const eUS = minsToUS12h(slot.end);
-                html += `<div class="us-slot-chip" onclick="window.selectUSTimeSlot(${slot.start}, this)">${sUS} – ${eUS}</div>`;
+                const isActive = (slot.start === selectedTotalMins) ? ' active-slot' : '';
+                html += `<div class="us-slot-chip${isActive}" onclick="window.selectUSTimeSlot(${slot.start}, this)">${sUS} – ${eUS}</div>`;
             });
             html += `</div>`;
             box.innerHTML = html;
         }
-    };
+    }
 
-    // 3. Авто-пересчет открытых слотов при смене Duration, Service или Staff
-    ['aDuration', 'modalApptService', 'modalApptStaff'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.addEventListener('change', () => {
-                const box = document.getElementById('availabilityBox');
-                if (box && box.style.display === 'block') {
-                    window.checkStaffAvailability();
-                }
+    // Жестко закрепляем нашу функцию за window.checkStaffAvailability, чтобы старый скрипт не мог её перезаписать!
+    function lockSlotFunction() {
+        if (typeof smsTemplates !== 'undefined') {
+            Object.keys(smsTemplates).forEach(lang => {
+                smsTemplates[lang] = smsTemplates[lang].replace(/\n\s*\n\s*\n+/g, '\n\n');
             });
         }
+        window.checkStaffAvailability = renderSlicedUSSlots;
+
+        const findBtn = document.querySelector('button[onclick*="checkStaffAvailability"]');
+        if (findBtn) {
+            findBtn.onclick = function(e) {
+                e.preventDefault();
+                renderSlicedUSSlots();
+            };
+        }
+    }
+
+    // Запускаем сразу и повторяем через 600мс и 1500мс (после того как отработает await loadSharedContacts в старом скрипте!)
+    lockSlotFunction();
+    setTimeout(lockSlotFunction, 600);
+    setTimeout(lockSlotFunction, 1500);
+
+    // При смене Duration, Service или Staff автоматически перенарезаем слоты
+    window.addEventListener('load', () => {
+        lockSlotFunction();
+        ['aDuration', 'modalApptService', 'modalApptStaff'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', () => {
+                    const box = document.getElementById('availabilityBox');
+                    if (box && box.style.display === 'block') {
+                        renderSlicedUSSlots();
+                    }
+                });
+            }
+        });
     });
-});
+})();
 </script>
 </body>
 </html>
