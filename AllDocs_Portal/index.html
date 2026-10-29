@@ -2435,7 +2435,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -8168,6 +8171,409 @@ window.renderMainCalendar = async function() {
     installCalendarUpgrade();
     setTimeout(installCalendarUpgrade, 500);
     setTimeout(installCalendarUpgrade, 1200);
+})();
+</script>
+    <script>
+(function initSmartCalendarControlsFixed() {
+    // 1. Создаем собственную надежную переменную даты календаря (сразу сегодняшнее число!)
+    window.calActiveDate = new Date();
+    window.calAgendaScope = 'week_ahead'; // 'week_ahead' | 'single_day' | 'full_month'
+
+    function toInputDateStr(d) {
+        const yr = d.getFullYear();
+        const mo = String(d.getMonth() + 1).padStart(2, '0');
+        const dy = String(d.getDate()).padStart(2, '0');
+        return `${yr}-${mo}-${dy}`;
+    }
+
+    // 2. Создаем умную панель выбора даты и ленту чисел месяца
+    function ensureSmartSubbar() {
+        const wrapper = document.getElementById('calGridWrapper');
+        const calContent = document.getElementById('calendarContent');
+        if (!wrapper || !calContent) return;
+
+        if (!document.getElementById('calSmartSubbar')) {
+            const subbar = document.createElement('div');
+            subbar.id = 'calSmartSubbar';
+            subbar.className = 'cal-smart-subbar';
+            subbar.innerHTML = `
+                <div class="cal-smart-left">
+                    <span style="font-size:11px; font-weight:800; color:#f5cba7; text-transform:uppercase; letter-spacing:0.6px;">📅 Pick Date:</span>
+                    <input type="date" id="calExactDatePicker" title="Jump to any past or future date">
+                    <button type="button" class="cal-smart-btn" id="calJumpTodayBtn">📍 Today</button>
+                </div>
+                <div class="cal-smart-right" id="calAgendaScopeGroup">
+                    <span style="font-size:10.5px; font-weight:800; color:#d48c46; text-transform:uppercase; letter-spacing:0.5px;">Show:</span>
+                    <button type="button" class="cal-smart-btn active" data-scope="week_ahead">🎯 Selected + 7 Days</button>
+                    <button type="button" class="cal-smart-btn" data-scope="single_day">📌 Exact Day Only</button>
+                    <button type="button" class="cal-smart-btn" data-scope="full_month">📜 Full Month (with Past)</button>
+                </div>
+            `;
+            wrapper.insertBefore(subbar, calContent);
+
+            const ribbon = document.createElement('div');
+            ribbon.id = 'calDayRibbon';
+            ribbon.className = 'cal-day-ribbon';
+            wrapper.insertBefore(ribbon, calContent);
+
+            // Сразу выставляем сегодняшнюю дату в поле Pick Date (чтобы никогда не было mm/dd/yyyy!)
+            const picker = document.getElementById('calExactDatePicker');
+            picker.value = toInputDateStr(window.calActiveDate);
+
+            picker.addEventListener('change', function() {
+                if (!this.value) return;
+                const parts = this.value.split('-');
+                window.calActiveDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                window.renderMainCalendar();
+            });
+
+            document.getElementById('calJumpTodayBtn').onclick = function() {
+                window.calActiveDate = new Date();
+                window.renderMainCalendar();
+            };
+
+            document.querySelectorAll('#calAgendaScopeGroup .cal-smart-btn').forEach(btn => {
+                btn.onclick = function() {
+                    document.querySelectorAll('#calAgendaScopeGroup .cal-smart-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    window.calAgendaScope = this.getAttribute('data-scope');
+                    const vs = document.getElementById('viewSelector');
+                    if (vs && vs.value !== 'agenda') vs.value = 'agenda';
+                    window.renderMainCalendar();
+                };
+            });
+        }
+    }
+
+    // 3. Отрисовка интерактивной 3D-ленты дней месяца (1..31)
+    function renderDayRibbon(records) {
+        const ribbon = document.getElementById('calDayRibbon');
+        if (!ribbon) return;
+
+        const y = window.calActiveDate.getFullYear();
+        const m = window.calActiveDate.getMonth();
+        const selectedDay = window.calActiveDate.getDate();
+        const daysInMonth = new Date(y, m + 1, 0).getDate();
+        const todayStart = new Date().setHours(0, 0, 0, 0);
+        const dowNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        let html = '';
+        for (let d = 1; d <= daysInMonth; d++) {
+            const curObj = new Date(y, m, d);
+            const curStr = curObj.toDateString();
+            const isSelected = (d === selectedDay);
+            const isToday = (curObj.getTime() === todayStart);
+            const isPast = (curObj.getTime() < todayStart);
+
+            const hasAppts = records.some(a => new Date(a.timestamp).toDateString() === curStr);
+            const dotHtml = hasAppts ? `<div class="ribbon-dot"></div>` : `<div style="height:7px;"></div>`;
+
+            let cls = 'ribbon-day-chip';
+            if (isSelected) cls += ' selected';
+            if (isToday) cls += ' is-today';
+            if (isPast) cls += ' is-past';
+
+            html += `
+                <div class="${cls}" onclick="window.jumpToCalendarDay(${y}, ${m}, ${d})" title="Click to view ${curStr}">
+                    <span class="ribbon-dow">${dowNames[curObj.getDay()]}</span>
+                    <span class="ribbon-num">${d}</span>
+                    ${dotHtml}
+                </div>
+            `;
+        }
+        ribbon.innerHTML = html;
+
+        setTimeout(() => {
+            const selChip = ribbon.querySelector('.ribbon-day-chip.selected');
+            if (selChip) selChip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }, 50);
+    }
+
+    // При клике на любое число в ленте — сразу показываем этот день!
+    window.jumpToCalendarDay = function(y, m, d) {
+        window.calActiveDate = new Date(y, m, d);
+        const vs = document.getElementById('viewSelector');
+        // Если были в режиме Month и кликнули на число в верхней ленте — переключаем в Agenda на этот день!
+        if (vs && (vs.value === 'month-condensed' || vs.value === 'month-full')) {
+            vs.value = 'agenda';
+        }
+        window.renderMainCalendar();
+    };
+
+    // 4. Полная и безотказная функция отрисовки всех 5 режимов календаря (Agenda, Day, Week, Month Condensed, Month Full)
+    function lockMasterCalendarFunctions() {
+        ensureSmartSubbar();
+
+        window.changeViewDate = function(dir) {
+            const view = document.getElementById('viewSelector').value;
+            if (view === 'week') {
+                window.calActiveDate.setDate(window.calActiveDate.getDate() + dir * 7);
+            } else if (view === 'day' || (view === 'agenda' && window.calAgendaScope === 'single_day')) {
+                window.calActiveDate.setDate(window.calActiveDate.getDate() + dir);
+            } else {
+                window.calActiveDate.setMonth(window.calActiveDate.getMonth() + dir);
+            }
+            window.renderMainCalendar();
+        };
+
+        window.renderMainCalendar = async function() {
+            ensureSmartSubbar();
+
+            const picker = document.getElementById('calExactDatePicker');
+            if (picker) picker.value = toInputDateStr(window.calActiveDate);
+
+            await window.loadAppointments();
+            const view = document.getElementById('viewSelector').value;
+            const area = document.getElementById('calendarContent');
+            const title = document.getElementById('mainCalTitle');
+            if (!area || !title) return;
+
+            area.innerHTML = '';
+            const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+            const y = window.calActiveDate.getFullYear();
+            const m = window.calActiveDate.getMonth();
+            const selDay = window.calActiveDate.getDate();
+
+            let records = window.globalAppointments || [];
+            const staffF = document.getElementById('staffFilter').value;
+            if (staffF !== 'All Staff') records = records.filter(r => r.staff === staffF);
+
+            const statusF = document.getElementById('statusFilter').value;
+            if (statusF !== 'All Statuses') {
+                records = records.filter(r => {
+                    const recStatus = r.clientStatus || (r.isLead ? 'Lead' : 'Existing Client');
+                    return recStatus === statusF;
+                });
+            }
+
+            // Всегда отрисовываем интерактивную ленту дней месяца
+            renderDayRibbon(records);
+
+            title.style.display = 'flex';
+            title.style.flexDirection = 'column';
+            title.style.alignItems = 'center';
+            title.style.lineHeight = '1.1';
+
+            // === РЕЖИМ 1: AGENDA (Сразу работает при выборе в списке!) ===
+            if (view === 'agenda') {
+                const subText = window.calAgendaScope === 'week_ahead'
+                    ? 'Selected Day + Next 7 Days'
+                    : (window.calAgendaScope === 'single_day' ? 'Exact Selected Date' : 'Full Month (Past & Upcoming)');
+                title.innerHTML = `${months[m]} ${selDay}, ${y}<span style="font-size: 12px; color: #f5cba7; margin-top: 4px;">${subText}</span>`;
+
+                const selectedDayStart = new Date(y, m, selDay, 0, 0, 0, 0).getTime();
+                const selectedDayEnd   = new Date(y, m, selDay, 23, 59, 59, 999).getTime();
+                const sevenDaysAheadEnd = new Date(y, m, selDay + 7, 23, 59, 59, 999).getTime();
+
+                const filtered = records.filter(a => {
+                    const d = new Date(a.timestamp);
+                    if (window.calAgendaScope === 'single_day') {
+                        return a.timestamp >= selectedDayStart && a.timestamp <= selectedDayEnd;
+                    } else if (window.calAgendaScope === 'full_month') {
+                        return d.getMonth() === m && d.getFullYear() === y;
+                    } else {
+                        return a.timestamp >= selectedDayStart && a.timestamp <= sevenDaysAheadEnd;
+                    }
+                }).sort((a, b) => a.timestamp - b.timestamp);
+
+                if (filtered.length === 0) {
+                    const selDateReadable = `${months[m]} ${selDay}, ${y}`;
+                    area.innerHTML = `
+                        <div style="padding:36px 24px; text-align:center; background:linear-gradient(180deg,#ffffff,#faf5ed); border-radius:20px; border:1.5px dashed rgba(184,115,51,0.35);">
+                            <div style="font-size:34px; margin-bottom:10px;">🗓️</div>
+                            <div style="font-size:16px; font-weight:800; color:#24140e; margin-bottom:6px;">No appointments found for ${selDateReadable} ${window.calAgendaScope === 'week_ahead' ? '(+7 days)' : ''}</div>
+                            <div style="font-size:13px; color:#6e5549; margin-bottom:16px;">Click another day on the ribbon above or click <b>📜 Full Month (with Past)</b> to see all records.</div>
+                            <button type="button" class="book-appt-btn" style="margin:0 auto; height:42px; padding:0 20px;" onclick="openApptModal('', '')">📅 + Book Appointment</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                let currentDate = '';
+                const nowMs = Date.now();
+                const targetDateStr = new Date(y, m, selDay).toDateString();
+
+                filtered.forEach(appt => {
+                    const dObj = new Date(appt.timestamp);
+                    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                    const dateTitle = `${days[dObj.getDay()]}, ${dObj.getMonth() + 1}/${dObj.getDate()}/${dObj.getFullYear()}`;
+                    const isTargetDay = (dObj.toDateString() === targetDateStr);
+                    const isPastAppt = (appt.timestamp < nowMs);
+
+                    if (dateTitle !== currentDate) {
+                        const targetBadge = isTargetDay ? `<span style="background:#d48c46; color:#fff; font-size:10px; padding:2px 8px; border-radius:8px; margin-left:8px; text-transform:uppercase;">🎯 Selected Day</span>` : '';
+                        html += `<div class="agenda-date-header ${isTargetDay ? 'selected-target-day' : ''}"><span style="font-size: 19px;">📅</span> ${dateTitle} ${targetBadge}</div>`;
+                        currentDate = dateTitle;
+                    }
+
+                    let leadBadge = appt.isLead ? '<span style="background: #e65100; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; vertical-align: middle; font-weight: bold;">🔥 LEAD</span>' : '';
+                    let pastBadge = isPastAppt ? '<span class="completed-appt-pill">✅ Completed</span>' : '';
+
+                    let endTimeStr = "";
+                    if (appt.time && appt.length) {
+                        let startMins = parseTimeStrToMinutes(appt.time);
+                        let durMins = parseDurationToMinutes(appt.length);
+                        if (durMins > 0) endTimeStr = " – " + formatMinutesToTimeStr(startMins + durMins);
+                    }
+
+                    html += `
+                        <div class="agenda-card ${isPastAppt ? 'past-appt' : ''}" onclick="openPreviewModal('${appt.id}')">
+                            <div class="agenda-info">
+                                <div class="client-name">${appt.client} ${leadBadge} ${pastBadge}</div>
+                                <div class="service-details">${appt.service} @ ${appt.location} <span style="font-size:11px; font-weight:800; color:#b87333;">WITH</span> <b>${appt.staff}</b></div>
+                            </div>
+                            <div class="agenda-time" style="font-size: 13.5px; text-align: center;">${appt.time}${endTimeStr}</div>
+                        </div>
+                    `;
+                });
+                area.innerHTML = html;
+
+            // === РЕЖИМ 2 И 3: MONTH CONDENSED & MONTH FULL ===
+            } else if (view === 'month-condensed' || view === 'month-full') {
+                title.innerHTML = `${months[m]} ${y}`;
+                const isCondensed = view === 'month-condensed';
+                let html = `<div class="month-grid">`;
+                ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => { html += `<div class="mc-header">${d}</div>`; });
+
+                const firstDay = new Date(y, m, 1).getDay();
+                const daysInMonth = new Date(y, m + 1, 0).getDate();
+                const todayStr = new Date().toDateString();
+
+                for (let i = 0; i < firstDay; i++) {
+                    html += `<div class="mc-cell ${isCondensed ? 'condensed' : ''}" style="background:var(--surface-color);"></div>`;
+                }
+                for (let i = 1; i <= daysInMonth; i++) {
+                    const cDateStr = new Date(y, m, i).toDateString();
+                    const isToday = (cDateStr === todayStr);
+                    const dayAppts = records.filter(a => new Date(a.timestamp).toDateString() === cDateStr);
+                    let content = '';
+
+                    if (isCondensed) {
+                        if (dayAppts.length > 0) {
+                            const word = dayAppts.length === 1 ? 'appt' : 'appts';
+                            content = `<div class="mc-badge" onclick="event.stopPropagation(); openDayList('${cDateStr}')">${dayAppts.length} ${word}</div>`;
+                        }
+                    } else {
+                        dayAppts.forEach(appt => {
+                            let leadIcon = appt.isLead ? '🔥 ' : '';
+                            content += `<div class="mini-appt" onclick="event.stopPropagation(); openPreviewModal('${appt.id}')">${appt.time} ${leadIcon}${appt.client.split(' ')[0]}</div>`;
+                        });
+                    }
+
+                    html += `<div class="mc-cell ${isCondensed ? 'condensed' : ''} ${isToday ? 'is-today' : ''}" onclick="window.jumpToCalendarDay(${y}, ${m}, ${i})" style="cursor:pointer;" title="Click to view ${cDateStr}"><div class="mc-date ${isToday ? 'is-today' : ''}">${i}</div>${content}</div>`;
+                }
+                html += '</div>';
+                area.innerHTML = html;
+
+            // === РЕЖИМ 4 И 5: DAY & WEEK ===
+            } else if (view === 'day' || view === 'week') {
+                const isWeek = (view === 'week');
+                if (view === 'day') {
+                    title.innerHTML = `${months[m]} ${selDay}<span style="font-size: 14px; color: #f5cba7; margin-top: 4px;">${y}</span>`;
+                } else {
+                    const wStart = new Date(window.calActiveDate); wStart.setDate(window.calActiveDate.getDate() - window.calActiveDate.getDay());
+                    const wEnd = new Date(wStart); wEnd.setDate(wStart.getDate() + 6);
+                    if (wStart.getMonth() === wEnd.getMonth()) {
+                        title.innerHTML = `${months[wStart.getMonth()]} ${wStart.getDate()} - ${wEnd.getDate()}<span style="font-size: 14px; color: #f5cba7; margin-top: 4px;">${wStart.getFullYear()}</span>`;
+                    } else {
+                        title.innerHTML = `${months[wStart.getMonth()].substring(0,3)} ${wStart.getDate()} - ${months[wEnd.getMonth()].substring(0,3)} ${wEnd.getDate()}<span style="font-size: 14px; color: #f5cba7; margin-top: 4px;">${wStart.getFullYear()}</span>`;
+                    }
+                }
+
+                const renderDayGrid = (targetDateObj) => {
+                    const dStr = targetDateObj.toDateString();
+                    const dayAppts = records.filter(a => new Date(a.timestamp).toDateString() === dStr).sort((a,b) => parseTimeStrToMinutes(a.time) - parseTimeStrToMinutes(b.time));
+                    let eventsHtml = '';
+                    dayAppts.forEach(appt => {
+                        let startMins = parseTimeStrToMinutes(appt.time);
+                        let durMins = parseDurationToMinutes(appt.length) || 60;
+                        let endMins = startMins + durMins;
+                        let endTimeStr = formatMinutesToTimeStr(endMins);
+                        let topPx = Math.max(0, startMins - 8 * 60);
+                        let heightPx = Math.max(30, durMins);
+
+                        let overlapping = dayAppts.filter(other => {
+                            if (String(other.id) === String(appt.id)) return false;
+                            let oStart = parseTimeStrToMinutes(other.time);
+                            let oEnd = oStart + (parseDurationToMinutes(other.length) || 60);
+                            return (startMins < oEnd && endMins > oStart);
+                        });
+
+                        let leftStyle = "4px", widthStyle = "calc(100% - 8px)";
+                        if (overlapping.length > 0) {
+                            let cluster = [appt, ...overlapping].sort((a,b) => parseTimeStrToMinutes(a.time) - parseTimeStrToMinutes(b.time) || String(a.id).localeCompare(String(b.id)));
+                            let myIndex = cluster.findIndex(x => String(x.id) === String(appt.id));
+                            let widthPct = 100 / cluster.length;
+                            leftStyle = `calc(${myIndex * widthPct}% + 2px)`;
+                            widthStyle = `calc(${widthPct}% - 4px)`;
+                        }
+
+                        let leadClass = appt.isLead ? 'gv-appt-lead' : 'gv-appt-reg';
+                        let leadIcon = appt.isLead ? '🔥 ' : '';
+                        eventsHtml += `
+                            <div class="gv-appt ${leadClass}" style="top: ${topPx}px; height: ${heightPx}px; left: ${leftStyle}; width: ${widthStyle};" onclick="openPreviewModal('${appt.id}')">
+                                <div class="gv-appt-time">${appt.time} - ${endTimeStr}</div>
+                                <div class="gv-appt-title">${leadIcon}${appt.client}</div>
+                                <div class="gv-appt-service">${appt.service} with ${appt.staff}</div>
+                            </div>
+                        `;
+                    });
+                    return eventsHtml;
+                };
+
+                let cssHtml = `<div class="gv-container"><div class="gv-time-col"><div class="gv-time-header"></div>`;
+                for (let h = 8; h <= 20; h++) {
+                    let ampm = h >= 12 ? 'PM' : 'AM';
+                    let h12 = h % 12 || 12;
+                    cssHtml += `<div class="gv-time-slot"><span class="gv-time-label">${h12} ${ampm}</span></div>`;
+                }
+                cssHtml += `</div><div class="gv-days-wrap" style="min-width:${isWeek ? '1050px' : '100%'};">`;
+
+                const todayStr = new Date().toDateString();
+                if (isWeek) {
+                    const wStart = new Date(window.calActiveDate); wStart.setDate(window.calActiveDate.getDate() - window.calActiveDate.getDay());
+                    const daysShort = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                    for (let i = 0; i < 7; i++) {
+                        let curD = new Date(wStart); curD.setDate(wStart.getDate() + i);
+                        let isToday = (curD.toDateString() === todayStr);
+                        cssHtml += `
+                            <div class="gv-day-col" style="min-width:145px;">
+                                <div class="gv-day-header ${isToday ? 'today' : ''}">
+                                    <span class="gv-day-header-day">${daysShort[i]}</span>
+                                    <span>${months[curD.getMonth()].substring(0,3)} ${curD.getDate()}</span>
+                                </div>
+                                <div class="gv-grid">${renderDayGrid(curD)}</div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    const isToday = (window.calActiveDate.toDateString() === todayStr);
+                    const daysFull = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                    cssHtml += `
+                        <div class="gv-day-col" style="min-width:100%;">
+                            <div class="gv-day-header ${isToday ? 'today' : ''}">
+                                <span class="gv-day-header-day">${daysFull[window.calActiveDate.getDay()]}</span>
+                                <span>${months[m]} ${selDay}</span>
+                            </div>
+                            <div class="gv-grid">${renderDayGrid(window.calActiveDate)}</div>
+                        </div>
+                    `;
+                }
+                cssHtml += `</div></div>`;
+                area.innerHTML = cssHtml;
+            }
+        };
+
+        // Если вкладка календаря уже открыта — сразу отрисовываем!
+        if (document.getElementById('tabCalendarContent')?.classList.contains('active')) {
+            window.renderMainCalendar();
+        }
+    }
+
+    lockMasterCalendarFunctions();
+    setTimeout(lockMasterCalendarFunctions, 400);
+    setTimeout(lockMasterCalendarFunctions, 1100);
 })();
 </script>
 </body>
