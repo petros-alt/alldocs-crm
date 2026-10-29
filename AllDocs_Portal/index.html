@@ -5137,98 +5137,237 @@ window.renderMainCalendar = async function() {
         })();
     }
 
-   // 3. ФОНОВЫЕ 3D-ПЛАНЕТЫ С КОЛЬЦАМИ И СПУТНИКАМИ (ВМЕСТО КВАДРАТИКОВ)
+   // 3. ULTRA-HD 3D ПЛАНЕТЫ 2026 (ПРОЦЕДУРНЫЕ ТЕКСТУРЫ, КРАТЕРЫ, ШЕЙДЕР АТМОСФЕРЫ И КОЛЬЦА)
     if (typeof THREE !== 'undefined' && !document.getElementById('webgl-bg-canvas')) {
         const bgCanvas = document.createElement('canvas');
         bgCanvas.id = 'webgl-bg-canvas';
+        bgCanvas.style.opacity = '1'; // Убираем размытую полупрозрачность для 100% четкости!
         document.body.insertBefore(bgCanvas, document.body.firstChild);
 
         const bgScene = new THREE.Scene();
-        const bgCam = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+        const bgCam = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
         bgCam.position.z = 16;
 
-        const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, alpha: true, antialias: true });
+        const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, alpha: true, antialias: true, powerPreference: 'high-performance' });
         bgRenderer.setSize(window.innerWidth, window.innerHeight);
-        bgRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        bgRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2.5));
+        bgRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+        bgRenderer.toneMappingExposure = 1.15;
 
-        // Мягкое 3D-освещение для объема планет
-        bgScene.add(new THREE.AmbientLight(0xffffff, 0.85));
-        const sunLight = new THREE.DirectionalLight(0xffe0b2, 1.8);
-        sunLight.position.set(10, 15, 12);
-        bgScene.add(sunLight);
+        // Кинематографическое трехточечное освещение
+        bgScene.add(new THREE.AmbientLight(0xfff5eb, 0.55));
 
-        const backLight = new THREE.PointLight(0xd48c46, 1.4, 40);
-        backLight.position.set(-12, -10, 8);
-        bgScene.add(backLight);
+        const keyLight = new THREE.DirectionalLight(0xfff0dd, 2.4);
+        keyLight.position.set(14, 18, 14);
+        bgScene.add(keyLight);
 
-        // Палитра планет в фирменных тонах портала (Золото, Бронза, Крем, Терракота, Эспрессо)
-        const planetColors = [0xd48c46, 0xb87333, 0x8b552b, 0xe6b88a, 0x5c3a21, 0xc88240];
-        const planets = [];
-        const sphereGeo = new THREE.SphereGeometry(1, 32, 32);
+        const rimLight = new THREE.DirectionalLight(0xd48c46, 1.5);
+        rimLight.position.set(-15, -10, -8);
+        bgScene.add(rimLight);
 
-        for (let i = 0; i < 18; i++) {
-            const planetGroup = new THREE.Group();
+        const fillLight = new THREE.PointLight(0x93c5fd, 0.9, 45);
+        fillLight.position.set(0, -12, 10);
+        bgScene.add(fillLight);
 
-            // Размер планеты
-            const radius = 0.22 + Math.random() * 0.55;
-            const mat = new THREE.MeshStandardMaterial({
-                color: planetColors[i % planetColors.length],
-                metalness: 0.45,
-                roughness: 0.28
+        // Генератор HD-текстур поверхности и 3D-рельефа (Bump Map)
+        function createPlanetTexture(palette, type) {
+            const c = document.createElement('canvas');
+            c.width = 1024;
+            c.height = 512;
+            const ctx = c.getContext('2d');
+
+            // Базовый градиент широт
+            const grad = ctx.createLinearGradient(0, 0, 0, c.height);
+            palette.forEach((col, idx) => grad.addColorStop(idx / (palette.length - 1), col));
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, c.width, c.height);
+
+            if (type === 'gas') {
+                // Полосы газового гиганта и турбулентные вихри
+                for (let i = 0; i < 95; i++) {
+                    const y = Math.random() * c.height;
+                    const h = 2 + Math.random() * 18;
+                    ctx.fillStyle = palette[Math.floor(Math.random() * palette.length)];
+                    ctx.globalAlpha = 0.12 + Math.random() * 0.28;
+                    ctx.fillRect(0, y, c.width, h);
+                }
+                // Большие штормы и антициклоны
+                for (let i = 0; i < 18; i++) {
+                    const x = Math.random() * c.width;
+                    const y = 60 + Math.random() * (c.height - 120);
+                    const rx = 18 + Math.random() * 55;
+                    const ry = 6 + Math.random() * 18;
+                    ctx.beginPath();
+                    ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+                    ctx.fillStyle = palette[Math.floor(Math.random() * palette.length)];
+                    ctx.globalAlpha = 0.35;
+                    ctx.fill();
+                }
+            } else {
+                // Каменистая экзопланета: кратеры, каньоны и минеральные пятна
+                for (let i = 0; i < 320; i++) {
+                    const x = Math.random() * c.width;
+                    const y = Math.random() * c.height;
+                    const r = 3 + Math.random() * 38;
+                    const g = ctx.createRadialGradient(x, y, r * 0.1, x, y, r);
+                    g.addColorStop(0, palette[0]);
+                    g.addColorStop(0.75, palette[palette.length - 1]);
+                    g.addColorStop(1, 'transparent');
+                    ctx.fillStyle = g;
+                    ctx.globalAlpha = 0.15 + Math.random() * 0.22;
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            const tex = new THREE.CanvasTexture(c);
+            tex.anisotropy = bgRenderer.capabilities.getMaxAnisotropy();
+            return tex;
+        }
+
+        // Генератор текстуры многослойных колец Сатурна с щелью Кассини
+        function createSaturnRingTexture() {
+            const c = document.createElement('canvas');
+            c.width = 512;
+            c.height = 512;
+            const ctx = c.getContext('2d');
+            const cx = 256, cy = 256;
+
+            for (let r = 115; r < 248; r += 1.2) {
+                // Щель Кассини
+                if (r > 188 && r < 198) continue;
+                const alpha = Math.sin((r - 115) / 133 * Math.PI) * (0.25 + Math.random() * 0.55);
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.strokeStyle = r % 5 < 2 ? `rgba(245, 203, 167, ${alpha})` : `rgba(184, 115, 51, ${alpha * 0.85})`;
+                ctx.lineWidth = 1.4;
+                ctx.stroke();
+            }
+            const tex = new THREE.CanvasTexture(c);
+            tex.anisotropy = bgRenderer.capabilities.getMaxAnisotropy();
+            return tex;
+        }
+
+        const ringTexture = createSaturnRingTexture();
+
+        // Палитры разных типов планет (Золотой гигант, Терракотовый Марс, Бронзовый Сатурн, Перламутровый Нептун, Темный обсидиан)
+        const planetStyles = [
+            { type: 'gas',   palette: ['#fff3e0', '#e6b88a', '#b87333', '#5c3a21', '#d48c46'], glow: 0xffd8a8, bump: 0.025, rough: 0.45, metal: 0.15 },
+            { type: 'rocky', palette: ['#f5ebe6', '#d48c46', '#8b552b', '#3e2723', '#b87333'], glow: 0xf5cba7, bump: 0.06,  rough: 0.72, metal: 0.25 },
+            { type: 'gas',   palette: ['#ffffff', '#ebd9c8', '#c88240', '#7a4924', '#f3e5d8'], glow: 0xffffff, bump: 0.02,  rough: 0.38, metal: 0.2 },
+            { type: 'rocky', palette: ['#ffedd5', '#ea580c', '#9a3412', '#431407', '#fdba74'], glow: 0xfdba74, bump: 0.07,  rough: 0.78, metal: 0.18 },
+            { type: 'gas',   palette: ['#e0f2fe', '#93c5fd', '#b87333', '#3b2316', '#bae6fd'], glow: 0x93c5fd, bump: 0.03,  rough: 0.42, metal: 0.22 }
+        ];
+
+        const prebuiltMaterials = planetStyles.map(st => {
+            const tex = createPlanetTexture(st.palette, st.type);
+            return {
+                style: st,
+                mat: new THREE.MeshStandardMaterial({
+                    map: tex,
+                    bumpMap: tex,
+                    bumpScale: st.bump,
+                    roughness: st.rough,
+                    metalness: st.metal
+                })
+            };
+        });
+
+        // GLSL-шейдер атмосферного свечения по краю сферы (Fresnel Effect)
+        function createAtmosphereMesh(radius, glowHex) {
+            const atmoGeo = new THREE.SphereGeometry(radius * 1.045, 48, 48);
+            const atmoMat = new THREE.ShaderMaterial({
+                uniforms: {
+                    glowColor: { value: new THREE.Color(glowHex) }
+                },
+                vertexShader: `
+                    varying vec3 vNormal;
+                    void main() {
+                        vNormal = normalize(normalMatrix * normal);
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 glowColor;
+                    varying vec3 vNormal;
+                    void main() {
+                        float intensity = pow(0.62 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.8);
+                        gl_FragColor = vec4(glowColor, 1.0) * intensity * 0.75;
+                    }
+                `,
+                blending: THREE.AdditiveBlending,
+                side: THREE.BackSide,
+                transparent: true,
+                depthWrite: false
             });
+            return new THREE.Mesh(atmoGeo, atmoMat);
+        }
 
-            const planetMesh = new THREE.Mesh(sphereGeo, mat);
+        const highPolySphere = new THREE.SphereGeometry(1, 64, 64);
+        const planets = [];
+
+        for (let i = 0; i < 14; i++) {
+            const planetGroup = new THREE.Group();
+            const preset = prebuiltMaterials[i % prebuiltMaterials.length];
+            const radius = 0.32 + Math.random() * 0.65;
+
+            // 1. Само тело планеты с рельефом и текстурой
+            const planetMesh = new THREE.Mesh(highPolySphere, preset.mat);
             planetMesh.scale.set(radius, radius, radius);
             planetGroup.add(planetMesh);
 
-            // Каждой третьей планете добавляем 3D-кольцо (как у Сатурна)
+            // 2. Атмосферное свечение вокруг планеты
+            planetGroup.add(createAtmosphereMesh(radius, preset.style.glow));
+
+            // 3. Реалистичные широкие кольца Сатурна
             if (i % 3 === 0) {
-                const ringGeo = new THREE.TorusGeometry(radius * 1.75, radius * 0.07, 16, 64);
+                const ringPlane = new THREE.PlaneGeometry(radius * 4.4, radius * 4.4);
                 const ringMat = new THREE.MeshStandardMaterial({
-                    color: 0xf5cba7,
-                    metalness: 0.6,
-                    roughness: 0.3,
+                    map: ringTexture,
                     transparent: true,
-                    opacity: 0.7
+                    side: THREE.DoubleSide,
+                    roughness: 0.5,
+                    metalness: 0.3,
+                    depthWrite: false
                 });
-                const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-                ringMesh.rotation.x = Math.PI / 2.2 + (Math.random() - 0.5) * 0.4;
-                ringMesh.rotation.y = (Math.random() - 0.5) * 0.4;
+                const ringMesh = new THREE.Mesh(ringPlane, ringMat);
+                ringMesh.rotation.x = Math.PI / 2.25 + (Math.random() - 0.5) * 0.35;
+                ringMesh.rotation.y = (Math.random() - 0.5) * 0.35;
                 planetGroup.add(ringMesh);
             }
 
-            // Некоторым крупным планетам добавляем маленький спутник на орбите
+            // 4. Детализированный спутник с кратерами на орбите
             let moonPivot = null;
-            if (i % 4 === 1) {
+            if (i % 2 === 0) {
                 moonPivot = new THREE.Group();
-                const moonMesh = new THREE.Mesh(
-                    sphereGeo,
-                    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 })
-                );
-                const moonRadius = radius * 0.26;
+                const moonRadius = radius * 0.22;
+                const moonMesh = new THREE.Mesh(highPolySphere, prebuiltMaterials[1].mat);
                 moonMesh.scale.set(moonRadius, moonRadius, moonRadius);
-                moonMesh.position.set(radius * 2.1, 0, 0);
+                moonMesh.position.set(radius * 2.15, 0, 0);
                 moonPivot.add(moonMesh);
+                moonPivot.rotation.z = (Math.random() - 0.5) * 0.5;
                 planetGroup.add(moonPivot);
             }
 
-            // Располагаем планеты преимущественно в свободном пространстве слева и справа от формы
+            // Размещаем в свободном пространстве слева и справа от формы
             const side = i % 2 === 0 ? -1 : 1;
-            const posX = side * (6.5 + Math.random() * 8.5);
-            const posY = (Math.random() - 0.5) * 18;
-            const posZ = (Math.random() - 0.5) * 8 - 2;
+            const posX = side * (6.8 + Math.random() * 7.5);
+            const posY = (Math.random() - 0.5) * 16;
+            const posZ = (Math.random() - 0.5) * 7 - 1.5;
 
             planetGroup.position.set(posX, posY, posZ);
+            planetGroup.rotation.z = (Math.random() - 0.5) * 0.4; // Осевой наклон планеты
 
             planets.push({
                 group: planetGroup,
+                mesh: planetMesh,
                 moonPivot: moonPivot,
-                baseY: posY,
                 baseX: posX,
-                floatSpeed: 0.4 + Math.random() * 0.8,
+                baseY: posY,
+                floatSpeed: 0.35 + Math.random() * 0.65,
                 floatOffset: Math.random() * Math.PI * 2,
-                rotSpeedX: (Math.random() - 0.5) * 0.012,
-                rotSpeedY: 0.005 + Math.random() * 0.012
+                spinSpeed: 0.004 + Math.random() * 0.008
             });
 
             bgScene.add(planetGroup);
@@ -5236,8 +5375,8 @@ window.renderMainCalendar = async function() {
 
         let mouseX = 0, mouseY = 0;
         document.addEventListener('mousemove', (e) => {
-            mouseX = (e.clientX / window.innerWidth - 0.5) * 2.2;
-            mouseY = (e.clientY / window.innerHeight - 0.5) * 2.2;
+            mouseX = (e.clientX / window.innerWidth - 0.5) * 2.0;
+            mouseY = (e.clientY / window.innerHeight - 0.5) * 2.0;
         });
 
         window.addEventListener('resize', () => {
@@ -5247,25 +5386,19 @@ window.renderMainCalendar = async function() {
         });
 
         let clock = 0;
-        (function animateBgPlanets() {
-            requestAnimationFrame(animateBgPlanets);
-            clock += 0.015;
+        (function animateUltraPlanets() {
+            requestAnimationFrame(animateUltraPlanets);
+            clock += 0.014;
 
             planets.forEach(p => {
-                // Вращение самой планеты и полет вверх-вниз по синусоиде
-                p.group.rotation.y += p.rotSpeedY;
-                p.group.rotation.x += p.rotSpeedX;
-                p.group.position.y = p.baseY + Math.sin(clock * p.floatSpeed + p.floatOffset) * 0.65;
-                p.group.position.x = p.baseX + Math.cos(clock * p.floatSpeed * 0.7 + p.floatOffset) * 0.35;
-
-                // Вращение спутника вокруг планеты
+                p.mesh.rotation.y += p.spinSpeed;
+                p.group.position.y = p.baseY + Math.sin(clock * p.floatSpeed + p.floatOffset) * 0.55;
+                p.group.position.x = p.baseX + Math.cos(clock * p.floatSpeed * 0.7 + p.floatOffset) * 0.3;
                 if (p.moonPivot) {
-                    p.moonPivot.rotation.y += 0.025;
-                    p.moonPivot.rotation.z = 0.3;
+                    p.moonPivot.rotation.y += 0.018;
                 }
             });
 
-            // Плавный 3D-параллакс камеры при движении мыши
             bgCam.position.x += (mouseX - bgCam.position.x) * 0.035;
             bgCam.position.y += (-mouseY - bgCam.position.y) * 0.035;
             bgCam.lookAt(0, 0, 0);
