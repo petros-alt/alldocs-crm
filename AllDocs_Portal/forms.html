@@ -945,7 +945,7 @@
         const s = String(str).trim();
         if (!s) return '';
         if (/^\d/.test(s) && !/[a-zA-Z]{3,}/.test(s)) return s;
-        if (/^(CA|NY|TX|FL|NV|AZ|WA|OR|IL|PA|OH|GA|NC|MI|NJ|VA|MA|MD|SSI|SSDI|CAPI|IHSS|NOA|SOC|MC|USCIS|USA|II|III|IV|LLC|INC|RN|NP)$/i.test(s)) {
+        if (/^(CA|NY|TX|FL|NV|AZ|WA|OR|IL|PA|OH|GA|NC|MI|NJ|VA|MA|MD|SSI|SSDI|CAPI|IHSS|NOA|SOC|MC|USCIS|USA|II|III|IV|LLC|INC|RN|NP|GED|12\+)$/i.test(s)) {
             return s.toUpperCase();
         }
         const upperCount = (s.match(/[A-Z]/g) || []).length;
@@ -953,7 +953,7 @@
         if ((upperCount > 2 && lowerCount === 0) || (lowerCount > 2 && upperCount === 0)) {
             return s.toLowerCase().replace(/\b([a-z])([a-z']*)/g, (match, first, rest, offset) => {
                 const up = match.toUpperCase();
-                if (/^(CA|SSI|SSDI|CAPI|IHSS|NOA|MD|DO|RN|LLC|INC|PO|II|III|IV|UCLA|USC|DMV)$/.test(up)) return up;
+                if (/^(CA|SSI|SSDI|CAPI|IHSS|NOA|MD|DO|RN|NP|LLC|INC|PO|II|III|IV|UCLA|USC|DMV|EKG|PFT|BNP|CBC|CMP|UTI|GED)$/.test(up)) return up;
                 if (offset > 0 && /^(and|or|of|in|on|at|to|for|with|from|by|the|a|an)$/.test(match)) return match;
                 return first.toUpperCase() + rest;
             });
@@ -1604,6 +1604,8 @@
                             }
                         });
                         clientMemoryStore.clinics = existingClinics;
+                    } else if (k === 'tests' && typeof val === 'object') {
+                        clientMemoryStore.tests = { ...(clientMemoryStore.tests || {}), ...val };
                     } else if (Array.isArray(val)) {
                         const nonEmpty = val.filter(Boolean).map(v => typeof v === 'string' ? toCleanTitleCase(v) : v);
                         if (nonEmpty.length > 0) clientMemoryStore[k] = nonEmpty;
@@ -1733,36 +1735,7 @@
         };
     }
 
-   // Умная разбивка длинного текста (лекарств/процедур/описания работы) на 2 или 3 строки PDF без обрезки слов
-    function splitTextToLines(text, firstLineLimit = 46, secondLineLimit = 85) {
-        const clean = toCleanTitleCase(text || '');
-        if (!clean) return ['', '', ''];
-        if (clean.length <= firstLineLimit) return [clean, '', ''];
-
-        let cut1 = clean.lastIndexOf(' ', firstLineLimit);
-        if (cut1 <= 10) cut1 = firstLineLimit;
-        const line1 = clean.slice(0, cut1).trim();
-        const rem1 = clean.slice(cut1).trim();
-
-        if (rem1.length <= secondLineLimit) return [line1, rem1, ''];
-
-        let cut2 = rem1.lastIndexOf(' ', secondLineLimit);
-        if (cut2 <= 10) cut2 = secondLineLimit;
-        const line2 = rem1.slice(0, cut2).trim();
-        const line3 = rem1.slice(cut2).trim();
-        return [line1, line2, line3];
-    }
-
-    function splitPhone(rawPhone = '') {
-        let clean = String(rawPhone || '').replace(/\D/g, '');
-        if (clean.length === 11 && clean.startsWith('1')) clean = clean.slice(1);
-        return {
-            area: clean.slice(0, 3),
-            rest: clean.length >= 10 ? `${clean.slice(3, 6)}-${clean.slice(6, 10)}` : ''
-        };
-    }
-
-   function cleanVal(v) {
+    function cleanVal(v) {
         if (v === null || v === undefined) return '';
         const s = String(v).trim();
         if (/^(n\/a|none|unknown|null|undefined|-)$/i.test(s)) return '';
@@ -1834,7 +1807,6 @@
         const c2 = ai.clinics?.[2] || {};
         const c3 = ai.clinics?.[3] || {};
 
-        // Если в пункте 16 стоит "No" (не работал последние 15 лет), то секция 17 (job) остается строго ПУСТОЙ (без N/A!)
         const worked15 = /^y/i.test(String(ai.workedLast15Years || '').trim()) && Boolean(cleanVal(ai.job?.title));
         const job = worked15 ? (ai.job || {}) : {};
         const tests = ai.tests || {};
@@ -1858,7 +1830,6 @@
 
         const [jobDesc1, jobDesc2, jobDesc3] = splitTextToLines(job.description, 75, 85);
 
-        // Тесты для Таблицы №10 (сначала берем точные данные из ai.tests от Gemini, а если сканировались сырые выписки — находим по ключевым словам)
         const findClinicForTest = (regex) => (ai.clinics || []).find(cl => regex.test((cl.reason + ' ' + cl.treatments + ' ' + cl.clinicName).toLowerCase())) || {};
 
         const ekgCl = findClinicForTest(/ekg|electrocardio|ecg/);
@@ -2106,13 +2077,12 @@
             return false;
         }
 
-        // Выбор нужного класса образования (1..12, GED, 12+) из 14 виджетов поля "15 grade" на Странице 4
         function selectGradeWidgetMc223(field, gradeVal = '12+') {
             try {
                 const widgets = field.acroField.getWidgets() || [];
                 if (widgets.length === 0) return false;
                 const g = String(gradeVal || '12+').trim().toUpperCase();
-                let targetIdx = widgets.length - 1; // По умолчанию '12+' — последний 14-й виджет (индекс 13)
+                let targetIdx = widgets.length - 1;
                 if (g === '12+') targetIdx = widgets.length - 1;
                 else if (g === 'GED') targetIdx = widgets.length - 2;
                 else {
@@ -2247,7 +2217,6 @@
                     } else if (rawName === '12 contacts') {
                         if (forceSelectPdfWidgetByPosition(field, 'left')) filledCount++;
                     } else if (rawName === '13 additional exam') {
-                        // Если в документе указано No -> ставим правый квадратик ('right'), иначе по документу
                         const willEx = ai.willingAdditionalExam ? isYes(ai.willingAdditionalExam) : false;
                         if (forceSelectPdfWidgetByPosition(field, willEx ? 'left' : 'right')) filledCount++;
                     } else if (rawName === '15 grade') {
@@ -2305,10 +2274,10 @@
             } catch (err) {}
         });
 
-        // ПЕЧАТЬ ДАТЫ ПОДПИСИ НА СТРАНИЦЕ 7 (PART V — SIGNATURE AND CERTIFICATION), Т.К. В ШАБЛОНЕ ТАМ НЕТ ПОЛЕЙ ВВОДА!
+        // ПЕЧАТЬ ДАТЫ ПОДПИСИ НА СТРАНИЦЕ 7 (PART V — SIGNATURE AND CERTIFICATION)
         if (isMc223 && pages.length >= 7) {
             try {
-                const page7 = pages[6]; // 7-я страница (индекс 6)
+                const page7 = pages[6];
                 const { width, height } = page7.getSize();
                 const sigDateToPrint = cleanVal(ai.signatureDate) || d.today;
                 if (sigDateToPrint) {
@@ -2321,451 +2290,6 @@
                 }
             } catch (e) {}
         }
-
-        return { totalFields: fields.length, filledCount };
-    }
-        // Разбиваем длинные списки лекарств и процедур на 1-ю (короткую) и 2-ю (длинную) строки PDF
-        const [c0Med1, c0Med2] = splitTextToLines(c0.medicines, 48, 95);
-        const [c0Trt1, c0Trt2] = splitTextToLines(c0.treatments, 24, 95);
-
-        const [c1Med1, c1Med2] = splitTextToLines(c1.medicines, 48, 95);
-        const [c1Trt1, c1Trt2] = splitTextToLines(c1.treatments, 24, 95);
-
-        const [c2Med1, c2Med2] = splitTextToLines(c2.medicines, 48, 95);
-        const [c2Trt1, c2Trt2] = splitTextToLines(c2.treatments, 24, 95);
-
-        const [c3Med1, c3Med2] = splitTextToLines(c3.medicines, 48, 95);
-        const [c3Trt1, c3Trt2] = splitTextToLines(c3.treatments, 24, 95);
-
-        const [jobDesc1, jobDesc2, jobDesc3] = splitTextToLines(job.description, 75, 85);
-
-        // Авто-определение тестов для Таблицы №10 (либо из ai.tests, либо автоматически из текста клиник!)
-        const allClinicsBlob = JSON.stringify(ai.clinics || []).toLowerCase();
-        const findClinicForTest = (regex) => (ai.clinics || []).find(cl => regex.test((cl.reason + ' ' + cl.treatments + ' ' + cl.clinicName).toLowerCase())) || {};
-
-        const ekgCl = findClinicForTest(/ekg|electrocardio|ecg/);
-        const xrayCl = findClinicForTest(/x-ray|xray|chest|radiology/);
-        const bloodCl = findClinicForTest(/blood|cbc|cmp|lipid|hba1c|quest|lab|urine|urinalysis/);
-        const otherCl = findClinicForTest(/24-hour|stone|ultrasound|ct|mri|culture/);
-
-        const tEkg = (tests.ekg && tests.ekg.name) ? tests.ekg : (ekgCl.clinicName ? {
-            performed: 'Yes', name: ekgCl.clinicName, address: ekgCl.address, city: ekgCl.city, state: ekgCl.state || 'CA', zip: ekgCl.zip, date: (ekgCl.firstSeen || '').replace(/^(\d{2})\/\d{2}\/(\d{4})$/, '$1/$2') || diagDate1
-        } : { performed: 'No' });
-
-        const tTread = (tests.treadmill && tests.treadmill.name) ? tests.treadmill : { performed: 'No' };
-
-        const tXray = (tests.chestXray && tests.chestXray.name) ? tests.chestXray : (xrayCl.clinicName ? {
-            performed: 'Yes', name: xrayCl.clinicName, address: xrayCl.address, city: xrayCl.city, state: xrayCl.state || 'CA', zip: xrayCl.zip, date: (xrayCl.firstSeen || '').replace(/^(\d{2})\/\d{2}\/(\d{4})$/, '$1/$2') || diagDate1
-        } : { performed: 'No' });
-
-        const tPft = (tests.breathing && tests.breathing.name) ? tests.breathing : { performed: 'No' };
-
-        const tBlood = (tests.blood && tests.blood.name) ? tests.blood : (bloodCl.clinicName ? {
-            performed: 'Yes', name: bloodCl.clinicName, address: bloodCl.address, city: bloodCl.city, state: bloodCl.state || 'CA', zip: bloodCl.zip, date: (bloodCl.lastSeen || bloodCl.firstSeen || '').replace(/^(\d{2})\/\d{2}\/(\d{4})$/, '$1/$2')
-        } : { performed: 'No' });
-
-        const tOther = (tests.other && tests.other.name) ? tests.other : (otherCl.clinicName ? {
-            performed: 'Yes', name: otherCl.clinicName, address: otherCl.address, city: otherCl.city, state: otherCl.state || 'CA', zip: otherCl.zip, date: (otherCl.lastSeen || otherCl.firstSeen || '').replace(/^(\d{2})\/\d{2}\/(\d{4})$/, '$1/$2')
-        } : { performed: 'No' });
-
-        const exactMc223Map = {
-            // СТРАНИЦА 1
-            "1a name": d.lastFirst,
-            "1b 3 SSA": ssn1,
-            "1b 2 SSA": ssn2,
-            "1b 4 SSA": ssn3,
-            "1c dob mm": dobMM,
-            "1c dob dd": dobDD,
-            "1c dob yy": dobYY,
-            "1d other names": (ai.otherNames && ai.otherNames.trim() !== '') ? toCleanTitleCase(ai.otherNames) : "N/A",
-            "1f height": d.heightFt,
-            "1f inches": d.heightIn,
-            "1g weight": d.weight,
-            "2a home": d.street,
-            "2a city": d.city,
-            "2a state": d.state,
-            "2a ZIP": d.zip,
-            "3 daytime area": phoneArea,
-            "3 daytime phone": phoneRest,
-            "3 message area": phoneArea,
-            "3 message phone": phoneRest,
-            "3 time": "Day Time",
-            "4a if no": (d.language && d.language.toLowerCase() !== 'english') ? d.language : "",
-            "4a if yes": `${d.repName} (${d.repOrg})`,
-            "4a area": d.repArea,
-            "4a phone": d.repPhoneOnly,
-            "4a time": "Day Time",
-
-            "5b recent date": ai.ssiDecisionDate || "",
-            "6a medical problem": diag1,
-            "6a month year": diagDate1,
-            "6b medical problem": diag2,
-            "6b month year": diagDate2,
-            "6c medical problem": diag3,
-            "6c month year": diagDate3,
-            "6d medical problem": diag4,
-            "6d month year": diagDate4,
-
-            // СТРАНИЦА 2 — КЛИНИКА №7
-            "7 name": toCleanTitleCase(c0.clinicName || ""),
-            "7 member": c0.memberId || "",
-            "7 area": c0Ph.area,
-            "7 phone": c0Ph.rest,
-            "7 doctor": toCleanTitleCase(c0.doctorName || ""),
-            "7 address": toCleanTitleCase(c0.address || ""),
-            "7 city": toCleanTitleCase(c0.city || ""),
-            "7 state": (c0.address || c0.clinicName) ? (c0.state || "CA").toUpperCase() : "",
-            "7 ZIP": c0.zip || "",
-            "7 first date": c0.firstSeen || "",
-            "7 last date": c0.lastSeen || "",
-            "7 next date": c0.nextAppt || "",
-            "7 reason": toCleanTitleCase(c0.reason || diag1 || ""),
-            "7 date seen": (/^y/i.test(c0.emergencyRoom || '')) ? (c0.erDates || c0.firstSeen || "") : "",
-            "7 medicine": c0Med1,
-            "7 more medicine": c0Med2,
-            "7 treatment": c0Trt1,
-            "7 more treatment": c0Trt2,
-
-            // СТРАНИЦА 2 — КЛИНИКА №8 (внимание: вторая строка лекарств в PDF называется "9 more medicine"!)
-            "8 name": toCleanTitleCase(c1.clinicName || ""),
-            "8 member": c1.memberId || "",
-            "8 area": c1Ph.area,
-            "8 phone": c1Ph.rest,
-            "8 doctor": toCleanTitleCase(c1.doctorName || ""),
-            "8 address": toCleanTitleCase(c1.address || ""),
-            "8 city": toCleanTitleCase(c1.city || ""),
-            "8 state": (c1.address || c1.clinicName) ? (c1.state || "CA").toUpperCase() : "",
-            "8 ZIP": c1.zip || "",
-            "8 first date": c1.firstSeen || "",
-            "8 last date": c1.lastSeen || "",
-            "8 next date": c1.nextAppt || "",
-            "8 reason": toCleanTitleCase(c1.reason || ""),
-            "8 date seen": (/^y/i.test(c1.emergencyRoom || '')) ? (c1.erDates || c1.firstSeen || "") : "",
-            "8 medicine": c1Med1,
-            "9 more medicine": c1Med2,
-            "8 treatment": c1Trt1,
-            "8 more treatment": c1Trt2,
-
-            // СТРАНИЦА 3 — ВРАЧ / КЛИНИКА №9
-            "9 name": toCleanTitleCase(c2.doctorName || c2.clinicName || ""),
-            "9 member": c2.memberId || "",
-            "9 area": c2Ph.area,
-            "9 phone": c2Ph.rest,
-            "9 address": toCleanTitleCase(c2.address || ""),
-            "9 city": toCleanTitleCase(c2.city || ""),
-            "9 state": (c2.address || c2.clinicName || c2.doctorName) ? (c2.state || "CA").toUpperCase() : "",
-            "9 ZIP": c2.zip || "",
-            "9 first date": c2.firstSeen || "",
-            "9 last date": c2.lastSeen || "",
-            "9 next date": c2.nextAppt || "",
-            "9 reason": toCleanTitleCase(c2.reason || ""),
-            "9 medicine": c2Med1,
-            "9 treatment": c2Trt1,
-            "9 more treatment": c2Trt2,
-
-            // СТРАНИЦА 3 — ТАБЛИЦА ТЕСТОВ №10 (EKG, TREADMILL, CHEST X-RAY, PFT, BLOOD TESTS, OTHER)
-            "10 electrocardio facility name": toCleanTitleCase(tEkg.name || ""),
-            "10 electrocardio address": toCleanTitleCase(tEkg.address || ""),
-            "10 electrocardio city": toCleanTitleCase(tEkg.city || ""),
-            "10 electrocardio state": tEkg.name ? (tEkg.state || "CA").toUpperCase() : "",
-            "10 electrocardio ZIP": tEkg.zip || "",
-            "10 electrocardio date": tEkg.date || "",
-
-            "10 treadmill facility name": toCleanTitleCase(tTread.name || ""),
-            "10 treadmill address": toCleanTitleCase(tTread.address || ""),
-            "10 treadmill city": toCleanTitleCase(tTread.city || ""),
-            "10 treadmill state": tTread.name ? (tTread.state || "CA").toUpperCase() : "",
-            "10 treadmill ZIP": tTread.zip || "",
-            "10 treadmill date": tTread.date || "",
-
-            "10 x-ray facility name": toCleanTitleCase(tXray.name || ""),
-            "10 x-ray address": toCleanTitleCase(tXray.address || ""),
-            "10 x-ray city": toCleanTitleCase(tXray.city || ""),
-            "10 x-ray state": tXray.name ? (tXray.state || "CA").toUpperCase() : "",
-            "10 x-ray ZIP": tXray.zip || "",
-            "10 x-ray date": tXray.date || "",
-
-            "10 PFT facility name": toCleanTitleCase(tPft.name || ""),
-            "10 PFT address": toCleanTitleCase(tPft.address || ""),
-            "10 PFT city": toCleanTitleCase(tPft.city || ""),
-            "10 PFT state": tPft.name ? (tPft.state || "CA").toUpperCase() : "",
-            "10 PFT ZIP": tPft.zip || "",
-            "10 PFT date": tPft.date || "",
-
-            "10 blood test facility name": toCleanTitleCase(tBlood.name || ""),
-            "10 blood test address": toCleanTitleCase(tBlood.address || ""),
-            "10 blood test city": toCleanTitleCase(tBlood.city || ""),
-            "10 blood test state": tBlood.name ? (tBlood.state || "CA").toUpperCase() : "",
-            "10 blood test ZIP": tBlood.zip || "",
-            "10 blood test date": tBlood.date || "",
-
-            "10 other test facility name": toCleanTitleCase(tOther.name || ""),
-            "10 other test facility address": toCleanTitleCase(tOther.address || ""),
-            "10 other test facility city": toCleanTitleCase(tOther.city || ""),
-            "10 other test facility state": tOther.name ? (tOther.state || "CA").toUpperCase() : "",
-            "10 other test facility ZIP": tOther.zip || "",
-            "10 other test facility date": tOther.date || "",
-
-            // СТРАНИЦА 4 & 5 & 8
-            "12 first name": `${d.repName} (${d.repOrg})`,
-            "12 first relationship": "Authorized Representative",
-            "12 first address": d.repFullAddress,
-            "12 first area": d.repArea,
-            "12 first phone": d.repPhoneOnly,
-            "14 activities list 1": toCleanTitleCase(ai.dailyLimitations?.[0] || ""),
-            "14 activities list 2": toCleanTitleCase(ai.dailyLimitations?.[1] || ""),
-            "14 activities list 3": toCleanTitleCase(ai.dailyLimitations?.[2] || ""),
-            "14 activities list 4": toCleanTitleCase(ai.dailyLimitations?.[3] || ""),
-            "15b date": ai.educationDate || "",
-
-            "17 title": toCleanTitleCase(job.title || ""),
-            "17 business": toCleanTitleCase(job.business || ""),
-            "17 date from": job.dateFrom || "",
-            "17 date to": job.dateTo || "",
-            "17 hours": job.hoursPerWeek || "",
-            "17 pay": job.rateOfPay || "",
-            "job description": jobDesc1,
-            "more job description": jobDesc2,
-            "additional job description": jobDesc3,
-
-            // СТРАНИЦА 8 (ДОПОЛНИТЕЛЬНАЯ КЛИНИКА 4, ЕСЛИ ЕСТЬ)
-            "7 name cont": toCleanTitleCase(c3.clinicName || ""),
-            "7 member cont": c3.memberId || "",
-            "7 area cont": c3Ph.area,
-            "7 phone cont": c3Ph.rest,
-            "7 doctor cont": toCleanTitleCase(c3.doctorName || ""),
-            "7 address cont": toCleanTitleCase(c3.address || ""),
-            "7 city cont": toCleanTitleCase(c3.city || ""),
-            "7 state cont": (c3.address || c3.clinicName) ? (c3.state || "CA").toUpperCase() : "",
-            "7 ZIP cont": c3.zip || "",
-            "7 first date cont": c3.firstSeen || "",
-            "7 last date cont": c3.lastSeen || "",
-            "7 next date cont": c3.nextAppt || "",
-            "7 reason cont": toCleanTitleCase(c3.reason || ""),
-            "7 medicine cont": c3Med1,
-            "7 more medicine cont": c3Med2,
-            "7 treatment cont": c3Trt1,
-            "7 more treatment cont": c3Trt2
-        };
-
-        const isMc223 = (currentOpenedFormCode === 'MC 223');
-
-        // Точное включение нужного квадратика (виджета) по его геометрии на странице (левый='left'=Yes, правый='right'=No, верхний='top', нижний='bottom')
-        function forceSelectPdfWidgetByPosition(field, preferPosition) {
-            try {
-                const widgets = field.acroField.getWidgets() || [];
-                if (widgets.length >= 2) {
-                    let targetWIdx = 0;
-                    if (preferPosition === 'left') {
-                        targetWIdx = widgets[0].getRectangle().x <= widgets[1].getRectangle().x ? 0 : 1;
-                    } else if (preferPosition === 'right') {
-                        targetWIdx = widgets[0].getRectangle().x <= widgets[1].getRectangle().x ? 1 : 0;
-                    } else if (preferPosition === 'top') {
-                        targetWIdx = widgets[0].getRectangle().y >= widgets[1].getRectangle().y ? 0 : 1;
-                    } else if (preferPosition === 'bottom') {
-                        targetWIdx = widgets[0].getRectangle().y >= widgets[1].getRectangle().y ? 1 : 0;
-                    }
-
-                    const onStateName = widgets[targetWIdx].getOnValue();
-                    if (onStateName) {
-                        field.acroField.setValue(onStateName);
-                        widgets.forEach((w, wIdx) => {
-                            w.setAppearanceState(wIdx === targetWIdx ? onStateName : PDFLib.PDFName.of('Off'));
-                        });
-                        return true;
-                    }
-                } else if (widgets.length === 1 && preferPosition !== 'off') {
-                    // Одиночный чекбокс (например, "3 Message phone", "5a pending")
-                    if (typeof field.check === 'function') {
-                        field.check();
-                        return true;
-                    }
-                    const onStateName = widgets[0].getOnValue();
-                    if (onStateName) {
-                        field.acroField.setValue(onStateName);
-                        widgets[0].setAppearanceState(onStateName);
-                        return true;
-                    }
-                }
-            } catch (e) {}
-            return false;
-        }
-
-        fields.forEach((field, idx) => {
-            const rawName = field.getName();
-            const typeName = field.constructor.name;
-            const key = rawName.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-            let pageNum = 1, xPct = 50, yPct = 50;
-            try {
-                const widgets = field.acroField.getWidgets();
-                if (widgets && widgets.length > 0) {
-                    const rect = widgets[0].getRectangle();
-                    const pageRef = widgets[0].P();
-                    const foundIdx = pages.findIndex(p => p.ref === pageRef);
-                    if (foundIdx !== -1) {
-                        pageNum = foundIdx + 1;
-                        const { width, height } = pages[foundIdx].getSize();
-                        yPct = Math.round(((height - rect.y) / height) * 100);
-                        xPct = Math.round((rect.x / width) * 100);
-                    }
-                }
-            } catch (e) {}
-
-            lastInspectedPdfFields.push({
-                index: idx,
-                page: pageNum,
-                xPct: xPct,
-                yPct: yPct,
-                name: rawName,
-                type: typeName,
-                options: typeof field.getOptions === 'function' ? field.getOptions() : undefined
-            });
-
-            try {
-                if (isMc223) {
-                    // 1. Заполняем все текстовые поля из exactMc223Map
-                    if (typeof field.setText === 'function') {
-                        if (Object.prototype.hasOwnProperty.call(exactMc223Map, rawName)) {
-                            const val = exactMc223Map[rawName];
-                            if (val !== null && val !== undefined && String(val).trim() !== '') {
-                                field.setText(String(val));
-                                filledCount++;
-                            }
-                        }
-                    }
-
-                    // 2. Расставляем ВСЕ ГАЛОЧКИ И ЧЕКБОКСЫ по страницам 1, 2, 3, 4, 5, 8!
-                    const isYes = (val) => /^y/i.test(String(val || '').trim());
-
-                    if (rawName === 'sex' && d.gender) {
-                        const isFem = d.gender.toLowerCase().startsWith('f');
-                        if (forceSelectPdfWidgetByPosition(field, isFem ? 'bottom' : 'top')) filledCount++;
-                    } else if (rawName === '3 Message phone' && phoneRest) {
-                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === '4a english') {
-                        const isEng = d.language && d.language.toLowerCase() === 'english';
-                        if (forceSelectPdfWidgetByPosition(field, isEng ? 'top' : 'bottom')) filledCount++;
-                    } else if (rawName === '4b interpreter') {
-                        if (forceSelectPdfWidgetByPosition(field, 'left')) filledCount++;
-                    } else if (rawName === '5 applied') {
-                        // Если клиент подавал на SSI -> Yes ('left'), иначе No ('right')
-                        const applied = isYes(ai.ssiApplied);
-                        if (forceSelectPdfWidgetByPosition(field, applied ? 'left' : 'right')) filledCount++;
-                    } else if (rawName === '5a approved' && /approv/i.test(ai.ssiStatus || '')) {
-                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === '5a denied' && /deni/i.test(ai.ssiStatus || '')) {
-                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === '5a pending' && /pend/i.test(ai.ssiStatus || '')) {
-                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === '5a appeal' && /appeal/i.test(ai.ssiStatus || '')) {
-                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === '5c worsened') {
-                        const wors = isYes(ai.ssiWorsened);
-                        if (forceSelectPdfWidgetByPosition(field, wors ? 'left' : 'right')) filledCount++;
-                    } else if (rawName === '5d new problem') {
-                        const newPr = isYes(ai.ssiNewProblem);
-                        if (forceSelectPdfWidgetByPosition(field, newPr ? 'left' : 'right')) filledCount++;
-                    } else if (rawName === '7 care') {
-                        const hasCare = Boolean(c0.clinicName || c0.doctorName);
-                        if (forceSelectPdfWidgetByPosition(field, hasCare ? 'left' : 'right')) filledCount++;
-                    } else if (rawName === '7 overnight' && (c0.clinicName || c0.doctorName)) {
-                        const ov7 = isYes(c0.overnightStay);
-                        if (forceSelectPdfWidgetByPosition(field, ov7 ? 'left' : 'right')) filledCount++;
-                    } else if (rawName === '7 emergency' && (c0.clinicName || c0.doctorName)) {
-                        const er7 = isYes(c0.emergencyRoom);
-                        if (forceSelectPdfWidgetByPosition(field, er7 ? 'left' : 'right')) filledCount++;
-                    } else if (rawName === '8 overnight' && (c1.clinicName || c1.doctorName)) {
-                        const ov8 = isYes(c1.overnightStay);
-                        if (forceSelectPdfWidgetByPosition(field, ov8 ? 'left' : 'right')) filledCount++;
-                    } else if (rawName === '8 emergency' && (c1.clinicName || c1.doctorName)) {
-                        const er8 = isYes(c1.emergencyRoom);
-                        if (forceSelectPdfWidgetByPosition(field, er8 ? 'left' : 'right')) filledCount++;
-                    } else if (rawName === '9 outside doctor') {
-                        const hasDoc9 = Boolean(c2.clinicName || c2.doctorName);
-                        if (forceSelectPdfWidgetByPosition(field, hasDoc9 ? 'left' : 'right')) filledCount++;
-                    } else if (rawName === '10 electrocardiogram') {
-                        const hasEkg = isYes(tEkg.performed) || Boolean(tEkg.name);
-                        if (forceSelectPdfWidgetByPosition(field, hasEkg ? 'left' : 'right')) filledCount++;
-                    } else if (rawName === '10 treadmill') {
-                        const hasTr = isYes(tTread.performed) || Boolean(tTread.name);
-                        if (forceSelectPdfWidgetByPosition(field, hasTr ? 'left' : 'right')) filledCount++;
-                    } else if (rawName === '10 x-ray') {
-                        const hasXr = isYes(tXray.performed) || Boolean(tXray.name);
-                        if (forceSelectPdfWidgetByPosition(field, hasXr ? 'left' : 'right')) filledCount++;
-                    } else if (rawName === '10 PFT') {
-                        const hasPft = isYes(tPft.performed) || Boolean(tPft.name);
-                        if (forceSelectPdfWidgetByPosition(field, hasPft ? 'left' : 'right')) filledCount++;
-                    } else if (rawName === '10 blood test') {
-                        const hasBl = isYes(tBlood.performed) || Boolean(tBlood.name);
-                        if (forceSelectPdfWidgetByPosition(field, hasBl ? 'left' : 'right')) filledCount++;
-                    } else if (rawName === '10 other test') {
-                        const hasOth = isYes(tOther.performed) || Boolean(tOther.name);
-                        if (forceSelectPdfWidgetByPosition(field, hasOth ? 'left' : 'right')) filledCount++;
-                    } else if (rawName === '11 other treatment') {
-                        if (forceSelectPdfWidgetByPosition(field, 'right')) filledCount++;
-                    } else if (rawName === '12 contacts') {
-                        if (forceSelectPdfWidgetByPosition(field, 'left')) filledCount++;
-                    } else if (rawName === '13 additional exam') {
-                        if (forceSelectPdfWidgetByPosition(field, 'left')) filledCount++;
-                    } else if (rawName === '15c special ed') {
-                        if (forceSelectPdfWidgetByPosition(field, 'right')) filledCount++;
-                    } else if (rawName === '16 work') {
-                        const worked = isYes(ai.workedLast15Years) || Boolean(job.title);
-                        if (forceSelectPdfWidgetByPosition(field, worked ? 'bottom' : 'top')) filledCount++;
-                    } else if (rawName === 'last 15 years' && job.title) {
-                        if (forceSelectPdfWidgetByPosition(field, 'right')) filledCount++;
-                    } else if (rawName === '7 overnight cont' && (c3.clinicName || c3.doctorName)) {
-                        const ovC = isYes(c3.overnightStay);
-                        if (forceSelectPdfWidgetByPosition(field, ovC ? 'left' : 'right')) filledCount++;
-                    } else if (rawName === '7 emergency cont' && (c3.clinicName || c3.doctorName)) {
-                        const erC = isYes(c3.emergencyRoom);
-                        if (forceSelectPdfWidgetByPosition(field, erC ? 'left' : 'right')) filledCount++;
-                    }
-                    return;
-                }
-
-                // УНИВЕРСАЛЬНОЕ УМНОЕ ЗАПОЛНЕНИЕ ДЛЯ ОСТАЛЬНЫХ 12 ФОРМ
-                if (typeof field.setText === 'function') {
-                    let valToSet = null;
-                    const isRepField = key.includes('rep') || key.includes('agent') || key.includes('org') || key.includes('helper') || key.includes('assister') || key.includes('preparer') || key.includes('interpreter') || key.includes('designee') || key.includes('attorney');
-
-                    if (isRepField) {
-                        if (key.includes('phone') || key.includes('tel')) valToSet = d.repPhone;
-                        else if (key.includes('org') || key.includes('agency') || key.includes('firm')) valToSet = d.repOrg;
-                        else if (key.includes('city')) valToSet = d.repCity;
-                        else if (key.includes('state')) valToSet = d.repState;
-                        else if (key.includes('zip')) valToSet = d.repZip;
-                        else if (key.includes('addr') || key.includes('street')) valToSet = d.repFullAddress;
-                        else if (key.includes('email')) valToSet = "info@alldocsconsulting.com";
-                        else if (key.includes('title') || key.includes('rel')) valToSet = "Authorized Representative";
-                        else if (key.includes('name')) valToSet = `${d.repName} (${d.repOrg})`;
-                    } else {
-                        if (key.includes('lastfirst') || (key.includes('applicant') && key.includes('name'))) valToSet = d.lastFirst;
-                        else if (key === 'firstname' || key.includes('fname') || key.includes('givenname')) valToSet = d.firstName;
-                        else if (key === 'lastname' || key.includes('lname') || key.includes('familyname') || key.includes('surname')) valToSet = d.lastName;
-                        else if (key.includes('fullname') || key.includes('clientname') || key.includes('recipientname') || key.includes('claimant') || key.includes('personname') || key.includes('printname') || key === 'name') valToSet = d.fullName;
-                        else if (key.includes('ssn') || key.includes('socialsecurity')) valToSet = formattedSsn;
-                        else if (key.includes('dob') || key.includes('birth')) valToSet = d.dob;
-                        else if (key.includes('phone') || key.includes('tel') || key.includes('daytime')) valToSet = formattedClientPhone;
-                        else if (key.includes('city')) valToSet = d.city;
-                        else if (key.includes('state') && !key.includes('statement')) valToSet = d.state;
-                        else if (key.includes('zip') || key.includes('postal')) valToSet = d.zip;
-                        else if (key.includes('citystatezip')) valToSet = d.cityStateZip;
-                        else if (key.includes('address') || key.includes('street') || key.includes('residence') || key.includes('homeaddr')) valToSet = d.street;
-                        else if (key.includes('case') || key.includes('cin') || key.includes('anum')) valToSet = d.caseNum;
-                        else if (key.includes('lang')) valToSet = d.language;
-                        else if (key.includes('signdate') || key.includes('datesigned') || key === 'date') valToSet = d.today;
-                        else if (key.includes('county')) valToSet = "Los Angeles";
-                    }
-
-                    if (valToSet !== null && valToSet !== undefined && String(valToSet).trim() !== '') {
-                        field.setText(String(valToSet));
-                        filledCount++;
-                    }
-                }
-            } catch (err) {}
-        });
 
         return { totalFields: fields.length, filledCount };
     }
