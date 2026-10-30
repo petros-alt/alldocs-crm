@@ -444,14 +444,7 @@
             accent-color: #10b981;
             cursor: pointer;
         }
-        .dw-file-cb {
-            width: 17px !important;
-            height: 17px !important;
-            margin: 0 !important;
-            flex-shrink: 0 !important;
-            accent-color: #2563eb;
-            cursor: pointer;
-        }
+       
 
         .ai-scan-btn {
             width: 100%;
@@ -740,8 +733,8 @@
             </div>
 
             <!-- 3D СПИСОК ФАЙЛОВ ВНУТРИ ЭТОГО MATTER И ПАПКИ (УВЕЛИЧЕННОЕ ОКНО С ПАМЯТЬЮ МЕЖДУ ПАПКАМИ) -->
-            <div id="dwSmartFilesBox" style="margin: 0 0 10px 0; padding: 12px; background: linear-gradient(180deg, #ffffff 0%, #f8f3eb 100%); border: 1.5px solid rgba(184,115,51,0.35); border-bottom: 4px solid rgba(139,85,43,0.42); border-radius: 16px; box-shadow: 0 8px 20px rgba(44,26,20,0.06); box-sizing:border-box;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div id="dwSmartFilesBox" ="margin: 0 0 10px 0; padding: 12px; background: linear-gradient(180deg, #ffffff 0%, #f8f3eb 100%); border: 1.5px solid rgba(184,115,51,0.35); border-bottom: 4px solid rgba(139,85,43,0.42); border-radius: 16px; box-shadow: 0 8px 20px rgba(44,26,20,0.06); box-sizing:border-box;">
+                <div ="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                     <span style="font-size:10.5px; font-weight:900; color:#2c1a14; text-transform:uppercase;">☑️ 4. Check Files to Scan:</span>
                     <span id="dwFilesCountTag" style="font-size:10px; font-weight:800; color:#047857; background:#d1fae5; border:1px solid #6ee7b7; padding:2px 8px; border-radius:10px;">0 files</span>
                 </div>
@@ -1117,9 +1110,6 @@
                 </label>
             `;
         });
-        listEl.innerHTML = html;
-        countTag.textContent = `${selectedFilesBasket.size}/${mergedList.length} selected`;
-    }
 
         // Объединяем файлы, уже выбранные в других папках (Pinned), с файлами текущей папки!
         const mergedList = [];
