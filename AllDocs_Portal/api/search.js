@@ -28,17 +28,17 @@ export default async function handler(req, res) {
             if (!geminiKey) {
                 return res.status(400).json({
                     success: false,
-                    error: "GEMINI_API_KEY не найден в Vercel Environment Variables! Убедитесь, что после добавления ключа вы сделали Redeploy."
+                    error: "GEMINI_API_KEY не найден в Vercel Environment Variables!"
                 });
             }
 
-            const { clientId, fileIds = [], fileUrls = [], uploadedFiles = [], clientName = '' } = req.body || {};
+            const { clientId, fileIds = [], uploadedFiles = [], clientName = '' } = req.body || {};
             const inlineParts = [];
             let textContext = `Client Name: ${clientName}\n`;
 
             // 1. Прикрепленные файлы с компьютера (если есть)
             if (Array.isArray(uploadedFiles)) {
-                uploadedFiles.forEach(uf => {
+                uploadedFiles.slice(0, 3).forEach(uf => {
                     if (uf.base64 && uf.mimeType) {
                         inlineParts.push({
                             inline_data: {
@@ -50,48 +50,48 @@ export default async function handler(req, res) {
                 });
             }
 
-            // 2. Скачиваем отмеченные галочками файлы напрямую из Docketwise
-            const targets = [];
-            if (Array.isArray(fileUrls) && fileUrls.length > 0) {
-                fileUrls.forEach(u => targets.push(u));
-            } else if (Array.isArray(fileIds) && fileIds.length > 0) {
-                fileIds.forEach(id => {
-                    targets.push(`https://app.docketwise.com/documents/${id}/download`);
-                    targets.push(`https://app.docketwise.com/documents/${id}`);
-                    targets.push(`https://app.docketwise.com/files/${id}/download`);
-                });
-            }
+            // 2. Скачиваем отмеченные галочками файлы из Docketwise (до 4 файлов за раз, чтобы не превышать квоту токенов!)
+            const uniqueDocIds = [...new Set(Array.isArray(fileIds) ? fileIds : [])].slice(0, 4);
 
-            for (const dUrl of targets.slice(0, 8)) {
-                try {
-                    const fRes = await fetch(dUrl, {
-                        headers: {
-                            "cookie": DW_COOKIE,
-                            "x-csrf-token": DW_CSRF_TOKEN,
-                            "Authorization": apiKey ? `Bearer ${apiKey}` : undefined,
-                            "Referer": `https://app.docketwise.com/en/contacts/${clientId || ''}`
-                        },
-                        redirect: 'follow'
-                    });
-                    if (fRes.ok) {
-                        const contentType = (fRes.headers.get('content-type') || '').toLowerCase();
-                        if (contentType.includes('pdf') || contentType.includes('image') || contentType.includes('octet-stream')) {
-                            const arrayBuf = await fRes.arrayBuffer();
-                            if (arrayBuf.byteLength > 500 && arrayBuf.byteLength < 15 * 1024 * 1024) {
-                                const b64 = Buffer.from(arrayBuf).toString('base64');
-                                let mime = 'application/pdf';
-                                if (contentType.includes('jpeg') || contentType.includes('jpg')) mime = 'image/jpeg';
-                                else if (contentType.includes('png')) mime = 'image/png';
-                                inlineParts.push({
-                                    inline_data: { mime_type: mime, data: b64 }
-                                });
+            for (const docId of uniqueDocIds) {
+                const candidateUrls = [
+                    `https://app.docketwise.com/documents/${docId}/download`,
+                    `https://app.docketwise.com/documents/${docId}`,
+                    `https://app.docketwise.com/files/${docId}/download`
+                ];
+                for (const dUrl of candidateUrls) {
+                    try {
+                        const fRes = await fetch(dUrl, {
+                            headers: {
+                                "cookie": DW_COOKIE,
+                                "x-csrf-token": DW_CSRF_TOKEN,
+                                "Authorization": apiKey ? `Bearer ${apiKey}` : undefined,
+                                "Referer": `https://app.docketwise.com/en/contacts/${clientId || ''}`
+                            },
+                            redirect: 'follow'
+                        });
+                        if (fRes.ok) {
+                            const contentType = (fRes.headers.get('content-type') || '').toLowerCase();
+                            if (contentType.includes('pdf') || contentType.includes('image') || contentType.includes('octet-stream')) {
+                                const arrayBuf = await fRes.arrayBuffer();
+                                // Берем файлы до 6 МБ, чтобы мгновенно проходить в бесплатную квоту Gemini
+                                if (arrayBuf.byteLength > 400 && arrayBuf.byteLength < 6 * 1024 * 1024) {
+                                    const b64 = Buffer.from(arrayBuf).toString('base64');
+                                    let mime = 'application/pdf';
+                                    if (contentType.includes('jpeg') || contentType.includes('jpg')) mime = 'image/jpeg';
+                                    else if (contentType.includes('png')) mime = 'image/png';
+                                    inlineParts.push({
+                                        inline_data: { mime_type: mime, data: b64 }
+                                    });
+                                    break;
+                                }
                             }
                         }
-                    }
-                } catch (e) {}
+                    } catch (e) {}
+                }
             }
 
-            // 3. Собираем всю текстовую информацию, анкеты и заметки клиента из Docketwise
+            // 3. Собираем текстовую анкету и заметки клиента из Docketwise
             if (clientId) {
                 try {
                     const cRes = await fetch(`https://app.docketwise.com/contacts/${clientId}.json`, {
@@ -99,7 +99,7 @@ export default async function handler(req, res) {
                     });
                     if (cRes.ok) {
                         const cJson = await cRes.json();
-                        textContext += `Docketwise Contact Profile: ${JSON.stringify(cJson).slice(0, 8000)}\n`;
+                        textContext += `Docketwise Contact Profile: ${JSON.stringify(cJson).slice(0, 6000)}\n`;
                     }
                 } catch (e) {}
 
@@ -109,16 +109,16 @@ export default async function handler(req, res) {
                     });
                     if (notesRes.ok) {
                         const notesHtml = await notesRes.text();
-                        const cleanNotes = notesHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 6000);
+                        const cleanNotes = notesHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 5000);
                         textContext += `Docketwise Client Notes: ${cleanNotes}\n`;
                     }
                 } catch (e) {}
             }
 
             const systemPrompt = `You are an expert California Medi-Cal / IHSS / CAPI Legal Document Extraction AI.
-Analyze all attached client documents (Passports, Driver's Licenses, Birth Certificates, SSN Cards, Medical Records, Visit Summaries, Prescriptions, Prior MC 223 / SOC forms) and the provided Docketwise context.
+Analyze all attached client documents (Driver's License, Birth Certificate, Passport, SSN Card, Medical Records, Visit Summaries, Prior Forms) and the Docketwise context.
 If any document is in Armenian or Russian, translate all extracted values into English.
-Infer gender ("Male" or "Female") from the documents or first name if not explicitly stated.
+Infer gender ("Male" or "Female") from the documents or first name.
 Do NOT confuse a doctor's or hospital's address with the applicant's home address.
 
 Return ONLY valid JSON matching this exact structure (leave empty string "" if unknown):
@@ -185,7 +185,7 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
 
             const requestParts = [{ text: systemPrompt + "\n\n" + textContext }, ...inlineParts];
 
-            // Автоматически узнаем у Google API список доступных моделей для вашего ключа (чтобы никогда не было ошибки 404!)
+            // Запрашиваем список доступных моделей для вашего ключа
             let availableModels = [];
             try {
                 const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey}`);
@@ -197,30 +197,30 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                 }
             } catch (e) {}
 
-            // Приоритет выбора самой мощной Pro / Flash модели из доступных вашему ключу
-            const preferredOrder = [
-                'gemini-2.5-pro',
+            // ВАЖНО: Сначала используем высоколимитные модели Flash (у которых огромная бесплатная квота и нет ошибки 429!),
+            // а если первая модель вернет 429 — мгновенно переключаемся на следующую!
+            const highQuotaOrder = [
                 'gemini-2.5-flash',
                 'gemini-2.0-flash',
-                'gemini-1.5-pro-latest',
-                'gemini-1.5-flash-latest',
-                'gemini-pro'
+                'gemini-2.0-flash-lite',
+                'gemini-1.5-flash',
+                'gemini-1.5-flash-8b',
+                'gemini-2.5-pro'
             ];
 
-            let modelsToTry = preferredOrder.filter(m => availableModels.includes(m));
-            // Добавляем остальные найденные модели Gemini на случай нестандартных имен
+            let modelsToTry = highQuotaOrder.filter(m => availableModels.includes(m));
             availableModels.forEach(m => {
                 if (m.includes('gemini') && !modelsToTry.includes(m)) modelsToTry.push(m);
             });
             if (modelsToTry.length === 0) {
-                modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-pro'];
+                modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
             }
 
             let aiJson = null;
             let usedModel = '';
             let lastErr = '';
 
-            for (const modelName of modelsToTry.slice(0, 4)) {
+            for (const modelName of modelsToTry.slice(0, 6)) {
                 try {
                     const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`, {
                         method: 'POST',
@@ -243,14 +243,39 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                         break;
                     } else {
                         lastErr = await gRes.text();
+                        // Если на модели с файлами превышен лимит 429, пробуем следующую модель в списке
+                        continue;
                     }
                 } catch (mErr) {
                     lastErr = mErr.message;
                 }
             }
 
+            // Если все модели вернули 429 из-за слишком тяжелых PDF, делаем легкий запрос по текстовому досье
+            if (!aiJson && inlineParts.length > 0) {
+                for (const fallbackModel of ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-1.5-flash']) {
+                    try {
+                        const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${fallbackModel}:generateContent?key=${geminiKey}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: [requestParts[0], ...inlineParts.slice(0, 2)] }],
+                                generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
+                            })
+                        });
+                        if (gRes.ok) {
+                            const gData = await gRes.json();
+                            const rawText = gData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+                            aiJson = JSON.parse(rawText.replace(/```json|```/g, '').trim());
+                            usedModel = fallbackModel;
+                            break;
+                        }
+                    } catch (e) {}
+                }
+            }
+
             if (!aiJson) {
-                throw new Error(`AI Scan error: ${lastErr.slice(0, 200)}`);
+                throw new Error(`AI Scan error: ${lastErr.slice(0, 220)}`);
             }
 
             return res.status(200).json({
@@ -278,13 +303,15 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
         if (/(zelle|receipt|invoice|payment|retainer|contract|check|bill_paid)/i.test(lower)) {
             return { category: 'ignore', badge: '💸 Ignore', priority: 0, autoSelect: false };
         }
-        if (/(passport|pass|dl|driver|license|id_card|state_id|ssn|social|birth|green_card|greencard|permanent|naturalization|medi-cal|medical_card|bic|benefit|utility|lease|address|questionnaire|intake)/i.test(lower)) {
+        // Самый высокий приоритет (100): Права (Driver License), Паспорт, Свидетельство о рождении, SSN
+        if (/(driver|license|dl|passport|birth|ssn|social|id_card|state_id|green_card|greencard|naturalization|medi-cal|bic)/i.test(lower)) {
             return { category: 'identity', badge: '🪪 ID / Personal', priority: 100, autoSelect: true };
         }
-        if (/(mc_223|mc223|mc 223|soc|873|804|814|453|839|medical|doctor|dr\.|clinic|hospital|meds|medication|rx|diagnosis|visit|summary|noa|ssi|capi|disability|appeal|hearing|dpa)/i.test(lower)) {
+        // Приоритет 90: Медицинские выписки и формы MC 223 / SOC
+        if (/(mc_223|mc223|mc 223|soc|873|804|814|453|839|medical|doctor|dr\.|clinic|hospital|meds|medication|rx|diagnosis|visit|summary|noa|ssi|capi|disability)/i.test(lower)) {
             return { category: 'medical_form', badge: '🩺 Medical / Form', priority: 90, autoSelect: true };
         }
-        return { category: 'other', badge: '📄 Document', priority: 50, autoSelect: true };
+        return { category: 'other', badge: '📄 Document', priority: 40, autoSelect: false };
     }
 
     if (clientId) {
@@ -316,10 +343,7 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                 }
             } catch (e) {}
 
-            // ГЛУБОКИЙ ПОИСК ФАЙЛОВ КЛИЕНТА ВО ВКЛАДКЕ FILES (ВСЕ МЕТОДЫ DOCKETWISE)
             let rawFiles = [];
-
-            // Сначала проверяем, есть ли массив documents/files внутри самого объекта contact
             const embeddedDocs = contact.documents || contact.files || contact.attachments || [];
             if (Array.isArray(embeddedDocs)) {
                 embeddedDocs.forEach(doc => {
@@ -334,10 +358,8 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                 });
             }
 
-            // Запрашиваем вкладку Files напрямую (/documents?client_id=... и /api/v1/documents)
             const urlsToTry = [
                 `https://app.docketwise.com/documents?client_id=${clientId}`,
-                `https://app.docketwise.com/en/contacts/${clientId}/files`,
                 `https://app.docketwise.com/api/v1/documents?client_id=${clientId}`
             ];
 
@@ -356,8 +378,6 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                     if (!docRes.ok) continue;
 
                     const rawText = await docRes.text();
-
-                    // Попытка 1: если ответ чистый JSON
                     try {
                         const parsed = JSON.parse(rawText);
                         const arr = Array.isArray(parsed) ? parsed : (parsed.documents || parsed.files || parsed.data || []);
@@ -372,7 +392,6 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                             }
                         });
                     } catch (notJson) {
-                        // Попытка 2: распаковываем экранированный JavaScript/HTML ответ Rails из /documents?client_id=...
                         const unescaped = rawText
                             .replace(/\\"/g, '"')
                             .replace(/\\'/g, "'")
@@ -380,7 +399,6 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                             .replace(/\\t/g, ' ')
                             .replace(/\\\//g, '/');
 
-                        // Ищем любые ссылки вида href="/documents/12345..." или href="/files/12345..."
                         const linkRegex = /href=["']([^"']*\/(?:documents|files|attachments)\/(\d+)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
                         let match;
                         while ((match = linkRegex.exec(unescaped)) !== null) {
@@ -397,21 +415,6 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                                 }
                             }
                         }
-
-                        // Дополнительно ищем строки таблицы с data-id или document_id
-                        const rowRegex = /documents\/(\d+)[^>]*>([^<]{3,120})</gi;
-                        let rMatch;
-                        while ((rMatch = rowRegex.exec(unescaped)) !== null) {
-                            const id = rMatch[1];
-                            const name = rMatch[2].trim();
-                            if (name && !/^(edit|delete|download)$/i.test(name) && !rawFiles.some(f => String(f.id) === String(id))) {
-                                rawFiles.push({
-                                    id: id,
-                                    name: name,
-                                    url: `https://app.docketwise.com/documents/${id}/download`
-                                });
-                            }
-                        }
                     }
                 } catch (e) {}
             }
@@ -421,9 +424,10 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                 return { ...f, ...meta };
             }).sort((a, b) => b.priority - a.priority);
 
+            // Автоматически ставим галочки только на 3 самых важных документах (например Driver License + Birth Certificate + Medical), чтобы сканирование шло мгновенно
             let autoSelectedCount = 0;
             classifiedFiles = classifiedFiles.map(f => {
-                if (f.autoSelect && autoSelectedCount < 5) {
+                if (f.autoSelect && autoSelectedCount < 3) {
                     autoSelectedCount++;
                     return { ...f, autoSelect: true };
                 }
@@ -463,7 +467,6 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                 if (ssnMatch) ssn = ssnMatch[1];
             }
 
-            // Авто-определение пола (если в Docketwise пусто, проверяем окончание имени)
             let gender = contact.gender || contact.sex || '';
             if (!gender && firstName) {
                 const fn = firstName.toLowerCase();
