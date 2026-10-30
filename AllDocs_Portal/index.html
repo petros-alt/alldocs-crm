@@ -1750,7 +1750,10 @@
 
 
 
+
+
 (000) 000-0000
+
 
 
 
@@ -2457,7 +2460,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -2505,7 +2511,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -8979,6 +8988,564 @@ window.renderMainCalendar = async function() {
             phoneUI.ul.style.display = 'none';
         }
     });
+})();
+</script>
+    <!-- ⚡ SMART 3D CALL NOTE TEMPLATES + ПОЛНОЕ УДАЛЕНИЕ ГОЛОСОВОГО ВВОДА (DICTATE) -->
+<style>
+    /* 1. Полностью скрываем и отключаем блок голосового ввода (Микрофон + выбор языка) */
+    .voice-controls-wrap,
+    #voiceLangSelect,
+    #voiceDictateBtn {
+        display: none !important;
+    }
+
+    /* 2. Стили умной панели шаблонов */
+    .smart-tpl-panel {
+        background: linear-gradient(160deg, #faf6f0 0%, #f0e8dc 100%);
+        border: 1.5px solid rgba(184, 115, 51, 0.28);
+        border-bottom: 4px solid rgba(161, 104, 58, 0.38);
+        border-radius: 18px;
+        padding: 12px 14px;
+        margin-top: 8px;
+        margin-bottom: 12px;
+        box-shadow: 0 8px 20px rgba(44, 26, 20, 0.05), inset 0 2px 2px #ffffff;
+    }
+
+    /* Вкладки категорий (только на английском) */
+    .smart-tpl-tabs {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        padding-bottom: 10px;
+        margin-bottom: 10px;
+        border-bottom: 1px dashed rgba(184, 115, 51, 0.25);
+    }
+    .smart-tpl-tab {
+        background: #ffffff;
+        color: #5c4338;
+        border: 1px solid rgba(184, 115, 51, 0.25);
+        border-bottom: 2.5px solid rgba(161, 104, 58, 0.35);
+        border-radius: 12px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        user-select: none;
+    }
+    .smart-tpl-tab:hover {
+        transform: translateY(-2px);
+        border-color: #b87333;
+        color: #24140e;
+    }
+    .smart-tpl-tab.active {
+        background: linear-gradient(135deg, #3e271c 0%, #24140e 100%);
+        color: #ffffff;
+        border-color: #d48c46;
+        border-bottom: 2.5px solid #8b552b;
+        box-shadow: 0 6px 14px rgba(36, 20, 14, 0.28);
+        transform: translateY(-1px);
+    }
+    .smart-tpl-tab .auto-dot {
+        display: none;
+        background: #10b981;
+        color: #fff;
+        font-size: 9px;
+        padding: 1px 5px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+    }
+    .smart-tpl-tab.auto-matched .auto-dot {
+        display: inline-block;
+    }
+
+    /* Кнопка очистки текста справа от вкладок */
+    .smart-tpl-clear {
+        margin-left: auto;
+        background: rgba(220, 38, 38, 0.08);
+        color: #dc2626;
+        border: 1px solid rgba(220, 38, 38, 0.25);
+        border-radius: 10px;
+        padding: 5px 10px;
+        font-size: 11px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .smart-tpl-clear:hover {
+        background: #dc2626;
+        color: #ffffff;
+    }
+
+    /* Сетка из 4–5 крупных кнопок шаблонов */
+    .smart-tpl-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+        gap: 8px;
+    }
+    .smart-tpl-chip {
+        background: linear-gradient(180deg, #ffffff 0%, #f7f2ea 100%);
+        border: 1.5px solid rgba(184, 115, 51, 0.25);
+        border-bottom: 3px solid rgba(161, 104, 58, 0.4);
+        border-radius: 12px;
+        padding: 8px 11px;
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        position: relative;
+        box-shadow: 0 3px 8px rgba(44, 26, 20, 0.04);
+    }
+    .smart-tpl-chip:hover {
+        transform: translateY(-2px);
+        background: linear-gradient(180deg, #ffffff 0%, #fff8f0 100%);
+        border-color: #b87333;
+        box-shadow: 0 8px 18px rgba(184, 115, 51, 0.16);
+    }
+    .smart-tpl-chip:active {
+        transform: translateY(1px);
+        border-bottom-width: 1.5px;
+    }
+    .smart-tpl-chip.urgent-chip {
+        border-left: 4px solid #dc2626;
+    }
+    .smart-tpl-chip.resolved-chip {
+        border-left: 4px solid #10b981;
+    }
+    .chip-hy {
+        font-size: 12.5px;
+        font-weight: 800;
+        color: #24140e;
+        line-height: 1.25;
+    }
+    .chip-en {
+        font-size: 10.5px;
+        font-weight: 700;
+        color: #8b552b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Мини-панель для быстрого ввода суммы Zelle, врача или даты */
+    .smart-tpl-inline-prompt {
+        display: none;
+        margin-top: 10px;
+        padding: 10px 12px;
+        background: linear-gradient(135deg, #2b1810 0%, #1a0f0a 100%);
+        border: 1.5px solid #d48c46;
+        border-radius: 12px;
+        color: #fff;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        animation: fadeIn 0.2s ease;
+    }
+    .smart-tpl-inline-prompt span {
+        font-size: 12px;
+        font-weight: 800;
+        color: #f5cba7;
+    }
+    .smart-tpl-inline-prompt input {
+        flex: 1;
+        min-width: 150px;
+        height: 34px !important;
+        padding: 4px 10px !important;
+        border-radius: 8px !important;
+        border: 1px solid #d48c46 !important;
+        background: #ffffff !important;
+        color: #24140e !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+    }
+    .smart-tpl-inline-prompt button {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 7px 14px;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+</style>
+
+<script>
+(function initSmartCallNoteTemplates() {
+    // Физически удаляем кнопки голосового ввода из DOM
+    const oldVoiceControls = document.querySelector('.voice-controls-wrap');
+    if (oldVoiceControls) oldVoiceControls.remove();
+
+    const descArea = document.getElementById('briefDescription');
+    if (!descArea || document.getElementById('smartTplPanel')) return;
+
+    const TEMPLATES_DB = {
+        "top5": {
+            label: "⭐ Top 5",
+            items: [
+                {
+                    hy: "📞 Հետ զանգիր (Գործի ընթացք)",
+                    en: "Callback — Case Status Update",
+                    text: "Client called requesting a general status update on their case. Please review the file and call back."
+                },
+                {
+                    hy: "🚨 ՇՏԱՊ հետ զանգիր այսօր",
+                    en: "URGENT Callback Today",
+                    text: "URGENT: Client requested a callback today regarding an important update on their case.",
+                    urgent: true
+                },
+                {
+                    hy: "👩‍💼 Մարիամի հետ քննարկել և զանգել",
+                    en: "Discuss with Mariam & Call Back",
+                    text: "Please review this case with Mariam and call the client back with an update."
+                },
+                {
+                    hy: "📥 Թղթեր է մոտեցնելու օֆիս",
+                    en: "Dropping Off Documents Today",
+                    text: "Client will stop by the office today to drop off required documents to proceed with their case."
+                },
+                {
+                    hy: "✅ Արդեն խոսել է աշխատակցի հետ",
+                    en: "Already Spoke with Staff",
+                    text: "Client already spoke with {STAFF} earlier today; no further action needed.",
+                    resolved: true
+                }
+            ]
+        },
+        "ihss": {
+            label: "🏥 IHSS / SSI",
+            items: [
+                {
+                    hy: "🏥 IHSS / CAPI գործի հարցով",
+                    en: "IHSS / CAPI Case Inquiry",
+                    text: "Client called regarding their IHSS / CAPI case status. Please review and return their call."
+                },
+                {
+                    hy: "✉️ IHSS / SSA նամակ է ուղարկել",
+                    en: "Sent IHSS / SSA Letter via Email",
+                    text: "Client received a letter/form from IHSS / Social Security and sent it to our office via email/WhatsApp. Please review and advise."
+                },
+                {
+                    hy: "🏠 Սոց. աշխատողը գալու է (Նախապատրաստում)",
+                    en: "Upcoming Social Worker Home Visit",
+                    text: "Client has an upcoming IHSS Social Worker home visit and needs preparation / guidance before the visit.",
+                    urgent: true
+                },
+                {
+                    hy: "📋 Սոց. աշխատողը եկել-գնացել է",
+                    en: "Social Worker Visit Completed",
+                    text: "Social Worker home visit is completed. Client followed up regarding the post-visit forms and next steps."
+                },
+                {
+                    hy: "⏱️ Ժամերը բարձրացնել (NOA) / Թոշակ",
+                    en: "Increase IHSS Hours / SSI Benefits",
+                    text: "Client is inquiring about increasing IHSS caregiving hours (or SSI/Medi-Cal benefits) and will provide their NOA for review."
+                }
+            ]
+        },
+        "housing": {
+            label: "🏠 Housing",
+            items: [
+                {
+                    hy: "🏠 Տան դիմումի ընթացք (Հետ զանգել)",
+                    en: "Housing Application Status",
+                    text: "Client called inquiring about their Housing application status. Please provide an update."
+                },
+                {
+                    hy: "👩‍💼 Տան հարցով՝ Մարիամին / Գոհարին",
+                    en: "Housing — Check with Mariam / Gohar",
+                    text: "Client called regarding Housing matters. Please coordinate with Mariam / Gohar and call the client back.",
+                    urgent: true
+                },
+                {
+                    hy: "🆕 Նոր հաճախորդ՝ Տան հարցով",
+                    en: "New Client — Housing Consultation",
+                    text: "New client inquiring about Housing assistance; scheduled an initial consultation."
+                },
+                {
+                    hy: "📑 Տան ֆորմաներ / նամակ է ստացել",
+                    en: "Received Housing Forms / Letter",
+                    text: "Client received a housing-related letter/form and needs assistance filling it out."
+                }
+            ]
+        },
+        "docs": {
+            label: "📄 Docs & Zelle",
+            items: [
+                {
+                    hy: "📥 Թղթեր և գումար է բերելու",
+                    en: "Bringing Docs & Payment to Start",
+                    text: "Client will come to the office to submit required documents and payment so we can begin working on their case."
+                },
+                {
+                    hy: "📤 Գալու է պատրաստի թղթերի հետևից",
+                    en: "Picking Up Completed Documents",
+                    text: "Client wants to pick up their completed documents from the office. Please prepare the file."
+                },
+                {
+                    hy: "📧 Email / Ֆաքս ուղարկել է (Ստացել ենք)",
+                    en: "Received Docs via Email / Fax",
+                    text: "Client sent the requested documents (bank statements / letters) via Email / Fax. Confirmed receipt.",
+                    resolved: true
+                },
+                {
+                    hy: "💸 Zelle փոխանցում է արել ($...)",
+                    en: "Sent Zelle Payment ($ Amount)",
+                    text: "Client confirmed they sent a Zelle payment of ${INPUT}. Please verify and update the file.",
+                    promptLabel: "💵 Գումարը / Enter Zelle Amount ($):",
+                    promptPlaceholder: "e.g. 500"
+                },
+                {
+                    hy: "📍 Հասցեն փոխել է / Տվյալներ տրամադրել",
+                    en: "Address Changed / Sent Office Info",
+                    text: "Client called to report an address/contact change (or requested our office Email/Fax/Zelle details)."
+                }
+            ]
+        },
+        "medical": {
+            label: "🩺 Medical",
+            items: [
+                {
+                    hy: "🚨 ՇՏԱՊ. Ռեքորդները (Medical Records) ուղարկել",
+                    en: "URGENT: Send Medical Records Today",
+                    text: "URGENT: Medical records request — please send/fax the client's medical records today.",
+                    urgent: true
+                },
+                {
+                    hy: "💊 Բժշկի այց և նոր դեղեր",
+                    en: "Doctor Visit & Medications Update",
+                    text: "Client had a doctor's appointment and reported updated details / medications ({INPUT}).",
+                    promptLabel: "🩺 Բժշկի անունը և դեղերը / Doctor & Medications:",
+                    promptPlaceholder: "e.g. Dr. Bagdasaryan, Mirtazapine"
+                },
+                {
+                    hy: "🏥 Ճշտել բժշկի հասցեն և ժամը",
+                    en: "Confirm Doctor Appt Address & Time",
+                    text: "Client needs confirmation of their upcoming doctor's appointment date, time, and clinic address. Please verify and notify them.",
+                    urgent: true
+                },
+                {
+                    hy: "📝 Բժշկից թուղթ է բերելու օֆիս",
+                    en: "Bringing Medical Form from Doctor",
+                    text: "Client will pick up the completed medical form from their doctor and bring it to our office."
+                }
+            ]
+        },
+        "appts": {
+            label: "📅 Appointments",
+            items: [
+                {
+                    hy: "🕒 Հարցնում էր՝ երբ է իր ժամադրությունը",
+                    en: "Checking Upcoming Appointment Time",
+                    text: "Client called to check/confirm their upcoming appointment date and time. Informed the client.",
+                    resolved: true
+                },
+                {
+                    hy: "🔄 Ժամադրությունը տեղափոխել ենք...",
+                    en: "Rescheduled Appointment To...",
+                    text: "Client requested to reschedule their appointment. Rescheduled to {INPUT}.",
+                    promptLabel: "📅 Նոր օրը և ժամը / New Date & Time:",
+                    promptPlaceholder: "e.g. Nov 10 at 4:00 PM"
+                },
+                {
+                    hy: "📞 Փոխել ենք հեռախոսային ժամադրության",
+                    en: "Switched to Phone Consultation",
+                    text: "Client cannot attend in person today due to personal reasons; switched their appointment to a Phone Consultation."
+                },
+                {
+                    hy: "📅 Ժամադրություն է ուզում Մարիամի մոտ",
+                    en: "Requests Appointment with Mariam",
+                    text: "Client requested to schedule an appointment with Mariam to discuss their case. Please review availability and call back."
+                }
+            ]
+        }
+    };
+
+    const panel = document.createElement('div');
+    panel.id = 'smartTplPanel';
+    panel.className = 'smart-tpl-panel';
+
+    const tabsWrap = document.createElement('div');
+    tabsWrap.className = 'smart-tpl-tabs';
+
+    const gridWrap = document.createElement('div');
+    gridWrap.className = 'smart-tpl-grid';
+
+    const inlinePrompt = document.createElement('div');
+    inlinePrompt.className = 'smart-tpl-inline-prompt';
+    inlinePrompt.innerHTML = `
+        <span id="tplPromptLabel">Enter detail:</span>
+        <input type="text" id="tplPromptInput" placeholder="..." />
+        <button type="button" id="tplPromptApplyBtn">Insert ✓</button>
+    `;
+
+    panel.appendChild(tabsWrap);
+    panel.appendChild(gridWrap);
+    panel.appendChild(inlinePrompt);
+
+    descArea.parentNode.insertBefore(panel, descArea);
+
+    let pendingTemplateItem = null;
+
+    function getSelectedStaffName() {
+        const staffSel = document.getElementById('assignedStaff');
+        if (staffSel && staffSel.selectedIndex > 0) {
+            return staffSel.options[staffSel.selectedIndex].text;
+        }
+        const assigneeSpan = document.getElementById('assigneeNameSpan');
+        if (assigneeSpan && assigneeSpan.textContent.trim()) {
+            return assigneeSpan.textContent.trim();
+        }
+        return 'our staff';
+    }
+
+    function insertTemplateText(item, customInputVal = '') {
+        let finalSentence = item.text
+            .replace('{STAFF}', getSelectedStaffName())
+            .replace('{INPUT}', customInputVal || '---');
+
+        const currentVal = descArea.value.trim();
+        if (currentVal && !currentVal.includes(finalSentence)) {
+            descArea.value = currentVal + '\n' + finalSentence;
+        } else if (!currentVal) {
+            descArea.value = finalSentence;
+        }
+
+        if (item.urgent) {
+            const urgCb = document.getElementById('urgentCallCheckbox');
+            if (urgCb && !urgCb.checked) {
+                urgCb.checked = true;
+                urgCb.dispatchEvent(new Event('change'));
+            }
+        }
+
+        if (item.resolved) {
+            const resCb = document.getElementById('resolvedByOpCheckbox');
+            if (resCb && !resCb.checked) {
+                resCb.checked = true;
+                resCb.dispatchEvent(new Event('change'));
+            }
+        }
+
+        descArea.dispatchEvent(new Event('input'));
+        descArea.focus();
+    }
+
+    function renderCategory(catKey, isAutoMatched = false) {
+        inlinePrompt.style.display = 'none';
+
+        tabsWrap.querySelectorAll('.smart-tpl-tab').forEach(btn => {
+            const isThis = btn.dataset.cat === catKey;
+            btn.classList.toggle('active', isThis);
+            if (isAutoMatched && isThis) {
+                btn.classList.add('auto-matched');
+            } else if (!isAutoMatched) {
+                btn.classList.remove('auto-matched');
+            }
+        });
+
+        gridWrap.innerHTML = '';
+        const catData = TEMPLATES_DB[catKey];
+        if (!catData) return;
+
+        catData.items.forEach(item => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'smart-tpl-chip' + (item.urgent ? ' urgent-chip' : '') + (item.resolved ? ' resolved-chip' : '');
+            chip.title = 'Click to insert: ' + item.text;
+            chip.innerHTML = `
+                <span class="chip-hy">${item.hy}</span>
+                <span class="chip-en">🇬🇧 ${item.en}</span>
+            `;
+
+            chip.onclick = () => {
+                if (item.promptLabel) {
+                    pendingTemplateItem = item;
+                    document.getElementById('tplPromptLabel').textContent = item.promptLabel;
+                    const inp = document.getElementById('tplPromptInput');
+                    inp.placeholder = item.promptPlaceholder || '';
+                    inp.value = '';
+                    inlinePrompt.style.display = 'flex';
+                    inp.focus();
+                } else {
+                    inlinePrompt.style.display = 'none';
+                    insertTemplateText(item);
+                }
+            };
+            gridWrap.appendChild(chip);
+        });
+    }
+
+    document.getElementById('tplPromptApplyBtn').onclick = () => {
+        if (!pendingTemplateItem) return;
+        const val = document.getElementById('tplPromptInput').value.trim();
+        insertTemplateText(pendingTemplateItem, val);
+        inlinePrompt.style.display = 'none';
+        pendingTemplateItem = null;
+    };
+    document.getElementById('tplPromptInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('tplPromptApplyBtn').click();
+        }
+    });
+
+    Object.keys(TEMPLATES_DB).forEach(catKey => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'smart-tpl-tab' + (catKey === 'top5' ? ' active' : '');
+        btn.dataset.cat = catKey;
+        btn.innerHTML = `${TEMPLATES_DB[catKey].label} <span class="auto-dot">Matched</span>`;
+        btn.onclick = () => renderCategory(catKey, false);
+        tabsWrap.appendChild(btn);
+    });
+
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.className = 'smart-tpl-clear';
+    clearBtn.textContent = '✖ Clear';
+    clearBtn.title = 'Clear note text';
+    clearBtn.onclick = () => {
+        descArea.value = '';
+        descArea.focus();
+    };
+    tabsWrap.appendChild(clearBtn);
+
+    renderCategory('top5', false);
+
+    // АВТО-СИНХРОНИЗАЦИЯ ОТ КЕЙСА DOCKETWISE (#matterSelect)
+    const matterSelect = document.getElementById('matterSelect');
+    function syncTemplatesWithDocketwiseMatter() {
+        if (!matterSelect || matterSelect.options.length <= 1) return;
+        const selectedOpt = matterSelect.options[matterSelect.selectedIndex] || matterSelect.options[1];
+        if (!selectedOpt) return;
+
+        const title = (selectedOpt.textContent || '').toLowerCase();
+        if (!title || title.includes('auto-detecting') || title.includes('please select')) return;
+
+        if (title.includes('housing') || title.includes('section 8') || title.includes('apartment') || title.includes('rent')) {
+            renderCategory('housing', true);
+        } else if (title.includes('ihss') || title.includes('capi') || title.includes('ssi') || title.includes('ssdi') || title.includes('social security') || title.includes('medi-cal') || title.includes('medicare') || title.includes('food')) {
+            renderCategory('ihss', true);
+        } else if (title.includes('medical') || title.includes('doctor') || title.includes('disability')) {
+            renderCategory('medical', true);
+        }
+    }
+
+    if (matterSelect) {
+        matterSelect.addEventListener('change', syncTemplatesWithDocketwiseMatter);
+        const observer = new MutationObserver(() => {
+            syncTemplatesWithDocketwiseMatter();
+        });
+        observer.observe(matterSelect, { childList: true });
+    }
 })();
 </script>
 </body>
