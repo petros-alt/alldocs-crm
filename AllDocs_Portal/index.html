@@ -9736,986 +9736,249 @@ window.renderMainCalendar = async function() {
     transform: translateY(-1px) !important;
     color: #ffffff !important;
 }
-</style>
-
 <script>
-    let currentClient = null;
-    let currentOpenedFormCode = '';
-    let lastInspectedPdfFields = [];
-    let clientMemoryStore = {};
+(function initDocketwiseManualControlPanel() {
+    const staffList = [
+        "Mariam Djaradjian",
+        "Artak Badalyan",
+        "Gohar Aloyan",
+        "Argishti Shahbazian",
+        "Lilit Avetisyan",
+        "Norayr Badalyan",
+        "Petros Eghiazaryan",
+        "Rima Avetisyan"
+    ];
 
-    // Фильтрация 13 карточек форм по группе программы
-    window.filterFormsByProgram = function(progKey, btnEl) {
-        document.querySelectorAll('#programFilterBar .prog-tab-btn').forEach(b => b.classList.remove('active'));
-        if (btnEl) {
-            btnEl.classList.add('active');
-        } else {
-            const matchBtn = document.querySelector(`#programFilterBar .prog-tab-btn[data-prog="${progKey}"]`);
-            if (matchBtn) matchBtn.classList.add('active');
-        }
+    function ensureDwControlPanel() {
+        const modalContent = document.querySelector('#journalViewModal .journal-modal-content');
+        const historyWrap = document.getElementById('jmToggleHistoryBtn')?.parentNode;
+        if (!modalContent || !historyWrap || document.getElementById('jmDocketwiseBar')) return;
 
-        document.querySelectorAll('#formsGrid .form-item').forEach(card => {
-            const cardProgs = card.getAttribute('data-prog') || '';
-            if (progKey === 'all' || cardProgs.includes(progKey)) {
-                card.style.display = 'flex';
-            } else {
-                card.style.display = 'none';
-            }
-        });
-    };
+        const bar = document.createElement('div');
+        bar.id = 'jmDocketwiseBar';
+        bar.className = 'dw-action-bar';
 
-    function renderSummaryPills() {
-        const box = document.getElementById('clientDataSummaryPills');
-        if (!box) return;
-        const m = clientMemoryStore;
-        const pills = [];
-        if (m.ssn) pills.push(`🔐 SSN: ${m.ssn}`);
-        if (m.dob) pills.push(`🎂 DOB: ${m.dob}`);
-        if (m.gender) pills.push(`👤 ${m.gender}`);
-        if (m.heightFt || m.weight) pills.push(`📏 ${m.heightFt || '?'}'${m.heightIn || '0'}", ${m.weight || '?'} lbs`);
-        if (m.street) pills.push(`🏠 ${m.street}, ${m.city || ''}`);
-        if (Array.isArray(m.diagnoses) && m.diagnoses.length > 0 && m.diagnoses[0].problem) {
-            pills.push(`🩺 ${m.diagnoses.length} Diagnoses`);
-        }
-        if (Array.isArray(m.clinics) && m.clinics.length > 0 && (m.clinics[0].clinicName || m.clinics[0].doctorName)) {
-            pills.push(`🏥 ${m.clinics.length} Doctors/Clinics`);
-        }
-        box.innerHTML = pills.map(p => `<span class="summary-pill">${p}</span>`).join('');
-    }
+        const todayISO = new Date().toISOString().split('T')[0];
 
-    // Отрисовка списка файлов выбранного Matter / Папки (С СОХРАНЕНИЕМ data-url!)
-    function renderMatterFilesList(files = []) {
-        const countTag = document.getElementById('dwFilesCountTag');
-        const listEl = document.getElementById('dwSmartFilesList');
-        countTag.textContent = `${files.length} files`;
-
-        if (files.length === 0) {
-            listEl.innerHTML = '<div style="color:#888; font-size:11px; padding:6px 0;">No files inside this folder (choose another folder above or attach local file below).</div>';
-            return;
-        }
-
-        let html = '';
-        files.forEach(f => {
-            const badgeColor = f.category === 'identity' ? '#2563eb' : (f.category === 'medical_form' ? '#059669' : '#8b552b');
-            const folderLabel = f.folderName && f.folderName !== 'Root' ? `<div style="font-size:9.5px; color:#8b552b;">📁 ${f.folderName}</div>` : '';
-            html += `
-                <label style="display:flex; align-items:center; justify-content:space-between; gap:6px; padding:6px 4px; border-bottom:1px dashed #eee; cursor:pointer; text-transform:none; font-weight:600; margin:0;">
-                    <div style="display:flex; align-items:center; gap:7px; overflow:hidden;">
-                        <input type="checkbox" class="dw-file-cb" value="${f.id}" data-url="${f.url || ''}" ${f.autoSelect ? 'checked' : ''} style="width:15px; height:15px; margin:0; flex-shrink:0;">
-                        <div style="overflow:hidden;">
-                            <a href="https://app.docketwise.com/documents/${f.id}" target="_blank" style="color:#2c1a14; text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; font-size:11.5px; font-weight:700;" title="${f.name}">${f.name} ↗</a>
-                            ${folderLabel}
+        bar.innerHTML = `
+            <div class="dw-action-header">
+                <div class="dw-action-title">⚖️ Docketwise Direct Actions</div>
+                <span class="dw-status-pill" id="jmDwStatusPill">● Ready</span>
+            </div>
+            <div class="dw-action-btns">
+                <button type="button" class="dw-act-btn" id="btnDwModeNote" onclick="window.switchDwMode('Note')">📝 Send Note</button>
+                <button type="button" class="dw-act-btn" id="btnDwModeTask" onclick="window.switchDwMode('Task')">📌 Assign Task</button>
+                <button type="button" class="dw-act-btn" id="btnDwModeLead" onclick="window.switchDwMode('Lead')">👤 + New Contact</button>
+            </div>
+            <div class="dw-compose-box" id="dwComposeBox">
+                <div id="dwMatterSelectWrap">
+                    <label class="dw-field-label">📂 Target Matter (Case in Docketwise):</label>
+                    <select id="jmDwMatterSelect">
+                        <option value="">General Contact Profile (No specific matter)</option>
+                    </select>
+                </div>
+                <div id="dwTaskFieldsWrap" style="display:none;">
+                    <div class="dw-task-row">
+                        <div>
+                            <label class="dw-field-label">👤 Assign Task To Staff:</label>
+                            <select id="jmDwTaskAssignee">
+                                ${staffList.map(s => `<option value="${s}">${s}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="dw-field-label">📅 Due Date:</label>
+                            <input type="date" id="jmDwTaskDue" value="${todayISO}">
                         </div>
                     </div>
-                    <span style="background:${badgeColor}; color:#fff; font-size:9px; padding:2px 6px; border-radius:6px; white-space:nowrap; flex-shrink:0;">${f.badge || '📄 File'}</span>
-                </label>
-            `;
-        });
-        listEl.innerHTML = html;
+                </div>
+                <label class="dw-field-label" id="dwTextLabel">✍️ Note / Task Text for Docketwise:</label>
+                <textarea id="jmDwTextInput" rows="3" placeholder="Review or edit text before sending to Docketwise..."></textarea>
+                <button type="button" class="dw-send-confirm-btn" id="jmDwConfirmSendBtn" onclick="window.executeDocketwiseAction()">
+                    🚀 Push to Docketwise Now
+                </button>
+            </div>
+        `;
+
+        modalContent.insertBefore(bar, historyWrap);
     }
 
-    // При смене Matter (Кейса): автоматически фильтруем формы справа и загружаем папки и файлы ЭТОГО Matter!
-    window.handleMatterChange = async function() {
-        const matterSel = document.getElementById('dfMatterSelect');
-        const folderSel = document.getElementById('dfFolderSelect');
-        const matterId = matterSel.value;
-        const matterTitle = (matterSel.options[matterSel.selectedIndex]?.text || '').toLowerCase();
+    window.currentDwMode = null;
 
-        if (matterTitle.includes('capi') || matterTitle.includes('ssi')) {
-            filterFormsByProgram('capi', null);
-        } else if (matterTitle.includes('ihss')) {
-            filterFormsByProgram('ihss', null);
-        } else if (matterTitle.includes('medi-cal') || matterTitle.includes('medical')) {
-            filterFormsByProgram('medical', null);
-        } else {
-            filterFormsByProgram('all', null);
-        }
+    window.switchDwMode = function(mode) {
+        ensureDwControlPanel();
+        const box = document.getElementById('dwComposeBox');
+        const btnNote = document.getElementById('btnDwModeNote');
+        const btnTask = document.getElementById('btnDwModeTask');
+        const btnLead = document.getElementById('btnDwModeLead');
 
-        if (!matterId) {
-            document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#888; font-size:11px; padding:6px 0;">No active matter selected.</div>';
+        if (window.currentDwMode === mode && box.style.display === 'block') {
+            box.style.display = 'none';
+            window.currentDwMode = null;
+            [btnNote, btnTask, btnLead].forEach(b => b?.classList.remove('active-mode'));
             return;
         }
 
-        document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#b87333; font-weight:700; padding:8px 0;">⏳ Opening Matter folders (01. ID, 02. Medical, 04. Work)...</div>';
-        folderSel.innerHTML = '<option value="ALL_KEY_FOLDERS">⏳ Loading folders...</option>';
+        window.currentDwMode = mode;
+        [btnNote, btnTask, btnLead].forEach(b => b?.classList.remove('active-mode'));
+        if (mode === 'Note') btnNote?.classList.add('active-mode');
+        if (mode === 'Task') btnTask?.classList.add('active-mode');
+        if (mode === 'Lead') btnLead?.classList.add('active-mode');
 
-        try {
-            const res = await fetch(`/api/search?matterId=${encodeURIComponent(matterId)}`);
-            const data = await res.json();
+        const matterWrap = document.getElementById('dwMatterSelectWrap');
+        const taskWrap = document.getElementById('dwTaskFieldsWrap');
+        const textLbl = document.getElementById('dwTextLabel');
+        const textInp = document.getElementById('jmDwTextInput');
+        const sendBtn = document.getElementById('jmDwConfirmSendBtn');
 
-            folderSel.innerHTML = '<option value="ALL_KEY_FOLDERS">⚡ All Key Folders (01. ID, 02. Medical, 04. Work)</option>';
-            if (data.success && Array.isArray(data.folders)) {
-                data.folders.forEach(fld => {
-                    const opt = document.createElement('option');
-                    opt.value = fld.folderId;
-                    opt.textContent = `📁 ${fld.name}`;
-                    folderSel.appendChild(opt);
-                });
-            }
+        const rawNotes = document.getElementById('jmNotes')?.textContent || '';
+        const replyNotes = document.getElementById('jmStaffReply')?.textContent || '';
+        const combinedClean = (rawNotes && rawNotes !== 'No notes provided by operator.')
+            ? (replyNotes ? `${rawNotes}\n[Resolution]: ${replyNotes}` : rawNotes)
+            : '';
 
-            renderMatterFilesList(data.files || []);
-        } catch (e) {
-            document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#dc2626; font-size:11px;">Could not load Matter folders.</div>';
+        if (mode === 'Note') {
+            matterWrap.style.display = 'block';
+            taskWrap.style.display = 'none';
+            textLbl.textContent = '📝 Clean Note Text for Docketwise:';
+            textInp.value = combinedClean;
+            sendBtn.innerHTML = '🚀 Push Note to Docketwise';
+        } else if (mode === 'Task') {
+            matterWrap.style.display = 'block';
+            taskWrap.style.display = 'block';
+            textLbl.textContent = '📌 Task Instructions for Staff in Docketwise:';
+            textInp.value = combinedClean;
+            sendBtn.innerHTML = '📌 Create Task in Docketwise';
+        } else if (mode === 'Lead') {
+            matterWrap.style.display = 'none';
+            taskWrap.style.display = 'none';
+            textLbl.textContent = '👤 Initial Intake Note for New Contact:';
+            textInp.value = combinedClean || 'Created from All Docs Call Center Portal.';
+            sendBtn.innerHTML = '👤 Create New Contact in Docketwise';
         }
+
+        box.style.display = 'block';
     };
 
-    window.handleFolderChange = async function() {
-        const matterId = document.getElementById('dfMatterSelect').value;
-        const folderId = document.getElementById('dfFolderSelect').value;
-        if (!matterId) return;
+    async function loadClientMattersForModal(clientName, phone, clientId) {
+        const sel = document.getElementById('jmDwMatterSelect');
+        const pill = document.getElementById('jmDwStatusPill');
+        if (!sel || !pill) return;
 
-        document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#b87333; font-weight:700; padding:8px 0;">⏳ Loading files from selected folder...</div>';
+        sel.innerHTML = '<option value="">⏳ Checking Docketwise Matters...</option>';
+        pill.textContent = '⏳ Syncing...';
+
         try {
-            const res = await fetch(`/api/search?matterId=${encodeURIComponent(matterId)}&folderId=${encodeURIComponent(folderId)}`);
+            const cleanQ = (phone && phone !== '--') ? phone.replace(/[^\d+]/g, '') : clientName;
+            const type = cleanQ.match(/\d/) ? 'phone' : 'name';
+            const res = await fetch(`/api/search?query=${encodeURIComponent(cleanQ)}&type=${type}`);
             const data = await res.json();
-            if (data.success) {
-                renderMatterFilesList(data.files || []);
-            }
-        } catch (e) {}
-    };
 
-    document.addEventListener("DOMContentLoaded", function() {
-        const loggedInStaff = localStorage.getItem('loggedInStaff');
-        const staffInitials = localStorage.getItem('staffInitials');
-        const staffRole = localStorage.getItem('staffRole');
+            sel.innerHTML = '<option value="">General Contact Profile (No specific matter)</option>';
+            if (data.success && Array.isArray(data.clients) && data.clients.length > 0) {
+                const matched = data.clients.find(c => String(c.id) === String(clientId)) || data.clients[0];
+                window.currentJmClientId = matched.id;
+                pill.textContent = `✓ Linked (ID: ${matched.id})`;
 
-        if (!loggedInStaff) {
-            window.location.href = 'login.html';
-        } else {
-            document.getElementById('userProfile').style.display = 'flex';
-            document.getElementById('topAvatar').textContent = staffInitials || 'ST';
-            document.getElementById('sidebarUserName').textContent = loggedInStaff;
-            document.getElementById('sidebarUserRole').textContent = staffRole || "Staff Member";
-
-            const userProfile = document.getElementById('userProfile');
-            const logoutMenu = document.getElementById('logoutMenu');
-            document.getElementById('logoutBtn').addEventListener('click', function() {
-                localStorage.clear();
-                window.location.href = 'login.html';
-            });
-            userProfile.addEventListener('click', () => logoutMenu.style.display = (logoutMenu.style.display === 'block') ? 'none' : 'block');
-            document.addEventListener('click', (e) => { if (!userProfile.contains(e.target) && !logoutMenu.contains(e.target)) logoutMenu.style.display = 'none'; });
-        }
-
-        const copyBtn = document.getElementById('copyPdfFieldsBtn');
-        if (copyBtn) {
-            copyBtn.onclick = function() {
-                navigator.clipboard.writeText(JSON.stringify(lastInspectedPdfFields, null, 2));
-                copyBtn.textContent = `✅ Copied ${lastInspectedPdfFields.length} fields!`;
-                setTimeout(() => { copyBtn.textContent = '📋 Copy PDF Field Names'; }, 4000);
-            };
-        }
-
-        // 3D МИККИ МАУС В САЙДБАРЕ
-        const sidebar = document.querySelector('.sidebar');
-        const navMenu = document.querySelector('.nav-menu');
-        if (sidebar && navMenu && typeof THREE !== 'undefined' && !document.getElementById('sidebar-3d-widget')) {
-            const widgetBox = document.createElement('div');
-            widgetBox.id = 'sidebar-3d-widget';
-            widgetBox.innerHTML = '<div class="widget-3d-label">✨ 3D Mickey Assistant</div>';
-            sidebar.insertBefore(widgetBox, navMenu);
-
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(42, widgetBox.clientWidth / widgetBox.clientHeight, 0.1, 100);
-            camera.position.z = 4.6;
-
-            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            renderer.setSize(widgetBox.clientWidth, widgetBox.clientHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            widgetBox.insertBefore(renderer.domElement, widgetBox.firstChild);
-
-            const mickeyGroup = new THREE.Group();
-            scene.add(mickeyGroup);
-
-            const goldMat = new THREE.MeshStandardMaterial({ color: 0xd48c46, metalness: 0.75, roughness: 0.18 });
-            const darkGoldMat = new THREE.MeshStandardMaterial({ color: 0x3e2723, metalness: 0.6, roughness: 0.22 });
-
-            mickeyGroup.add(new THREE.Mesh(new THREE.SphereGeometry(0.82, 32, 32), goldMat));
-
-            const earGeo = new THREE.SphereGeometry(0.50, 32, 32);
-            earGeo.scale(1, 1, 0.55);
-            const leftEar = new THREE.Mesh(earGeo, goldMat);
-            leftEar.position.set(-0.72, 0.74, 0);
-            leftEar.rotation.z = 0.45;
-            mickeyGroup.add(leftEar);
-
-            const rightEar = new THREE.Mesh(earGeo, goldMat);
-            rightEar.position.set(0.72, 0.74, 0);
-            rightEar.rotation.z = -0.45;
-            mickeyGroup.add(rightEar);
-
-            const eyeGeo = new THREE.SphereGeometry(0.09, 16, 16);
-            eyeGeo.scale(0.8, 1.35, 0.6);
-            const leftEye = new THREE.Mesh(eyeGeo, darkGoldMat);
-            leftEye.position.set(-0.22, 0.12, 0.78);
-            mickeyGroup.add(leftEye);
-
-            const rightEye = new THREE.Mesh(eyeGeo, darkGoldMat);
-            rightEye.position.set(0.22, 0.12, 0.78);
-            mickeyGroup.add(rightEye);
-
-            const noseGeo = new THREE.SphereGeometry(0.14, 16, 16);
-            noseGeo.scale(1.1, 0.8, 0.9);
-            const noseMesh = new THREE.Mesh(noseGeo, darkGoldMat);
-            noseMesh.position.set(0, -0.06, 0.88);
-            mickeyGroup.add(noseMesh);
-
-            const ringGeo = new THREE.TorusGeometry(1.52, 0.025, 16, 64);
-            const ringMat = new THREE.MeshBasicMaterial({ color: 0xf5cba7, transparent: true, opacity: 0.55 });
-            const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-            ringMesh.rotation.x = Math.PI / 2.3;
-            mickeyGroup.add(ringMesh);
-
-            scene.add(new THREE.AmbientLight(0xffffff, 0.85));
-            const pLight1 = new THREE.PointLight(0xffe0b2, 2.2, 15);
-            pLight1.position.set(3, 4, 5);
-            scene.add(pLight1);
-
-            let clock = 0;
-            (function animateMickey() {
-                requestAnimationFrame(animateMickey);
-                clock += 0.035;
-                mickeyGroup.rotation.y += 0.008;
-                mickeyGroup.position.y = Math.sin(clock) * 0.12;
-                ringMesh.rotation.z += 0.012;
-                renderer.render(scene, camera);
-            })();
-        }
-
-        const fullNameInput = document.getElementById('fullName');
-        const clientList = document.getElementById('clientList');
-        const nameLoader = document.getElementById('nameLoader');
-        
-        const phoneNumberInput = document.getElementById('phoneNumber');
-        const phoneList = document.getElementById('phoneList');
-        const phoneLoader = document.getElementById('phoneLoader');
-
-        async function fetchDocketwiseData(query, type = 'name') {
-            try {
-                const response = await fetch(`/api/search?query=${encodeURIComponent(query)}&type=${type}`);
-                const data = await response.json();
-                if (data.success && data.clients && data.clients.length > 0) return data.clients;
-            } catch (error) { console.error("API Error:", error); }
-            return [];
-        }
-
-        function debounce(func, delay = 450) {
-            let timeoutId;
-            return function (...args) {
-                clearTimeout(timeoutId);
-                timeoutId = setTimeout(() => { func.apply(null, args); }, delay);
-            };
-        }
-
-        async function applyClientData(client) {
-            currentClient = client;
-            fullNameInput.value = client.name || '';
-            phoneNumberInput.value = client.phone || '';
-
-            document.getElementById('displayClientName').innerText = client.name || 'Client';
-            document.getElementById('displayDwId').innerText = `ID: ${client.id}`;
-
-            const matterSel = document.getElementById('dfMatterSelect');
-            matterSel.innerHTML = '';
-            if (client.matters && client.matters.length > 0) {
-                client.matters.forEach(m => {
-                    const opt = document.createElement('option');
-                    opt.value = m.id;
-                    opt.textContent = `📂 ${m.title}`;
-                    matterSel.appendChild(opt);
-                });
-                matterSel.selectedIndex = 0;
+                if (Array.isArray(matched.matters) && matched.matters.length > 0) {
+                    matched.matters.forEach((m, idx) => {
+                        const opt = document.createElement('option');
+                        opt.value = m.id;
+                        opt.textContent = `📂 ${m.title}`;
+                        if (idx === 0) opt.selected = true;
+                        sel.appendChild(opt);
+                    });
+                }
             } else {
-                matterSel.innerHTML = '<option value="">No active matters found</option>';
+                pill.textContent = '⚠️ Not in Docketwise (Click + New Contact)';
             }
-
-            const parts = (client.name || '').trim().split(/\s+/);
-            clientMemoryStore = {
-                firstName: parts[0] || '',
-                lastName: parts.slice(1).join(' ') || '',
-                phone: client.phone || '',
-                state: 'CA',
-                language: 'Armenian'
-            };
-            renderSummaryPills();
-
-            document.getElementById('clientCard').style.display = 'block';
-            document.getElementById('formsGrid').classList.add('active');
-            document.getElementById('dossierStatusBadge').textContent = '⏳ Loading Docketwise Dossier...';
-
-            await window.handleMatterChange();
-
-            try {
-                const res = await fetch(`/api/search?clientId=${encodeURIComponent(client.id)}`);
-                const fullData = await res.json();
-                if (fullData && fullData.success && fullData.profile) {
-                    const p = fullData.profile;
-                    clientMemoryStore = {
-                        ...clientMemoryStore,
-                        firstName: p.firstName || clientMemoryStore.firstName,
-                        lastName: p.lastName || clientMemoryStore.lastName,
-                        ssn: p.ssn || clientMemoryStore.ssn || '',
-                        dob: p.dob || clientMemoryStore.dob || '',
-                        street: p.street || clientMemoryStore.street || '',
-                        city: p.city || 'Glendale',
-                        state: p.state || 'CA',
-                        zip: p.zip || clientMemoryStore.zip || '',
-                        gender: p.gender || clientMemoryStore.gender || '',
-                        language: p.language || 'Armenian',
-                        heightFt: p.heightFeet || clientMemoryStore.heightFt || '',
-                        heightIn: p.heightInches || clientMemoryStore.heightIn || '',
-                        weight: p.weight || clientMemoryStore.weight || '',
-                        caseNum: p.aNumber || clientMemoryStore.caseNum || ''
-                    };
-                    renderSummaryPills();
-                    document.getElementById('dossierStatusBadge').textContent = '✓ Docketwise Profile Ready';
-                } else {
-                    document.getElementById('dossierStatusBadge').textContent = '✓ Client Linked';
-                }
-            } catch (e) {
-                document.getElementById('dossierStatusBadge').textContent = '✓ Client Linked';
-            }
-        }
-
-        const handleNameSearch = debounce(async (searchText) => {
-            if (searchText.length < 3) { clientList.style.display = 'none'; nameLoader.style.display = 'none'; return; }
-            nameLoader.style.display = 'block';
-            const results = await fetchDocketwiseData(searchText, 'name');
-            nameLoader.style.display = 'none';
-            clientList.innerHTML = '';
-            
-            if (results.length > 0) {
-                results.forEach(client => {
-                    const li = document.createElement('li'); 
-                    li.innerHTML = `<span class="client-name-list">${client.name}</span><span class="client-phone-list">📞 ${client.phone || 'No phone'}</span>`;
-                    li.addEventListener('mousedown', function(e) { 
-                        e.preventDefault(); clientList.style.display = 'none'; applyClientData(client); 
-                    });
-                    clientList.appendChild(li);
-                });
-                clientList.style.display = 'block';
-            } else { clientList.style.display = 'none'; }
-        }, 450);
-
-        const handlePhoneSearch = debounce(async (searchDigits) => {
-            if (searchDigits.length < 4) { phoneList.style.display = 'none'; phoneLoader.style.display = 'none'; return; }
-            phoneLoader.style.display = 'block';
-            const results = await fetchDocketwiseData(searchDigits, 'phone');
-            phoneLoader.style.display = 'none';
-            phoneList.innerHTML = '';
-
-            if (results.length > 0) {
-                results.forEach(client => {
-                    const li = document.createElement('li'); 
-                    li.innerHTML = `<span class="client-name-list">${client.name}</span><span class="client-phone-list">📞 ${client.phone || 'No phone'}</span>`;
-                    li.addEventListener('mousedown', function(e) { 
-                        e.preventDefault(); phoneList.style.display = 'none'; applyClientData(client); 
-                    });
-                    phoneList.appendChild(li);
-                });
-                phoneList.style.display = 'block';
-            } else { phoneList.style.display = 'none'; }
-        }, 450);
-
-        fullNameInput.addEventListener('input', function() { handleNameSearch(this.value.trim()); });
-        phoneNumberInput.addEventListener('input', function() { handlePhoneSearch(this.value.replace(/\D/g, '')); });
-
-        document.addEventListener('mousedown', function(e) {
-            if (!document.getElementById('autocompleteWrapper').contains(e.target)) clientList.style.display = 'none';
-            if (!document.getElementById('phoneAutocompleteWrapper').contains(e.target)) phoneList.style.display = 'none';
-        });
-    });
-
-    function fileToBase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-                const res = reader.result || '';
-                const b64 = res.includes(',') ? res.split(',')[1] : res;
-                resolve({ name: file.name, mimeType: file.type || 'application/pdf', base64: b64 });
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-    }
-
-    async function runAiDocumentScan() {
-        const btn = document.getElementById('btnRunAiScan');
-        const badge = document.getElementById('dossierStatusBadge');
-        const matterId = document.getElementById('dfMatterSelect').value;
-
-        const checkedBoxes = Array.from(document.querySelectorAll('.dw-file-cb:checked'));
-        const checkedItems = checkedBoxes.map(cb => ({
-            id: cb.value,
-            url: cb.getAttribute('data-url') || ''
-        }));
-
-        const localFilesInput = document.getElementById('localAiFilesInput');
-        const uploadedFiles = [];
-
-        if (localFilesInput && localFilesInput.files.length > 0) {
-            for (const f of Array.from(localFilesInput.files)) {
-                uploadedFiles.push(await fileToBase64(f));
-            }
-        }
-
-        // Делим выбранные файлы на легкие пачки по 2 файла (с сохранением их прямых ссылок!)
-        const BATCH_SIZE = 2;
-        const batches = [];
-
-        for (let i = 0; i < checkedItems.length; i += BATCH_SIZE) {
-            const slice = checkedItems.slice(i, i + BATCH_SIZE);
-            batches.push({
-                fileIds: slice.map(x => x.id),
-                fileUrls: slice.map(x => x.url),
-                uploadedFiles: []
-            });
-        }
-        for (let i = 0; i < uploadedFiles.length; i += BATCH_SIZE) {
-            batches.push({
-                fileIds: [],
-                fileUrls: [],
-                uploadedFiles: uploadedFiles.slice(i, i + BATCH_SIZE)
-            });
-        }
-
-        if (batches.length === 0) {
-            batches.push({ fileIds: [], fileUrls: [], uploadedFiles: [] });
-        }
-
-        btn.disabled = true;
-        let totalRead = 0;
-        let lastModelUsed = 'Gemini';
-
-        try {
-            for (let bIdx = 0; bIdx < batches.length; bIdx++) {
-                const currentBatch = batches[bIdx];
-                const stepLabel = batches.length > 1 ? `Batch ${bIdx + 1}/${batches.length}` : 'Files';
-                btn.textContent = `⏳ AI Scanning ${stepLabel}...`;
-                badge.textContent = `🧠 Reading ${stepLabel}...`;
-
-                const res = await fetch('/api/search', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        clientId: currentClient ? currentClient.id : '',
-                        matterId: matterId,
-                        clientName: currentClient ? currentClient.name : '',
-                        fileIds: currentBatch.fileIds,
-                        fileUrls: currentBatch.fileUrls,
-                        uploadedFiles: currentBatch.uploadedFiles
-                    })
-                });
-
-                const rawText = await res.text();
-                let data = null;
-                try {
-                    data = JSON.parse(rawText);
-                } catch (jsonErr) {
-                    throw new Error(`Server timeout on ${stepLabel}. Try scanning 1-2 files at a time.`);
-                }
-
-                if (!data.success) {
-                    throw new Error(data.error || `AI Scan failed on ${stepLabel}`);
-                }
-
-                totalRead += (data.filesScanned || 0);
-                if (data.model) lastModelUsed = data.model;
-
-                const ex = data.extracted || {};
-
-                Object.keys(ex).forEach(k => {
-                    const val = ex[k];
-                    if (val === null || val === undefined || val === '') return;
-
-                    if (k === 'diagnoses' && Array.isArray(val)) {
-                        const existingDiag = Array.isArray(clientMemoryStore.diagnoses) ? clientMemoryStore.diagnoses : [];
-                        val.forEach(dItem => {
-                            if (dItem && dItem.problem && !existingDiag.some(e => e.problem.toLowerCase() === dItem.problem.toLowerCase())) {
-                                existingDiag.push(dItem);
-                            }
-                        });
-                        clientMemoryStore.diagnoses = existingDiag;
-                    } else if (k === 'clinics' && Array.isArray(val)) {
-                        const existingClinics = Array.isArray(clientMemoryStore.clinics) ? clientMemoryStore.clinics : [];
-                        val.forEach(cItem => {
-                            if (cItem && (cItem.clinicName || cItem.doctorName)) {
-                                const isDup = existingClinics.some(e =>
-                                    (e.clinicName && cItem.clinicName && e.clinicName.toLowerCase() === cItem.clinicName.toLowerCase()) ||
-                                    (e.doctorName && cItem.doctorName && e.doctorName.toLowerCase() === cItem.doctorName.toLowerCase())
-                                );
-                                if (!isDup) existingClinics.push(cItem);
-                            }
-                        });
-                        clientMemoryStore.clinics = existingClinics;
-                    } else if (Array.isArray(val)) {
-                        const nonEmpty = val.filter(Boolean);
-                        if (nonEmpty.length > 0) clientMemoryStore[k] = nonEmpty;
-                    } else if (typeof val === 'object') {
-                        clientMemoryStore[k] = { ...(clientMemoryStore[k] || {}), ...val };
-                    } else {
-                        clientMemoryStore[k] = val;
-                    }
-                });
-
-                renderSummaryPills();
-            }
-
-            badge.textContent = `✅ AI Scan Complete (${totalRead} docs via ${lastModelUsed})`;
-            btn.textContent = '✅ All Data Extracted! Click Form on Right →';
-            setTimeout(() => { btn.textContent = '🧠 5. Scan Checked Files with Gemini AI'; }, 4500);
         } catch (err) {
-            alert('❌ ' + err.message);
-            badge.textContent = '⚠️ AI Scan Interrupted';
-            btn.textContent = '🧠 5. Scan Checked Files with Gemini AI';
-        } finally {
-            btn.disabled = false;
+            sel.innerHTML = '<option value="">General Contact Profile (No specific matter)</option>';
+            pill.textContent = '● Ready';
         }
     }
 
-    async function sendNoteToDocketwise() {
-        const noteText = document.getElementById('note-input').value.trim();
-        const statusMsg = document.getElementById('note-status');
-        const matterId = document.getElementById('dfMatterSelect').value;
+    window.executeDocketwiseAction = async function() {
+        const btn = document.getElementById('jmDwConfirmSendBtn');
+        const pill = document.getElementById('jmDwStatusPill');
+        const textVal = document.getElementById('jmDwTextInput')?.value.trim() || '';
+        const matterId = document.getElementById('jmDwMatterSelect')?.value || '';
+        const taskAssignee = document.getElementById('jmDwTaskAssignee')?.value || '';
+        const taskDue = document.getElementById('jmDwTaskDue')?.value || '';
 
-        if (!currentClient || !currentClient.id) {
-            statusMsg.style.color = "#dc2626";
-            statusMsg.innerText = "❌ Select a client first!";
-            return;
-        }
-        if (!noteText) {
-            statusMsg.style.color = "#dc2626";
-            statusMsg.innerText = "❌ Enter note text!";
+        if (!textVal && window.currentDwMode !== 'Lead') {
+            alert('⚠️ Please enter text before sending to Docketwise.');
             return;
         }
 
-        statusMsg.style.color = "#b87333";
-        statusMsg.innerText = "⏳ Sending to Docketwise...";
+        const origBtnHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Sending to Docketwise...';
 
         try {
-            const response = await fetch('/api/submit_call', {
+            const payload = {
+                actionType: window.currentDwMode || 'Note',
+                clientId: window.currentJmClientId || '',
+                matterId: matterId,
+                fullName: window.currentJmClientName || 'Client',
+                phone: window.currentJmPhone || '',
+                description: textVal,
+                assignedStaff: taskAssignee,
+                dueDate: taskDue,
+                operatorName: localStorage.getItem('loggedInStaff') || 'Staff'
+            };
+
+            const res = await fetch('/api/submit_call', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    actionType: 'Note',
-                    clientId: currentClient.id,
-                    matterId: matterId,
-                    fullName: currentClient.name,
-                    phone: currentClient.phone,
-                    description: noteText,
-                    operatorName: localStorage.getItem('loggedInStaff') || 'Staff'
-                })
+                body: JSON.stringify(payload)
             });
 
-            const result = await response.json();
+            const result = await res.json();
             if (result.success) {
-                statusMsg.style.color = "#059669";
-                statusMsg.innerText = "✅ Saved to Docketwise!";
-                document.getElementById('note-input').value = "";
-                setTimeout(() => { statusMsg.innerText = ""; }, 4000);
+                pill.textContent = '✅ Sent to Docketwise!';
+                btn.innerHTML = '✅ Successfully Pushed!';
+                setTimeout(() => {
+                    document.getElementById('dwComposeBox').style.display = 'none';
+                    btn.innerHTML = origBtnHtml;
+                    btn.disabled = false;
+                }, 1400);
             } else {
-                statusMsg.style.color = "#dc2626";
-                statusMsg.innerText = "❌ " + (result.error || "Error");
+                alert('❌ Docketwise error: ' + (result.error || 'Could not complete action'));
+                btn.innerHTML = origBtnHtml;
+                btn.disabled = false;
             }
-        } catch (error) {
-            statusMsg.style.color = "#dc2626";
-            statusMsg.innerText = "❌ Connection error";
+        } catch (e) {
+            alert('❌ Connection error while contacting Docketwise API.');
+            btn.innerHTML = origBtnHtml;
+            btn.disabled = false;
         }
-    }
+    };
 
-    function collectClientDossierForPdf() {
-        const m = clientMemoryStore || {};
-        const firstName = (m.firstName || '').trim();
-        const lastName = (m.lastName || '').trim();
-        const fullName = `${firstName} ${lastName}`.trim() || (currentClient ? currentClient.name : '');
-        const lastFirst = lastName ? `${lastName}, ${firstName}` : fullName;
-        const phone = document.getElementById('phoneNumber').value.trim() || m.phone || (currentClient ? currentClient.phone : '');
-        const ssn = (m.ssn || '').trim();
-        const dob = (m.dob || '').trim();
-        const street = (m.street || '').trim();
-        const city = (m.city || 'Glendale').trim();
-        const state = (m.state || 'CA').trim();
-        const zip = (m.zip || '').trim();
-        const fullAddress = [street, city, state, zip].filter(Boolean).join(', ');
-        const cityStateZip = [city, state, zip].filter(Boolean).join(', ');
-        const gender = m.gender || '';
-        const language = (m.language || 'Armenian').trim();
-        const heightFt = String(m.heightFt || '').trim();
-        const heightIn = String(m.heightIn || '').trim();
-        const weight = String(m.weight || '').trim();
-        const caseNum = (m.caseNum || '').trim();
-        const today = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+    function hookJournalModalForDw() {
+        if (typeof window.openJournalModal !== 'function' || window.openJournalModal._dwHooked) return;
+        const origOpenJm = window.openJournalModal;
 
-        return {
-            firstName, lastName, fullName, lastFirst,
-            phone, ssn, dob,
-            street, city, state, zip, fullAddress, cityStateZip,
-            gender, language, heightFt, heightIn, weight, caseNum,
-            ai: m,
-            today,
-            repName: "Mariam Djaradjian",
-            repOrg: "All Docs Consulting",
-            repStreet: "400 W Colorado St, Suite 202",
-            repCity: "Glendale",
-            repState: "CA",
-            repZip: "91204",
-            repFullAddress: "400 W Colorado St, Suite 202, Glendale, CA 91204",
-            repArea: "747",
-            repPhoneOnly: "204-2404",
-            repPhone: "(747) 204-2404"
-        };
-    }
+        window.openJournalModal = function(client, phone, date, op, st, color, notes, reply, trackingBadgeHTML, logId, assignedStaff, isResolved, clientId) {
+            origOpenJm.apply(this, arguments);
+            ensureDwControlPanel();
 
-    function smartAutoFillPdfForm(form, d, pdfDoc) {
-        const fields = form.getFields();
-        const pages = pdfDoc ? pdfDoc.getPages() : [];
-        let filledCount = 0;
-        lastInspectedPdfFields = [];
+            window.currentJmClientName = client;
+            window.currentJmClientId = clientId || '';
+            window.currentDwMode = null;
 
-        const cleanSsn = (d.ssn || '').replace(/\D/g, '');
-        const ssn1 = cleanSsn.slice(0, 3);
-        const ssn2 = cleanSsn.slice(3, 5);
-        const ssn3 = cleanSsn.slice(5, 9);
-        const formattedSsn = cleanSsn.length === 9 ? `${ssn1}-${ssn2}-${ssn3}` : d.ssn;
+            const box = document.getElementById('dwComposeBox');
+            if (box) box.style.display = 'none';
+            document.querySelectorAll('#jmDocketwiseBar .dw-act-btn').forEach(b => b.classList.remove('active-mode'));
 
-        let cleanPhone = (d.phone || '').replace(/\D/g, '');
-        if (cleanPhone.length === 11 && cleanPhone.startsWith('1')) cleanPhone = cleanPhone.slice(1);
-        const phoneArea = cleanPhone.slice(0, 3);
-        const phoneRest = cleanPhone.length >= 10 ? `${cleanPhone.slice(3, 6)}-${cleanPhone.slice(6, 10)}` : d.phone;
-
-        const dobParts = (d.dob || '').split(/[\/\-]/);
-        const dobMM = dobParts[0] || '';
-        const dobDD = dobParts[1] || '';
-        const dobYY = dobParts[2] || '';
-
-        const ai = d.ai || {};
-        const diag1 = ai.diagnoses?.[0]?.problem || '';
-        const diagDate1 = ai.diagnoses?.[0]?.onsetDate || '';
-        const diag2 = ai.diagnoses?.[1]?.problem || '';
-        const diagDate2 = ai.diagnoses?.[1]?.onsetDate || '';
-        const diag3 = ai.diagnoses?.[2]?.problem || '';
-        const diagDate3 = ai.diagnoses?.[2]?.onsetDate || '';
-        const diag4 = ai.diagnoses?.[3]?.problem || '';
-        const diagDate4 = ai.diagnoses?.[3]?.onsetDate || '';
-
-        const c0 = ai.clinics?.[0] || {};
-        const c1 = ai.clinics?.[1] || {};
-        const c2 = ai.clinics?.[2] || {};
-        const job = ai.job || {};
-
-        let c0PhoneClean = (c0.phone || '').replace(/\D/g, '');
-        if (c0PhoneClean.length === 11 && c0PhoneClean.startsWith('1')) c0PhoneClean = c0PhoneClean.slice(1);
-        const c0Area = c0PhoneClean.slice(0, 3);
-        const c0Rest = c0PhoneClean.length >= 10 ? `${c0PhoneClean.slice(3, 6)}-${c0PhoneClean.slice(6, 10)}` : (c0.phone || '');
-
-        const exactMc223Map = {
-            "1a name": d.lastFirst,
-            "1b 3 SSA": ssn1,
-            "1b 2 SSA": ssn2,
-            "1b 4 SSA": ssn3,
-            "1c dob mm": dobMM,
-            "1c dob dd": dobDD,
-            "1c dob yy": dobYY,
-            "1d other names": ai.otherNames || "",
-            "1f height": d.heightFt,
-            "1f inches": d.heightIn,
-            "1g weight": d.weight,
-            "2a home": d.street,
-            "2a city": d.city,
-            "2a state": d.state,
-            "2a ZIP": d.zip,
-            "3 daytime area": phoneArea,
-            "3 daytime phone": phoneRest,
-            "4a if no": (d.language && d.language.toLowerCase() !== 'english') ? d.language : "",
-            "4a if yes": `${d.repName} (${d.repOrg})`,
-            "4a area": d.repArea,
-            "4a phone": d.repPhoneOnly,
-
-            "5b recent date": ai.ssiDecisionDate || "",
-            "6a medical problem": diag1,
-            "6a month year": diagDate1,
-            "6b medical problem": diag2,
-            "6b month year": diagDate2,
-            "6c medical problem": diag3,
-            "6c month year": diagDate3,
-            "6d medical problem": diag4,
-            "6d month year": diagDate4,
-
-            "7 name": c0.clinicName || "",
-            "7 member": c0.memberId || "",
-            "7 area": c0Area,
-            "7 phone": c0Rest,
-            "7 doctor": c0.doctorName || "",
-            "7 address": c0.address || "",
-            "7 city": c0.city || "",
-            "7 state": c0.address ? (c0.state || "CA") : "",
-            "7 ZIP": c0.zip || "",
-            "7 first date": c0.firstSeen || "",
-            "7 last date": c0.lastSeen || "",
-            "7 next date": c0.nextAppt || "",
-            "7 reason": c0.reason || diag1 || "",
-            "7 medicine": c0.medicines || "",
-            "7 treatment": c0.treatments || "",
-
-            "8 name": c1.clinicName || "",
-            "8 member": c1.memberId || "",
-            "8 doctor": c1.doctorName || "",
-            "8 address": c1.address || "",
-            "8 city": c1.city || "",
-            "8 state": c1.address ? (c1.state || "CA") : "",
-            "8 ZIP": c1.zip || "",
-            "8 first date": c1.firstSeen || "",
-            "8 last date": c1.lastSeen || "",
-            "8 next date": c1.nextAppt || "",
-            "8 reason": c1.reason || "",
-            "8 medicine": c1.medicines || "",
-            "8 treatment": c1.treatments || "",
-
-            "9 name": c2.doctorName || c2.clinicName || "",
-            "9 member": c2.memberId || "",
-            "9 address": c2.address || "",
-            "9 city": c2.city || "",
-            "9 state": c2.address ? (c2.state || "CA") : "",
-            "9 ZIP": c2.zip || "",
-            "9 first date": c2.firstSeen || "",
-            "9 last date": c2.lastSeen || "",
-            "9 next date": c2.nextAppt || "",
-            "9 reason": c2.reason || "",
-            "9 medicine": c2.medicines || "",
-            "9 treatment": c2.treatments || "",
-
-            "12 first name": `${d.repName} (${d.repOrg})`,
-            "12 first relationship": "Authorized Representative",
-            "12 first address": d.repFullAddress,
-            "12 first area": d.repArea,
-            "12 first phone": d.repPhoneOnly,
-            "14 activities list 1": ai.dailyLimitations?.[0] || "",
-            "14 activities list 2": ai.dailyLimitations?.[1] || "",
-            "14 activities list 3": ai.dailyLimitations?.[2] || "",
-            "14 activities list 4": ai.dailyLimitations?.[3] || "",
-            "15b date": ai.educationDate || "",
-
-            "17 title": job.title || "",
-            "17 business": job.business || "",
-            "17 date from": job.dateFrom || "",
-            "17 date to": job.dateTo || "",
-            "17 hours": job.hoursPerWeek || "",
-            "17 pay": job.rateOfPay || "",
-            "job description": job.description || ""
+            loadClientMattersForModal(client, phone, clientId);
         };
 
-        const isMc223 = (currentOpenedFormCode === 'MC 223');
-
-        function selectRadioByIndex(field, targetIdx) {
-            if (typeof field.getOptions !== 'function' || typeof field.select !== 'function') return false;
-            const opts = field.getOptions() || [];
-            if (opts[targetIdx] !== undefined) {
-                field.select(opts[targetIdx]);
-                return true;
-            }
-            return false;
-        }
-
-        // Геометрический выбор квадратика радио-кнопки по его реальной позиции на странице (левый = Yes, правый = No)
-        function selectRadioByGeometry(field, preferSide = 'left') {
-            try {
-                const opts = typeof field.getOptions === 'function' ? (field.getOptions() || []) : [];
-                const widgets = field.acroField.getWidgets() || [];
-                if (widgets.length >= 2 && opts.length >= 2) {
-                    const x0 = widgets[0].getRectangle().x;
-                    const x1 = widgets[1].getRectangle().x;
-                    const leftIdx = x0 <= x1 ? 0 : 1;
-                    const rightIdx = x0 <= x1 ? 1 : 0;
-                    const chosenIdx = preferSide === 'left' ? leftIdx : rightIdx;
-                    if (opts[chosenIdx] !== undefined) {
-                        field.select(opts[chosenIdx]);
-                        return true;
-                    }
-                }
-            } catch (e) {}
-            return selectRadioByIndex(field, preferSide === 'left' ? 0 : 1);
-        }
-
-        fields.forEach((field, idx) => {
-            const rawName = field.getName();
-            const typeName = field.constructor.name;
-            const key = rawName.toLowerCase().replace(/[^a-z0-9]/g, '');
-
-            let pageNum = 1, xPct = 50, yPct = 50;
-            try {
-                const widgets = field.acroField.getWidgets();
-                if (widgets && widgets.length > 0) {
-                    const rect = widgets[0].getRectangle();
-                    const pageRef = widgets[0].P();
-                    const foundIdx = pages.findIndex(p => p.ref === pageRef);
-                    if (foundIdx !== -1) {
-                        pageNum = foundIdx + 1;
-                        const { width, height } = pages[foundIdx].getSize();
-                        yPct = Math.round(((height - rect.y) / height) * 100);
-                        xPct = Math.round((rect.x / width) * 100);
-                    }
-                }
-            } catch (e) {}
-
-            lastInspectedPdfFields.push({
-                index: idx,
-                page: pageNum,
-                xPct: xPct,
-                yPct: yPct,
-                name: rawName,
-                type: typeName,
-                options: typeof field.getOptions === 'function' ? field.getOptions() : undefined
-            });
-
-            try {
-                if (isMc223) {
-                    if (typeof field.setText === 'function') {
-                        if (Object.prototype.hasOwnProperty.call(exactMc223Map, rawName)) {
-                            const val = exactMc223Map[rawName];
-                            if (val !== null && val !== undefined && String(val).trim() !== '') {
-                                field.setText(String(val));
-                                filledCount++;
-                            }
-                        }
-                    }
-
-                    if (rawName === 'sex' && d.gender) {
-                        const isFem = d.gender.toLowerCase().startsWith('f');
-                        if (selectRadioByIndex(field, isFem ? 1 : 0)) filledCount++;
-                    } else if (rawName === '4a english') {
-                        const isEng = d.language && d.language.toLowerCase() === 'english';
-                        if (selectRadioByIndex(field, isEng ? 0 : 1)) filledCount++;
-                    } else if (rawName === '4b interpreter') {
-                        // Выбираем строго ЛЕВЫЙ квадратик (Yes) по его геометрической координате X!
-                        if (selectRadioByGeometry(field, 'left')) filledCount++;
-                    } else if (rawName === '7 care' && c0.clinicName) {
-                        if (selectRadioByGeometry(field, 'left')) filledCount++;
-                    } else if (rawName === '12 contacts') {
-                        if (selectRadioByGeometry(field, 'left')) filledCount++;
-                    } else if (rawName === '13 additional exam') {
-                        if (selectRadioByGeometry(field, 'left')) filledCount++;
-                    }
-                    return;
-                }
-
-                // ДЛЯ ОСТАЛЬНЫХ 12 ФОРМ
-                if (typeof field.setText === 'function') {
-                    let valToSet = null;
-                    const isRepField = key.includes('rep') || key.includes('agent') || key.includes('org') || key.includes('helper') || key.includes('assister') || key.includes('preparer') || key.includes('interpreter') || key.includes('designee') || key.includes('attorney');
-
-                    if (isRepField) {
-                        if (key.includes('phone') || key.includes('tel')) valToSet = d.repPhone;
-                        else if (key.includes('org') || key.includes('agency') || key.includes('firm')) valToSet = d.repOrg;
-                        else if (key.includes('city')) valToSet = d.repCity;
-                        else if (key.includes('state')) valToSet = d.repState;
-                        else if (key.includes('zip')) valToSet = d.repZip;
-                        else if (key.includes('addr') || key.includes('street')) valToSet = d.repFullAddress;
-                        else if (key.includes('name')) valToSet = `${d.repName} (${d.repOrg})`;
-                    } else {
-                        if (key.includes('lastfirst') || (key.includes('applicant') && key.includes('name'))) valToSet = d.lastFirst;
-                        else if (key === 'firstname' || key.includes('fname')) valToSet = d.firstName;
-                        else if (key === 'lastname' || key.includes('lname')) valToSet = d.lastName;
-                        else if (key.includes('fullname') || key.includes('clientname') || key.includes('recipientname') || key.includes('claimant') || key === 'name') valToSet = d.fullName;
-                        else if (key.includes('ssn') || key.includes('socialsecurity')) valToSet = formattedSsn;
-                        else if (key.includes('dob') || key.includes('birth')) valToSet = d.dob;
-                        else if (key.includes('phone') || key.includes('tel')) valToSet = d.phone;
-                        else if (key.includes('city')) valToSet = d.city;
-                        else if (key.includes('state') && !key.includes('statement')) valToSet = d.state;
-                        else if (key.includes('zip')) valToSet = d.zip;
-                        else if (key.includes('address') || key.includes('street')) valToSet = d.street;
-                        else if (key.includes('signdate') || key.includes('datesigned')) valToSet = d.today;
-                        else if (key.includes('county')) valToSet = "Los Angeles";
-                    }
-
-                    if (valToSet !== null && valToSet !== undefined && String(valToSet).trim() !== '') {
-                        field.setText(String(valToSet));
-                        filledCount++;
-                    }
-                }
-            } catch (err) {}
-        });
-
-        return { totalFields: fields.length, filledCount };
+        window.openJournalModal._dwHooked = true;
     }
 
-    async function openEditor(formCode) {
-        currentOpenedFormCode = formCode;
-        document.getElementById('modalFormName').innerText = formCode;
-        document.getElementById('pdfModal').style.display = 'flex';
-        
-        const loader = document.getElementById('pdfLoader');
-        const iframe = document.getElementById('pdfIframe');
-        const statsBadge = document.getElementById('fillStatsBadge');
-        
-        loader.style.display = 'flex';
-        loader.innerHTML = `<div>⏳ Автозаполнение формы <b>${formCode}</b>...</div>`;
-        iframe.src = "";
-
-        try {
-            const possibleUrls = [
-                `pdf-templates/${formCode}.pdf`,
-                `pdf-templates/${formCode.replace(/\s+/g, '_')}.pdf`
-            ];
-
-            let response = null;
-            for (const url of possibleUrls) {
-                const r = await fetch(url);
-                if (r.ok) {
-                    response = r;
-                    break;
-                }
-            }
-
-            if (!response || !response.ok) {
-                throw new Error(`Файл шаблона "${formCode}.pdf" не найден в папке pdf-templates!`);
-            }
-            
-            const arrayBuffer = await response.arrayBuffer();
-            const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-            const form = pdfDoc.getForm();
-
-            const dossier = collectClientDossierForPdf();
-            const stats = smartAutoFillPdfForm(form, dossier, pdfDoc);
-
-            statsBadge.textContent = `✓ Auto-Filled ${stats.filledCount} exact fields`;
-
-            const pdfBytes = await pdfDoc.save();
-            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-            const blobUrl = URL.createObjectURL(blob);
-            
-            iframe.src = blobUrl;
-            loader.style.display = 'none';
-
-        } catch (error) {
-            console.error(error);
-            loader.innerHTML = `<div style="color:#dc2626;">❌ Ошибка: ${error.message}</div>`;
-        }
-    }
-
-    function closeEditor() {
-        document.getElementById('pdfModal').style.display = 'none';
-        const iframe = document.getElementById('pdfIframe');
-        if (iframe.src && iframe.src.startsWith('blob:')) {
-            URL.revokeObjectURL(iframe.src);
-        }
-        iframe.src = ""; 
-    }
-
-    function downloadPDF() {
-        const iframeSrc = document.getElementById('pdfIframe').src;
-        if (iframeSrc) {
-            const link = document.createElement('a');
-            link.href = iframeSrc;
-            const cName = (currentClient && currentClient.name) ? currentClient.name.replace(/\s+/g, '_') : 'Client';
-            const formName = currentOpenedFormCode.replace(/\s+/g, '_');
-            link.download = `${formName}_${cName}.pdf`; 
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-    }
+    hookJournalModalForDw();
+    setTimeout(hookJournalModalForDw, 500);
+})();
 </script>
-</body>
-</html>
 </body>
 </html>
