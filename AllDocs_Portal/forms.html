@@ -3,29 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All Docs Consulting - Form Generator</title>
+    <title>All Docs Consulting - Forms & Documents</title>
     
-    <!-- ПОДКЛЮЧАЕМ БИБЛИОТЕКУ ДЛЯ РАБОТЫ С PDF -->
+    <!-- Шрифты 1-в-1 как в index.html -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Библиотека работы с PDF -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <style>
         :root {
-            /* MODERN BROWN PALETTE */
-            --primary-color: #3e2723;     
-            --secondary-color: #5d4037;   
-            --accent-color: #a1683a;      
-            --accent-hover: #8b552b;      
-            --bg-color: #f5f2eb;          
-            --form-bg: #ffffff;           
-            --border-color: #d7ccc8;      
+            --primary-color: #2c1a14;     
+            --secondary-color: #6e5549;   
+            --accent-color: #b87333;      
+            --accent-hover: #9a5b22;      
+            --accent-glow: rgba(184, 115, 51, 0.28);
+            --bg-color: #f4efe6;          
+            --form-bg: rgba(255, 255, 255, 0.92);           
+            --border-color: rgba(161, 104, 58, 0.22);      
             --surface-color: #faf7f2;     
-            --sidebar-width: 260px;
+            --sidebar-width: 270px; /* ТОЧНО 270px КАК В INDEX.HTML! */
         }
 
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--surface-color); border-radius: 8px; }
+        ::-webkit-scrollbar-thumb { background: rgba(161, 104, 58, 0.35); border-radius: 8px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-color); }
+
         body {
-            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 15% 10%, rgba(184, 115, 51, 0.12) 0px, transparent 50%),
+                radial-gradient(at 85% 90%, rgba(62, 39, 35, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
             color: var(--primary-color);
+            line-height: 1.6;
             margin: 0;
             padding: 0;
             display: flex;
@@ -33,105 +49,321 @@
             overflow: hidden;
         }
 
-        /* ========================================= */
-        /* SIDEBAR STYLES                            */
-        /* ========================================= */
-        .sidebar { width: var(--sidebar-width); background-color: var(--primary-color); height: 100vh; position: fixed; left: 0; top: 0; display: flex; flex-direction: column; box-shadow: 4px 0 20px rgba(0,0,0,0.15); z-index: 100; color: var(--bg-color); }
-        .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .sidebar-header img { width: 80%; max-width: 150px; border-radius: 8px; background: white; padding: 10px; }
-        .nav-menu { list-style: none; padding: 20px 0; margin: 0; flex: 1; }
-        .nav-item { margin-bottom: 5px; }
-        .nav-link { display: flex; align-items: center; padding: 15px 25px; color: rgba(255,255,255,0.7); text-decoration: none; font-weight: 500; font-size: 15px; transition: all 0.3s ease; border-left: 4px solid transparent; }
-        .nav-link:hover { background-color: rgba(255,255,255,0.05); color: white; }
-        .nav-link.active { background-color: rgba(255,255,255,0.1); color: white; border-left-color: var(--accent-color); font-weight: 600; }
-        .nav-icon { margin-right: 15px; font-size: 18px; }
+        /* =========================================================
+           САЙДБАР 1-В-1 КАК В INDEX.HTML (НИКАКИХ СДВИГОВ И ПРЫЖКОВ)
+           ========================================================= */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, #21120c 0%, #120906 100%);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 8px 0 35px rgba(0,0,0,0.25);
+            z-index: 100;
+            color: #f5f2eb;
+            border-right: 1.5px solid rgba(212, 140, 70, 0.25);
+            box-sizing: border-box;
+        }
+        .sidebar-header { padding: 28px 20px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .sidebar-header img { width: 78%; max-width: 155px; border-radius: 14px; background: white; padding: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); transition: transform 0.3s ease; }
+        .sidebar-header img:hover { transform: scale(1.04) translateY(-2px); }
 
-        .sidebar-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); position: relative; }
-        .user-profile { display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 10px; border-radius: 8px; transition: background 0.2s; }
-        .user-profile:hover { background-color: rgba(255,255,255,0.05); }
-        .avatar-circle-small { width: 40px; height: 40px; border-radius: 50%; background-color: var(--accent-color); color: white; display: flex; justify-content: center; align-items: center; font-size: 15px; font-weight: 700; user-select: none; }
+        #sidebar-3d-widget {
+            width: calc(100% - 32px);
+            height: 150px;
+            margin: 15px auto 5px;
+            border-radius: 16px;
+            background: radial-gradient(circle at center, rgba(184, 115, 51, 0.22) 0%, rgba(0,0,0,0.4) 100%);
+            border: 1px solid rgba(184, 115, 51, 0.3);
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+            cursor: grab;
+            flex-shrink: 0;
+        }
+        .widget-3d-label {
+            position: absolute;
+            bottom: 8px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 10px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.65);
+            font-weight: 700;
+            pointer-events: none;
+        }
+
+        .nav-menu { list-style: none; padding: 15px 12px; margin: 0; flex: 1; }
+        .nav-item { margin-bottom: 8px; }
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 14px 20px;
+            color: rgba(255,255,255,0.65);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14.5px;
+            transition: all 0.25s ease;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(255, 255, 255, 0.03);
+        }
+        .nav-link:hover { background-color: rgba(255,255,255,0.08); color: white; transform: translateX(4px); }
+        .nav-link.active {
+            background: linear-gradient(135deg, #b87333 0%, #7c471e 100%);
+            color: #ffffff;
+            border: 1px solid #f5cba7;
+            border-bottom: 3.5px solid #4a280d;
+            box-shadow: 0 10px 22px rgba(184, 115, 51, 0.35), inset 0 1px 1px rgba(255,255,255,0.35);
+        }
+        .nav-icon { margin-right: 14px; font-size: 18px; }
+
+        .sidebar-footer { padding: 18px; border-top: 1px solid rgba(255,255,255,0.08); position: relative; }
+        .user-profile { display: flex; align-items: center; gap: 12px; cursor: pointer; padding: 10px 12px; border-radius: 12px; transition: all 0.2s; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
+        .user-profile:hover { background-color: rgba(255,255,255,0.09); transform: translateY(-1px); }
+        .avatar-circle-small { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #d48c46, #8b552b); color: white; display: flex; justify-content: center; align-items: center; font-size: 15px; font-weight: 800; box-shadow: 0 4px 10px rgba(0,0,0,0.3); user-select: none; }
         .user-info { display: flex; flex-direction: column; }
-        .user-name { font-size: 14px; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
-        .user-role { font-size: 12px; color: rgba(255,255,255,0.6); }
+        .user-name { font-size: 14px; font-weight: 700; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+        .user-role { font-size: 11.5px; color: #d48c46; font-weight: 600; }
+        .logout-menu { display: none; position: absolute; bottom: 85px; left: 18px; right: 18px; background: #ffffff; border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.35); padding: 8px; border: 1px solid var(--border-color); }
+        .logout-btn { background: transparent; border: none; color: #ef4444; cursor: pointer; font-weight: 700; font-size: 14px; width: 100%; text-align: left; padding: 12px 15px; border-radius: 8px; }
+        .logout-btn:hover { background: rgba(239, 68, 68, 0.12); }
 
-        .logout-menu { display: none; position: absolute; bottom: 80px; left: 20px; right: 20px; background: var(--form-bg); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); padding: 8px; animation: fadeIn 0.2s ease; }
-        .logout-btn { background: transparent; border: none; color: #d32f2f; cursor: pointer; font-weight: 600; font-size: 14px; width: 100%; text-align: left; padding: 12px 15px; border-radius: 4px; transition: background-color 0.2s; }
-        .logout-btn:hover { background: #ffebee; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        /* =========================================================
+           РАБОЧАЯ ЗОНА FORMS & DOCUMENTS В СТИЛЕ 3D WARM LUXURY
+           ========================================================= */
+        .main-wrapper {
+            margin-left: var(--sidebar-width);
+            display: flex;
+            width: calc(100% - var(--sidebar-width));
+            height: 100vh;
+            box-sizing: border-box;
+        }
 
-        /* ========================================= */
-        /* MAIN WORKSPACE AREA                       */
-        /* ========================================= */
-        .main-wrapper { margin-left: var(--sidebar-width); display: flex; width: calc(100% - var(--sidebar-width)); height: 100vh; }
+        /* ЛЕВАЯ КОЛОНКА ПОИСКА И ДОСЬЕ КЛИЕНТА */
+        .search-panel {
+            width: 395px;
+            background: linear-gradient(165deg, #ffffff 0%, #f7f2ea 100%);
+            border-right: 1.5px solid rgba(184, 115, 51, 0.28);
+            padding: 26px 22px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            flex-shrink: 0;
+            z-index: 10;
+            box-shadow: 10px 0 30px rgba(44, 26, 20, 0.06);
+            box-sizing: border-box;
+        }
 
-        /* --- CLIENT SEARCH PANEL --- */
-        .search-panel { width: 340px; background-color: var(--form-bg); border-right: 1px solid var(--border-color); padding: 30px 25px; display: flex; flex-direction: column; overflow-y: visible; flex-shrink: 0; z-index: 10; }
-        .panel-title { font-size: 18px; font-weight: 700; color: var(--primary-color); margin: 0 0 20px 0; padding-bottom: 15px; border-bottom: 2px solid var(--border-color); }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; font-size: 13px; font-weight: 700; color: var(--secondary-color); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-        input { width: 100%; padding: 12px 15px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 15px; box-sizing: border-box; background-color: #fcfbfa; transition: 0.3s; font-family: inherit;}
-        input:focus { outline: none; border-color: var(--accent-color); background-color: var(--form-bg); box-shadow: 0 0 0 3px rgba(161, 104, 58, 0.15); }
+        .panel-title-box {
+            background: linear-gradient(145deg, #3e271c 0%, #24140e 100%);
+            color: #ffffff;
+            padding: 14px 18px;
+            border-radius: 16px;
+            border: 1.5px solid rgba(212, 140, 70, 0.5);
+            border-bottom: 4px solid #120906;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 10px 22px rgba(36, 20, 14, 0.2);
+        }
+        .panel-title-box h2 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 15px;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: 0.4px;
+        }
 
-        /* AUTOCOMPLETE STYLES */
+        .form-group { margin-bottom: 14px; }
+        label { display: block; font-size: 11.5px; font-weight: 800; color: var(--primary-color); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+        input, select {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid rgba(161, 104, 58, 0.28);
+            border-radius: 12px;
+            font-size: 13.5px;
+            font-weight: 600;
+            box-sizing: border-box;
+            background: linear-gradient(180deg, #f3ede3 0%, #faf7f2 100%);
+            color: var(--primary-color);
+            transition: all 0.2s ease;
+            font-family: inherit;
+            box-shadow: inset 0 2px 4px rgba(44, 26, 20, 0.05);
+        }
+        input:focus, select:focus {
+            outline: none;
+            background: #ffffff;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(184, 115, 51, 0.15);
+        }
+
+        /* AUTOCOMPLETE */
         .autocomplete-wrapper { position: relative; display: flex; align-items: center; }
-        .autocomplete-wrapper input { padding-right: 35px; }
-        .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--form-bg); border: 1px solid var(--border-color); border-radius: 8px; max-height: 250px; overflow-y: auto; margin: 4px 0 0 0; padding: 0; list-style: none; z-index: 1000; box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: none; }
-        .autocomplete-list li { padding: 12px 16px; cursor: pointer; border-bottom: 1px solid #f5f2eb; font-size: 14.5px; color: var(--primary-color); transition: background-color 0.2s; line-height: 1.4; }
-        .autocomplete-list li:hover { background-color: #fdfaf6; }
-        .client-name-list { font-weight: 600; color: var(--accent-color); display: block; }
-        .client-phone-list { font-size: 12.5px; color: var(--secondary-color); opacity: 0.8; }
-        .loading-indicator { position: absolute; right: 12px; color: var(--accent-color); font-size: 12px; display: none; font-weight: bold; }
+        .autocomplete-list {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: linear-gradient(165deg, #ffffff 0%, #faf6f0 100%);
+            border: 1.5px solid rgba(184, 115, 51, 0.4);
+            border-radius: 16px;
+            max-height: 250px;
+            overflow-y: auto;
+            margin: 0;
+            padding: 6px;
+            list-style: none;
+            z-index: 1000;
+            box-shadow: 0 20px 45px rgba(44, 26, 20, 0.25);
+            display: none;
+        }
+        .autocomplete-list li {
+            padding: 10px 14px;
+            cursor: pointer;
+            border-radius: 10px;
+            margin-bottom: 4px;
+            border-bottom: 1px solid rgba(184, 115, 51, 0.1);
+            background: #ffffff;
+            font-size: 13.5px;
+            transition: all 0.2s ease;
+        }
+        .autocomplete-list li:hover {
+            background: linear-gradient(90deg, #fff8f0 0%, #f5ebe0 100%);
+            transform: translateX(3px);
+            border-left: 4px solid var(--accent-color);
+        }
+        .client-name-list { font-weight: 800; color: var(--accent-color); display: block; }
+        .client-phone-list { font-size: 12px; color: var(--secondary-color); font-weight: 600; }
+        .loading-indicator { position: absolute; right: 12px; color: var(--accent-color); font-size: 11px; display: none; font-weight: 800; }
 
-        .client-card { background-color: #fdfaf6; border: 1px solid var(--border-color); border-left: 4px solid var(--accent-color); border-radius: 8px; padding: 20px; margin-top: 30px; display: none; box-shadow: 0 4px 10px rgba(62, 39, 35, 0.05); animation: fadeIn 0.4s ease;}
-        .client-card h3 { margin: 0 0 10px 0; color: var(--primary-color); font-size: 18px; font-weight: 700; }
-        .client-card p { margin: 6px 0; font-size: 14px; color: var(--secondary-color); }
-        .status-badge { display: inline-block; background-color: #4CAF50; color: white; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; margin-bottom: 10px; letter-spacing: 0.5px;}
+        /* DOCKETWISE DOSSIER CARD */
+        .client-card {
+            background: linear-gradient(160deg, #faf6f0 0%, #f1e9dd 100%);
+            border: 1.5px solid rgba(184, 115, 51, 0.35);
+            border-bottom: 4px solid #8b552b;
+            border-radius: 18px;
+            padding: 16px;
+            margin-top: 6px;
+            display: none;
+            box-shadow: 0 10px 24px rgba(44, 26, 20, 0.08), inset 0 2px 2px #ffffff;
+        }
+        .dossier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+        .dossier-grid .full-col { grid-column: span 2; }
+        .dossier-grid label { font-size: 10px; color: #6e4223; margin-bottom: 3px; }
+        .dossier-grid input, .dossier-grid select { padding: 7px 10px; font-size: 12.5px; border-radius: 9px; background: #ffffff; }
+        .status-badge { display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 4px 10px; border-radius: 12px; font-size: 10.5px; font-weight: 800; margin-bottom: 8px; }
 
-        /* --- FORMS GRID --- */
-        .forms-area { flex: 1; padding: 40px; overflow-y: auto; background-color: var(--bg-color); z-index: 1;}
-        .area-header { margin-bottom: 40px; }
-        .area-header h1 { margin: 0; color: var(--primary-color); font-size: 28px; font-family: 'Times New Roman', Times, serif; font-style: italic;}
-        .area-header p { color: var(--secondary-color); margin-top: 8px; font-size: 15px;}
+        /* ПРАВАЯ ЧАСТЬ С СЕТКОЙ 13 ФОРМ */
+        .forms-area { flex: 1; padding: 32px 36px; overflow-y: auto; box-sizing: border-box; }
+        .area-header {
+            background: linear-gradient(135deg, #24140e 0%, #3e2723 55%, #5d3618 100%);
+            padding: 24px 30px;
+            border-radius: 24px;
+            border: 1.5px solid rgba(245, 203, 167, 0.4);
+            border-bottom: 5px solid #140a07;
+            box-shadow: 0 20px 45px rgba(36, 20, 14, 0.25), inset 0 2px 3px rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 28px;
+        }
+        .area-header h1 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 26px;
+            font-weight: 800;
+            color: #ffffff;
+            margin: 0 0 4px 0;
+        }
+        .area-header p { color: #f5cba7; font-size: 13.5px; margin: 0; font-weight: 600; }
 
-        .forms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; opacity: 0.4; pointer-events: none; transition: opacity 0.4s ease; }
+        .forms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 18px;
+            opacity: 0.45;
+            pointer-events: none;
+            transition: opacity 0.35s ease;
+        }
         .forms-grid.active { opacity: 1; pointer-events: auto; }
 
-        .form-item { background-color: var(--form-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(62, 39, 35, 0.05); display: flex; flex-direction: column; justify-content: space-between; transition: transform 0.2s, box-shadow 0.2s; }
-        .form-item:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(62, 39, 35, 0.1); border-color: var(--accent-color);}
+        .form-item {
+            background: linear-gradient(145deg, #ffffff 0%, #f7f2ea 100%);
+            border: 1.5px solid rgba(184, 115, 51, 0.28);
+            border-bottom: 4.5px solid rgba(139, 85, 43, 0.45);
+            border-radius: 20px;
+            padding: 22px;
+            box-shadow: 0 12px 26px rgba(44, 26, 20, 0.06), inset 0 2px 2px #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .form-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 38px rgba(184, 115, 51, 0.18), inset 0 2px 2px #ffffff;
+            border-color: var(--accent-color);
+        }
         
-        .form-icon { font-size: 24px; margin-bottom: 15px; color: var(--accent-color); }
-        .form-item h4 { margin: 0 0 10px 0; font-size: 17px; color: var(--primary-color); font-weight: 700; line-height: 1.3;}
-        .form-item p { margin: 0 0 25px 0; font-size: 13px; color: var(--secondary-color); line-height: 1.5; flex: 1;}
+        .form-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 13px;
+            background: linear-gradient(135deg, #fdf8f2 0%, #f1e4d1 100%);
+            border: 1px solid rgba(184, 115, 51, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 10px rgba(44, 26, 20, 0.05);
+        }
+        .form-item h4 { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0 0 6px 0; font-size: 17.5px; color: var(--primary-color); font-weight: 800; }
+        .form-item p { margin: 0 0 18px 0; font-size: 12.5px; color: var(--secondary-color); line-height: 1.45; flex: 1; font-weight: 600; }
 
-        .btn-download { background-color: transparent; color: var(--accent-color); border: 2px solid var(--accent-color); padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 0.5px;}
-        .btn-download:hover { background-color: var(--accent-color); color: white; }
+        .btn-download {
+            background: linear-gradient(135deg, #3e271c 0%, #24140e 100%);
+            color: #ffffff;
+            border: 1px solid #d48c46;
+            border-bottom: 3.5px solid #8b552b;
+            padding: 11px 14px;
+            border-radius: 12px;
+            font-size: 12.5px;
+            font-weight: 800;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 6px 14px rgba(36, 20, 14, 0.2);
+        }
+        .btn-download:hover {
+            background: linear-gradient(135deg, #c88240 0%, #8b552b 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(184, 115, 51, 0.35);
+        }
 
-        /* ========================================= */
-        /* MODAL EDITOR STYLES (EXPANDED SIZE)       */
-        /* ========================================= */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(62, 39, 35, 0.85); z-index: 1000; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(5px); animation: fadeIn 0.3s ease; }
+        /* МОДАЛЬНОЕ ОКНО РЕДАКТОРА PDF */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(18, 10, 7, 0.82); z-index: 1000; justify-content: center; align-items: center; padding: 18px; backdrop-filter: blur(8px); }
+        .modal-container { background: #ffffff; width: 96%; max-width: 1420px; height: 94vh; border-radius: 22px; display: flex; flex-direction: column; box-shadow: 0 30px 80px rgba(0,0,0,0.65); overflow: hidden; border: 2px solid #d48c46; }
+        .modal-header { padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #24140e 0%, #3e271c 100%); color: white; }
+        .modal-title { font-size: 18px; font-weight: 800; color: #ffffff; margin: 0; display: flex; align-items: center; gap: 10px; }
+        .fill-stats-badge { background: rgba(16, 185, 129, 0.25); color: #6ee7b7; border: 1px solid #10b981; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; margin-left: 10px; }
+        .modal-close { background: rgba(255,255,255,0.12); border: none; font-size: 22px; color: #f5cba7; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; }
+        .modal-close:hover { background: #dc2626; color: white; }
         
-        .modal-container { background: var(--form-bg); width: 95%; max-width: 1400px; height: 95vh; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.5); overflow: hidden; }
-        
-        .modal-header { padding: 15px 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--surface-color); flex-shrink: 0;}
-        .modal-title { font-size: 20px; font-weight: 700; color: var(--primary-color); margin: 0; display: flex; align-items: center; gap: 10px;}
-        .modal-close { background: transparent; border: none; font-size: 32px; color: var(--secondary-color); cursor: pointer; transition: 0.2s; line-height: 1; padding: 0;}
-        .modal-close:hover { color: #d32f2f; }
-        
-        .modal-body { flex: 1; padding: 0; background: #525659; display: flex; flex-direction: column; width: 100%; height: 100%; overflow: hidden; position: relative;}
-        
-        .loader-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.9); display: flex; justify-content: center; align-items: center; font-size: 18px; font-weight: bold; color: var(--accent-color); z-index: 5; flex-direction: column;}
-        
-        iframe { width: 100%; height: 100%; border: none; flex: 1; z-index: 1; position: relative;}
+        .modal-body { flex: 1; padding: 0; background: #525659; display: flex; width: 100%; height: 100%; overflow: hidden; position: relative; }
+        .loader-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.95); display: flex; justify-content: center; align-items: center; font-size: 17px; font-weight: 800; color: var(--primary-color); z-index: 5; flex-direction: column; gap: 10px; }
+        iframe { width: 100%; height: 100%; border: none; flex: 1; }
 
-        .modal-footer { padding: 15px 25px; border-top: 1px solid var(--border-color); background: var(--form-bg); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;}
-        .footer-note { font-size: 14px; color: var(--secondary-color); font-style: italic; }
-        .footer-actions { display: flex; gap: 15px; }
-        .btn-cancel { background: transparent; color: var(--secondary-color); border: none; font-weight: 600; cursor: pointer; padding: 10px 20px; font-size: 15px;}
-        .btn-cancel:hover { text-decoration: underline; }
-        .btn-save { background: var(--accent-color); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; font-size: 15px; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(161, 104, 58, 0.2); }
-        .btn-save:hover { background: var(--accent-hover); transform: translateY(-1px); }
-
+        .modal-footer { padding: 14px 24px; border-top: 1px solid var(--border-color); background: var(--surface-color); display: flex; justify-content: space-between; align-items: center; }
+        .footer-note { font-size: 13px; color: var(--secondary-color); font-weight: 600; }
+        .footer-actions { display: flex; gap: 12px; }
+        .btn-cancel { background: #e8dfd1; color: var(--primary-color); border: none; border-radius: 12px; font-weight: 800; cursor: pointer; padding: 10px 18px; font-size: 14px; }
+        .btn-save { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; border-bottom: 3.5px solid #065f46; padding: 11px 22px; border-radius: 12px; font-weight: 800; font-size: 14px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -142,7 +374,6 @@
     </div>
     <ul class="nav-menu">
         <li class="nav-item"><a href="index.html" class="nav-link"><span class="nav-icon">📞</span> Call Center Log</a></li>
-        <li class="nav-item"><a href="calendar.html" class="nav-link"><span class="nav-icon">📅</span> Master Calendar</a></li>
         <li class="nav-item"><a href="forms.html" class="nav-link active"><span class="nav-icon">📄</span> Forms & Documents</a></li>
     </ul>
 
@@ -163,62 +394,138 @@
 <main class="main-wrapper">
     
     <div class="search-panel">
-        <h2 class="panel-title">Client Lookup</h2>
+        <div class="panel-title-box">
+            <h2>🔍 1. Client Lookup</h2>
+            <span style="background:rgba(16,185,129,0.2); color:#6ee7b7; border:1px solid #10b981; padding:3px 9px; border-radius:12px; font-size:10.5px; font-weight:800;">● Docketwise Live</span>
+        </div>
         
         <div class="form-group">
-            <label>Client Name</label>
+            <label>Client Full Name</label>
             <div class="autocomplete-wrapper" id="autocompleteWrapper">
-                <input type="text" id="fullName" placeholder="Start typing name..." autocomplete="off">
-                <span class="loading-indicator" id="nameLoader">Searching...</span>
+                <input type="text" id="fullName" placeholder="Type name to search Docketwise..." autocomplete="off">
+                <span class="loading-indicator" id="nameLoader">⏳...</span>
                 <ul class="autocomplete-list" id="clientList"></ul>
             </div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" style="margin-bottom: 10px;">
             <label>Phone Number</label>
             <div class="autocomplete-wrapper" id="phoneAutocompleteWrapper">
-                <input type="tel" id="phoneNumber" placeholder="+1 (555) 000-0000" autocomplete="off">
-                <span class="loading-indicator" id="phoneLoader">Searching...</span>
+                <input type="tel" id="phoneNumber" placeholder="Search by phone..." autocomplete="off">
+                <span class="loading-indicator" id="phoneLoader">⏳...</span>
                 <ul class="autocomplete-list" id="phoneList"></ul>
             </div>
         </div>
 
+        <!-- ДОСЬЕ КЛИЕНТА ИЗ DOCKETWISE -->
         <div class="client-card" id="clientCard">
-            <span class="status-badge">Active Case Found</span>
-            <h3 id="displayClientName">John Doe</h3>
-            <p><strong>Phone:</strong> <span id="displayClientPhone">+1 (555) 123-4567</span></p>
-            <p><strong>Matters:</strong><br> <span id="displayClientMatters" style="font-size: 13px;">No active matters</span></p>
-            
-            <!-- НОВЫЙ БЛОК: БЫСТРАЯ ЗАМЕТКА -->
-            <div style="margin-top: 20px; padding: 15px; background: white; border: 1px solid var(--border-color); border-radius: 8px;">
-                <h4 style="margin: 0 0 10px 0; color: var(--primary-color); font-size: 14px;">📝 Быстрая заметка в CRM</h4>
-                <textarea id="note-input" placeholder="Напишите заметку..." style="width: 100%; box-sizing: border-box; height: 60px; margin-bottom: 10px; padding: 10px; font-size: 13px; border: 1px solid var(--border-color); border-radius: 4px; font-family: inherit; resize: vertical;"></textarea>
-                <button onclick="sendNoteToDocketwise()" style="background-color: #4CAF50; color: white; padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: bold; width: 100%; transition: background 0.2s;">
-                    Сохранить в Docketwise
-                </button>
-                <p id="note-status" style="margin-top: 10px; font-weight: bold; font-size: 12px; text-align: center; margin-bottom: 0;"></p>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span class="status-badge" id="dossierStatusBadge">✓ Docketwise Linked</span>
+                <span id="displayDwId" style="font-size:11px; font-weight:800; color:#8b552b;"></span>
             </div>
-            
-            <p style="font-size: 12px; color: var(--accent-color); margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
-                <i>* Client successfully linked. Select a form from the right panel to auto-fill data.</i>
-            </p>
+            <h3 id="displayClientName" style="margin:0 0 4px 0; font-size:17px; font-weight:800;">Client Name</h3>
+            <div id="displayClientMatters" style="font-size: 12px; color: #047857; font-weight: 700; margin-bottom: 8px;"></div>
+
+            <div style="font-size:10.5px; font-weight:900; color:#8b552b; text-transform:uppercase; border-top:1px dashed rgba(184,115,51,0.35); padding-top:8px; margin-top:6px;">
+                📋 Auto-Fill Fields (From Docketwise):
+            </div>
+
+            <div class="dossier-grid">
+                <div>
+                    <label>Last Name</label>
+                    <input type="text" id="dfLastName" placeholder="Last Name">
+                </div>
+                <div>
+                    <label>First Name</label>
+                    <input type="text" id="dfFirstName" placeholder="First Name">
+                </div>
+                <div>
+                    <label>SSN (Social Security)</label>
+                    <input type="text" id="dfSsn" placeholder="XXX-XX-XXXX">
+                </div>
+                <div>
+                    <label>Date of Birth</label>
+                    <input type="text" id="dfDob" placeholder="MM/DD/YYYY">
+                </div>
+                <div class="full-col">
+                    <label>Street Address & Apt</label>
+                    <input type="text" id="dfStreet" placeholder="123 Main St, Apt 4">
+                </div>
+                <div>
+                    <label>City</label>
+                    <input type="text" id="dfCity" placeholder="Glendale">
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1.3fr; gap:5px;">
+                    <div>
+                        <label>State</label>
+                        <input type="text" id="dfState" value="CA">
+                    </div>
+                    <div>
+                        <label>ZIP</label>
+                        <input type="text" id="dfZip" placeholder="91204">
+                    </div>
+                </div>
+                <div>
+                    <label>Sex / Gender</label>
+                    <select id="dfGender">
+                        <option value="">-- Select --</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Language</label>
+                    <input type="text" id="dfLanguage" value="Armenian">
+                </div>
+                <div>
+                    <label>Height (Ft / In)</label>
+                    <div style="display:flex; gap:4px;">
+                        <input type="text" id="dfHeightFt" placeholder="5 ft">
+                        <input type="text" id="dfHeightIn" placeholder="6 in">
+                    </div>
+                </div>
+                <div>
+                    <label>Weight (Lbs)</label>
+                    <input type="text" id="dfWeight" placeholder="160">
+                </div>
+                <div class="full-col">
+                    <label>Case / Medi-Cal / A-Number</label>
+                    <input type="text" id="dfCaseNum" placeholder="Optional Case #">
+                </div>
+            </div>
+
+            <!-- БЫСТРАЯ ЗАМЕТКА В DOCKETWISE -->
+            <div style="margin-top: 14px; padding: 12px; background: #ffffff; border: 1.5px solid rgba(184,115,51,0.3); border-radius: 12px;">
+                <label style="color: #6e4223; margin-bottom: 5px;">📝 Send Quick Note to Docketwise</label>
+                <select id="dfMatterSelect" style="margin-bottom: 6px; padding: 7px 10px; font-size: 12px; background:#faf6f0;"></select>
+                <textarea id="note-input" placeholder="Type clean note for Docketwise..." style="width: 100%; box-sizing: border-box; height: 52px; margin-bottom: 8px; padding: 8px; font-size: 12.5px; border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit; resize: vertical;"></textarea>
+                <button onclick="sendNoteToDocketwise()" style="background: linear-gradient(135deg, #3e271c 0%, #24140e 100%); color: white; padding: 9px 12px; border: 1px solid #d48c46; border-bottom: 3px solid #8b552b; border-radius: 9px; cursor: pointer; font-size: 12px; font-weight: 800; width: 100%;">
+                    🚀 Push Note to Docketwise
+                </button>
+                <p id="note-status" style="margin-top: 6px; font-weight: 800; font-size: 11.5px; text-align: center; margin-bottom: 0;"></p>
+            </div>
         </div>
     </div>
 
     <div class="forms-area">
         <div class="area-header">
-            <h1>Document Generator</h1>
-            <p>Search and select a client from the left panel to unlock auto-fill PDF generation.</p>
+            <div>
+                <h1>Document Generator</h1>
+                <p>Select a client on the left to auto-fill official PDF forms from Docketwise in 1 click</p>
+            </div>
+            <div style="background: linear-gradient(135deg, #d48c46 0%, #9a5b22 100%); color: #ffffff; font-size: 11px; font-weight: 800; letter-spacing: 1.2px; padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.35);">
+                ⚡ 13 TEMPLATES READY
+            </div>
         </div>
 
         <div class="forms-grid" id="formsGrid">
             
             <div class="form-item">
                 <div><div class="form-icon">📋</div>
-                    <h4>GEN 853</h4>
-                    <p>Sworn Statement</p>
+                    <h4>MC 223</h4>
+                    <p>Applicant's Supplemental Statement of Facts for Medi-Cal</p>
                 </div>
-                <button class="btn-download" onclick="openEditor('GEN 853')">Open & Fill PDF</button>
+                <button class="btn-download" onclick="openEditor('MC 223')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
             <div class="form-item">
@@ -226,15 +533,7 @@
                     <h4>MC 220</h4>
                     <p>Authorization for Release of Information</p>
                 </div>
-                <button class="btn-download" onclick="openEditor('MC 220')">Open & Fill PDF</button>
-            </div>
-
-            <div class="form-item">
-                <div><div class="form-icon">📋</div>
-                    <h4>MC 223</h4>
-                    <p>Applicant's Supplemental Statement of Facts for Medi-Cal</p>
-                </div>
-                <button class="btn-download" onclick="openEditor('MC 223')">Open & Fill PDF</button>
+                <button class="btn-download" onclick="openEditor('MC 220')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
             <div class="form-item">
@@ -242,7 +541,7 @@
                     <h4>MC 382</h4>
                     <p>Appointment of Authorized Representative</p>
                 </div>
-                <button class="btn-download" onclick="openEditor('MC 382')">Open & Fill PDF</button>
+                <button class="btn-download" onclick="openEditor('MC 382')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
             <div class="form-item">
@@ -250,7 +549,15 @@
                     <h4>MC 383</h4>
                     <p>Authorized Rep. Standard Agreement for Organizations</p>
                 </div>
-                <button class="btn-download" onclick="openEditor('MC 383')">Open & Fill PDF</button>
+                <button class="btn-download" onclick="openEditor('MC 383')">⚡ Open & Auto-Fill PDF</button>
+            </div>
+
+            <div class="form-item">
+                <div><div class="form-icon">📋</div>
+                    <h4>GEN 853</h4>
+                    <p>Sworn Statement</p>
+                </div>
+                <button class="btn-download" onclick="openEditor('GEN 853')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
             <div class="form-item">
@@ -258,7 +565,7 @@
                     <h4>SOC 453</h4>
                     <p>Statement of Household Expenses and Contributions (CAPI)</p>
                 </div>
-                <button class="btn-download" onclick="openEditor('SOC 453')">Open & Fill PDF</button>
+                <button class="btn-download" onclick="openEditor('SOC 453')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
             <div class="form-item">
@@ -266,7 +573,7 @@
                     <h4>SOC 455</h4>
                     <p>State Interim Assistance Reimbursement Authorization</p>
                 </div>
-                <button class="btn-download" onclick="openEditor('SOC 455')">Open & Fill PDF</button>
+                <button class="btn-download" onclick="openEditor('SOC 455')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
             <div class="form-item">
@@ -274,7 +581,7 @@
                     <h4>SOC 804</h4>
                     <p>Statement of Facts for Determining Continuing Eligibility (CAPI)</p>
                 </div>
-                <button class="btn-download" onclick="openEditor('SOC 804')">Open & Fill PDF</button>
+                <button class="btn-download" onclick="openEditor('SOC 804')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
             <div class="form-item">
@@ -282,31 +589,15 @@
                     <h4>SOC 814</h4>
                     <p>Statement of Facts (CAPI)</p>
                 </div>
-                <button class="btn-download" onclick="openEditor('SOC 814')">Open & Fill PDF</button>
-            </div>
-
-            <div class="form-item">
-                <div><div class="form-icon">🏛️</div>
-                    <h4>SSP 14</h4>
-                    <p>Authorization for Reimbursement of Interim Assistance</p>
-                </div>
-                <button class="btn-download" onclick="openEditor('SSP 14')">Open & Fill PDF</button>
-            </div>
-
-            <div class="form-item">
-                <div><div class="form-icon">👨‍⚖️</div>
-                    <h4>DPA 19</h4>
-                    <p>Authorized Representative for Appeals/Hearings</p>
-                </div>
-                <button class="btn-download" onclick="openEditor('DPA 19')">Open & Fill PDF</button>
+                <button class="btn-download" onclick="openEditor('SOC 814')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
             <div class="form-item">
                 <div><div class="form-icon">🏠</div>
                     <h4>SOC 839</h4>
-                    <p>In-Home Supportive Services (IHSS) Designation of Authorized Representative</p>
+                    <p>IHSS Designation of Authorized Representative</p>
                 </div>
-                <button class="btn-download" onclick="openEditor('SOC 839')">Open & Fill PDF</button>
+                <button class="btn-download" onclick="openEditor('SOC 839')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
             <div class="form-item">
@@ -314,7 +605,23 @@
                     <h4>SOC 840</h4>
                     <p>IHSS Provider or Recipient Change of Address and/or Telephone</p>
                 </div>
-                <button class="btn-download" onclick="openEditor('SOC 840')">Open & Fill PDF</button>
+                <button class="btn-download" onclick="openEditor('SOC 840')">⚡ Open & Auto-Fill PDF</button>
+            </div>
+
+            <div class="form-item">
+                <div><div class="form-icon">🏛️</div>
+                    <h4>SSP 14</h4>
+                    <p>Authorization for Reimbursement of Interim Assistance</p>
+                </div>
+                <button class="btn-download" onclick="openEditor('SSP 14')">⚡ Open & Auto-Fill PDF</button>
+            </div>
+
+            <div class="form-item">
+                <div><div class="form-icon">👨‍⚖️</div>
+                    <h4>DPA 19</h4>
+                    <p>Authorized Representative for Appeals/Hearings</p>
+                </div>
+                <button class="btn-download" onclick="openEditor('DPA 19')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
         </div>
@@ -324,33 +631,35 @@
 <div class="modal-overlay" id="pdfModal">
     <div class="modal-container">
         <div class="modal-header">
-            <h3 class="modal-title"><span class="nav-icon">✍️</span> Form Editor: <span id="modalFormName">Form Name</span></h3>
+            <h3 class="modal-title">
+                <span>✍️</span> Form Editor: <span id="modalFormName">Form Name</span>
+                <span class="fill-stats-badge" id="fillStatsBadge">Auto-Filled</span>
+            </h3>
             <button class="modal-close" onclick="closeEditor()">&times;</button>
         </div>
         
         <div class="modal-body">
             <div class="loader-overlay" id="pdfLoader">
-                ⚙️ Автоматическое заполнение данных клиента...
+                <div>⏳ Загрузка данных из Docketwise и автозаполнение PDF...</div>
             </div>
             <iframe id="pdfIframe" src="" title="PDF Viewer"></iframe>
         </div>
         
         <div class="modal-footer">
-            <div class="footer-note">Note: Type directly into the PDF. Use the browser's download/print icon inside the viewer to save your filled document.</div>
+            <div class="footer-note">💡 Данные из Docketwise уже подставлены. Вы можете дописать или изменить любое поле прямо внутри PDF перед скачиванием.</div>
             <div class="footer-actions">
                 <button class="btn-cancel" onclick="closeEditor()">Close</button>
-                <button class="btn-save" onclick="downloadPDF()">⬇️ Download PDF</button>
+                <button class="btn-save" onclick="downloadPDF()">⬇️ Download Filled PDF</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // Глобальная переменная для хранения текущего выбранного клиента
     let currentClient = null;
+    let currentOpenedFormCode = '';
 
     document.addEventListener("DOMContentLoaded", function() {
-        // --- AUTHENTICATION GUARD & PROFILE SETUP ---
         const loggedInStaff = localStorage.getItem('loggedInStaff');
         const staffInitials = localStorage.getItem('staffInitials');
         const staffRole = localStorage.getItem('staffRole');
@@ -359,7 +668,7 @@
             window.location.href = 'login.html';
         } else {
             document.getElementById('userProfile').style.display = 'flex';
-            document.getElementById('topAvatar').textContent = staffInitials;
+            document.getElementById('topAvatar').textContent = staffInitials || 'ST';
             document.getElementById('sidebarUserName').textContent = loggedInStaff;
             document.getElementById('sidebarUserRole').textContent = staffRole || "Staff Member";
 
@@ -373,7 +682,82 @@
             document.addEventListener('click', (e) => { if (!userProfile.contains(e.target) && !logoutMenu.contains(e.target)) logoutMenu.style.display = 'none'; });
         }
 
-        // --- SMART SEARCH AUTOCOMPLETE LOGIC ---
+        // 3D МИККИ МАУС В САЙДБАРЕ (ДЛЯ ПОЛНОЙ ИДЕНТИЧНОСТИ С INDEX.HTML)
+        const sidebar = document.querySelector('.sidebar');
+        const navMenu = document.querySelector('.nav-menu');
+        if (sidebar && navMenu && typeof THREE !== 'undefined' && !document.getElementById('sidebar-3d-widget')) {
+            const widgetBox = document.createElement('div');
+            widgetBox.id = 'sidebar-3d-widget';
+            widgetBox.innerHTML = '<div class="widget-3d-label">✨ 3D Mickey Assistant</div>';
+            sidebar.insertBefore(widgetBox, navMenu);
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(42, widgetBox.clientWidth / widgetBox.clientHeight, 0.1, 100);
+            camera.position.z = 4.6;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(widgetBox.clientWidth, widgetBox.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            widgetBox.insertBefore(renderer.domElement, widgetBox.firstChild);
+
+            const mickeyGroup = new THREE.Group();
+            scene.add(mickeyGroup);
+
+            const goldMat = new THREE.MeshStandardMaterial({ color: 0xd48c46, metalness: 0.75, roughness: 0.18 });
+            const darkGoldMat = new THREE.MeshStandardMaterial({ color: 0x3e2723, metalness: 0.6, roughness: 0.22 });
+
+            mickeyGroup.add(new THREE.Mesh(new THREE.SphereGeometry(0.82, 32, 32), goldMat));
+
+            const earGeo = new THREE.SphereGeometry(0.50, 32, 32);
+            earGeo.scale(1, 1, 0.55);
+            const leftEar = new THREE.Mesh(earGeo, goldMat);
+            leftEar.position.set(-0.72, 0.74, 0);
+            leftEar.rotation.z = 0.45;
+            mickeyGroup.add(leftEar);
+
+            const rightEar = new THREE.Mesh(earGeo, goldMat);
+            rightEar.position.set(0.72, 0.74, 0);
+            rightEar.rotation.z = -0.45;
+            mickeyGroup.add(rightEar);
+
+            const eyeGeo = new THREE.SphereGeometry(0.09, 16, 16);
+            eyeGeo.scale(0.8, 1.35, 0.6);
+            const leftEye = new THREE.Mesh(eyeGeo, darkGoldMat);
+            leftEye.position.set(-0.22, 0.12, 0.78);
+            mickeyGroup.add(leftEye);
+
+            const rightEye = new THREE.Mesh(eyeGeo, darkGoldMat);
+            rightEye.position.set(0.22, 0.12, 0.78);
+            mickeyGroup.add(rightEye);
+
+            const noseGeo = new THREE.SphereGeometry(0.14, 16, 16);
+            noseGeo.scale(1.1, 0.8, 0.9);
+            const noseMesh = new THREE.Mesh(noseGeo, darkGoldMat);
+            noseMesh.position.set(0, -0.06, 0.88);
+            mickeyGroup.add(noseMesh);
+
+            const ringGeo = new THREE.TorusGeometry(1.52, 0.025, 16, 64);
+            const ringMat = new THREE.MeshBasicMaterial({ color: 0xf5cba7, transparent: true, opacity: 0.55 });
+            const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+            ringMesh.rotation.x = Math.PI / 2.3;
+            mickeyGroup.add(ringMesh);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+            const pLight1 = new THREE.PointLight(0xffe0b2, 2.2, 15);
+            pLight1.position.set(3, 4, 5);
+            scene.add(pLight1);
+
+            let clock = 0;
+            (function animateMickey() {
+                requestAnimationFrame(animateMickey);
+                clock += 0.035;
+                mickeyGroup.rotation.y += 0.008;
+                mickeyGroup.position.y = Math.sin(clock) * 0.12;
+                ringMesh.rotation.z += 0.012;
+                renderer.render(scene, camera);
+            })();
+        }
+
         const fullNameInput = document.getElementById('fullName');
         const clientList = document.getElementById('clientList');
         const nameLoader = document.getElementById('nameLoader');
@@ -382,17 +766,16 @@
         const phoneList = document.getElementById('phoneList');
         const phoneLoader = document.getElementById('phoneLoader');
 
-        async function fetchDocketwiseData(query) {
+        async function fetchDocketwiseData(query, type = 'name') {
             try {
-                const response = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+                const response = await fetch(`/api/search?query=${encodeURIComponent(query)}&type=${type}`);
                 const data = await response.json();
-                if (data.success && data.clients && data.clients.length > 0) return data.clients; 
-                else if (data.success && data.client) return [data.client]; 
+                if (data.success && data.clients && data.clients.length > 0) return data.clients;
             } catch (error) { console.error("API Error:", error); }
             return [];
         }
 
-        function debounce(func, delay = 500) {
+        function debounce(func, delay = 450) {
             let timeoutId;
             return function (...args) {
                 clearTimeout(timeoutId);
@@ -400,42 +783,81 @@
             };
         }
 
-        function applyClientData(client, skipPhoneUpdate = false) {
-            // Сохраняем клиента в глобальную переменную для PDF и Заметок
+        async function applyClientData(client) {
             currentClient = client;
+            fullNameInput.value = client.name || '';
+            phoneNumberInput.value = client.phone || '';
 
-            fullNameInput.value = client.name;
-            if (!skipPhoneUpdate) phoneNumberInput.value = client.phone && client.phone !== "Номер не указан" ? client.phone : "";
-            
-            document.getElementById('displayClientName').innerText = client.name;
-            document.getElementById('displayClientPhone').innerText = client.phone && client.phone !== "Номер не указан" ? client.phone : "No phone";
-            
-            let mattersText = "No active matters found";
+            document.getElementById('displayClientName').innerText = client.name || 'Client';
+            document.getElementById('displayDwId').innerText = `ID: ${client.id}`;
+
+            const matterSel = document.getElementById('dfMatterSelect');
+            matterSel.innerHTML = '';
             if (client.matters && client.matters.length > 0) {
-                mattersText = client.matters.map(m => m.title).join('<br><br>');
+                document.getElementById('displayClientMatters').innerHTML = client.matters.map(m => `📂 ${m.title}`).join('<br>');
+                client.matters.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.id;
+                    opt.textContent = `📂 ${m.title}`;
+                    matterSel.appendChild(opt);
+                });
+            } else {
+                document.getElementById('displayClientMatters').innerHTML = 'No active matters';
+                matterSel.innerHTML = '<option value="">General Profile (No active matter)</option>';
             }
-            document.getElementById('displayClientMatters').innerHTML = mattersText;
 
-            // Сбрасываем статус прошлой заметки
-            document.getElementById('note-status').innerText = "";
-            document.getElementById('note-input').value = "";
+            const parts = (client.name || '').trim().split(/\s+/);
+            document.getElementById('dfFirstName').value = parts[0] || '';
+            document.getElementById('dfLastName').value = parts.slice(1).join(' ') || '';
 
             document.getElementById('clientCard').style.display = 'block';
             document.getElementById('formsGrid').classList.add('active');
+            document.getElementById('dossierStatusBadge').textContent = '⏳ Loading Full Dossier...';
+
+            // Запрашиваем расширенное досье через УЖЕ СУЩЕСТВУЮЩИЙ /api/search?clientId=...
+            try {
+                const res = await fetch(`/api/search?clientId=${encodeURIComponent(client.id)}`);
+                const fullData = await res.json();
+                if (fullData && fullData.success && fullData.profile) {
+                    const p = fullData.profile;
+                    currentClient.fullProfile = p;
+                    document.getElementById('dfFirstName').value = p.firstName || parts[0] || '';
+                    document.getElementById('dfLastName').value = p.lastName || parts.slice(1).join(' ') || '';
+                    document.getElementById('dfSsn').value = p.ssn || '';
+                    document.getElementById('dfDob').value = p.dob || '';
+                    document.getElementById('dfStreet').value = p.street || '';
+                    document.getElementById('dfCity').value = p.city || 'Glendale';
+                    document.getElementById('dfState').value = p.state || 'CA';
+                    document.getElementById('dfZip').value = p.zip || '';
+                    document.getElementById('dfLanguage').value = p.language || 'Armenian';
+                    document.getElementById('dfHeightFt').value = p.heightFeet || '';
+                    document.getElementById('dfHeightIn').value = p.heightInches || '';
+                    document.getElementById('dfWeight').value = p.weight || '';
+                    document.getElementById('dfCaseNum').value = p.aNumber || '';
+                    if (p.gender) {
+                        const gNorm = p.gender.toLowerCase().startsWith('f') ? 'Female' : (p.gender.toLowerCase().startsWith('m') ? 'Male' : '');
+                        document.getElementById('dfGender').value = gNorm;
+                    }
+                    document.getElementById('dossierStatusBadge').textContent = '✓ Full Docketwise Dossier Ready';
+                } else {
+                    document.getElementById('dossierStatusBadge').textContent = '✓ Client Linked';
+                }
+            } catch (e) {
+                document.getElementById('dossierStatusBadge').textContent = '✓ Client Linked';
+            }
         }
 
         const handleNameSearch = debounce(async (searchText) => {
             if (searchText.length < 3) { clientList.style.display = 'none'; nameLoader.style.display = 'none'; return; }
             nameLoader.style.display = 'block';
-            const results = await fetchDocketwiseData(searchText);
+            const results = await fetchDocketwiseData(searchText, 'name');
             nameLoader.style.display = 'none';
             clientList.innerHTML = '';
             
             if (results.length > 0) {
                 results.forEach(client => {
                     const li = document.createElement('li'); 
-                    const displayPhone = client.phone && client.phone !== "Номер не указан" ? `📞 ${client.phone}` : 'No phone';
-                    li.innerHTML = `<span class="client-name-list">${client.name}</span><span class="client-phone-list">${displayPhone}</span>`;
+                    li.innerHTML = `<span class="client-name-list">${client.name}</span><span class="client-phone-list">📞 ${client.phone || 'No phone'}</span>`;
                     li.addEventListener('mousedown', function(e) { 
                         e.preventDefault(); clientList.style.display = 'none'; applyClientData(client); 
                     });
@@ -443,28 +865,27 @@
                 });
                 clientList.style.display = 'block';
             } else { clientList.style.display = 'none'; }
-        }, 600);
+        }, 450);
 
         const handlePhoneSearch = debounce(async (searchDigits) => {
-            if (searchDigits.length < 5) { phoneList.style.display = 'none'; phoneLoader.style.display = 'none'; return; }
+            if (searchDigits.length < 4) { phoneList.style.display = 'none'; phoneLoader.style.display = 'none'; return; }
             phoneLoader.style.display = 'block';
-            const results = await fetchDocketwiseData(searchDigits);
+            const results = await fetchDocketwiseData(searchDigits, 'phone');
             phoneLoader.style.display = 'none';
             phoneList.innerHTML = '';
 
             if (results.length > 0) {
                 results.forEach(client => {
                     const li = document.createElement('li'); 
-                    const displayPhone = client.phone && client.phone !== "Номер не указан" ? client.phone : "No phone";
-                    li.innerHTML = `<span class="client-name-list">${displayPhone}</span><span class="client-phone-list">${client.name}</span>`;
+                    li.innerHTML = `<span class="client-name-list">${client.name}</span><span class="client-phone-list">📞 ${client.phone || 'No phone'}</span>`;
                     li.addEventListener('mousedown', function(e) { 
-                        e.preventDefault(); phoneList.style.display = 'none'; applyClientData(client, false); 
+                        e.preventDefault(); phoneList.style.display = 'none'; applyClientData(client); 
                     });
                     phoneList.appendChild(li);
                 });
                 phoneList.style.display = 'block';
             } else { phoneList.style.display = 'none'; }
-        }, 600);
+        }, 450);
 
         fullNameInput.addEventListener('input', function() { handleNameSearch(this.value.trim()); });
         phoneNumberInput.addEventListener('input', function() { handlePhoneSearch(this.value.replace(/\D/g, '')); });
@@ -475,125 +896,287 @@
         });
     });
 
-    // ==========================================
-    // НОВАЯ ФУНКЦИЯ ДЛЯ ОТПРАВКИ ЗАМЕТОК
-    // ==========================================
     async function sendNoteToDocketwise() {
-        const noteText = document.getElementById('note-input').value;
+        const noteText = document.getElementById('note-input').value.trim();
         const statusMsg = document.getElementById('note-status');
+        const matterId = document.getElementById('dfMatterSelect').value;
 
         if (!currentClient || !currentClient.id) {
-            statusMsg.style.color = "red";
-            statusMsg.innerText = "❌ Сначала выберите клиента!";
+            statusMsg.style.color = "#dc2626";
+            statusMsg.innerText = "❌ Select a client first!";
+            return;
+        }
+        if (!noteText) {
+            statusMsg.style.color = "#dc2626";
+            statusMsg.innerText = "❌ Enter note text!";
             return;
         }
 
-        if (noteText.trim() === "") {
-            statusMsg.style.color = "red";
-            statusMsg.innerText = "❌ Напишите текст заметки!";
-            return;
-        }
-
-        statusMsg.style.color = "#a1683a";
-        statusMsg.innerText = "⏳ Отправка в Docketwise...";
+        statusMsg.style.color = "#b87333";
+        statusMsg.innerText = "⏳ Sending to Docketwise...";
 
         try {
-            // Отправляем запрос на наш серверный файл, который мы создали ранее
-            const response = await fetch('/api/create-note', {
+            const response = await fetch('/api/submit_call', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    actionType: 'Note',
                     clientId: currentClient.id,
-                    content: noteText
+                    matterId: matterId,
+                    fullName: currentClient.name,
+                    phone: currentClient.phone,
+                    description: noteText,
+                    operatorName: localStorage.getItem('loggedInStaff') || 'Staff'
                 })
             });
 
             const result = await response.json();
-
             if (result.success) {
-                statusMsg.style.color = "green";
-                statusMsg.innerText = "✅ Успешно сохранено!";
-                document.getElementById('note-input').value = ""; // Очищаем поле
-                
-                // Убираем надпись об успехе через 4 секунды
-                setTimeout(() => {
-                    statusMsg.innerText = "";
-                }, 4000);
+                statusMsg.style.color = "#059669";
+                statusMsg.innerText = "✅ Saved to Docketwise!";
+                document.getElementById('note-input').value = "";
+                setTimeout(() => { statusMsg.innerText = ""; }, 4000);
             } else {
-                // Если Норайр не дал прав на запись, ошибка покажется здесь
-                statusMsg.style.color = "red";
-                statusMsg.innerText = "❌ Ошибка доступа: Нет прав на запись!";
-                console.error("Docketwise Error:", result.error);
+                statusMsg.style.color = "#dc2626";
+                statusMsg.innerText = "❌ " + (result.error || "Error");
             }
         } catch (error) {
-            statusMsg.style.color = "red";
-            statusMsg.innerText = "❌ Ошибка соединения: " + error.message;
+            statusMsg.style.color = "#dc2626";
+            statusMsg.innerText = "❌ Connection error";
         }
     }
 
-    // ==========================================
-    // ОБЩИЙ ДВИЖОК ДЛЯ АВТОЗАПОЛНЕНИЯ PDF
-    // ==========================================
+    function collectClientDossierForPdf() {
+        const firstName = document.getElementById('dfFirstName').value.trim();
+        const lastName = document.getElementById('dfLastName').value.trim();
+        const fullName = `${firstName} ${lastName}`.trim() || (currentClient ? currentClient.name : '');
+        const lastFirst = lastName ? `${lastName}, ${firstName}` : fullName;
+        const phone = document.getElementById('phoneNumber').value.trim() || (currentClient ? currentClient.phone : '');
+        const ssn = document.getElementById('dfSsn').value.trim();
+        const dob = document.getElementById('dfDob').value.trim();
+        const street = document.getElementById('dfStreet').value.trim();
+        const city = document.getElementById('dfCity').value.trim();
+        const state = document.getElementById('dfState').value.trim() || 'CA';
+        const zip = document.getElementById('dfZip').value.trim();
+        const fullAddress = [street, city, state, zip].filter(Boolean).join(', ');
+        const cityStateZip = [city, state, zip].filter(Boolean).join(', ');
+        const gender = document.getElementById('dfGender').value;
+        const language = document.getElementById('dfLanguage').value.trim() || 'Armenian';
+        const heightFt = document.getElementById('dfHeightFt').value.trim();
+        const heightIn = document.getElementById('dfHeightIn').value.trim();
+        const weight = document.getElementById('dfWeight').value.trim();
+        const caseNum = document.getElementById('dfCaseNum').value.trim();
+        const today = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+
+        return {
+            firstName, lastName, fullName, lastFirst,
+            phone, ssn, dob,
+            street, city, state, zip, fullAddress, cityStateZip,
+            gender, language, heightFt, heightIn, weight, caseNum,
+            today,
+            repName: "Mariam Djaradjian",
+            repOrg: "All Docs Consulting",
+            repStreet: "400 W Colorado St, Suite 202",
+            repCity: "Glendale",
+            repState: "CA",
+            repZip: "91204",
+            repFullAddress: "400 W Colorado St, Suite 202, Glendale, CA 91204",
+            repPhone: "(747) 204-2404"
+        };
+    }
+
+    function smartAutoFillPdfForm(form, d) {
+        const fields = form.getFields();
+        let filledCount = 0;
+
+        fields.forEach(field => {
+            const rawName = field.getName();
+            const key = rawName.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+            try {
+                if (typeof field.setText === 'function') {
+                    let valToSet = null;
+                    const isRepField = key.includes('rep') || key.includes('agent') || key.includes('org') || key.includes('helper') || key.includes('assister') || key.includes('preparer') || key.includes('interpreter') || key.includes('designee') || key.includes('attorney');
+
+                    if (isRepField) {
+                        if (key.includes('phone') || key.includes('tel')) valToSet = d.repPhone;
+                        else if (key.includes('org') || key.includes('agency') || key.includes('firm') || key.includes('business')) valToSet = d.repOrg;
+                        else if (key.includes('city')) valToSet = d.repCity;
+                        else if (key.includes('state')) valToSet = d.repState;
+                        else if (key.includes('zip')) valToSet = d.repZip;
+                        else if (key.includes('addr') || key.includes('street')) valToSet = d.repFullAddress;
+                        else if (key.includes('name') || key.includes('interpreter')) valToSet = `${d.repName} (${d.repOrg})`;
+                    } else {
+                        if (key.includes('lastfirst') || key.includes('1a') || (key.includes('applicant') && key.includes('name'))) {
+                            valToSet = d.lastFirst;
+                        } else if (key === 'firstname' || key.includes('fname') || key.includes('givenname')) {
+                            valToSet = d.firstName;
+                        } else if (key === 'lastname' || key.includes('lname') || key.includes('surname') || key.includes('familyname')) {
+                            valToSet = d.lastName;
+                        } else if (key.includes('fullname') || key.includes('clientname') || key.includes('recipientname') || key.includes('beneficiary') || key.includes('claimant') || key.includes('printname') || key === 'name') {
+                            valToSet = d.fullName;
+                        } else if (key.includes('ssn') || key.includes('socialsecurity') || key.includes('1b') || key.includes('socsec')) {
+                            valToSet = d.ssn;
+                        } else if (key.includes('dob') || key.includes('birth') || key.includes('bdate') || key.includes('1c')) {
+                            valToSet = d.dob;
+                        } else if (key.includes('phone') || key.includes('tel') || key.includes('mobile') || key.includes('daytime')) {
+                            valToSet = d.phone;
+                        } else if (key.includes('citystatezip')) {
+                            valToSet = d.cityStateZip;
+                        } else if (key.includes('city')) {
+                            valToSet = d.city;
+                        } else if (key.includes('state') && !key.includes('statement')) {
+                            valToSet = d.state;
+                        } else if (key.includes('zip') || key.includes('postal')) {
+                            valToSet = d.zip;
+                        } else if (key.includes('homeaddress') || key.includes('street') || key.includes('address') || key.includes('2a') || key.includes('addr')) {
+                            valToSet = d.street;
+                        } else if (key.includes('language') || key.includes('speak')) {
+                            valToSet = d.language;
+                        } else if (key.includes('feet') || key.includes('1f') || key === 'ft') {
+                            valToSet = d.heightFt;
+                        } else if (key.includes('inch') || key === 'in') {
+                            valToSet = d.heightIn;
+                        } else if (key.includes('weight') || key.includes('pound') || key.includes('lbs') || key.includes('1g')) {
+                            valToSet = d.weight;
+                        } else if (key.includes('casenum') || key.includes('caseid') || key.includes('medi') || key.includes('aidcode')) {
+                            valToSet = d.caseNum;
+                        } else if (key.includes('signdate') || key.includes('datesigned') || key === 'date' || key.endsWith('date')) {
+                            valToSet = d.today;
+                        } else if (key.includes('county')) {
+                            valToSet = "Los Angeles";
+                        }
+                    }
+
+                    if (valToSet !== null && valToSet !== undefined && String(valToSet).trim() !== '') {
+                        field.setText(String(valToSet));
+                        filledCount++;
+                    }
+                }
+
+                if (typeof field.check === 'function') {
+                    if (d.gender === 'Male' && (key === 'male' || key.includes('sexm') || key.includes('genderm'))) {
+                        field.check();
+                        filledCount++;
+                    } else if (d.gender === 'Female' && (key === 'female' || key.includes('sexf') || key.includes('genderf'))) {
+                        field.check();
+                        filledCount++;
+                    }
+                }
+            } catch (err) {}
+        });
+
+        return { totalFields: fields.length, filledCount };
+    }
+
+    // КООРДИНАТНОЕ ЗАПОЛНЕНИЕ СТРАНИЦЫ 1 ДЛЯ СКАНИРОВАННОЙ MC 223 (ЕСЛИ В НЕЙ 0 ИНТЕРАКТИВНЫХ ПОЛЕЙ)
+    async function drawOverlayOnScannedMc223(pdfDoc, d) {
+        const pages = pdfDoc.getPages();
+        if (pages.length === 0) return;
+        const page1 = pages[0];
+        const { width, height } = page1.getSize();
+        const font = await pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+        const fontSize = 10.5;
+        const color = PDFLib.rgb(0.05, 0.12, 0.45);
+
+        const draw = (text, xPct, yFromTopPct) => {
+            if (!text) return;
+            page1.drawText(String(text), {
+                x: width * (xPct / 100),
+                y: height * (1 - yFromTopPct / 100),
+                size: fontSize,
+                font: font,
+                color: color
+            });
+        };
+
+        // Точные координаты полей для бланка MC 223 (Page 1 - Part I Personal Information)
+        draw(d.lastFirst, 7.5, 16.3);   // 1a. Applicant name (Last, First, MI)
+        draw(d.ssn, 51.0, 16.3);        // 1b. Social Security number
+        draw(d.dob, 78.5, 16.3);        // 1c. Date of birth
+        if (d.gender === 'Male') draw('X', 51.3, 19.6);
+        if (d.gender === 'Female') draw('X', 59.8, 19.6);
+        draw(d.heightFt, 69.5, 19.8);   // 1f. Height Feet
+        draw(d.heightIn, 76.5, 19.8);   // 1f. Height Inches
+        draw(d.weight, 86.0, 19.8);     // 1g. Weight Pounds
+        draw(d.street, 7.5, 23.6);      // 2a. Home address
+        draw(d.city, 55.5, 23.6);        // City
+        draw(d.state, 77.5, 23.6);       // State
+        draw(d.zip, 84.5, 23.6);         // ZIP code
+        draw(d.phone, 7.5, 31.0);        // 3. Daytime telephone number
+        if (d.language && d.language.toLowerCase() !== 'english') {
+            draw('X', 53.0, 35.8);       // 4a. Speak English -> No
+            draw(d.language, 76.0, 35.8);// What language
+        } else {
+            draw('X', 53.0, 34.0);       // 4a. Speak English -> Yes
+        }
+    }
+
     async function openEditor(formCode) {
+        currentOpenedFormCode = formCode;
         document.getElementById('modalFormName').innerText = formCode;
         document.getElementById('pdfModal').style.display = 'flex';
         
         const loader = document.getElementById('pdfLoader');
         const iframe = document.getElementById('pdfIframe');
+        const statsBadge = document.getElementById('fillStatsBadge');
         
         loader.style.display = 'flex';
-        iframe.src = ""; 
+        loader.innerHTML = `<div>⏳ Автозаполнение формы <b>${formCode}</b> данными клиента из Docketwise...</div>`;
+        iframe.src = "";
 
         try {
-            // Форматируем имя файла (заменяем пробелы на нижнее подчеркивание)
-            const fileName = formCode.replace(' ', '_') + '.pdf';
-            const response = await fetch(`pdf-templates/${fileName}`);
-            
-            if (!response.ok) throw new Error("Файл шаблона не найден на сервере!");
+            const possibleUrls = [
+                `pdf-templates/${formCode}.pdf`,
+                `pdf-templates/${formCode.replace(/\s+/g, '_')}.pdf`
+            ];
+
+            let response = null;
+            for (const url of possibleUrls) {
+                const r = await fetch(url);
+                if (r.ok) {
+                    response = r;
+                    break;
+                }
+            }
+
+            if (!response || !response.ok) {
+                throw new Error(`Файл шаблона "${formCode}.pdf" не найден в папке pdf-templates!`);
+            }
             
             const arrayBuffer = await response.arrayBuffer();
-            
-            // Загружаем PDF (игнорируя защиту, как мы выяснили)
             const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
             const form = pdfDoc.getForm();
 
-            // МАППИНГ ПОЛЕЙ: Если клиент выбран, заполняем форму
-            if (currentClient) {
-                
-                // Индивидуальные настройки для формы SSP 14
-                if (formCode === 'SSP 14') {
-                    try {
-                        const nameField = form.getTextField('FullName');
-                        if (nameField) nameField.setText(currentClient.name);
-                    } catch (e) {
-                        console.warn("Поле FullName не найдено в SSP 14");
-                    }
-                }
-                
-                // Место для других форм...
-                // if (formCode === 'GEN 853') { ... }
+            const dossier = collectClientDossierForPdf();
+            const stats = smartAutoFillPdfForm(form, dossier);
+
+            if (stats.totalFields > 0) {
+                statsBadge.textContent = `✓ Auto-Filled ${stats.filledCount} of ${stats.totalFields} interactive fields`;
+            } else if (formCode === 'MC 223') {
+                // Если MC 223 — скан без интерактивных полей, печатаем данные клиента прямо поверх скана!
+                await drawOverlayOnScannedMc223(pdfDoc, dossier);
+                statsBadge.textContent = `✓ Auto-Filled via Smart Overlay (MC 223)`;
+            } else {
+                statsBadge.textContent = `Ready to View / Print`;
             }
 
-            // Превращаем заполненный PDF обратно в файл
             const pdfBytes = await pdfDoc.save();
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
             const blobUrl = URL.createObjectURL(blob);
             
-            // Показываем в iframe
             iframe.src = blobUrl;
             loader.style.display = 'none';
 
         } catch (error) {
             console.error(error);
-            loader.innerHTML = `❌ Ошибка: ${error.message}`;
+            loader.innerHTML = `<div style="color:#dc2626;">❌ Ошибка: ${error.message}</div>`;
         }
     }
 
     function closeEditor() {
         document.getElementById('pdfModal').style.display = 'none';
         const iframe = document.getElementById('pdfIframe');
-        
-        // Очищаем память браузера от временного файла
         if (iframe.src && iframe.src.startsWith('blob:')) {
             URL.revokeObjectURL(iframe.src);
         }
@@ -602,11 +1185,12 @@
 
     function downloadPDF() {
         const iframeSrc = document.getElementById('pdfIframe').src;
-        if(iframeSrc) {
+        if (iframeSrc) {
             const link = document.createElement('a');
             link.href = iframeSrc;
-            const formName = document.getElementById('modalFormName').innerText.replace(' ', '_');
-            link.download = `${formName}_Filled.pdf`; 
+            const cName = (currentClient && currentClient.name) ? currentClient.name.replace(/\s+/g, '_') : 'Client';
+            const formName = currentOpenedFormCode.replace(/\s+/g, '_');
+            link.download = `${formName}_${cName}.pdf`; 
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
