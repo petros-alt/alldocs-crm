@@ -688,7 +688,6 @@
     let lastInspectedPdfFields = [];
     let clientMemoryStore = {};
 
-    // Фильтрация 13 карточек форм по группе программы
     window.filterFormsByProgram = function(progKey, btnEl) {
         document.querySelectorAll('#programFilterBar .prog-tab-btn').forEach(b => b.classList.remove('active'));
         if (btnEl) {
@@ -727,7 +726,6 @@
         box.innerHTML = pills.map(p => `<span class="summary-pill">${p}</span>`).join('');
     }
 
-    // Отрисовка списка файлов выбранного Matter / Папки
     function renderMatterFilesList(files = []) {
         const countTag = document.getElementById('dwFilesCountTag');
         const listEl = document.getElementById('dwSmartFilesList');
@@ -745,7 +743,7 @@
             html += `
                 <label style="display:flex; align-items:center; justify-content:space-between; gap:6px; padding:6px 4px; border-bottom:1px dashed #eee; cursor:pointer; text-transform:none; font-weight:600; margin:0;">
                     <div style="display:flex; align-items:center; gap:7px; overflow:hidden;">
-                        <input type="checkbox" class="dw-file-cb" value="${f.id}" ${f.autoSelect ? 'checked' : ''} style="width:15px; height:15px; margin:0; flex-shrink:0;">
+                        <input type="checkbox" class="dw-file-cb" value="${f.id}" data-url="${f.url || ''}" ${f.autoSelect ? 'checked' : ''} style="width:15px; height:15px; margin:0; flex-shrink:0;">
                         <div style="overflow:hidden;">
                             <a href="https://app.docketwise.com/documents/${f.id}" target="_blank" style="color:#2c1a14; text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; font-size:11.5px; font-weight:700;" title="${f.name}">${f.name} ↗</a>
                             ${folderLabel}
@@ -758,14 +756,12 @@
         listEl.innerHTML = html;
     }
 
-    // При смене Matter (Кейса): автоматически фильтруем формы справа и загружаем папки и файлы ЭТОГО Matter!
     window.handleMatterChange = async function() {
         const matterSel = document.getElementById('dfMatterSelect');
         const folderSel = document.getElementById('dfFolderSelect');
         const matterId = matterSel.value;
         const matterTitle = (matterSel.options[matterSel.selectedIndex]?.text || '').toLowerCase();
 
-        // Авто-переключение вкладки форм справа под выбранный Matter
         if (matterTitle.includes('capi') || matterTitle.includes('ssi')) {
             filterFormsByProgram('capi', null);
         } else if (matterTitle.includes('ihss')) {
@@ -804,7 +800,6 @@
         }
     };
 
-    // При выборе конкретной папки внутри Matter (например, только 01. PERSONAL ID или 02. MEDICAL RECORDS)
     window.handleFolderChange = async function() {
         const matterId = document.getElementById('dfMatterSelect').value;
         const folderId = document.getElementById('dfFolderSelect').value;
@@ -989,10 +984,8 @@
             document.getElementById('formsGrid').classList.add('active');
             document.getElementById('dossierStatusBadge').textContent = '⏳ Loading Docketwise Dossier...';
 
-            // 1. Загружаем папки и файлы выбранного Matter
             await window.handleMatterChange();
 
-            // 2. Параллельно загружаем анкетные данные самого клиента (SSN, Адрес, Пол)
             try {
                 const res = await fetch(`/api/search?clientId=${encodeURIComponent(client.id)}`);
                 const fullData = await res.json();
@@ -1087,13 +1080,16 @@
         });
     }
 
-   async function runAiDocumentScan() {
+    async function runAiDocumentScan() {
         const btn = document.getElementById('btnRunAiScan');
         const badge = document.getElementById('dossierStatusBadge');
         const matterId = document.getElementById('dfMatterSelect').value;
 
         const checkedBoxes = Array.from(document.querySelectorAll('.dw-file-cb:checked'));
-        const checkedDwFileIds = checkedBoxes.map(cb => cb.value);
+        const checkedItems = checkedBoxes.map(cb => ({
+            id: cb.value,
+            url: cb.getAttribute('data-url') || ''
+        }));
 
         const localFilesInput = document.getElementById('localAiFilesInput');
         const uploadedFiles = [];
@@ -1104,25 +1100,27 @@
             }
         }
 
-        // Делим выбранные файлы на легкие пачки по 2 файла, чтобы не перегружать память и квоту Gemini
         const BATCH_SIZE = 2;
         const batches = [];
 
-        for (let i = 0; i < checkedDwFileIds.length; i += BATCH_SIZE) {
+        for (let i = 0; i < checkedItems.length; i += BATCH_SIZE) {
+            const slice = checkedItems.slice(i, i + BATCH_SIZE);
             batches.push({
-                fileIds: checkedDwFileIds.slice(i, i + BATCH_SIZE),
+                fileIds: slice.map(x => x.id),
+                fileUrls: slice.map(x => x.url),
                 uploadedFiles: []
             });
         }
         for (let i = 0; i < uploadedFiles.length; i += BATCH_SIZE) {
             batches.push({
                 fileIds: [],
+                fileUrls: [],
                 uploadedFiles: uploadedFiles.slice(i, i + BATCH_SIZE)
             });
         }
 
         if (batches.length === 0) {
-            batches.push({ fileIds: [], uploadedFiles: [] });
+            batches.push({ fileIds: [], fileUrls: [], uploadedFiles: [] });
         }
 
         btn.disabled = true;
@@ -1144,6 +1142,7 @@
                         matterId: matterId,
                         clientName: currentClient ? currentClient.name : '',
                         fileIds: currentBatch.fileIds,
+                        fileUrls: currentBatch.fileUrls,
                         uploadedFiles: currentBatch.uploadedFiles
                     })
                 });
@@ -1153,7 +1152,7 @@
                 try {
                     data = JSON.parse(rawText);
                 } catch (jsonErr) {
-                    throw new Error(`Server timeout on ${stepLabel}. Please update api/search.js and try again.`);
+                    throw new Error(`Server timeout on ${stepLabel}. Try scanning 1-2 files at a time.`);
                 }
 
                 if (!data.success) {
@@ -1165,7 +1164,6 @@
 
                 const ex = data.extracted || {};
 
-                // Умное слияние данных из каждой пачки в единую память клиента
                 Object.keys(ex).forEach(k => {
                     const val = ex[k];
                     if (val === null || val === undefined || val === '') return;
@@ -1458,6 +1456,25 @@
             return false;
         }
 
+        function selectRadioByGeometry(field, preferSide = 'left') {
+            try {
+                const opts = typeof field.getOptions === 'function' ? (field.getOptions() || []) : [];
+                const widgets = field.acroField.getWidgets() || [];
+                if (widgets.length >= 2 && opts.length >= 2) {
+                    const x0 = widgets[0].getRectangle().x;
+                    const x1 = widgets[1].getRectangle().x;
+                    const leftIdx = x0 <= x1 ? 0 : 1;
+                    const rightIdx = x0 <= x1 ? 1 : 0;
+                    const chosenIdx = preferSide === 'left' ? leftIdx : rightIdx;
+                    if (opts[chosenIdx] !== undefined) {
+                        field.select(opts[chosenIdx]);
+                        return true;
+                    }
+                }
+            } catch (e) {}
+            return selectRadioByIndex(field, preferSide === 'left' ? 0 : 1);
+        }
+
         fields.forEach((field, idx) => {
             const rawName = field.getName();
             const typeName = field.constructor.name;
@@ -1501,8 +1518,6 @@
                         }
                     }
 
-                    // Точная установка радио-кнопок MC 223:
-                    // opts[0] = первый квадратик (Male / Yes), opts[1] = второй квадратик (Female / No)
                     if (rawName === 'sex' && d.gender) {
                         const isFem = d.gender.toLowerCase().startsWith('f');
                         if (selectRadioByIndex(field, isFem ? 1 : 0)) filledCount++;
@@ -1510,14 +1525,13 @@
                         const isEng = d.language && d.language.toLowerCase() === 'english';
                         if (selectRadioByIndex(field, isEng ? 0 : 1)) filledCount++;
                     } else if (rawName === '4b interpreter') {
-                        // В 4b interpreter: индекс 0 = YES (левый квадратик), индекс 1 = NO (правый квадратик)!
-                        if (selectRadioByIndex(field, 0)) filledCount++;
+                        if (selectRadioByGeometry(field, 'left')) filledCount++;
                     } else if (rawName === '7 care' && c0.clinicName) {
-                        if (selectRadioByIndex(field, 0)) filledCount++;
+                        if (selectRadioByGeometry(field, 'left')) filledCount++;
                     } else if (rawName === '12 contacts') {
-                        if (selectRadioByIndex(field, 0)) filledCount++;
+                        if (selectRadioByGeometry(field, 'left')) filledCount++;
                     } else if (rawName === '13 additional exam') {
-                        if (selectRadioByIndex(field, 0)) filledCount++;
+                        if (selectRadioByGeometry(field, 'left')) filledCount++;
                     }
                     return;
                 }
