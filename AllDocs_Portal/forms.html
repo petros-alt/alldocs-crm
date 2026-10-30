@@ -426,6 +426,17 @@
             <h3 id="displayClientName" style="margin:0 0 4px 0; font-size:17px; font-weight:800;">Client Name</h3>
             <div id="displayClientMatters" style="font-size: 12px; color: #047857; font-weight: 700; margin-bottom: 8px;"></div>
 
+            <!-- БЛОК ОТФИЛЬТРОВАННЫХ ФАЙЛОВ ИЗ ВКЛАДКИ FILES В DOCKETWISE -->
+            <div id="dwSmartFilesBox" style="margin: 10px 0; padding: 10px 12px; background: #ffffff; border: 1.5px solid rgba(184,115,51,0.32); border-radius: 12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <span style="font-size:10.5px; font-weight:900; color:#2c1a14; text-transform:uppercase;">📂 Docketwise Files (Smart Filter)</span>
+                    <span id="dwFilesCountTag" style="font-size:10px; font-weight:800; color:#059669; background:#d1fae5; padding:2px 7px; border-radius:10px;">0 files</span>
+                </div>
+                <div id="dwSmartFilesList" style="max-height: 125px; overflow-y: auto; font-size: 12px;">
+                    <div style="color:#888; font-size:11.5px; padding:4px 0;">Select client to scan Docketwise Files...</div>
+                </div>
+            </div>
+
             <div style="font-size:10.5px; font-weight:900; color:#8b552b; text-transform:uppercase; border-top:1px dashed rgba(184,115,51,0.35); padding-top:8px; margin-top:6px;">
                 📋 Auto-Fill Fields (From Docketwise):
             </div>
@@ -480,8 +491,8 @@
                 <div>
                     <label>Height (Ft / In)</label>
                     <div style="display:flex; gap:4px;">
-                        <input type="text" id="dfHeightFt" placeholder="5 ft">
-                        <input type="text" id="dfHeightIn" placeholder="6 in">
+                        <input type="text" id="dfHeightFt" placeholder="5">
+                        <input type="text" id="dfHeightIn" placeholder="6">
                     </div>
                 </div>
                 <div>
@@ -635,6 +646,7 @@
                 <span>✍️</span> Form Editor: <span id="modalFormName">Form Name</span>
                 <span class="fill-stats-badge" id="fillStatsBadge">Auto-Filled</span>
             </h3>
+            <button type="button" id="copyPdfFieldsBtn" style="margin-left:auto; margin-right:12px; background:rgba(255,255,255,0.14); color:#fde68a; border:1px solid rgba(253,230,138,0.45); padding:6px 12px; border-radius:10px; font-size:11.5px; font-weight:800; cursor:pointer;">📋 Copy PDF Field Names</button>
             <button class="modal-close" onclick="closeEditor()">&times;</button>
         </div>
         
@@ -658,6 +670,7 @@
 <script>
     let currentClient = null;
     let currentOpenedFormCode = '';
+    let lastInspectedPdfFields = [];
 
     document.addEventListener("DOMContentLoaded", function() {
         const loggedInStaff = localStorage.getItem('loggedInStaff');
@@ -682,7 +695,17 @@
             document.addEventListener('click', (e) => { if (!userProfile.contains(e.target) && !logoutMenu.contains(e.target)) logoutMenu.style.display = 'none'; });
         }
 
-        // 3D МИККИ МАУС В САЙДБАРЕ (ДЛЯ ПОЛНОЙ ИДЕНТИЧНОСТИ С INDEX.HTML)
+        // Обработчик кнопки копирования заводских имен полей PDF
+        const copyBtn = document.getElementById('copyPdfFieldsBtn');
+        if (copyBtn) {
+            copyBtn.onclick = function() {
+                navigator.clipboard.writeText(JSON.stringify(lastInspectedPdfFields, null, 2));
+                copyBtn.textContent = `✅ Copied ${lastInspectedPdfFields.length} fields! Paste in chat!`;
+                setTimeout(() => { copyBtn.textContent = '📋 Copy PDF Field Names'; }, 4000);
+            };
+        }
+
+        // 3D МИККИ МАУС В САЙДБАРЕ
         const sidebar = document.querySelector('.sidebar');
         const navMenu = document.querySelector('.nav-menu');
         if (sidebar && navMenu && typeof THREE !== 'undefined' && !document.getElementById('sidebar-3d-widget')) {
@@ -812,9 +835,9 @@
 
             document.getElementById('clientCard').style.display = 'block';
             document.getElementById('formsGrid').classList.add('active');
-            document.getElementById('dossierStatusBadge').textContent = '⏳ Loading Full Dossier...';
+            document.getElementById('dossierStatusBadge').textContent = '⏳ Scanning Docketwise Files & Profile...';
+            document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#b87333; font-weight:700; padding:6px 0;">⏳ Filtering files in Docketwise...</div>';
 
-            // Запрашиваем расширенное досье через УЖЕ СУЩЕСТВУЮЩИЙ /api/search?clientId=...
             try {
                 const res = await fetch(`/api/search?clientId=${encodeURIComponent(client.id)}`);
                 const fullData = await res.json();
@@ -838,6 +861,30 @@
                         const gNorm = p.gender.toLowerCase().startsWith('f') ? 'Female' : (p.gender.toLowerCase().startsWith('m') ? 'Male' : '');
                         document.getElementById('dfGender').value = gNorm;
                     }
+
+                    // Отрисовываем отфильтрованные файлы из вкладки Files
+                    const files = p.files || [];
+                    document.getElementById('dwFilesCountTag').textContent = `${files.length} files`;
+                    if (files.length > 0) {
+                        let filesHtml = '';
+                        files.forEach(f => {
+                            const badgeColor = f.category === 'identity' ? '#2563eb' : (f.category === 'medical_form' ? '#059669' : '#64748b');
+                            const rowOpacity = f.category === 'ignore' ? '0.55' : '1';
+                            filesHtml += `
+                                <label style="display:flex; align-items:center; justify-content:space-between; gap:6px; padding:5px 4px; border-bottom:1px dashed #eee; cursor:pointer; text-transform:none; font-weight:600; margin:0; opacity:${rowOpacity};">
+                                    <div style="display:flex; align-items:center; gap:6px; overflow:hidden;">
+                                        <input type="checkbox" class="dw-file-cb" value="${f.id}" ${f.autoSelect ? 'checked' : ''} style="width:15px; height:15px; margin:0; flex-shrink:0;">
+                                        <a href="${f.url}" target="_blank" style="color:#2c1a14; text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:11.5px;" title="${f.name} (Click to open in Docketwise)">${f.name} ↗</a>
+                                    </div>
+                                    <span style="background:${badgeColor}; color:#fff; font-size:9px; padding:2px 6px; border-radius:6px; white-space:nowrap; flex-shrink:0;">${f.badge}</span>
+                                </label>
+                            `;
+                        });
+                        document.getElementById('dwSmartFilesList').innerHTML = filesHtml;
+                    } else {
+                        document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#888; font-size:11.5px; padding:4px 0;">No uploaded files in Docketwise Files tab.</div>';
+                    }
+
                     document.getElementById('dossierStatusBadge').textContent = '✓ Full Docketwise Dossier Ready';
                 } else {
                     document.getElementById('dossierStatusBadge').textContent = '✓ Client Linked';
@@ -985,66 +1032,173 @@
         };
     }
 
-    function smartAutoFillPdfForm(form, d) {
+    // УМНЫЙ ПОЗИЦИОННЫЙ АВТОЗАПОЛНИТЕЛЬ PDF (УЧИТЫВАЕТ СТРАНИЦУ И КООРДИНАТЫ X/Y)
+    function smartAutoFillPdfForm(form, d, pdfDoc) {
         const fields = form.getFields();
+        const pages = pdfDoc ? pdfDoc.getPages() : [];
         let filledCount = 0;
+        lastInspectedPdfFields = [];
 
-        fields.forEach(field => {
+        // Разбиваем SSN (806340477 -> 806, 34, 0477) для трех клеточек 1b
+        const cleanSsn = (d.ssn || '').replace(/\D/g, '');
+        const ssn1 = cleanSsn.slice(0, 3);
+        const ssn2 = cleanSsn.slice(3, 5);
+        const ssn3 = cleanSsn.slice(5, 9);
+        const formattedSsn = cleanSsn.length === 9 ? `${ssn1}-${ssn2}-${ssn3}` : d.ssn;
+
+        // Разбиваем телефон ((313) 493-2493 -> area: 313, rest: 493-2493)
+        let cleanPhone = (d.phone || '').replace(/\D/g, '');
+        if (cleanPhone.length === 11 && cleanPhone.startsWith('1')) cleanPhone = cleanPhone.slice(1);
+        const phoneArea = cleanPhone.slice(0, 3);
+        const phoneRest = cleanPhone.length >= 10 ? `${cleanPhone.slice(3, 6)}-${cleanPhone.slice(6, 10)}` : d.phone;
+
+        // Разбиваем Дату Рождения (MM/DD/YYYY -> mm, dd, yyyy)
+        const dobParts = (d.dob || '').split(/[\/\-]/);
+        const dobMM = dobParts[0] || '';
+        const dobDD = dobParts[1] || '';
+        const dobYYYY = dobParts[2] || '';
+
+        let p1AddressCount = 0;
+        let p1CityCount = 0;
+        let p1StateCount = 0;
+        let p1ZipCount = 0;
+
+        fields.forEach((field, idx) => {
             const rawName = field.getName();
+            const typeName = field.constructor.name;
             const key = rawName.toLowerCase().replace(/[^a-z0-9]/g, '');
 
+            // Определяем точный номер страницы (1..8) и координаты X, Y на листе
+            let pageNum = 1;
+            let yPctFromTop = 50;
+            let xPctFromLeft = 50;
             try {
+                const widgets = field.acroField.getWidgets();
+                if (widgets && widgets.length > 0) {
+                    const rect = widgets[0].getRectangle();
+                    const pageRef = widgets[0].P();
+                    const foundIdx = pages.findIndex(p => p.ref === pageRef);
+                    if (foundIdx !== -1) {
+                        pageNum = foundIdx + 1;
+                        const { width, height } = pages[foundIdx].getSize();
+                        yPctFromTop = Math.round(((height - rect.y) / height) * 100);
+                        xPctFromLeft = Math.round((rect.x / width) * 100);
+                    }
+                }
+            } catch (e) {}
+
+            lastInspectedPdfFields.push({
+                index: idx,
+                page: pageNum,
+                xPct: xPctFromLeft,
+                yPct: yPctFromTop,
+                name: rawName,
+                type: typeName
+            });
+
+            try {
+                const isMc223 = (currentOpenedFormCode === 'MC 223');
+
+                // В MC 223 личные данные клиента заполняем ТОЛЬКО в Part I на Странице 1 (верхние 48% листа),
+                // а дату подписи — ТОЛЬКО на Странице 7!
+                if (isMc223) {
+                    if (pageNum !== 1 && pageNum !== 7) return;
+                    if (pageNum === 1 && yPctFromTop > 48) return;
+                }
+
                 if (typeof field.setText === 'function') {
                     let valToSet = null;
-                    const isRepField = key.includes('rep') || key.includes('agent') || key.includes('org') || key.includes('helper') || key.includes('assister') || key.includes('preparer') || key.includes('interpreter') || key.includes('designee') || key.includes('attorney');
 
-                    if (isRepField) {
-                        if (key.includes('phone') || key.includes('tel')) valToSet = d.repPhone;
-                        else if (key.includes('org') || key.includes('agency') || key.includes('firm') || key.includes('business')) valToSet = d.repOrg;
-                        else if (key.includes('city')) valToSet = d.repCity;
-                        else if (key.includes('state')) valToSet = d.repState;
-                        else if (key.includes('zip')) valToSet = d.repZip;
-                        else if (key.includes('addr') || key.includes('street')) valToSet = d.repFullAddress;
-                        else if (key.includes('name') || key.includes('interpreter')) valToSet = `${d.repName} (${d.repOrg})`;
-                    } else {
-                        if (key.includes('lastfirst') || key.includes('1a') || (key.includes('applicant') && key.includes('name'))) {
-                            valToSet = d.lastFirst;
-                        } else if (key === 'firstname' || key.includes('fname') || key.includes('givenname')) {
-                            valToSet = d.firstName;
-                        } else if (key === 'lastname' || key.includes('lname') || key.includes('surname') || key.includes('familyname')) {
-                            valToSet = d.lastName;
-                        } else if (key.includes('fullname') || key.includes('clientname') || key.includes('recipientname') || key.includes('beneficiary') || key.includes('claimant') || key.includes('printname') || key === 'name') {
-                            valToSet = d.fullName;
-                        } else if (key.includes('ssn') || key.includes('socialsecurity') || key.includes('1b') || key.includes('socsec')) {
-                            valToSet = d.ssn;
-                        } else if (key.includes('dob') || key.includes('birth') || key.includes('bdate') || key.includes('1c')) {
-                            valToSet = d.dob;
-                        } else if (key.includes('phone') || key.includes('tel') || key.includes('mobile') || key.includes('daytime')) {
-                            valToSet = d.phone;
-                        } else if (key.includes('citystatezip')) {
-                            valToSet = d.cityStateZip;
-                        } else if (key.includes('city')) {
-                            valToSet = d.city;
-                        } else if (key.includes('state') && !key.includes('statement')) {
-                            valToSet = d.state;
-                        } else if (key.includes('zip') || key.includes('postal')) {
-                            valToSet = d.zip;
-                        } else if (key.includes('homeaddress') || key.includes('street') || key.includes('address') || key.includes('2a') || key.includes('addr')) {
-                            valToSet = d.street;
-                        } else if (key.includes('language') || key.includes('speak')) {
-                            valToSet = d.language;
-                        } else if (key.includes('feet') || key.includes('1f') || key === 'ft') {
-                            valToSet = d.heightFt;
-                        } else if (key.includes('inch') || key === 'in') {
-                            valToSet = d.heightIn;
-                        } else if (key.includes('weight') || key.includes('pound') || key.includes('lbs') || key.includes('1g')) {
-                            valToSet = d.weight;
-                        } else if (key.includes('casenum') || key.includes('caseid') || key.includes('medi') || key.includes('aidcode')) {
-                            valToSet = d.caseNum;
-                        } else if (key.includes('signdate') || key.includes('datesigned') || key === 'date' || key.endsWith('date')) {
+                    if (isMc223 && pageNum === 7) {
+                        if (key.includes('date')) {
                             valToSet = d.today;
-                        } else if (key.includes('county')) {
-                            valToSet = "Los Angeles";
+                        }
+                    } else if (isMc223 && pageNum === 1) {
+                        // 1a. Applicant name (Last, First, MI)
+                        if (key.includes('1a') || (yPctFromTop >= 13 && yPctFromTop <= 18 && xPctFromLeft < 45)) {
+                            valToSet = d.lastFirst;
+                        }
+                        // 1b. SSN (либо одно поле, либо 3 маленьких поля)
+                        else if (key.includes('ssn') || key.includes('social') || (yPctFromTop >= 13 && yPctFromTop <= 18 && xPctFromLeft >= 48 && xPctFromLeft <= 75)) {
+                            if (xPctFromLeft >= 48 && xPctFromLeft < 58 && cleanSsn.length === 9) valToSet = ssn1;
+                            else if (xPctFromLeft >= 58 && xPctFromLeft < 64 && cleanSsn.length === 9) valToSet = ssn2;
+                            else if (xPctFromLeft >= 64 && xPctFromLeft <= 75 && cleanSsn.length === 9) valToSet = ssn3;
+                            else valToSet = formattedSsn;
+                        }
+                        // 1c. Date of Birth (MM / DD / YYYY)
+                        else if (key.includes('dob') || key.includes('birth') || (yPctFromTop >= 13 && yPctFromTop <= 18 && xPctFromLeft > 75)) {
+                            if (xPctFromLeft > 75 && xPctFromLeft < 81 && dobMM) valToSet = dobMM;
+                            else if (xPctFromLeft >= 81 && xPctFromLeft < 86 && dobDD) valToSet = dobDD;
+                            else if (xPctFromLeft >= 86 && dobYYYY) valToSet = dobYYYY;
+                            else valToSet = d.dob;
+                        }
+                        // 1f & 1g. Height & Weight
+                        else if (key.includes('feet') || (yPctFromTop >= 18 && yPctFromTop <= 23 && xPctFromLeft >= 67 && xPctFromLeft < 75)) {
+                            valToSet = d.heightFt;
+                        } else if (key.includes('inch') || (yPctFromTop >= 18 && yPctFromTop <= 23 && xPctFromLeft >= 75 && xPctFromLeft < 82)) {
+                            valToSet = d.heightIn;
+                        } else if (key.includes('weight') || key.includes('pound') || (yPctFromTop >= 18 && yPctFromTop <= 23 && xPctFromLeft >= 82)) {
+                            valToSet = d.weight;
+                        }
+                        // 2a. Home Address (только первая строка адреса 2a, без 2b Mailing Address)
+                        else if ((key.includes('address') || key.includes('street') || key.includes('2a')) && !key.includes('2b') && !key.includes('mailing')) {
+                            if (p1AddressCount === 0 && yPctFromTop <= 29) {
+                                valToSet = d.street;
+                                p1AddressCount++;
+                            }
+                        } else if (key.includes('city')) {
+                            if (p1CityCount === 0 && yPctFromTop <= 29) {
+                                valToSet = d.city;
+                                p1CityCount++;
+                            }
+                        } else if (key.includes('state') && !key.includes('statement')) {
+                            if (p1StateCount === 0 && yPctFromTop <= 29) {
+                                valToSet = d.state;
+                                p1StateCount++;
+                            }
+                        } else if (key.includes('zip')) {
+                            if (p1ZipCount === 0 && yPctFromTop <= 29) {
+                                valToSet = d.zip;
+                                p1ZipCount++;
+                            }
+                        }
+                        // 3. Daytime telephone number (Area code + Number)
+                        else if (yPctFromTop >= 30 && yPctFromTop <= 39 && xPctFromLeft < 36) {
+                            if (xPctFromLeft < 14) valToSet = phoneArea;
+                            else valToSet = phoneRest;
+                        }
+                        // 4a. Language
+                        else if (key.includes('language') || key.includes('speak') || (yPctFromTop >= 41 && yPctFromTop <= 48 && xPctFromLeft >= 14 && xPctFromLeft <= 44)) {
+                            if (d.language && d.language.toLowerCase() !== 'english') {
+                                valToSet = d.language;
+                            }
+                        }
+                    } else {
+                        // ДЛЯ ОСТАЛЬНЫХ 12 ФОРМ
+                        const isRepField = key.includes('rep') || key.includes('agent') || key.includes('org') || key.includes('helper') || key.includes('assister') || key.includes('preparer') || key.includes('interpreter') || key.includes('designee') || key.includes('attorney');
+
+                        if (isRepField) {
+                            if (key.includes('phone') || key.includes('tel')) valToSet = d.repPhone;
+                            else if (key.includes('org') || key.includes('agency') || key.includes('firm')) valToSet = d.repOrg;
+                            else if (key.includes('city')) valToSet = d.repCity;
+                            else if (key.includes('state')) valToSet = d.repState;
+                            else if (key.includes('zip')) valToSet = d.repZip;
+                            else if (key.includes('addr') || key.includes('street')) valToSet = d.repFullAddress;
+                            else if (key.includes('name')) valToSet = `${d.repName} (${d.repOrg})`;
+                        } else {
+                            if (key.includes('lastfirst') || (key.includes('applicant') && key.includes('name'))) valToSet = d.lastFirst;
+                            else if (key === 'firstname' || key.includes('fname')) valToSet = d.firstName;
+                            else if (key === 'lastname' || key.includes('lname')) valToSet = d.lastName;
+                            else if (key.includes('fullname') || key.includes('clientname') || key.includes('recipientname') || key.includes('claimant') || key === 'name') valToSet = d.fullName;
+                            else if (key.includes('ssn') || key.includes('socialsecurity')) valToSet = formattedSsn;
+                            else if (key.includes('dob') || key.includes('birth')) valToSet = d.dob;
+                            else if (key.includes('phone') || key.includes('tel')) valToSet = d.phone;
+                            else if (key.includes('city')) valToSet = d.city;
+                            else if (key.includes('state') && !key.includes('statement')) valToSet = d.state;
+                            else if (key.includes('zip')) valToSet = d.zip;
+                            else if (key.includes('address') || key.includes('street')) valToSet = d.street;
+                            else if (key.includes('signdate') || key.includes('datesigned')) valToSet = d.today;
+                            else if (key.includes('county')) valToSet = "Los Angeles";
                         }
                     }
 
@@ -1054,11 +1208,12 @@
                     }
                 }
 
-                if (typeof field.check === 'function') {
-                    if (d.gender === 'Male' && (key === 'male' || key.includes('sexm') || key.includes('genderm'))) {
+                // ЧЕКБОКСЫ (Только на Странице 1 в Part I)
+                if (typeof field.check === 'function' && pageNum === 1 && yPctFromTop <= 48) {
+                    if (d.gender === 'Male' && (key === 'male' || key.includes('sexm') || (yPctFromTop >= 18 && yPctFromTop <= 21 && xPctFromLeft >= 55 && xPctFromLeft <= 62))) {
                         field.check();
                         filledCount++;
-                    } else if (d.gender === 'Female' && (key === 'female' || key.includes('sexf') || key.includes('genderf'))) {
+                    } else if (d.gender === 'Female' && (key === 'female' || key.includes('sexf') || (yPctFromTop >= 20 && yPctFromTop <= 23 && xPctFromLeft >= 55 && xPctFromLeft <= 62))) {
                         field.check();
                         filledCount++;
                     }
@@ -1090,25 +1245,24 @@
             });
         };
 
-        // Точные координаты полей для бланка MC 223 (Page 1 - Part I Personal Information)
-        draw(d.lastFirst, 7.5, 16.3);   // 1a. Applicant name (Last, First, MI)
-        draw(d.ssn, 51.0, 16.3);        // 1b. Social Security number
-        draw(d.dob, 78.5, 16.3);        // 1c. Date of birth
+        draw(d.lastFirst, 7.5, 16.3);
+        draw(d.ssn, 51.0, 16.3);
+        draw(d.dob, 78.5, 16.3);
         if (d.gender === 'Male') draw('X', 51.3, 19.6);
         if (d.gender === 'Female') draw('X', 59.8, 19.6);
-        draw(d.heightFt, 69.5, 19.8);   // 1f. Height Feet
-        draw(d.heightIn, 76.5, 19.8);   // 1f. Height Inches
-        draw(d.weight, 86.0, 19.8);     // 1g. Weight Pounds
-        draw(d.street, 7.5, 23.6);      // 2a. Home address
-        draw(d.city, 55.5, 23.6);        // City
-        draw(d.state, 77.5, 23.6);       // State
-        draw(d.zip, 84.5, 23.6);         // ZIP code
-        draw(d.phone, 7.5, 31.0);        // 3. Daytime telephone number
+        draw(d.heightFt, 69.5, 19.8);
+        draw(d.heightIn, 76.5, 19.8);
+        draw(d.weight, 86.0, 19.8);
+        draw(d.street, 7.5, 23.6);
+        draw(d.city, 55.5, 23.6);
+        draw(d.state, 77.5, 23.6);
+        draw(d.zip, 84.5, 23.6);
+        draw(d.phone, 7.5, 31.0);
         if (d.language && d.language.toLowerCase() !== 'english') {
-            draw('X', 53.0, 35.8);       // 4a. Speak English -> No
-            draw(d.language, 76.0, 35.8);// What language
+            draw('X', 53.0, 35.8);
+            draw(d.language, 76.0, 35.8);
         } else {
-            draw('X', 53.0, 34.0);       // 4a. Speak English -> Yes
+            draw('X', 53.0, 34.0);
         }
     }
 
@@ -1149,12 +1303,11 @@
             const form = pdfDoc.getForm();
 
             const dossier = collectClientDossierForPdf();
-            const stats = smartAutoFillPdfForm(form, dossier);
+            const stats = smartAutoFillPdfForm(form, dossier, pdfDoc);
 
             if (stats.totalFields > 0) {
                 statsBadge.textContent = `✓ Auto-Filled ${stats.filledCount} of ${stats.totalFields} interactive fields`;
             } else if (formCode === 'MC 223') {
-                // Если MC 223 — скан без интерактивных полей, печатаем данные клиента прямо поверх скана!
                 await drawOverlayOnScannedMc223(pdfDoc, dossier);
                 statsBadge.textContent = `✓ Auto-Filled via Smart Overlay (MC 223)`;
             } else {
