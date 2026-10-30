@@ -7695,7 +7695,7 @@ window.renderMainCalendar = async function() {
     setTimeout(upgradeOpenChatFunction, 1200);
 })();
 </script>
-  <!-- 👑 SMART AGENDA, WEEK, DAY & MONTH UPGRADE (ЕДИНЫЙ ИСПРАВЛЕННЫЙ БЛОК) -->
+<!-- 👑 SMART AGENDA, WEEK, DAY & MONTH UPGRADE (С ФУНКЦИЕЙ СБРОСА НА СЕГОДНЯ ПО ПОВТОРНОМУ КЛИКУ) -->
 <style>
     /* 1. Панель быстрого выбора даты и управления режимом Agenda */
     .cal-smart-subbar {
@@ -7844,9 +7844,7 @@ window.renderMainCalendar = async function() {
         margin-left: 16px !important;
     }
 
-    /* =====================================================================
-       4. 3D-СТИЛИ ДЛЯ РЕЖИМОВ WEEK И DAY (ЧТОБЫ СЕТКА НЕ РАЗВАЛИВАЛАСЬ!)
-       ===================================================================== */
+    /* 4. 3D-СТИЛИ ДЛЯ РЕЖИМОВ WEEK И DAY */
     .gv-container {
         display: flex !important;
         align-items: flex-start !important;
@@ -8016,6 +8014,29 @@ window.renderMainCalendar = async function() {
         return `${yr}-${mo}-${dy}`;
     }
 
+    // Синхронизация подсветки кнопок Today и Show
+    function syncSmartButtonsUI() {
+        const todayStr = new Date().toDateString();
+        const isTodaySelected = (window.calActiveDate.toDateString() === todayStr);
+
+        const todayBtn = document.getElementById('calJumpTodayBtn');
+        if (todayBtn) {
+            if (isTodaySelected && window.calAgendaScope !== 'full_month') {
+                todayBtn.classList.add('active');
+            } else {
+                todayBtn.classList.remove('active');
+            }
+        }
+
+        document.querySelectorAll('#calAgendaScopeGroup .cal-smart-btn').forEach(btn => {
+            if (btn.getAttribute('data-scope') === window.calAgendaScope) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+
     function ensureSmartSubbar() {
         const wrapper = document.getElementById('calGridWrapper');
         const calContent = document.getElementById('calendarContent');
@@ -8029,13 +8050,13 @@ window.renderMainCalendar = async function() {
                 <div class="cal-smart-left">
                     <span style="font-size:11px; font-weight:800; color:#f5cba7; text-transform:uppercase; letter-spacing:0.6px;">📅 Pick Date:</span>
                     <input type="date" id="calExactDatePicker" title="Jump to any past or future date">
-                    <button type="button" class="cal-smart-btn" id="calJumpTodayBtn">📍 Today</button>
+                    <button type="button" class="cal-smart-btn active" id="calJumpTodayBtn" title="Reset and show Today">📍 Today</button>
                 </div>
                 <div class="cal-smart-right" id="calAgendaScopeGroup">
                     <span style="font-size:10.5px; font-weight:800; color:#d48c46; text-transform:uppercase; letter-spacing:0.5px;">Show:</span>
-                    <button type="button" class="cal-smart-btn active" data-scope="week_ahead">🎯 Selected + 7 Days</button>
-                    <button type="button" class="cal-smart-btn" data-scope="single_day">📌 Exact Day Only</button>
-                    <button type="button" class="cal-smart-btn" data-scope="full_month">📜 Full Month (with Past)</button>
+                    <button type="button" class="cal-smart-btn active" data-scope="week_ahead" title="Click to view +7 days (Click again to reset to Today)">🎯 Selected + 7 Days</button>
+                    <button type="button" class="cal-smart-btn" data-scope="single_day" title="Click to view only 1 day (Click again to unselect & return to Today)">📌 Exact Day Only</button>
+                    <button type="button" class="cal-smart-btn" data-scope="full_month" title="Click to view full month (Click again to unselect & return to Today)">📜 Full Month (with Past)</button>
                 </div>
             `;
             wrapper.insertBefore(subbar, calContent);
@@ -8052,21 +8073,44 @@ window.renderMainCalendar = async function() {
                 if (!this.value) return;
                 const parts = this.value.split('-');
                 window.calActiveDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                if (window.calAgendaScope === 'full_month') {
+                    window.calAgendaScope = 'week_ahead';
+                }
+                syncSmartButtonsUI();
                 window.renderMainCalendar();
             });
 
+            // Кнопка 📍 Today: ВСЕГДА возвращает на сегодняшний день и снимает Full Month!
             document.getElementById('calJumpTodayBtn').onclick = function() {
                 window.calActiveDate = new Date();
+                if (window.calAgendaScope === 'full_month') {
+                    window.calAgendaScope = 'week_ahead';
+                }
+                const vs = document.getElementById('viewSelector');
+                if (vs && vs.value !== 'agenda' && vs.value !== 'day') {
+                    vs.value = 'agenda';
+                }
+                syncSmartButtonsUI();
                 window.renderMainCalendar();
             };
 
+            // Кнопки Show: повторный клик по уже активной кнопке снимает её и возвращает на Сегодня!
             document.querySelectorAll('#calAgendaScopeGroup .cal-smart-btn').forEach(btn => {
                 btn.onclick = function() {
-                    document.querySelectorAll('#calAgendaScopeGroup .cal-smart-btn').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    window.calAgendaScope = this.getAttribute('data-scope');
+                    const clickedScope = this.getAttribute('data-scope');
+                    const isAlreadyActive = this.classList.contains('active');
+
+                    if (isAlreadyActive) {
+                        window.calActiveDate = new Date();
+                        window.calAgendaScope = 'week_ahead';
+                    } else {
+                        window.calAgendaScope = clickedScope;
+                    }
+
                     const vs = document.getElementById('viewSelector');
                     if (vs && vs.value !== 'agenda') vs.value = 'agenda';
+
+                    syncSmartButtonsUI();
                     window.renderMainCalendar();
                 };
             });
@@ -8088,7 +8132,7 @@ window.renderMainCalendar = async function() {
         for (let d = 1; d <= daysInMonth; d++) {
             const curObj = new Date(y, m, d);
             const curStr = curObj.toDateString();
-            const isSelected = (d === selectedDay);
+            const isSelected = (d === selectedDay && window.calAgendaScope !== 'full_month');
             const isToday = (curObj.getTime() === todayStart);
             const isPast = (curObj.getTime() < todayStart);
 
@@ -8101,7 +8145,7 @@ window.renderMainCalendar = async function() {
             if (isPast) cls += ' is-past';
 
             html += `
-                <div class="${cls}" onclick="window.jumpToCalendarDay(${y}, ${m}, ${d})" title="Click to view ${curStr}">
+                <div class="${cls}" onclick="window.jumpToCalendarDay(${y}, ${m}, ${d})" title="Click to view ${curStr} (Click again to return to Today)">
                     <span class="ribbon-dow">${dowNames[curObj.getDay()]}</span>
                     <span class="ribbon-num">${d}</span>
                     ${dotHtml}
@@ -8111,17 +8155,30 @@ window.renderMainCalendar = async function() {
         ribbon.innerHTML = html;
 
         setTimeout(() => {
-            const selChip = ribbon.querySelector('.ribbon-day-chip.selected');
+            const selChip = ribbon.querySelector('.ribbon-day-chip.selected') || ribbon.querySelector('.ribbon-day-chip.is-today');
             if (selChip) selChip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         }, 50);
     }
 
     window.jumpToCalendarDay = function(y, m, d) {
-        window.calActiveDate = new Date(y, m, d);
+        const clickedDate = new Date(y, m, d);
+        const isSameDayClicked = (window.calActiveDate.toDateString() === clickedDate.toDateString() && window.calAgendaScope !== 'full_month');
+
+        if (isSameDayClicked) {
+            window.calActiveDate = new Date();
+            window.calAgendaScope = 'week_ahead';
+        } else {
+            window.calActiveDate = clickedDate;
+            if (window.calAgendaScope === 'full_month') {
+                window.calAgendaScope = 'week_ahead';
+            }
+        }
+
         const vs = document.getElementById('viewSelector');
         if (vs && (vs.value === 'month-condensed' || vs.value === 'month-full')) {
             vs.value = 'agenda';
         }
+        syncSmartButtonsUI();
         window.renderMainCalendar();
     };
 
@@ -8137,11 +8194,13 @@ window.renderMainCalendar = async function() {
             } else {
                 window.calActiveDate.setMonth(window.calActiveDate.getMonth() + dir);
             }
+            syncSmartButtonsUI();
             window.renderMainCalendar();
         };
 
         window.renderMainCalendar = async function() {
             ensureSmartSubbar();
+            syncSmartButtonsUI();
 
             const picker = document.getElementById('calExactDatePicker');
             if (picker) picker.value = toInputDateStr(window.calActiveDate);
@@ -8205,7 +8264,7 @@ window.renderMainCalendar = async function() {
                         <div style="padding:36px 24px; text-align:center; background:linear-gradient(180deg,#ffffff,#faf5ed); border-radius:20px; border:1.5px dashed rgba(184,115,51,0.35);">
                             <div style="font-size:34px; margin-bottom:10px;">🗓️</div>
                             <div style="font-size:16px; font-weight:800; color:#24140e; margin-bottom:6px;">No appointments found for ${selDateReadable} ${window.calAgendaScope === 'week_ahead' ? '(+7 days)' : ''}</div>
-                            <div style="font-size:13px; color:#6e5549; margin-bottom:16px;">Click another day on the ribbon above or click <b>📜 Full Month (with Past)</b> to see all records.</div>
+                            <div style="font-size:13px; color:#6e5549; margin-bottom:16px;">Click <b>📍 Today</b> or another day on the ribbon above, or switch to <b>📜 Full Month (with Past)</b>.</div>
                             <button type="button" class="book-appt-btn" style="margin:0 auto; height:42px; padding:0 20px;" onclick="openApptModal('', '')">📅 + Book Appointment</button>
                         </div>
                     `;
