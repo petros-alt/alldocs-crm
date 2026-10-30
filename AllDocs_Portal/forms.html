@@ -1464,6 +1464,156 @@
         }, 160);
     }
 
+   // Умное объединение данных из 10 разных файлов (выписки, аптека, анализы, ID)
+    function mergeExtractedDataIntoMemory(ex) {
+        if (!ex || typeof ex !== 'object') return;
+        clientMemoryStore.aiScanned = true;
+
+        Object.keys(ex).forEach(k => {
+            const val = ex[k];
+            if (val === null || val === undefined || val === '') return;
+
+            if (k === 'diagnoses' && Array.isArray(val)) {
+                const existingDiag = Array.isArray(clientMemoryStore.diagnoses) ? clientMemoryStore.diagnoses : [];
+                val.forEach(dItem => {
+                    if (dItem && dItem.problem) {
+                        const cleanProb = toCleanTitleCase(dItem.problem);
+                        if (cleanProb && !existingDiag.some(e => e.problem.toLowerCase() === cleanProb.toLowerCase())) {
+                            existingDiag.push({ problem: cleanProb, onsetDate: dItem.onsetDate || '' });
+                        }
+                    }
+                });
+                clientMemoryStore.diagnoses = existingDiag;
+            } else if (k === 'clinics' && Array.isArray(val)) {
+                const existingClinics = Array.isArray(clientMemoryStore.clinics) ? clientMemoryStore.clinics : [];
+                val.forEach(cItem => {
+                    if (cItem && (cItem.clinicName || cItem.doctorName || cItem.medicines)) {
+                        const cleanedClinic = {};
+                        Object.keys(cItem).forEach(ck => {
+                            cleanedClinic[ck] = ck === 'state' ? (cItem[ck] || 'CA').toUpperCase() : toCleanTitleCase(cItem[ck]);
+                        });
+
+                        // Если это чисто аптечная выписка (Pharmacy Report) — сохраняем лекарства в общий буфер и прикрепляем к основной клинике
+                        if (!cleanedClinic.clinicName && !cleanedClinic.doctorName && cleanedClinic.medicines) {
+                            clientMemoryStore.pharmacyMeds = clientMemoryStore.pharmacyMeds
+                                ? (clientMemoryStore.pharmacyMeds.includes(cleanedClinic.medicines.slice(0, 12)) ? clientMemoryStore.pharmacyMeds : clientMemoryStore.pharmacyMeds + ', ' + cleanedClinic.medicines)
+                                : cleanedClinic.medicines;
+                            if (existingClinics.length > 0 && !existingClinics[0].medicines) {
+                                existingClinics[0].medicines = clientMemoryStore.pharmacyMeds;
+                            }
+                            return;
+                        }
+
+                        // Не добавляем диагностические лаборатории (Quest Diagnostics / Dignity Health EKG) как отдельные амбулаторные клиники, если они уже идут в Таблицу №10
+                        const isPureLabOrTestHosp = /quest diagnostics|dignity health/i.test(cleanedClinic.clinicName || '') && /ekg|x-ray|electrocardio|blood/i.test((cleanedClinic.reason || '') + ' ' + (cleanedClinic.treatments || ''));
+                        if (isPureLabOrTestHosp && existingClinics.length >= 2) {
+                            return;
+                        }
+
+                        const matchIdx = existingClinics.findIndex(e =>
+                            (e.clinicName && cleanedClinic.clinicName && e.clinicName.toLowerCase() === cleanedClinic.clinicName.toLowerCase()) ||
+                            (e.doctorName && cleanedClinic.doctorName && e.doctorName.toLowerCase() === cleanedClinic.doctorName.toLowerCase())
+                        );
+
+                        if (matchIdx === -1) {
+                            if (cleanedClinic.clinicName || cleanedClinic.doctorName) {
+                                if (!cleanedClinic.medicines && existingClinics.length === 0 && clientMemoryStore.pharmacyMeds) {
+                                    cleanedClinic.medicines = clientMemoryStore.pharmacyMeds;
+                                }
+                                existingClinics.push(cleanedClinic);
+                            }
+                        } else {
+                            const target = existingClinics[matchIdx];
+                            Object.keys(cleanedClinic).forEach(fieldKey => {
+                                const newV = cleanedClinic[fieldKey];
+                                if (!newV) return;
+                                if (!target[fieldKey] || (/^n/i.test(target[fieldKey]) && /^y/i.test(newV))) {
+                                    target[fieldKey] = newV;
+                                }
+                            });
+                        }
+                    }
+                });
+                if (existingClinics.length > 0 && !existingClinics[0].medicines && clientMemoryStore.pharmacyMeds) {
+                    existingClinics[0].medicines = clientMemoryStore.pharmacyMeds;
+                }
+                clientMemoryStore.clinics = existingClinics;
+            } else if (k === 'tests' && typeof val === 'object') {
+                const currentTests = clientMemoryStore.tests || {};
+                Object.keys(val).forEach(tKey => {
+                    const newTest = val[tKey];
+                    if (!newTest || typeof newTest !== 'object') return;
+                    const oldTest = currentTests[tKey] || {};
+                    const isNewYes = /^y/i.test(newTest.performed || '') || Boolean(newTest.name);
+                    const isOldYes = /^y/i.test(oldTest.performed || '') || Boolean(oldTest.name);
+
+                    if (isNewYes && !isOldYes) {
+                        currentTests[tKey] = { ...newTest, performed: 'Yes' };
+                    } else if (isNewYes && isOldYes) {
+                        currentTests[tKey] = {
+                            performed: 'Yes',
+                            name: oldTest.name || newTest.name || '',
+                            address: oldTest.address || newTest.address || '',
+                            city: oldTest.city || newTest.city || '',
+                            state: oldTest.state || newTest.state || 'CA',
+                            zip: oldTest.zip || newTest.zip || '',
+                            date: oldTest.date || newTest.date || ''
+                        };
+                    } else if (!isOldYes && !currentTests[tKey] && newTest.performed) {
+                        currentTests[tKey] = newTest;
+                    }
+                });
+                clientMemoryStore.tests = currentTests;
+            } else if (Array.isArray(val)) {
+                const nonEmpty = val.filter(Boolean).map(v => typeof v === 'string' ? toCleanTitleCase(v) : v);
+                if (nonEmpty.length > 0) {
+                    const existingArr = Array.isArray(clientMemoryStore[k]) ? clientMemoryStore[k] : [];
+                    nonEmpty.forEach(item => {
+                        if (!existingArr.includes(item)) existingArr.push(item);
+                    });
+                    clientMemoryStore[k] = existingArr;
+                }
+            } else if (typeof val === 'object') {
+                const cleanedObj = {};
+                Object.keys(val).forEach(ok => {
+                    if (val[ok]) cleanedObj[ok] = toCleanTitleCase(val[ok]);
+                });
+                clientMemoryStore[k] = { ...(clientMemoryStore[k] || {}), ...cleanedObj };
+            } else {
+                const strVal = k === 'state' ? String(val).toUpperCase() : toCleanTitleCase(val);
+                if (!strVal) return;
+                if (/^y/i.test(clientMemoryStore[k] || '') && /^n/i.test(strVal)) return;
+                clientMemoryStore[k] = strVal;
+            }
+        });
+    }
+
+    async function sendSingleBatchToAi(batchObj, matterId) {
+        const res = await fetch('/api/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                clientId: currentClient ? currentClient.id : '',
+                matterId: matterId,
+                clientName: currentClient ? currentClient.name : '',
+                fileIds: batchObj.fileIds,
+                fileUrls: batchObj.fileUrls,
+                uploadedFiles: batchObj.uploadedFiles
+            })
+        });
+        const rawText = await res.text();
+        let parsed = null;
+        try {
+            parsed = JSON.parse(rawText);
+        } catch (jsonErr) {
+            throw new Error('FILE_TOO_LARGE_OR_TIMEOUT');
+        }
+        if (!parsed || !parsed.success) {
+            throw new Error(parsed?.error || 'AI Scan failed');
+        }
+        return parsed;
+    }
+
     async function runAiDocumentScan() {
         const btn = document.getElementById('btnRunAiScan');
         const badge = document.getElementById('dossierStatusBadge');
@@ -1488,7 +1638,7 @@
             }
         }
 
-        const BATCH_SIZE = 3;
+        const BATCH_SIZE = 2;
         const batches = [];
 
         for (let i = 0; i < checkedItems.length; i += BATCH_SIZE) {
@@ -1515,112 +1665,45 @@
         currentPctValue = 0;
         setLive3DProgress(2, '🚀 Connecting to Docketwise & Gemini...');
         let totalRead = 0;
-        let lastModelUsed = 'Gemini';
 
         try {
             for (let bIdx = 0; bIdx < batches.length; bIdx++) {
                 const currentBatch = batches[bIdx];
-                const stepLabel = batches.length > 1 ? `Batch ${bIdx + 1}/${batches.length}` : `${currentBatch.fileIds.length + currentBatch.uploadedFiles.length || 1} Docs`;
+                const stepLabel = batches.length > 1 ? `Part ${bIdx + 1}/${batches.length}` : `Files`;
 
-                const rangeStart = Math.round((bIdx / batches.length) * 90) + 5;
-                const rangeMax = Math.round(((bIdx + 0.92) / batches.length) * 94);
+                const rangeStart = Math.round((bIdx / batches.length) * 90) + 4;
+                const rangeMax = Math.round(((bIdx + 0.9) / batches.length) * 95);
 
                 btn.textContent = `⏳ AI Scanning ${stepLabel}...`;
                 badge.textContent = `🧠 Reading ${stepLabel}...`;
                 startSmoothProgressTicker(rangeStart, rangeMax, `🧠 Gemini Vision reading ${stepLabel}...`);
 
-                let data = null;
-                let batchErr = '';
-
-                for (let attempt = 1; attempt <= 2; attempt++) {
-                    try {
-                        if (attempt === 2) {
-                            setLive3DProgress(currentPctValue, `⚡ Switching to fast backup AI server...`);
-                            await new Promise(r => setTimeout(r, 1200));
-                        }
-                        const res = await fetch('/api/search', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                clientId: currentClient ? currentClient.id : '',
-                                matterId: matterId,
-                                clientName: currentClient ? currentClient.name : '',
-                                fileIds: currentBatch.fileIds,
-                                fileUrls: currentBatch.fileUrls,
-                                uploadedFiles: currentBatch.uploadedFiles
-                            })
-                        });
-
-                        const rawText = await res.text();
-                        const parsed = JSON.parse(rawText);
-                        if (parsed && parsed.success) {
-                            data = parsed;
-                            break;
-                        } else {
-                            batchErr = parsed?.error || `Error on ${stepLabel}`;
-                        }
-                    } catch (e) {
-                        batchErr = e.message;
-                    }
-                }
-
-                if (!data || !data.success) {
-                    throw new Error(batchErr || `AI Scan failed on ${stepLabel}`);
-                }
-
-                totalRead += (data.filesScanned || 0);
-                if (data.model) lastModelUsed = data.model;
-
-                const ex = data.extracted || {};
-
-                Object.keys(ex).forEach(k => {
-                    const val = ex[k];
-                    if (val === null || val === undefined || val === '') return;
-
-                    if (k === 'diagnoses' && Array.isArray(val)) {
-                        const existingDiag = Array.isArray(clientMemoryStore.diagnoses) ? clientMemoryStore.diagnoses : [];
-                        val.forEach(dItem => {
-                            if (dItem && dItem.problem) {
-                                const cleanProb = toCleanTitleCase(dItem.problem);
-                                if (!existingDiag.some(e => e.problem.toLowerCase() === cleanProb.toLowerCase())) {
-                                    existingDiag.push({ problem: cleanProb, onsetDate: dItem.onsetDate || '' });
-                                }
+                try {
+                    const data = await sendSingleBatchToAi(currentBatch, matterId);
+                    totalRead += (data.filesScanned || 0);
+                    mergeExtractedDataIntoMemory(data.extracted || {});
+                    renderSummaryPills();
+                } catch (batchErr) {
+                    if (currentBatch.fileIds.length > 1) {
+                        for (let sIdx = 0; sIdx < currentBatch.fileIds.length; sIdx++) {
+                            setLive3DProgress(currentPctValue, `⚡ Scanning large PDF ${sIdx + 1}/${currentBatch.fileIds.length} individually...`);
+                            try {
+                                const singleData = await sendSingleBatchToAi({
+                                    fileIds: [currentBatch.fileIds[sIdx]],
+                                    fileUrls: [currentBatch.fileUrls[sIdx]],
+                                    uploadedFiles: []
+                                }, matterId);
+                                totalRead += (singleData.filesScanned || 0);
+                                mergeExtractedDataIntoMemory(singleData.extracted || {});
+                                renderSummaryPills();
+                            } catch (singleErr) {
+                                console.warn('Skipped oversized file:', singleErr.message);
                             }
-                        });
-                        clientMemoryStore.diagnoses = existingDiag;
-                    } else if (k === 'clinics' && Array.isArray(val)) {
-                        const existingClinics = Array.isArray(clientMemoryStore.clinics) ? clientMemoryStore.clinics : [];
-                        val.forEach(cItem => {
-                            if (cItem && (cItem.clinicName || cItem.doctorName)) {
-                                const cleanedClinic = {};
-                                Object.keys(cItem).forEach(ck => {
-                                    cleanedClinic[ck] = ck === 'state' ? (cItem[ck] || 'CA').toUpperCase() : toCleanTitleCase(cItem[ck]);
-                                });
-                                const isDup = existingClinics.some(e =>
-                                    (e.clinicName && cleanedClinic.clinicName && e.clinicName.toLowerCase() === cleanedClinic.clinicName.toLowerCase()) ||
-                                    (e.doctorName && cleanedClinic.doctorName && e.doctorName.toLowerCase() === cleanedClinic.doctorName.toLowerCase())
-                                );
-                                if (!isDup) existingClinics.push(cleanedClinic);
-                            }
-                        });
-                        clientMemoryStore.clinics = existingClinics;
-                    } else if (k === 'tests' && typeof val === 'object') {
-                        clientMemoryStore.tests = { ...(clientMemoryStore.tests || {}), ...val };
-                    } else if (Array.isArray(val)) {
-                        const nonEmpty = val.filter(Boolean).map(v => typeof v === 'string' ? toCleanTitleCase(v) : v);
-                        if (nonEmpty.length > 0) clientMemoryStore[k] = nonEmpty;
-                    } else if (typeof val === 'object') {
-                        const cleanedObj = {};
-                        Object.keys(val).forEach(ok => {
-                            if (val[ok]) cleanedObj[ok] = toCleanTitleCase(val[ok]);
-                        });
-                        clientMemoryStore[k] = { ...(clientMemoryStore[k] || {}), ...cleanedObj };
+                        }
                     } else {
-                        clientMemoryStore[k] = k === 'state' ? String(val).toUpperCase() : toCleanTitleCase(val);
+                        console.warn('Batch skipped:', batchErr.message);
                     }
-                });
-
-                renderSummaryPills();
+                }
             }
 
             clearInterval(liveProgressInterval);
@@ -1793,6 +1876,9 @@
         const dobYY = dobParts[2] || '';
 
         const ai = d.ai || {};
+        // Был ли уже выполнен AI Scan документов клиента?
+        const hasAiScanRun = Boolean(ai.aiScanned || (Array.isArray(ai.diagnoses) && ai.diagnoses.length > 0) || (Array.isArray(ai.clinics) && ai.clinics.length > 0));
+
         const diag1 = cleanVal(ai.diagnoses?.[0]?.problem);
         const diagDate1 = cleanVal(ai.diagnoses?.[0]?.onsetDate);
         const diag2 = cleanVal(ai.diagnoses?.[1]?.problem);
@@ -2146,8 +2232,7 @@
                         }
                     }
 
-                    const isYes = (val) => /^y/i.test(String(val || '').trim());
-
+                    // Базовые галочки профиля клиента и представителя (ставятся всегда):
                     if (rawName === 'sex' && d.gender) {
                         const isFem = d.gender.toLowerCase().startsWith('f');
                         if (forceSelectPdfWidgetByPosition(field, isFem ? 'bottom' : 'top')) filledCount++;
@@ -2158,7 +2243,16 @@
                         if (forceSelectPdfWidgetByPosition(field, isEng ? 'top' : 'bottom')) filledCount++;
                     } else if (rawName === '4b interpreter') {
                         if (forceSelectPdfWidgetByPosition(field, 'left')) filledCount++;
-                    } else if (rawName === '5 applied') {
+                    } else if (rawName === '12 contacts') {
+                        if (forceSelectPdfWidgetByPosition(field, 'left')) filledCount++;
+                    }
+
+                    // МЕДИЦИНСКИЕ И ИСТОРИЧЕСКИЕ ГАЛОЧКИ СТАВЯТСЯ ТОЛЬКО ПОСЛЕ ТОГО, КАК ВЫ НАЖАЛИ AI SCAN!
+                    if (!hasAiScanRun) return;
+
+                    const isYes = (val) => /^y/i.test(String(val || '').trim());
+
+                    if (rawName === '5 applied') {
                         const applied = isYes(ai.ssiApplied);
                         if (forceSelectPdfWidgetByPosition(field, applied ? 'left' : 'right')) filledCount++;
                     } else if (rawName === '5a approved' && /approv/i.test(ai.ssiStatus || '')) {
@@ -2214,8 +2308,6 @@
                     } else if (rawName === '11 other treatment') {
                         const has11 = isYes(ai.otherMedicalTreatment11);
                         if (forceSelectPdfWidgetByPosition(field, has11 ? 'left' : 'right')) filledCount++;
-                    } else if (rawName === '12 contacts') {
-                        if (forceSelectPdfWidgetByPosition(field, 'left')) filledCount++;
                     } else if (rawName === '13 additional exam') {
                         const willEx = ai.willingAdditionalExam ? isYes(ai.willingAdditionalExam) : false;
                         if (forceSelectPdfWidgetByPosition(field, willEx ? 'left' : 'right')) filledCount++;
@@ -2273,23 +2365,6 @@
                 }
             } catch (err) {}
         });
-
-        // ПЕЧАТЬ ДАТЫ ПОДПИСИ НА СТРАНИЦЕ 7 (PART V — SIGNATURE AND CERTIFICATION)
-        if (isMc223 && pages.length >= 7) {
-            try {
-                const page7 = pages[6];
-                const { width, height } = page7.getSize();
-                const sigDateToPrint = cleanVal(ai.signatureDate) || d.today;
-                if (sigDateToPrint) {
-                    page7.drawText(sigDateToPrint, {
-                        x: width * 0.735,
-                        y: height * 0.515,
-                        size: 13
-                    });
-                    filledCount++;
-                }
-            } catch (e) {}
-        }
 
         return { totalFields: fields.length, filledCount };
     }
