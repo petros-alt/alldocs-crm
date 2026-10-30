@@ -28,7 +28,16 @@
             --sidebar-width: 270px;
         }
 
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        @keyframes progressShine {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        @keyframes pulseGlow3D {
+            0%, 100% { box-shadow: 0 8px 22px rgba(37, 99, 235, 0.28), inset 0 1px 2px rgba(255,255,255,0.4); }
+            50% { box-shadow: 0 12px 30px rgba(37, 99, 235, 0.5), inset 0 1px 2px rgba(255,255,255,0.6); }
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: var(--surface-color); border-radius: 8px; }
         ::-webkit-scrollbar-thumb { background: rgba(161, 104, 58, 0.35); border-radius: 8px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--accent-color); }
@@ -41,7 +50,7 @@
                 radial-gradient(at 85% 90%, rgba(62, 39, 35, 0.1) 0px, transparent 50%);
             background-attachment: fixed;
             color: var(--primary-color);
-            line-height: 1.6;
+            line-height: 1.5;
             margin: 0;
             padding: 0;
             display: flex;
@@ -141,18 +150,19 @@
             box-sizing: border-box;
         }
 
-        /* ЛЕВАЯ КОЛОНКА ПОИСКА И ПАПОК MATTER */
+        /* ЛЕВАЯ 3D-КОЛОНКА ПОИСКА И ПАПОК MATTER (СТРОГО В РАМКАХ 415px) */
         .search-panel {
-            width: 395px;
-            background: linear-gradient(165deg, #ffffff 0%, #f7f2ea 100%);
-            border-right: 1.5px solid rgba(184, 115, 51, 0.28);
-            padding: 22px 20px;
+            width: 415px;
+            background: linear-gradient(165deg, #ffffff 0%, #f5efe6 100%);
+            border-right: 1.5px solid rgba(184, 115, 51, 0.32);
+            padding: 18px 18px 24px 18px;
             display: flex;
             flex-direction: column;
             overflow-y: auto;
+            overflow-x: hidden;
             flex-shrink: 0;
             z-index: 10;
-            box-shadow: 10px 0 30px rgba(44, 26, 20, 0.06);
+            box-shadow: 12px 0 35px rgba(44, 26, 20, 0.08);
             box-sizing: border-box;
         }
 
@@ -161,47 +171,85 @@
             color: #ffffff;
             padding: 13px 16px;
             border-radius: 16px;
-            border: 1.5px solid rgba(212, 140, 70, 0.5);
+            border: 1.5px solid rgba(212, 140, 70, 0.55);
             border-bottom: 4px solid #120906;
-            margin-bottom: 14px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            box-shadow: 0 10px 22px rgba(36, 20, 14, 0.2);
+            box-shadow: 0 10px 22px rgba(36, 20, 14, 0.22), inset 0 1px 1px rgba(255,255,255,0.2);
+            box-sizing: border-box;
         }
         .panel-title-box h2 {
             font-family: 'Plus Jakarta Sans', sans-serif;
             font-size: 14.5px;
             font-weight: 800;
             margin: 0;
-            letter-spacing: 0.4px;
+            letter-spacing: 0.3px;
         }
 
-        .form-group { margin-bottom: 11px; }
+        .form-group { margin-bottom: 10px; width: 100%; box-sizing: border-box; }
         label { display: block; font-size: 10.5px; font-weight: 800; color: var(--primary-color); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
         input, select, textarea {
             width: 100%;
+            max-width: 100%;
             padding: 9px 12px;
-            border: 1.5px solid rgba(161, 104, 58, 0.28);
-            border-radius: 11px;
+            border: 1.5px solid rgba(161, 104, 58, 0.3);
+            border-bottom: 3px solid rgba(161, 104, 58, 0.42);
+            border-radius: 12px;
             font-size: 13px;
-            font-weight: 600;
+            font-weight: 700;
             box-sizing: border-box;
-            background: linear-gradient(180deg, #f3ede3 0%, #faf7f2 100%);
+            background: linear-gradient(180deg, #ffffff 0%, #f5efe6 100%);
             color: var(--primary-color);
             transition: all 0.2s ease;
             font-family: inherit;
-            box-shadow: inset 0 2px 4px rgba(44, 26, 20, 0.05);
+            box-shadow: 0 4px 10px rgba(44, 26, 20, 0.04), inset 0 1px 1px #ffffff;
         }
         input:focus, select:focus, textarea:focus {
             outline: none;
             background: #ffffff;
             border-color: var(--accent-color);
-            box-shadow: 0 0 0 3px rgba(184, 115, 51, 0.15);
+            box-shadow: 0 0 0 3px rgba(184, 115, 51, 0.16);
+        }
+
+        /* 3D DARK ESPRESSO SELECTS ДЛЯ MATTER И FOLDER */
+        .select-3d-dark {
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            background-color: #26160e !important;
+            background-image: 
+                url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23f5cba7' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"),
+                linear-gradient(160deg, #3a2419 0%, #21120b 100%) !important;
+            background-repeat: no-repeat, no-repeat !important;
+            background-position: right 11px center, 0 0 !important;
+            background-size: 14px, 100% 100% !important;
+            color: #fff8f0 !important;
+            border: 1.5px solid rgba(212, 140, 70, 0.6) !important;
+            border-bottom: 3.5px solid #120905 !important;
+            border-radius: 13px !important;
+            padding: 10px 32px 10px 12px !important;
+            font-size: 12.5px !important;
+            font-weight: 800 !important;
+            cursor: pointer !important;
+            box-shadow: 0 8px 18px rgba(36, 20, 14, 0.2), inset 0 1px 1px rgba(255,255,255,0.18) !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            transition: all 0.2s ease !important;
+        }
+        .select-3d-dark:hover {
+            border-color: #ffd8a8 !important;
+            transform: translateY(-1px) !important;
+        }
+        .select-3d-dark option {
+            background: #24140e;
+            color: #fff8f0;
+            font-weight: 700;
         }
 
         /* AUTOCOMPLETE */
-        .autocomplete-wrapper { position: relative; display: flex; align-items: center; }
+        .autocomplete-wrapper { position: relative; display: flex; align-items: center; width: 100%; }
         .autocomplete-list {
             position: absolute;
             top: calc(100% + 6px);
@@ -238,33 +286,124 @@
         .client-phone-list { font-size: 12px; color: var(--secondary-color); font-weight: 600; }
         .loading-indicator { position: absolute; right: 12px; color: var(--accent-color); font-size: 11px; display: none; font-weight: 800; }
 
-        /* КАРТОЧКА КЛИЕНТА И ВЫБОРА MATTER / ПАПКИ */
+        /* 3D КАРТОЧКА КЛИЕНТА (СТРОГО В РАМКАХ БЕЗ ВЫЛЕЗОВ) */
         .client-card {
-            background: linear-gradient(160deg, #faf6f0 0%, #f1e9dd 100%);
-            border: 1.5px solid rgba(184, 115, 51, 0.35);
-            border-bottom: 4px solid #8b552b;
-            border-radius: 18px;
-            padding: 15px;
+            background: linear-gradient(160deg, #fbf8f3 0%, #efe6d8 100%);
+            border: 1.5px solid rgba(184, 115, 51, 0.38);
+            border-bottom: 5px solid #8b552b;
+            border-radius: 20px;
+            padding: 14px;
             margin-top: 4px;
             display: none;
-            box-shadow: 0 10px 24px rgba(44, 26, 20, 0.08), inset 0 2px 2px #ffffff;
+            box-shadow: 0 14px 30px rgba(44, 26, 20, 0.1), inset 0 2px 3px #ffffff;
+            width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
         }
-        .status-badge { display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 4px 10px; border-radius: 12px; font-size: 10.5px; font-weight: 800; margin-bottom: 6px; }
+
+        .client-card-top-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 6px;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 800;
+            box-shadow: 0 3px 8px rgba(16, 185, 129, 0.25);
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .dw-id-pill {
+            font-size: 10px;
+            font-weight: 800;
+            color: #6e4223;
+            background: rgba(184, 115, 51, 0.14);
+            border: 1px solid rgba(184, 115, 51, 0.3);
+            padding: 3px 8px;
+            border-radius: 8px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
 
         .summary-pills-box {
             display: flex;
             flex-wrap: wrap;
             gap: 5px;
-            margin: 8px 0;
+            margin: 8px 0 10px 0;
         }
         .summary-pill {
-            background: #ffffff;
-            border: 1px solid rgba(184, 115, 51, 0.35);
-            border-radius: 8px;
+            background: linear-gradient(180deg, #ffffff 0%, #f9f5ee 100%);
+            border: 1px solid rgba(184, 115, 51, 0.38);
+            border-bottom: 2px solid rgba(139, 85, 43, 0.45);
+            border-radius: 9px;
             padding: 3px 8px;
-            font-size: 11px;
-            font-weight: 700;
+            font-size: 10.5px;
+            font-weight: 800;
             color: #2c1a14;
+            box-shadow: 0 2px 5px rgba(44, 26, 20, 0.05);
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* 3D-КОНТЕЙНЕР ВЫБОРА MATTER И ПАПКИ */
+        .matter-folder-3d-box {
+            background: linear-gradient(145deg, #ffffff 0%, #f5efe6 100%);
+            border: 1.5px solid rgba(184, 115, 51, 0.3);
+            border-bottom: 3.5px solid rgba(139, 85, 43, 0.38);
+            border-radius: 16px;
+            padding: 11px 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 6px 16px rgba(44, 26, 20, 0.05), inset 0 2px 2px #ffffff;
+            box-sizing: border-box;
+        }
+
+        /* 3D-КАПСУЛЫ ФАЙЛОВ ВНУТРИ СПИСКА */
+        .dw-file-3d-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 7px 9px;
+            margin-bottom: 6px;
+            background: linear-gradient(145deg, #ffffff 0%, #faf6ef 100%);
+            border: 1px solid rgba(184, 115, 51, 0.25);
+            border-bottom: 2.5px solid rgba(161, 104, 58, 0.35);
+            border-radius: 11px;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            box-sizing: border-box;
+            text-transform: none;
+        }
+        .dw-file-3d-row:hover {
+            transform: translateY(-1px);
+            border-color: #b87333;
+            box-shadow: 0 5px 12px rgba(184, 115, 51, 0.14);
+        }
+        .dw-file-3d-row:has(.dw-file-cb:checked) {
+            background: linear-gradient(145deg, #eff6ff 0%, #dbeafe 100%);
+            border-color: #60a5fa;
+            border-bottom: 2.5px solid #2563eb;
+        }
+        .dw-file-cb {
+            width: 16px !important;
+            height: 16px !important;
+            margin: 0 !important;
+            flex-shrink: 0 !important;
+            accent-color: #2563eb;
+            cursor: pointer;
         }
 
         .ai-scan-btn {
@@ -273,16 +412,78 @@
             background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
             color: #ffffff;
             border: 1px solid #93c5fd;
-            border-bottom: 3.5px solid #1e3a8a;
-            border-radius: 12px;
+            border-bottom: 4px solid #1e3a8a;
+            border-radius: 13px;
             padding: 11px 12px;
             font-size: 12.5px;
             font-weight: 800;
             cursor: pointer;
             transition: all 0.2s ease;
-            box-shadow: 0 6px 14px rgba(37, 99, 235, 0.25);
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28), inset 0 1px 1px rgba(255,255,255,0.35);
+            box-sizing: border-box;
         }
-        .ai-scan-btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
+        .ai-scan-btn:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.06); }
+        .ai-scan-btn:disabled { opacity: 0.85; cursor: wait; animation: pulseGlow3D 1.5s infinite; }
+
+        /* 🚀 3D ЖИВАЯ ШКАЛА ПРОГРЕССА (ОТ 1% ДО 100%) */
+        .ai-progress-3d-wrap {
+            display: none;
+            margin-top: 10px;
+            background: linear-gradient(155deg, #24140e 0%, #140a06 100%);
+            border: 1.5px solid #d48c46;
+            border-bottom: 4px solid #090402;
+            border-radius: 14px;
+            padding: 11px 13px;
+            color: #fff8f0;
+            box-shadow: 0 12px 26px rgba(20, 10, 6, 0.35), inset 0 1px 2px rgba(255,255,255,0.15);
+            box-sizing: border-box;
+        }
+        .ai-progress-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 7px;
+            gap: 8px;
+        }
+        .ai-progress-status {
+            font-size: 11px;
+            font-weight: 800;
+            color: #f5cba7;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .ai-progress-pct {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 900;
+            color: #6ee7b7;
+            background: rgba(16, 185, 129, 0.18);
+            border: 1px solid rgba(16, 185, 129, 0.45);
+            padding: 2px 8px;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+        .ai-progress-track {
+            width: 100%;
+            height: 12px;
+            background: #120905;
+            border-radius: 10px;
+            border: 1px solid rgba(212, 140, 70, 0.35);
+            overflow: hidden;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+            position: relative;
+        }
+        .ai-progress-fill {
+            width: 0%;
+            height: 100%;
+            border-radius: 9px;
+            background: linear-gradient(90deg, #2563eb 0%, #10b981 50%, #f59e0b 100%);
+            background-size: 200% 100%;
+            animation: progressShine 2s linear infinite;
+            transition: width 0.22s ease-out;
+            box-shadow: 0 0 12px rgba(16, 185, 129, 0.65);
+        }
 
         /* ПРАВАЯ ЧАСТЬ С ФИЛЬТРОМ ГРУПП ПРОГРАММ И СЕТКОЙ 13 ФОРМ */
         .forms-area { flex: 1; padding: 28px 34px; overflow-y: auto; box-sizing: border-box; }
@@ -301,7 +502,6 @@
         .area-header h1 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 25px; font-weight: 800; color: #ffffff; margin: 0 0 4px 0; }
         .area-header p { color: #f5cba7; font-size: 13px; margin: 0; font-weight: 600; }
 
-        /* КНОПКИ ГРУППИРОВКИ ФОРМ ПО ПРОГРАММАМ (ALL | MEDI-CAL | CAPI / SSI | IHSS | APPEALS) */
         .program-filter-bar {
             display: flex;
             align-items: center;
@@ -445,7 +645,7 @@
     <div class="search-panel">
         <div class="panel-title-box">
             <h2>🔍 1. Client & Matter</h2>
-            <span style="background:rgba(16,185,129,0.2); color:#6ee7b7; border:1px solid #10b981; padding:3px 9px; border-radius:12px; font-size:10.5px; font-weight:800;">● Docketwise + AI</span>
+            <span style="background:rgba(16,185,129,0.2); color:#6ee7b7; border:1px solid #10b981; padding:3px 9px; border-radius:12px; font-size:10px; font-weight:800;">● Docketwise + AI</span>
         </div>
         
         <div class="form-group">
@@ -457,7 +657,7 @@
             </div>
         </div>
 
-        <div class="form-group" style="margin-bottom: 10px;">
+        <div class="form-group" style="margin-bottom: 8px;">
             <label>Phone Number</label>
             <div class="autocomplete-wrapper" id="phoneAutocompleteWrapper">
                 <input type="tel" id="phoneNumber" placeholder="Search by phone..." autocomplete="off">
@@ -466,60 +666,72 @@
             </div>
         </div>
 
-        <!-- КАРТОЧКА КЛИЕНТА: ВЫБОР MATTER -> ВЫБОР ПАПКИ -> СПИСОК ФАЙЛОВ ЭТОГО MATTER -->
+        <!-- 3D КАРТОЧКА КЛИЕНТА (СТРОГО В РАМКАХ) -->
         <div class="client-card" id="clientCard">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="client-card-top-row">
                 <span class="status-badge" id="dossierStatusBadge">✓ Docketwise Linked</span>
-                <span id="displayDwId" style="font-size:11px; font-weight:800; color:#8b552b;"></span>
+                <span class="dw-id-pill" id="displayDwId">ID: ---</span>
             </div>
-            <h3 id="displayClientName" style="margin:0 0 6px 0; font-size:17px; font-weight:800;">Client Name</h3>
+            <h3 id="displayClientName" style="margin:0 0 4px 0; font-size:17px; font-weight:800; color:#24140e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Client Name</h3>
 
             <!-- Краткая сводка найденных данных (SSN, DOB, Адрес, Диагнозы, Врачи) -->
             <div class="summary-pills-box" id="clientDataSummaryPills"></div>
 
-            <!-- ШАГ 2: ВЫБОР MATTER (КЕЙСА) -->
-            <div style="margin-top: 8px;">
-                <label style="color:#6e4223;">📂 2. Select Active Matter (Case):</label>
-                <select id="dfMatterSelect" onchange="handleMatterChange()" style="background:#ffffff; border-color:#b87333; font-weight:800;"></select>
+            <!-- 3D БЛОК ВЫБОРА MATTER (ШАГ 2) И ПАПКИ (ШАГ 3) -->
+            <div class="matter-folder-3d-box">
+                <div style="margin-bottom: 9px;">
+                    <label style="color:#6e4223; font-size:10px; margin-bottom:4px;">📂 2. Select Active Matter (Case):</label>
+                    <select id="dfMatterSelect" class="select-3d-dark" onchange="handleMatterChange()"></select>
+                </div>
+
+                <div>
+                    <label style="color:#6e4223; font-size:10px; margin-bottom:4px;">📁 3. Folder Inside Matter:</label>
+                    <select id="dfFolderSelect" class="select-3d-dark" onchange="handleFolderChange()">
+                        <option value="ALL_KEY_FOLDERS">⚡ All Key Folders (01. ID, 02. Medical, 04. Work)</option>
+                    </select>
+                </div>
             </div>
 
-            <!-- ШАГ 3: ВЫБОР ПАПКИ ВНУТРИ ВЫБРАННОГО MATTER -->
-            <div style="margin-top: 8px;">
-                <label style="color:#6e4223;">📁 3. Folder Inside Matter:</label>
-                <select id="dfFolderSelect" onchange="handleFolderChange()" style="background:#ffffff;">
-                    <option value="ALL_KEY_FOLDERS">⚡ All Key Folders (01. ID, 02. Medical, 04. Work)</option>
-                </select>
-            </div>
-
-            <!-- СПИСОК ФАЙЛОВ ВНУТРИ ЭТОГО MATTER И ПАПКИ -->
-            <div id="dwSmartFilesBox" style="margin: 10px 0; padding: 12px; background: #ffffff; border: 1.5px solid rgba(184,115,51,0.35); border-radius: 14px;">
+            <!-- 3D СПИСОК ФАЙЛОВ ВНУТРИ ЭТОГО MATTER И ПАПКИ -->
+            <div id="dwSmartFilesBox" style="margin: 0 0 10px 0; padding: 12px; background: linear-gradient(180deg, #ffffff 0%, #f8f3eb 100%); border: 1.5px solid rgba(184,115,51,0.35); border-bottom: 4px solid rgba(139,85,43,0.42); border-radius: 16px; box-shadow: 0 8px 20px rgba(44,26,20,0.06); box-sizing:border-box;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                     <span style="font-size:10px; font-weight:900; color:#2c1a14; text-transform:uppercase;">☑️ 4. Check Files to Scan:</span>
-                    <span id="dwFilesCountTag" style="font-size:10px; font-weight:800; color:#059669; background:#d1fae5; padding:2px 7px; border-radius:10px;">0 files</span>
+                    <span id="dwFilesCountTag" style="font-size:10px; font-weight:800; color:#047857; background:#d1fae5; border:1px solid #6ee7b7; padding:2px 8px; border-radius:10px;">0 files</span>
                 </div>
-                <div id="dwSmartFilesList" style="max-height: 165px; overflow-y: auto; font-size: 11.5px;">
+                <div id="dwSmartFilesList" style="max-height: 175px; overflow-y: auto; overflow-x: hidden; padding-right: 2px;">
                     <div style="color:#888; font-size:11px; padding:4px 0;">Select Matter above to view files...</div>
                 </div>
 
-                <!-- Загрузка дополнительных файлов с компьютера (при необходимости) -->
-                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(184,115,51,0.25);">
+                <!-- Загрузка дополнительных файлов с компьютера -->
+                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(184,115,51,0.28);">
                     <label style="font-size:9.5px; color:#6e4223; margin-bottom:4px;">📎 Or attach local file (Passport / Medical PDF/JPG):</label>
-                    <input type="file" id="localAiFilesInput" multiple accept=".pdf,image/*" style="padding:5px; font-size:11px; background:#faf6f0;">
+                    <input type="file" id="localAiFilesInput" multiple accept=".pdf,image/*" style="padding:6px; font-size:11px; background:#faf6f0;">
                 </div>
 
                 <button type="button" class="ai-scan-btn" id="btnRunAiScan" onclick="runAiDocumentScan()">
                     🧠 5. Scan Checked Files with Gemini AI
                 </button>
+
+                <!-- 🚀 ЖИВАЯ 3D ШКАЛА ЗАГРУЗКИ (ОТ 1% ДО 100%) -->
+                <div class="ai-progress-3d-wrap" id="aiProgress3dWrap">
+                    <div class="ai-progress-top">
+                        <span class="ai-progress-status" id="aiProgressStatusText">🚀 Connecting to Docketwise...</span>
+                        <span class="ai-progress-pct" id="aiProgressPctText">1%</span>
+                    </div>
+                    <div class="ai-progress-track">
+                        <div class="ai-progress-fill" id="aiProgressFillBar"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- БЫСТРАЯ ЗАМЕТКА В ВЫБРАННЫЙ MATTER -->
-            <div style="margin-top: 10px; padding: 11px; background: #ffffff; border: 1.5px solid rgba(184,115,51,0.3); border-radius: 12px;">
-                <label style="color: #6e4223; margin-bottom: 5px;">📝 Quick Note to Selected Matter</label>
-                <textarea id="note-input" placeholder="Type clean note for Docketwise..." style="width: 100%; box-sizing: border-box; height: 44px; margin-bottom: 8px; padding: 8px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit; resize: vertical;"></textarea>
-                <button onclick="sendNoteToDocketwise()" style="background: linear-gradient(135deg, #3e271c 0%, #24140e 100%); color: white; padding: 8px 12px; border: 1px solid #d48c46; border-bottom: 3px solid #8b552b; border-radius: 9px; cursor: pointer; font-size: 12px; font-weight: 800; width: 100%;">
+            <div style="padding: 11px; background: linear-gradient(180deg, #ffffff 0%, #f8f3eb 100%); border: 1.5px solid rgba(184,115,51,0.3); border-bottom: 3.5px solid rgba(139,85,43,0.38); border-radius: 14px; box-sizing: border-box;">
+                <label style="color: #6e4223; margin-bottom: 5px; font-size:10px;">📝 Quick Note to Selected Matter</label>
+                <textarea id="note-input" placeholder="Type clean note for Docketwise..." style="width: 100%; box-sizing: border-box; height: 42px; min-height: 42px; margin-bottom: 8px; padding: 7px 10px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 9px; font-family: inherit; resize: vertical;"></textarea>
+                <button onclick="sendNoteToDocketwise()" style="background: linear-gradient(135deg, #3e271c 0%, #24140e 100%); color: white; padding: 8px 12px; border: 1px solid #d48c46; border-bottom: 3px solid #8b552b; border-radius: 10px; cursor: pointer; font-size: 12px; font-weight: 800; width: 100%;">
                     🚀 Push Note to Matter
                 </button>
-                <p id="note-status" style="margin-top: 6px; font-weight: 800; font-size: 11.5px; text-align: center; margin-bottom: 0;"></p>
+                <p id="note-status" style="margin-top: 6px; font-weight: 800; font-size: 11px; text-align: center; margin-bottom: 0;"></p>
             </div>
         </div>
     </div>
@@ -688,7 +900,6 @@
     let lastInspectedPdfFields = [];
     let clientMemoryStore = {};
 
-    // Форматирование любого текста БЕЗ КАПСЛОКА (Title Case) перед вставкой в PDF
     function toCleanTitleCase(str) {
         if (str === null || str === undefined) return '';
         const s = String(str).trim();
@@ -748,7 +959,6 @@
         box.innerHTML = pills.map(p => `<span class="summary-pill">${p}</span>`).join('');
     }
 
-    // Контроль: максимум 10 отмеченных файлов
     window.enforceMaxTenFiles = function(cbEl) {
         const checked = document.querySelectorAll('.dw-file-cb:checked');
         const countTag = document.getElementById('dwFilesCountTag');
@@ -774,23 +984,23 @@
         let html = '';
         files.forEach(f => {
             const badgeColor = f.category === 'identity' ? '#2563eb' : (f.category === 'medical_form' ? '#059669' : '#8b552b');
-            const folderLabel = f.folderName && f.folderName !== 'Root' ? `<div style="font-size:9.5px; color:#8b552b;">📁 ${f.folderName}</div>` : '';
+            const folderLabel = f.folderName && f.folderName !== 'Root' ? `<div style="font-size:9px; color:#8b552b; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📁 ${f.folderName}</div>` : '';
             html += `
-                <label style="display:flex; align-items:center; justify-content:space-between; gap:6px; padding:6px 4px; border-bottom:1px dashed #eee; cursor:pointer; text-transform:none; font-weight:600; margin:0;">
-                    <div style="display:flex; align-items:center; gap:7px; overflow:hidden;">
-                        <input type="checkbox" class="dw-file-cb" value="${f.id}" data-url="${f.url || ''}" onchange="window.enforceMaxTenFiles(this)" ${f.autoSelect ? 'checked' : ''} style="width:15px; height:15px; margin:0; flex-shrink:0;">
-                        <div style="overflow:hidden;">
-                            <a href="https://app.docketwise.com/documents/${f.id}" target="_blank" style="color:#2c1a14; text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; font-size:11.5px; font-weight:700;" title="${f.name}">${f.name} ↗</a>
+                <label class="dw-file-3d-row">
+                    <div style="display:flex; align-items:center; gap:8px; overflow:hidden; min-width:0; flex:1;">
+                        <input type="checkbox" class="dw-file-cb" value="${f.id}" data-url="${f.url || ''}" onchange="window.enforceMaxTenFiles(this)" ${f.autoSelect ? 'checked' : ''}>
+                        <div style="overflow:hidden; min-width:0; flex:1;">
+                            <a href="https://app.docketwise.com/documents/${f.id}" target="_blank" onclick="event.stopPropagation()" style="color:#24140e; text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; font-size:11.5px; font-weight:800;" title="${f.name}">${f.name} ↗</a>
                             ${folderLabel}
                         </div>
                     </div>
-                    <span style="background:${badgeColor}; color:#fff; font-size:9px; padding:2px 6px; border-radius:6px; white-space:nowrap; flex-shrink:0;">${f.badge || '📄 File'}</span>
+                    <span style="background:${badgeColor}; color:#fff; font-size:9px; font-weight:800; padding:3px 7px; border-radius:7px; white-space:nowrap; flex-shrink:0;">${f.badge || '📄 File'}</span>
                 </label>
             `;
         });
         listEl.innerHTML = html;
         const initChecked = document.querySelectorAll('.dw-file-cb:checked').length;
-        countTag.textContent = `${initChecked} selected (max 10)`;
+        countTag.textContent = `${initChecked}/${Math.min(files.length, 10)} selected`;
     }
 
     window.handleMatterChange = async function() {
@@ -814,7 +1024,7 @@
             return;
         }
 
-        document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#b87333; font-weight:700; padding:8px 0;">⏳ Opening Matter folders (01. ID, 02. Medical, 04. Work)...</div>';
+        document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#b87333; font-weight:800; font-size:11.5px; padding:8px 0;">⏳ Opening Matter folders (01. ID, 02. Medical, 04. Work)...</div>';
         folderSel.innerHTML = '<option value="ALL_KEY_FOLDERS">⏳ Loading folders...</option>';
 
         try {
@@ -842,7 +1052,7 @@
         const folderId = document.getElementById('dfFolderSelect').value;
         if (!matterId) return;
 
-        document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#b87333; font-weight:700; padding:8px 0;">⏳ Loading files from selected folder...</div>';
+        document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#b87333; font-weight:800; font-size:11.5px; padding:8px 0;">⏳ Loading files from selected folder...</div>';
         try {
             const res = await fetch(`/api/search?matterId=${encodeURIComponent(matterId)}&folderId=${encodeURIComponent(folderId)}`);
             const data = await res.json();
@@ -1019,7 +1229,7 @@
 
             document.getElementById('clientCard').style.display = 'block';
             document.getElementById('formsGrid').classList.add('active');
-            document.getElementById('dossierStatusBadge').textContent = '⏳ Loading Docketwise Dossier...';
+            document.getElementById('dossierStatusBadge').textContent = '⏳ Loading Dossier...';
 
             await window.handleMatterChange();
 
@@ -1046,7 +1256,7 @@
                         caseNum: p.aNumber || clientMemoryStore.caseNum || ''
                     };
                     renderSummaryPills();
-                    document.getElementById('dossierStatusBadge').textContent = '✓ Docketwise Profile Ready';
+                    document.getElementById('dossierStatusBadge').textContent = '✓ Profile Ready';
                 } else {
                     document.getElementById('dossierStatusBadge').textContent = '✓ Client Linked';
                 }
@@ -1117,6 +1327,35 @@
         });
     }
 
+    // УПРАВЛЕНИЕ 3D ШКАЛОЙ ПРОГРЕССА (ОТ 1% ДО 100% В РЕАЛЬНОМ ВРЕМЕНИ)
+    let liveProgressInterval = null;
+    let currentPctValue = 0;
+
+    function setLive3DProgress(pct, statusText) {
+        const wrap = document.getElementById('aiProgress3dWrap');
+        const fill = document.getElementById('aiProgressFillBar');
+        const pctTxt = document.getElementById('aiProgressPctText');
+        const stTxt = document.getElementById('aiProgressStatusText');
+        if (!wrap || !fill || !pctTxt || !stTxt) return;
+
+        wrap.style.display = 'block';
+        currentPctValue = Math.max(1, Math.min(100, Math.round(pct)));
+        fill.style.width = currentPctValue + '%';
+        pctTxt.textContent = currentPctValue + '%';
+        if (statusText) stTxt.textContent = statusText;
+    }
+
+    function startSmoothProgressTicker(minTarget, maxTarget, statusLabel) {
+        clearInterval(liveProgressInterval);
+        if (currentPctValue < minTarget) setLive3DProgress(minTarget, statusLabel);
+        liveProgressInterval = setInterval(() => {
+            if (currentPctValue < maxTarget) {
+                const step = currentPctValue < 50 ? 3 : (currentPctValue < 80 ? 2 : 1);
+                setLive3DProgress(Math.min(maxTarget, currentPctValue + step), statusLabel);
+            }
+        }, 160);
+    }
+
     async function runAiDocumentScan() {
         const btn = document.getElementById('btnRunAiScan');
         const badge = document.getElementById('dossierStatusBadge');
@@ -1162,15 +1401,22 @@
         }
 
         btn.disabled = true;
+        currentPctValue = 0;
+        setLive3DProgress(2, '🚀 Connecting to Docketwise & Gemini...');
         let totalRead = 0;
         let lastModelUsed = 'Gemini';
 
         try {
             for (let bIdx = 0; bIdx < batches.length; bIdx++) {
                 const currentBatch = batches[bIdx];
-                const stepLabel = batches.length > 1 ? `Batch ${bIdx + 1}/${batches.length}` : 'Files';
+                const stepLabel = batches.length > 1 ? `Batch ${bIdx + 1}/${batches.length}` : `${currentBatch.fileIds.length + currentBatch.uploadedFiles.length || 1} Docs`;
+
+                const rangeStart = Math.round((bIdx / batches.length) * 90) + 5;
+                const rangeMax = Math.round(((bIdx + 0.92) / batches.length) * 94);
+
                 btn.textContent = `⏳ AI Scanning ${stepLabel}...`;
                 badge.textContent = `🧠 Reading ${stepLabel}...`;
+                startSmoothProgressTicker(rangeStart, rangeMax, `🧠 Gemini Vision reading ${stepLabel}...`);
 
                 let data = null;
                 let batchErr = '';
@@ -1178,8 +1424,8 @@
                 for (let attempt = 1; attempt <= 2; attempt++) {
                     try {
                         if (attempt === 2) {
-                            btn.textContent = `⏳ Retrying ${stepLabel} (high demand)...`;
-                            await new Promise(r => setTimeout(r, 2000));
+                            setLive3DProgress(currentPctValue, `⚡ Switching to fast backup AI server...`);
+                            await new Promise(r => setTimeout(r, 1200));
                         }
                         const res = await fetch('/api/search', {
                             method: 'POST',
@@ -1264,10 +1510,17 @@
                 renderSummaryPills();
             }
 
-            badge.textContent = `✅ AI Scan Complete (${totalRead} docs via ${lastModelUsed})`;
-            btn.textContent = '✅ All Data Extracted! Click Form on Right →';
-            setTimeout(() => { btn.textContent = '🧠 5. Scan Checked Files with Gemini AI'; }, 4500);
+            clearInterval(liveProgressInterval);
+            setLive3DProgress(100, `✅ 100% Complete! Extracted from ${totalRead} docs`);
+            badge.textContent = `✓ AI Scan Complete (${totalRead} docs)`;
+            btn.textContent = '✅ 100% Extracted! Click Form on Right →';
+
+            setTimeout(() => {
+                btn.textContent = '🧠 5. Scan Checked Files with Gemini AI';
+            }, 4500);
         } catch (err) {
+            clearInterval(liveProgressInterval);
+            setLive3DProgress(currentPctValue, `⚠️ Interrupted: ${err.message.slice(0, 45)}`);
             alert('❌ ' + err.message);
             badge.textContent = '⚠️ AI Scan Interrupted';
             btn.textContent = '🧠 5. Scan Checked Files with Gemini AI';
@@ -1520,14 +1773,11 @@
             return false;
         }
 
+        // Железный выбор левого квадратика YES в 4b interpreter (opts[1] в MC 223)
         function selectYesOptionMc223Interpreter(field) {
             if (typeof field.getOptions !== 'function' || typeof field.select !== 'function') return false;
             const opts = field.getOptions() || [];
-            const yesOpt = opts.find(o => /yes/i.test(String(o)));
-            if (yesOpt !== undefined) {
-                field.select(yesOpt);
-                return true;
-            }
+            // В шаблоне MC 223 opts[0] ставит галочку в правый квадратик No, а opts[1] ставит галочку в левый квадратик Yes!
             const targetIdx = opts.length > 1 ? 1 : 0;
             if (opts[targetIdx] !== undefined) {
                 field.select(opts[targetIdx]);
