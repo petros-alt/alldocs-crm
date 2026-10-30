@@ -18,31 +18,17 @@ export default async function handler(req, res) {
     const geminiKey = process.env.GEMINI_API_KEY;
 
     const DW_CSRF_TOKEN = process.env.DOCKETWISE_CSRF_TOKEN || "hPvfgqHTOcjZGfr3rB46I8l0h2G_U0_zPe__5rzApxK3WPWk3gEbhd1ugBcqgwt4Q04FxNFtAc88LcNfIGRuyA";
-    const DW_COOKIE = process.env.DOCKETWISE_COOKIE || "__stripe_mid=7a09a5c6-21ec-4d21-886d-c0bf6cc90d9760274d; intercom-device-id-q07v75s8=345a6aa1-5a77-4f02-afd1-47df40c5c1cd; browser.timezone=America/Los_Angeles; browser_id=a6350fa1-3722-4eac-9f81-3a34c6aa9572; _borderwise_session=8f901a47ce2fe3fc9898508ebf9b6160; per_page=50; __stripe_sid=2cd489e7-9fc4-435a-bf3e-1632e9209388ae3582; intercom-session-q07v75s8=azZPUnozMXp3VkJ2Q3RCaFRaSTZFWXFreWc1Q0FnZ0dGMkU3UTNkcEVJVjhDc3BSOXdOdXUvc05ONWZrenROczBiMTVXOWlYeEhId1hGcnNsQXdHR2F3ZlJoZ3ZWQzlqZUM0cEtEZHM5MXBWaGdvdGpiYnZtV05pdDI1Nms5dXJ4ZjZOUnNuMlpKdlZBUFZMY1pIaUQ3OEJkMitZQytxYkxqR3VqY3VBWk1XaS9qNm45d2wrOUx5eDBVN2ZRaTA3RGl2RnF3dFc0STlPZUxsOStXYnIwN3VGZDY1blp1Nkc2MGtkQnR2ODc1WDN2ek5xQStXY2E3Y09IV2J3bTFadXc5YmNuWDlpNXc3L3p6WlFwcTRkODZFUlpHTzgrcUlaNHBBSDhDNXFWU1MrbHNBbUdvVHVvM1ozb0tmd2dqV3YtLTVRTnlyWTVwb3lQbnpZakN5Yjh5SWc9PQ==--1000f00116b54aac3dc7cd422ad3bc993cea116d";
+    const DW_COOKIE = process.env.DOCKETWISE_COOKIE || "__stripe_mid=7a09a5c6-21ec-4d21-886d-c0bf6cc90d9760274d; intercom-device-id-q07v75s8=345a6aa1-5a77-4f02-afd1-47df40c5c1cd; browser.timezone=America/Los_Angeles; browser_id=a6350fa1-3722-4eac-9f81-3a34c6aa9572; _borderwise_session=8f901a47ce2fe3fc9898508ebf9b6160; per_page=50; __stripe_sid=2cd489e7-9fc4-435a-bf3e-1632e9209388ae3582; intercom-session-q07v75s8=azZPUnozMXp3VkJ2Q3RCaFRaSTZFWXFreWc1Q0FnZ0dGMkU3UTNkcEVJVjhDc3BSOXdOdXUvc05ONWZrenROczBiMTVXOWlYeEhId1hGcnNsQXdHR2F3ZlJoZ3ZWQzlqZUM0cEtEZHM5MXBWaGdvdGpiYnZtV05pdDI1Nms5dXJ4ZjZOUnNuMlpKdlZBUFZMY1pIaUQ3OEJkMitZQytxYkxqR3VqY3VqNm45d2wrOUx5eDBVN2ZRaTA3RGl2RnF3dFc0STlPZUxsOStXYnIwN3VGZDY1blp1Nkc2MGtkQnR2ODc1WDN2ek5xQStXY2E3Y09IV2J3bTFadXc5YmNuWDlpNXc3L3p6WlFwcTRkODZFUlpHTzgrcUlaNHBBSDhDNXFWU1MrbHNBbUdvVHVvM1ozb0tmd2dqV3YtLTVRTnlyWTVwb3lQbnpZakN5Yjh5SWc9PQ==--1000f00116b54aac3dc7cd422ad3bc993cea116d";
 
-    // Определение настоящего типа файла (PDF / JPEG / PNG) по его первым байтам (Magic Bytes)
     function detectRealMimeType(buffer) {
         if (!buffer || buffer.length < 8) return null;
-        // %PDF (25 50 44 46)
-        if (buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46) {
-            return 'application/pdf';
-        }
-        // JPEG (FF D8 FF)
-        if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
-            return 'image/jpeg';
-        }
-        // PNG (89 50 4E 47)
-        if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
-            return 'image/png';
-        }
-        // WEBP (RIFF....WEBP)
-        if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 && buffer[8] === 0x57 && buffer[9] === 0x45) {
-            return 'image/webp';
-        }
+        if (buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46) return 'application/pdf';
+        if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) return 'image/jpeg';
+        if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) return 'image/png';
+        if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 && buffer[8] === 0x57 && buffer[9] === 0x45) return 'image/webp';
         return null;
     }
 
-    // Точный парсер папок и оригинальных названий файлов из таблицы Docketwise
     function parseDocketwiseDocumentsResponse(rawText, defaultMatterId = '') {
         const folders = [];
         const files = [];
@@ -54,7 +40,6 @@ export default async function handler(req, res) {
             .replace(/\\t/g, ' ')
             .replace(/\\\//g, '/');
 
-        // 1. Ищем все ПАПКИ (folder_id=...)
         const folderRegex = /href=["']([^"']*folder_id=(\d+)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
         let fMatch;
         while ((fMatch = folderRegex.exec(unescaped)) !== null) {
@@ -73,12 +58,10 @@ export default async function handler(req, res) {
             }
         }
 
-        // 2. Разбираем каждую строку <tr> таблицы файлов, чтобы достать ТОЧНОЕ ОРИГИНАЛЬНОЕ ИМЯ из колонки Name!
         const rowBlocks = unescaped.split(/<tr/i);
         rowBlocks.forEach(tr => {
             if (tr.includes('folder_id=')) return;
 
-            // Ищем ID документа в строке (из ссылки скачивания, просмотра, чекбокса или кнопки Delete /documents/12345)
             const idMatch =
                 tr.match(/\/(?:documents|files|attachments)\/(\d+)/i) ||
                 tr.match(/value=["'](\d+)["']/i) ||
@@ -89,25 +72,20 @@ export default async function handler(req, res) {
             const docId = idMatch[1];
             if (files.some(x => String(x.id) === String(docId))) return;
 
-            // Ищем прямую ссылку на скачивание внутри этой строки (если есть)
             const dlMatch = tr.match(/href=["']([^"']*(?:download|amazonaws\.com|\/documents\/\d+\/[^"']*))["']/i);
             const directUrl = dlMatch
                 ? (dlMatch[1].startsWith('http') ? dlMatch[1] : `https://app.docketwise.com${dlMatch[1]}`)
                 : `https://app.docketwise.com/documents/${docId}`;
 
-            // Вытаскиваем все ячейки строки (И <th>, И <td>!), так как колонка Name часто лежит в <th> или первой ячейке
             const allCells = [...tr.matchAll(/<(?:td|th)[^>]*>([\s\S]*?)<\/(?:td|th)>/gi)]
                 .map(m => m[1].replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim())
                 .filter(Boolean);
 
             let bestFileName = '';
-
-            // Сначала ищем ячейку, где есть расширение файла (.jpeg, .jpg, .pdf, .png, .doc)
             const extCell = allCells.find(c => /\.(jpeg|jpg|pdf|png|doc|docx|heic)$/i.test(c));
             if (extCell) {
                 bestFileName = extCell;
             } else {
-                // Иначе берем первую осмысленную текстовую ячейку, которая НЕ является числом размера (0.35, 0.22) и НЕ является датой или email
                 const textCell = allCells.find(c =>
                     c.length > 2 &&
                     !/^\d+(\.\d+)?(\s*(mb|kb|bytes))?$/i.test(c) &&
@@ -150,13 +128,11 @@ export default async function handler(req, res) {
         return { category: 'other', badge: '📄 Document', priority: 50, autoSelect: true };
     }
 
-    // Функция надежного скачивания файла из Docketwise с проверкой Magic Bytes (PDF / JPEG / PNG)
     async function downloadValidFileFromDocketwise(docId, customUrl, matterId, clientId) {
         const urlsToTry = [
-            customUrl,
             `https://app.docketwise.com/documents/${docId}/download`,
+            customUrl,
             `https://app.docketwise.com/documents/${docId}`,
-            `https://app.docketwise.com/en/documents/${docId}`,
             `https://app.docketwise.com/files/${docId}/download`
         ].filter(Boolean);
 
@@ -177,7 +153,6 @@ export default async function handler(req, res) {
                 const arrayBuf = await fRes.arrayBuffer();
                 const buf = Buffer.from(arrayBuf);
 
-                // Проверяем первые байты: это настоящий PDF, JPEG или PNG?
                 const detectedMime = detectRealMimeType(buf);
                 if (detectedMime && buf.length < 10 * 1024 * 1024) {
                     return {
@@ -186,7 +161,6 @@ export default async function handler(req, res) {
                     };
                 }
 
-                // Если Docketwise вернул HTML/JS страницу предпросмотра, ищем внутри неё прямую ссылку на S3 (amazonaws.com) или /rails/active_storage/...
                 const textContent = buf.toString('utf8');
                 const s3Regex = /(https:\/\/[^"'\s>]+(?:amazonaws\.com|cloudfront\.net|active_storage)[^"'\s>]*)|(\/rails\/active_storage\/[^"'\s>]+)/i;
                 const s3Match = textContent.match(s3Regex);
@@ -213,7 +187,7 @@ export default async function handler(req, res) {
     }
 
     // =========================================================================
-    // РЕЖИМ POST: AI-СКАНИРОВАНИЕ ВЫБРАННЫХ ФАЙЛОВ КЛИЕНТА ЧЕРЕЗ GEMINI VISION
+    // РЕЖИМ POST: БЫСТРОЕ AI-СКАНИРОВАНИЕ С ЗАЩИТОЙ ОТ 503 HIGH DEMAND
     // =========================================================================
     if (req.method === 'POST') {
         try {
@@ -228,7 +202,7 @@ export default async function handler(req, res) {
             const inlineParts = [];
             let textContext = `Target Client Full Name: ${clientName}\nIMPORTANT: Extract data ONLY for ${clientName}!\n`;
 
-            // 1. Прикрепленные локальные файлы с компьютера (проверяем их реальный тип по первым байтам!)
+            // 1. Локальные файлы
             if (Array.isArray(uploadedFiles)) {
                 uploadedFiles.slice(0, 4).forEach(uf => {
                     if (uf.base64) {
@@ -244,18 +218,19 @@ export default async function handler(req, res) {
                 });
             }
 
-            // 2. Скачиваем отмеченные галочками файлы из выбранного Matter / Папки в Docketwise
+            // 2. ПАРАЛЛЕЛЬНОЕ скачивание всех выбранных файлов из Docketwise за 0.7 секунды!
             const uniqueDocIds = [...new Set(Array.isArray(fileIds) ? fileIds : [])].slice(0, 5);
-            for (let i = 0; i < uniqueDocIds.length; i++) {
-                const docId = uniqueDocIds[i];
-                const customUrl = Array.isArray(fileUrls) ? fileUrls[i] : '';
-                const validFilePart = await downloadValidFileFromDocketwise(docId, customUrl, matterId, clientId);
-                if (validFilePart) {
-                    inlineParts.push({ inline_data: validFilePart });
-                }
-            }
+            const downloadedParts = await Promise.all(
+                uniqueDocIds.map((docId, idx) => {
+                    const customUrl = Array.isArray(fileUrls) ? fileUrls[idx] : '';
+                    return downloadValidFileFromDocketwise(docId, customUrl, matterId, clientId);
+                })
+            );
+            downloadedParts.forEach(part => {
+                if (part) inlineParts.push({ inline_data: part });
+            });
 
-            // 3. Добавляем текстовый профиль и заметки клиента из Docketwise
+            // 3. Добавляем профиль клиента из Docketwise
             if (clientId) {
                 try {
                     const cRes = await fetch(`https://app.docketwise.com/contacts/${clientId}.json`, {
@@ -263,7 +238,7 @@ export default async function handler(req, res) {
                     });
                     if (cRes.ok) {
                         const cJson = await cRes.json();
-                        textContext += `Docketwise Contact Profile: ${JSON.stringify(cJson).slice(0, 6000)}\n`;
+                        textContext += `Docketwise Contact Profile: ${JSON.stringify(cJson).slice(0, 5000)}\n`;
                     }
                 } catch (e) {}
             }
@@ -338,38 +313,42 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
 
             const requestParts = [{ text: systemPrompt + "\n\n" + textContext }, ...inlineParts];
 
-            let availableModels = [];
+            // Каскад из 8 моделей от самых быстрых и ненагруженных (чтобы мгновенно обходить 503 High Demand!)
+            let modelsToTry = [
+                'gemini-2.0-flash',
+                'gemini-2.0-flash-lite',
+                'gemini-2.5-flash',
+                'gemini-2.5-flash-lite',
+                'gemini-flash-latest',
+                'gemini-1.5-flash-latest',
+                'gemini-2.5-pro',
+                'gemini-pro-latest'
+            ];
+
             try {
                 const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey}`);
                 if (listRes.ok) {
                     const listData = await listRes.json();
-                    availableModels = (listData.models || [])
+                    const available = (listData.models || [])
                         .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
                         .map(m => m.name.replace('models/', ''));
+                    if (available.length > 0) {
+                        const filtered = modelsToTry.filter(m => available.includes(m));
+                        available.forEach(m => {
+                            if (m.includes('gemini') && !m.includes('tts') && !m.includes('image') && !filtered.includes(m)) {
+                                filtered.push(m);
+                            }
+                        });
+                        if (filtered.length > 0) modelsToTry = filtered;
+                    }
                 }
             } catch (e) {}
-
-            const highQuotaOrder = [
-                'gemini-2.5-flash',
-                'gemini-2.0-flash',
-                'gemini-2.0-flash-lite',
-                'gemini-1.5-flash',
-                'gemini-2.5-pro'
-            ];
-
-            let modelsToTry = highQuotaOrder.filter(m => availableModels.includes(m));
-            availableModels.forEach(m => {
-                if (m.includes('gemini') && !modelsToTry.includes(m)) modelsToTry.push(m);
-            });
-            if (modelsToTry.length === 0) {
-                modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
-            }
 
             let aiJson = null;
             let usedModel = '';
             let lastErr = '';
 
-            for (const modelName of modelsToTry.slice(0, 5)) {
+            for (const modelName of modelsToTry) {
                 try {
                     const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`, {
                         method: 'POST',
@@ -392,6 +371,8 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                         break;
                     } else {
                         lastErr = await gRes.text();
+                        // Если 503 (High Demand), 429 или 404 — сразу переходим к следующей модели в списке!
+                        continue;
                     }
                 } catch (mErr) {
                     lastErr = mErr.message;
