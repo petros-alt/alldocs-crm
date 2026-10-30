@@ -2437,7 +2437,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -2473,7 +2476,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -2502,7 +2508,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -7686,9 +7695,9 @@ window.renderMainCalendar = async function() {
     setTimeout(upgradeOpenChatFunction, 1200);
 })();
 </script>
-    <!-- 👑 SMART AGENDA & DATE PICKER UPGRADE: ВЫБОР ЛЮБОГО ДНЯ + ИСТОРИЯ ПРОШЛЫХ ВСТРЕЧ + ЛЕНТА ДНЕЙ -->
+  <!-- 👑 SMART AGENDA, WEEK, DAY & MONTH UPGRADE (ЕДИНЫЙ ИСПРАВЛЕННЫЙ БЛОК) -->
 <style>
-    /* Панель быстрого выбора даты и управления режимом Agenda */
+    /* 1. Панель быстрого выбора даты и управления режимом Agenda */
     .cal-smart-subbar {
         display: flex;
         align-items: center;
@@ -7704,15 +7713,12 @@ window.renderMainCalendar = async function() {
         box-shadow: 0 12px 28px rgba(36, 20, 14, 0.2);
         flex-wrap: wrap;
     }
-
     .cal-smart-left, .cal-smart-right {
         display: flex;
         align-items: center;
         gap: 8px;
         flex-wrap: wrap;
     }
-
-    /* Поле выбора точной даты */
     #calExactDatePicker {
         width: auto !important;
         padding: 7px 12px !important;
@@ -7726,8 +7732,6 @@ window.renderMainCalendar = async function() {
         color-scheme: dark;
         box-shadow: inset 0 2px 4px rgba(0,0,0,0.5) !important;
     }
-
-    /* 3D-кнопки в умной панели */
     .cal-smart-btn {
         background: rgba(255, 255, 255, 0.08);
         color: #f5cba7;
@@ -7757,7 +7761,7 @@ window.renderMainCalendar = async function() {
         box-shadow: 0 4px 12px rgba(212, 140, 70, 0.35);
     }
 
-    /* Горизонтальная 3D-лента всех дней месяца (Quick Day Ribbon) */
+    /* 2. Горизонтальная 3D-лента всех дней месяца (Quick Day Ribbon) */
     .cal-day-ribbon {
         display: flex;
         align-items: center;
@@ -7791,12 +7795,10 @@ window.renderMainCalendar = async function() {
         background: #ffffff;
     }
     .ribbon-day-chip.is-past {
-        opacity: 0.72;
+        opacity: 0.75;
         background: linear-gradient(180deg, #f5f0e8 0%, #e8dfd1 100%);
     }
-    .ribbon-day-chip.is-today {
-        border: 2px solid #0284c7;
-    }
+    .ribbon-day-chip.is-today { border: 2px solid #0284c7; }
     .ribbon-day-chip.selected {
         background: linear-gradient(145deg, #3a2314 0%, #22130c 100%) !important;
         border-color: #d48c46 !important;
@@ -7805,35 +7807,15 @@ window.renderMainCalendar = async function() {
         box-shadow: 0 8px 18px rgba(36, 20, 14, 0.32);
         opacity: 1 !important;
     }
-    .ribbon-dow {
-        font-size: 9px;
-        font-weight: 800;
-        text-transform: uppercase;
-        color: #8b552b;
-        letter-spacing: 0.5px;
-    }
-    .ribbon-num {
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        font-size: 15px;
-        font-weight: 800;
-        color: #24140e;
-        line-height: 1.15;
-    }
+    .ribbon-dow { font-size: 9px; font-weight: 800; text-transform: uppercase; color: #8b552b; letter-spacing: 0.5px; }
+    .ribbon-num { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 800; color: #24140e; line-height: 1.15; }
     .ribbon-day-chip.selected .ribbon-dow { color: #f5cba7 !important; }
     .ribbon-day-chip.selected .ribbon-num { color: #ffffff !important; }
-
-    /* Точка-индикатор наличия встреч в этот день */
-    .ribbon-dot {
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        background: #10b981;
-        margin-top: 2px;
-    }
+    .ribbon-dot { width: 5px; height: 5px; border-radius: 50%; background: #10b981; margin-top: 2px; }
     .ribbon-day-chip.is-past .ribbon-dot { background: #9a5b22; }
     .ribbon-day-chip.selected .ribbon-dot { background: #fde68a; }
 
-    /* Плашка прошедшей (уже состоявшейся) встречи в Agenda */
+    /* 3. Стили для карточек Agenda */
     .agenda-card.past-appt {
         background: linear-gradient(145deg, #faf7f2 0%, #efe8dc 100%) !important;
         border-left: 6px solid #10b981 !important;
@@ -7856,326 +7838,174 @@ window.renderMainCalendar = async function() {
         border-left: 5px solid #d48c46 !important;
         padding: 10px 16px !important;
     }
-
-    /* Убираем перенос времени на 3 строчки в длинных карточках Agenda */
     .agenda-time {
         white-space: nowrap !important;
         flex-shrink: 0 !important;
         margin-left: 16px !important;
     }
+
+    /* =====================================================================
+       4. 3D-СТИЛИ ДЛЯ РЕЖИМОВ WEEK И DAY (ЧТОБЫ СЕТКА НЕ РАЗВАЛИВАЛАСЬ!)
+       ===================================================================== */
+    .gv-container {
+        display: flex !important;
+        align-items: flex-start !important;
+        border: 2px solid rgba(184, 115, 51, 0.28) !important;
+        border-radius: 22px !important;
+        background: #ffffff !important;
+        overflow: auto !important;
+        height: 620px !important;
+        box-shadow: 0 14px 34px rgba(44, 26, 20, 0.08) !important;
+        position: relative !important;
+        scroll-behavior: smooth !important;
+    }
+    .gv-time-col {
+        width: 76px !important;
+        flex-shrink: 0 !important;
+        background: linear-gradient(180deg, #2b1810 0%, #1e110b 100%) !important;
+        border-right: 1.5px solid rgba(212, 140, 70, 0.35) !important;
+        position: sticky !important;
+        left: 0 !important;
+        z-index: 100 !important;
+        min-height: 100% !important;
+        height: max-content !important;
+    }
+    .gv-time-header {
+        height: 54px !important;
+        background: #24140c !important;
+        border-bottom: 1.5px solid rgba(212, 140, 70, 0.35) !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 105 !important;
+    }
+    .gv-time-slot {
+        height: 60px !important;
+        position: relative !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+        box-sizing: border-box !important;
+    }
+    .gv-time-label {
+        position: absolute !important;
+        top: 6px !important;
+        right: 10px !important;
+        font-size: 11px !important;
+        color: #f5cba7 !important;
+        font-weight: 800 !important;
+    }
+    .gv-days-wrap {
+        display: flex !important;
+        flex: 1 !important;
+        background: #faf7f2 !important;
+        height: max-content !important;
+    }
+    .gv-day-col {
+        flex: 1 !important;
+        border-right: 1px solid rgba(184, 115, 51, 0.18) !important;
+        position: relative !important;
+    }
+    .gv-day-col:last-child { border-right: none !important; }
+    .gv-day-header {
+        height: 54px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: linear-gradient(180deg, #3a2314 0%, #26160c 100%) !important;
+        border-bottom: 2px solid rgba(212, 140, 70, 0.4) !important;
+        font-weight: 800 !important;
+        font-size: 13.5px !important;
+        color: #ffffff !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 90 !important;
+        box-sizing: border-box !important;
+    }
+    .gv-day-header.today {
+        background: linear-gradient(135deg, #c88240 0%, #8b552b 100%) !important;
+        color: #ffffff !important;
+        border-bottom: 3px solid #fde68a !important;
+    }
+    .gv-day-header-day {
+        font-size: 10px !important;
+        text-transform: uppercase !important;
+        color: #f5cba7 !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.7px !important;
+    }
+    .today .gv-day-header-day { color: #ffffff !important; }
+    .gv-grid {
+        position: relative !important;
+        height: 780px !important;
+        background-image: linear-gradient(to bottom, rgba(184, 115, 51, 0.15) 1px, transparent 1px) !important;
+        background-size: 100% 60px !important;
+        background-position: 0 -1px !important;
+    }
+    .gv-appt {
+        position: absolute !important;
+        border-radius: 10px !important;
+        padding: 5px 8px !important;
+        overflow: hidden !important;
+        box-shadow: 0 4px 12px rgba(44, 26, 20, 0.12) !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+        z-index: 10 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 2px !important;
+        box-sizing: border-box !important;
+    }
+    .gv-appt:hover {
+        z-index: 60 !important;
+        transform: scale(1.03) translateY(-2px) !important;
+        box-shadow: 0 12px 28px rgba(44, 26, 20, 0.28) !important;
+        min-height: max-content !important;
+        height: auto !important;
+    }
+    .gv-appt-reg {
+        background: linear-gradient(145deg, #ffffff 0%, #f3ece0 100%) !important;
+        border: 1px solid rgba(184, 115, 51, 0.35) !important;
+        border-left: 4px solid #b87333 !important;
+    }
+    .gv-appt-lead {
+        background: linear-gradient(145deg, #fffbeb 0%, #fef3c7 100%) !important;
+        border: 1px solid #f59e0b !important;
+        border-left: 4px solid #ea580c !important;
+    }
+    .gv-appt-time {
+        font-size: 9.5px !important;
+        font-weight: 800 !important;
+        color: #f5cba7 !important;
+        background: #2c1a14 !important;
+        padding: 1.5px 6px !important;
+        border-radius: 6px !important;
+        width: fit-content !important;
+        white-space: nowrap !important;
+    }
+    .gv-appt-title {
+        font-weight: 800 !important;
+        color: #24140e !important;
+        line-height: 1.15 !important;
+        font-size: 11.5px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        margin-top: 1px !important;
+    }
+    .gv-appt-service {
+        font-size: 10px !important;
+        color: #6e5549 !important;
+        font-weight: 600 !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+    .gv-appt:hover .gv-appt-title, .gv-appt:hover .gv-appt-service {
+        white-space: normal !important;
+    }
 </style>
 
 <script>
-(function initSmartCalendarControls() {
-    // Режимы отображения Agenda:
-    // 'week_ahead' = Выбранный день + 7 следующих дней (по умолчанию, самое удобное!)
-    // 'full_month' = Весь месяц целиком
-    // 'single_day' = Только 1 выбранный день
-    window.calAgendaScope = 'week_ahead';
-    window.calShowPastInMonth = false;
-
-    function toInputDateStr(d) {
-        const yr = d.getFullYear();
-        const mo = String(d.getMonth() + 1).padStart(2, '0');
-        const dy = String(d.getDate()).padStart(2, '0');
-        return `${yr}-${mo}-${dy}`;
-    }
-
-    // Встраиваем панель выбора даты и ленту дней прямо под .calendar-toolbar
-    function ensureSmartSubbar() {
-        const wrapper = document.getElementById('calGridWrapper');
-        const calContent = document.getElementById('calendarContent');
-        if (!wrapper || !calContent) return;
-
-        if (!document.getElementById('calSmartSubbar')) {
-            const subbar = document.createElement('div');
-            subbar.id = 'calSmartSubbar';
-            subbar.className = 'cal-smart-subbar';
-            subbar.innerHTML = `
-                <div class="cal-smart-left">
-                    <span style="font-size:11px; font-weight:800; color:#f5cba7; text-transform:uppercase; letter-spacing:0.6px;">📅 Pick Date:</span>
-                    <input type="date" id="calExactDatePicker" title="Jump to any past or future date">
-                    <button type="button" class="cal-smart-btn" id="calJumpTodayBtn">📍 Today</button>
-                </div>
-                <div class="cal-smart-right" id="calAgendaScopeGroup">
-                    <span style="font-size:10.5px; font-weight:800; color:#d48c46; text-transform:uppercase; letter-spacing:0.5px;">Show:</span>
-                    <button type="button" class="cal-smart-btn active" data-scope="week_ahead" title="Show selected day + next 7 days">🎯 Selected + 7 Days</button>
-                    <button type="button" class="cal-smart-btn" data-scope="single_day" title="Show only the selected day">📌 Exact Day Only</button>
-                    <button type="button" class="cal-smart-btn" data-scope="full_month" title="Show entire month including past completed appointments">📜 Full Month (with Past)</button>
-                </div>
-            `;
-            wrapper.insertBefore(subbar, calContent);
-
-            const ribbon = document.createElement('div');
-            ribbon.id = 'calDayRibbon';
-            ribbon.className = 'cal-day-ribbon';
-            wrapper.insertBefore(ribbon, calContent);
-
-            // Событие выбора точной даты через календарь
-            const picker = document.getElementById('calExactDatePicker');
-            picker.addEventListener('change', function() {
-                if (!this.value) return;
-                const parts = this.value.split('-');
-                viewDate = new Date(parseInt(parts[0],10), parseInt(parts[1],10) - 1, parseInt(parts[2],10));
-                window.renderMainCalendar();
-            });
-
-            // Кнопка Today
-            document.getElementById('calJumpTodayBtn').onclick = function() {
-                viewDate = new Date();
-                window.renderMainCalendar();
-            };
-
-            // Переключатели диапазона (Selected + 7 Days / Exact Day / Full Month with Past)
-            document.querySelectorAll('#calAgendaScopeGroup .cal-smart-btn').forEach(btn => {
-                btn.onclick = function() {
-                    document.querySelectorAll('#calAgendaScopeGroup .cal-smart-btn').forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    window.calAgendaScope = this.getAttribute('data-scope');
-                    // Если пользователь нажал Exact Day или Selected + 7 Days будучи в другом режиме, переключаем в Agenda
-                    const vs = document.getElementById('viewSelector');
-                    if (vs && vs.value !== 'agenda' && vs.value !== 'day') {
-                        vs.value = 'agenda';
-                    }
-                    window.renderMainCalendar();
-                };
-            });
-        }
-    }
-
-    // Функция отрисовки интерактивной ленты чисел месяца (1..31)
-    function renderDayRibbon(records) {
-        const ribbon = document.getElementById('calDayRibbon');
-        if (!ribbon) return;
-
-        const y = viewDate.getFullYear();
-        const m = viewDate.getMonth();
-        const selectedDay = viewDate.getDate();
-        const daysInMonth = new Date(y, m + 1, 0).getDate();
-        const todayStart = new Date().setHours(0, 0, 0, 0);
-        const dowNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-        let html = '';
-        for (let d = 1; d <= daysInMonth; d++) {
-            const curObj = new Date(y, m, d);
-            const curStr = curObj.toDateString();
-            const isSelected = (d === selectedDay);
-            const isToday = (curObj.getTime() === todayStart);
-            const isPast = (curObj.getTime() < todayStart);
-
-            const hasAppts = records.some(a => new Date(a.timestamp).toDateString() === curStr);
-            const dotHtml = hasAppts ? `<div class="ribbon-dot"></div>` : `<div style="height:7px;"></div>`;
-
-            let cls = 'ribbon-day-chip';
-            if (isSelected) cls += ' selected';
-            if (isToday) cls += ' is-today';
-            if (isPast) cls += ' is-past';
-
-            html += `
-                <div class="${cls}" onclick="window.jumpToCalendarDay(${y}, ${m}, ${d})" title="Click to view ${curStr}">
-                    <span class="ribbon-dow">${dowNames[curObj.getDay()]}</span>
-                    <span class="ribbon-num">${d}</span>
-                    ${dotHtml}
-                </div>
-            `;
-        }
-        ribbon.innerHTML = html;
-
-        // Плавно прокручиваем ленту к выбранному дню
-        setTimeout(() => {
-            const selChip = ribbon.querySelector('.ribbon-day-chip.selected');
-            if (selChip) {
-                selChip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-            }
-        }, 50);
-    }
-
-    // Прыжок на любой выбранный день по клику на ленту или клетку месяца
-    window.jumpToCalendarDay = function(y, m, d) {
-        viewDate = new Date(y, m, d);
-        const vs = document.getElementById('viewSelector');
-        // Если мы были в режиме Month, при клике на пустую дату или число показываем этот день
-        window.renderMainCalendar();
-    };
-
-    // Модернизируем функцию renderMainCalendar и changeViewDate
-    function installCalendarUpgrade() {
-        ensureSmartSubbar();
-
-        // В режиме Agenda стрелки ← и → теперь листают по 7 дней (или по 1 дню в Exact Day), чтобы было удобно!
-        window.changeViewDate = function(dir) {
-            const view = document.getElementById('viewSelector').value;
-            if (view === 'week') {
-                viewDate.setDate(viewDate.getDate() + dir * 7);
-            } else if (view === 'day' || (view === 'agenda' && window.calAgendaScope === 'single_day')) {
-                viewDate.setDate(viewDate.getDate() + dir);
-            } else {
-                viewDate.setMonth(viewDate.getMonth() + dir);
-            }
-            window.renderMainCalendar();
-        };
-
-        const origRender = window.renderMainCalendar;
-        window.renderMainCalendar = async function() {
-            ensureSmartSubbar();
-
-            // Синхронизируем поле <input type="date"> с текущим viewDate
-            const picker = document.getElementById('calExactDatePicker');
-            if (picker && typeof viewDate !== 'undefined') {
-                picker.value = toInputDateStr(viewDate);
-            }
-
-            const view = document.getElementById('viewSelector').value;
-
-            // Если выбран режим Month или Week или Day — вызываем стандартную отрисовку + обновляем ленту дней
-            if (view !== 'agenda') {
-                await origRender.apply(this, arguments);
-                const recs = window.globalAppointments || [];
-                renderDayRibbon(recs);
-
-                // Делаем каждую клетку в режиме Month кликабельной для быстрого перехода к этому дню!
-                if (view === 'month-condensed' || view === 'month-full') {
-                    const y = viewDate.getFullYear();
-                    const m = viewDate.getMonth();
-                    document.querySelectorAll('#calendarContent .mc-cell').forEach(cell => {
-                        const dateEl = cell.querySelector('.mc-date');
-                        if (dateEl) {
-                            const dayNum = parseInt(dateEl.textContent.trim(), 10);
-                            if (!isNaN(dayNum)) {
-                                cell.style.cursor = 'pointer';
-                                cell.onclick = function(e) {
-                                    // Если кликнули не на сам бейдж или мини-встречу, открываем список этого дня или переходим на него
-                                    if (e.target === cell || e.target === dateEl) {
-                                        viewDate = new Date(y, m, dayNum);
-                                        const cDateStr = viewDate.toDateString();
-                                        const dayAppts = recs.filter(a => new Date(a.timestamp).toDateString() === cDateStr);
-                                        if (dayAppts.length > 0) {
-                                            window.openDayList(cDateStr);
-                                        } else {
-                                            document.getElementById('viewSelector').value = 'agenda';
-                                            window.renderMainCalendar();
-                                        }
-                                    }
-                                };
-                            }
-                        }
-                    });
-                }
-                return;
-            }
-
-            // === УМНЫЙ РЕЖИМ AGENDA (С ПОДДЕРЖКОЙ ВЫБОРА ЛЮБОГО ДНЯ И ПРОШЛЫХ ВСТРЕЧ!) ===
-            await window.loadAppointments();
-            const area = document.getElementById('calendarContent');
-            const title = document.getElementById('mainCalTitle');
-            const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-            const y = viewDate.getFullYear();
-            const m = viewDate.getMonth();
-            const selDay = viewDate.getDate();
-
-            let records = window.globalAppointments || [];
-            const staffF = document.getElementById('staffFilter').value;
-            if (staffF !== 'All Staff') records = records.filter(r => r.staff === staffF);
-
-            const statusF = document.getElementById('statusFilter').value;
-            if (statusF !== 'All Statuses') {
-                records = records.filter(r => {
-                    const recStatus = r.clientStatus || (r.isLead ? 'Lead' : 'Existing Client');
-                    return recStatus === statusF;
-                });
-            }
-
-            // Отрисовываем ленту дней месяца
-            renderDayRibbon(records);
-
-            // Обновляем заголовок в шапке
-            title.style.display = 'flex';
-            title.style.flexDirection = 'column';
-            title.style.alignItems = 'center';
-            title.style.lineHeight = '1.1';
-            title.innerHTML = `${months[m]} ${selDay}, ${y}<span style="font-size: 12px; color: #f5cba7; margin-top: 4px;">${window.calAgendaScope === 'week_ahead' ? 'Selected Day + Next 7 Days' : (window.calAgendaScope === 'single_day' ? 'Exact Selected Date' : 'Full Month History & Upcoming')}</span>`;
-
-            // Вычисляем границы дат в зависимости от выбранного режима (Selected + 7 Days / Exact Day / Full Month)
-            const selectedDayStart = new Date(y, m, selDay, 0, 0, 0, 0).getTime();
-            const selectedDayEnd   = new Date(y, m, selDay, 23, 59, 59, 999).getTime();
-            const sevenDaysAheadEnd = new Date(y, m, selDay + 7, 23, 59, 59, 999).getTime();
-
-            const filtered = records.filter(a => {
-                const d = new Date(a.timestamp);
-                if (window.calAgendaScope === 'single_day') {
-                    return a.timestamp >= selectedDayStart && a.timestamp <= selectedDayEnd;
-                } else if (window.calAgendaScope === 'full_month') {
-                    return d.getMonth() === m && d.getFullYear() === y;
-                } else {
-                    // По умолчанию 'week_ahead': начиная с выбранного дня + 7 дней вперед (включая прошлые даты, если выбран прошлый день!)
-                    return a.timestamp >= selectedDayStart && a.timestamp <= sevenDaysAheadEnd;
-                }
-            }).sort((a, b) => a.timestamp - b.timestamp);
-
-            if (filtered.length === 0) {
-                const selDateReadable = `${months[m]} ${selDay}, ${y}`;
-                area.innerHTML = `
-                    <div style="padding:36px 24px; text-align:center; background:linear-gradient(180deg,#ffffff,#faf5ed); border-radius:20px; border:1.5px dashed rgba(184,115,51,0.35);">
-                        <div style="font-size:34px; margin-bottom:10px;">🗓️</div>
-                        <div style="font-size:16px; font-weight:800; color:#24140e; margin-bottom:6px;">No appointments found for ${selDateReadable} ${window.calAgendaScope === 'week_ahead' ? '(+7 days)' : ''}</div>
-                        <div style="font-size:13px; color:#6e5549; margin-bottom:16px;">Click another day on the ribbon above or switch to <b>📜 Full Month (with Past)</b> to see all month records.</div>
-                        <button type="button" class="book-appt-btn" style="margin:0 auto; height:42px; padding:0 20px;" onclick="openApptModal('', '')">📅 + Book Appointment on This Date</button>
-                    </div>
-                `;
-                return;
-            }
-
-            let html = '';
-            let currentDate = '';
-            const nowMs = Date.now();
-            const targetDateStr = new Date(y, m, selDay).toDateString();
-
-            filtered.forEach(appt => {
-                const dObj = new Date(appt.timestamp);
-                const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-                const dateTitle = `${days[dObj.getDay()]}, ${dObj.getMonth() + 1}/${dObj.getDate()}/${dObj.getFullYear()}`;
-                const isTargetDay = (dObj.toDateString() === targetDateStr);
-                const isPastAppt = (appt.timestamp < nowMs);
-
-                if (dateTitle !== currentDate) {
-                    const targetBadge = isTargetDay ? `<span style="background:#d48c46; color:#fff; font-size:10px; padding:2px 8px; border-radius:8px; margin-left:8px; text-transform:uppercase;">🎯 Selected Day</span>` : '';
-                    html += `<div class="agenda-date-header ${isTargetDay ? 'selected-target-day' : ''}"><span style="font-size: 19px;">📅</span> ${dateTitle} ${targetBadge}</div>`;
-                    currentDate = dateTitle;
-                }
-
-                let leadBadge = appt.isLead ? '<span style="background: #e65100; color: white; font-size: 10px; padding: 2px 6px; border-radius: 10px; margin-left: 8px; vertical-align: middle; font-weight: bold;">🔥 LEAD</span>' : '';
-                let pastBadge = isPastAppt ? '<span class="completed-appt-pill">✅ Completed</span>' : '';
-
-                let endTimeStr = "";
-                if (appt.time && appt.length) {
-                    let startMins = parseTimeStrToMinutes(appt.time);
-                    let durMins = parseDurationToMinutes(appt.length);
-                    if (durMins > 0) endTimeStr = " – " + formatMinutesToTimeStr(startMins + durMins);
-                }
-
-                html += `
-                    <div class="agenda-card ${isPastAppt ? 'past-appt' : ''}" onclick="openPreviewModal('${appt.id}')">
-                        <div class="agenda-info">
-                            <div class="client-name">${appt.client} ${leadBadge} ${pastBadge}</div>
-                            <div class="service-details">${appt.service} @ ${appt.location} <span style="font-size:11px; font-weight:800; color:#b87333;">WITH</span> <b>${appt.staff}</b></div>
-                        </div>
-                        <div class="agenda-time" style="font-size: 13.5px; text-align: center;">${appt.time}${endTimeStr}</div>
-                    </div>
-                `;
-            });
-
-            area.innerHTML = html;
-        };
-    }
-
-    installCalendarUpgrade();
-    setTimeout(installCalendarUpgrade, 500);
-    setTimeout(installCalendarUpgrade, 1200);
-})();
-</script>
-    <script>
 (function initSmartCalendarControlsFixed() {
-    // 1. Создаем собственную надежную переменную даты календаря (сразу сегодняшнее число!)
     window.calActiveDate = new Date();
     window.calAgendaScope = 'week_ahead'; // 'week_ahead' | 'single_day' | 'full_month'
 
@@ -8186,7 +8016,6 @@ window.renderMainCalendar = async function() {
         return `${yr}-${mo}-${dy}`;
     }
 
-    // 2. Создаем умную панель выбора даты и ленту чисел месяца
     function ensureSmartSubbar() {
         const wrapper = document.getElementById('calGridWrapper');
         const calContent = document.getElementById('calendarContent');
@@ -8216,7 +8045,6 @@ window.renderMainCalendar = async function() {
             ribbon.className = 'cal-day-ribbon';
             wrapper.insertBefore(ribbon, calContent);
 
-            // Сразу выставляем сегодняшнюю дату в поле Pick Date (чтобы никогда не было mm/dd/yyyy!)
             const picker = document.getElementById('calExactDatePicker');
             picker.value = toInputDateStr(window.calActiveDate);
 
@@ -8245,7 +8073,6 @@ window.renderMainCalendar = async function() {
         }
     }
 
-    // 3. Отрисовка интерактивной 3D-ленты дней месяца (1..31)
     function renderDayRibbon(records) {
         const ribbon = document.getElementById('calDayRibbon');
         if (!ribbon) return;
@@ -8289,18 +8116,15 @@ window.renderMainCalendar = async function() {
         }, 50);
     }
 
-    // При клике на любое число в ленте — сразу показываем этот день!
     window.jumpToCalendarDay = function(y, m, d) {
         window.calActiveDate = new Date(y, m, d);
         const vs = document.getElementById('viewSelector');
-        // Если были в режиме Month и кликнули на число в верхней ленте — переключаем в Agenda на этот день!
         if (vs && (vs.value === 'month-condensed' || vs.value === 'month-full')) {
             vs.value = 'agenda';
         }
         window.renderMainCalendar();
     };
 
-    // 4. Полная и безотказная функция отрисовки всех 5 режимов календаря (Agenda, Day, Week, Month Condensed, Month Full)
     function lockMasterCalendarFunctions() {
         ensureSmartSubbar();
 
@@ -8346,7 +8170,6 @@ window.renderMainCalendar = async function() {
                 });
             }
 
-            // Всегда отрисовываем интерактивную ленту дней месяца
             renderDayRibbon(records);
 
             title.style.display = 'flex';
@@ -8354,7 +8177,7 @@ window.renderMainCalendar = async function() {
             title.style.alignItems = 'center';
             title.style.lineHeight = '1.1';
 
-            // === РЕЖИМ 1: AGENDA (Сразу работает при выборе в списке!) ===
+            // === РЕЖИМ 1: AGENDA ===
             if (view === 'agenda') {
                 const subText = window.calAgendaScope === 'week_ahead'
                     ? 'Selected Day + Next 7 Days'
@@ -8565,7 +8388,6 @@ window.renderMainCalendar = async function() {
             }
         };
 
-        // Если вкладка календаря уже открыта — сразу отрисовываем!
         if (document.getElementById('tabCalendarContent')?.classList.contains('active')) {
             window.renderMainCalendar();
         }
