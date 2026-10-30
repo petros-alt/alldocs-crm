@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Библиотека работы с PDF -->
+    <!-- Библиотека работы с PDF и 3D -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
@@ -688,6 +688,28 @@
     let lastInspectedPdfFields = [];
     let clientMemoryStore = {};
 
+    // Форматирование любого текста БЕЗ КАПСЛОКА (Title Case) перед вставкой в PDF
+    function toCleanTitleCase(str) {
+        if (str === null || str === undefined) return '';
+        const s = String(str).trim();
+        if (!s) return '';
+        if (/^\d/.test(s) && !/[a-zA-Z]{3,}/.test(s)) return s;
+        if (/^(CA|NY|TX|FL|NV|AZ|WA|OR|IL|PA|OH|GA|NC|MI|NJ|VA|MA|MD|SSI|SSDI|CAPI|IHSS|NOA|SOC|MC|USCIS|USA|II|III|IV|LLC|INC|RN|NP)$/i.test(s)) {
+            return s.toUpperCase();
+        }
+        const upperCount = (s.match(/[A-Z]/g) || []).length;
+        const lowerCount = (s.match(/[a-z]/g) || []).length;
+        if ((upperCount > 2 && lowerCount === 0) || (lowerCount > 2 && upperCount === 0)) {
+            return s.toLowerCase().replace(/\b([a-z])([a-z']*)/g, (match, first, rest, offset) => {
+                const up = match.toUpperCase();
+                if (/^(CA|SSI|SSDI|CAPI|IHSS|NOA|MD|DO|RN|LLC|INC|PO|II|III|IV|UCLA|USC|DMV)$/.test(up)) return up;
+                if (offset > 0 && /^(and|or|of|in|on|at|to|for|with|from|by|the|a|an)$/.test(match)) return match;
+                return first.toUpperCase() + rest;
+            });
+        }
+        return s;
+    }
+
     window.filterFormsByProgram = function(progKey, btnEl) {
         document.querySelectorAll('#programFilterBar .prog-tab-btn').forEach(b => b.classList.remove('active'));
         if (btnEl) {
@@ -714,9 +736,9 @@
         const pills = [];
         if (m.ssn) pills.push(`🔐 SSN: ${m.ssn}`);
         if (m.dob) pills.push(`🎂 DOB: ${m.dob}`);
-        if (m.gender) pills.push(`👤 ${m.gender}`);
+        if (m.gender) pills.push(`👤 ${toCleanTitleCase(m.gender)}`);
         if (m.heightFt || m.weight) pills.push(`📏 ${m.heightFt || '?'}'${m.heightIn || '0'}", ${m.weight || '?'} lbs`);
-        if (m.street) pills.push(`🏠 ${m.street}, ${m.city || ''}`);
+        if (m.street) pills.push(`🏠 ${toCleanTitleCase(m.street)}, ${toCleanTitleCase(m.city || '')}`);
         if (Array.isArray(m.diagnoses) && m.diagnoses.length > 0 && m.diagnoses[0].problem) {
             pills.push(`🩺 ${m.diagnoses.length} Diagnoses`);
         }
@@ -726,12 +748,25 @@
         box.innerHTML = pills.map(p => `<span class="summary-pill">${p}</span>`).join('');
     }
 
+    // Контроль: максимум 10 отмеченных файлов
+    window.enforceMaxTenFiles = function(cbEl) {
+        const checked = document.querySelectorAll('.dw-file-cb:checked');
+        const countTag = document.getElementById('dwFilesCountTag');
+        if (checked.length > 10) {
+            cbEl.checked = false;
+            alert('⚠️ Maximum 10 files can be selected for Gemini AI Scan at once.');
+        }
+        const nowChecked = document.querySelectorAll('.dw-file-cb:checked').length;
+        const total = document.querySelectorAll('.dw-file-cb').length;
+        if (countTag) countTag.textContent = `${nowChecked}/${Math.min(total, 10)} selected`;
+    };
+
     function renderMatterFilesList(files = []) {
         const countTag = document.getElementById('dwFilesCountTag');
         const listEl = document.getElementById('dwSmartFilesList');
-        countTag.textContent = `${files.length} files`;
 
         if (files.length === 0) {
+            countTag.textContent = `0 files`;
             listEl.innerHTML = '<div style="color:#888; font-size:11px; padding:6px 0;">No files inside this folder (choose another folder above or attach local file below).</div>';
             return;
         }
@@ -743,7 +778,7 @@
             html += `
                 <label style="display:flex; align-items:center; justify-content:space-between; gap:6px; padding:6px 4px; border-bottom:1px dashed #eee; cursor:pointer; text-transform:none; font-weight:600; margin:0;">
                     <div style="display:flex; align-items:center; gap:7px; overflow:hidden;">
-                        <input type="checkbox" class="dw-file-cb" value="${f.id}" data-url="${f.url || ''}" ${f.autoSelect ? 'checked' : ''} style="width:15px; height:15px; margin:0; flex-shrink:0;">
+                        <input type="checkbox" class="dw-file-cb" value="${f.id}" data-url="${f.url || ''}" onchange="window.enforceMaxTenFiles(this)" ${f.autoSelect ? 'checked' : ''} style="width:15px; height:15px; margin:0; flex-shrink:0;">
                         <div style="overflow:hidden;">
                             <a href="https://app.docketwise.com/documents/${f.id}" target="_blank" style="color:#2c1a14; text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; font-size:11.5px; font-weight:700;" title="${f.name}">${f.name} ↗</a>
                             ${folderLabel}
@@ -754,6 +789,8 @@
             `;
         });
         listEl.innerHTML = html;
+        const initChecked = document.querySelectorAll('.dw-file-cb:checked').length;
+        countTag.textContent = `${initChecked} selected (max 10)`;
     }
 
     window.handleMatterChange = async function() {
@@ -950,10 +987,10 @@
 
         async function applyClientData(client) {
             currentClient = client;
-            fullNameInput.value = client.name || '';
+            fullNameInput.value = toCleanTitleCase(client.name || '');
             phoneNumberInput.value = client.phone || '';
 
-            document.getElementById('displayClientName').innerText = client.name || 'Client';
+            document.getElementById('displayClientName').innerText = toCleanTitleCase(client.name || 'Client');
             document.getElementById('displayDwId').innerText = `ID: ${client.id}`;
 
             const matterSel = document.getElementById('dfMatterSelect');
@@ -970,7 +1007,7 @@
                 matterSel.innerHTML = '<option value="">No active matters found</option>';
             }
 
-            const parts = (client.name || '').trim().split(/\s+/);
+            const parts = toCleanTitleCase(client.name || '').trim().split(/\s+/);
             clientMemoryStore = {
                 firstName: parts[0] || '',
                 lastName: parts.slice(1).join(' ') || '',
@@ -993,16 +1030,16 @@
                     const p = fullData.profile;
                     clientMemoryStore = {
                         ...clientMemoryStore,
-                        firstName: p.firstName || clientMemoryStore.firstName,
-                        lastName: p.lastName || clientMemoryStore.lastName,
+                        firstName: toCleanTitleCase(p.firstName || clientMemoryStore.firstName),
+                        lastName: toCleanTitleCase(p.lastName || clientMemoryStore.lastName),
                         ssn: p.ssn || clientMemoryStore.ssn || '',
                         dob: p.dob || clientMemoryStore.dob || '',
-                        street: p.street || clientMemoryStore.street || '',
-                        city: p.city || 'Glendale',
-                        state: p.state || 'CA',
+                        street: toCleanTitleCase(p.street || clientMemoryStore.street || ''),
+                        city: toCleanTitleCase(p.city || 'Glendale'),
+                        state: (p.state || 'CA').toUpperCase(),
                         zip: p.zip || clientMemoryStore.zip || '',
-                        gender: p.gender || clientMemoryStore.gender || '',
-                        language: p.language || 'Armenian',
+                        gender: toCleanTitleCase(p.gender || clientMemoryStore.gender || ''),
+                        language: toCleanTitleCase(p.language || 'Armenian'),
                         heightFt: p.heightFeet || clientMemoryStore.heightFt || '',
                         heightIn: p.heightInches || clientMemoryStore.heightIn || '',
                         weight: p.weight || clientMemoryStore.weight || '',
@@ -1085,7 +1122,7 @@
         const badge = document.getElementById('dossierStatusBadge');
         const matterId = document.getElementById('dfMatterSelect').value;
 
-        const checkedBoxes = Array.from(document.querySelectorAll('.dw-file-cb:checked'));
+        const checkedBoxes = Array.from(document.querySelectorAll('.dw-file-cb:checked')).slice(0, 10);
         const checkedItems = checkedBoxes.map(cb => ({
             id: cb.value,
             url: cb.getAttribute('data-url') || ''
@@ -1095,12 +1132,13 @@
         const uploadedFiles = [];
 
         if (localFilesInput && localFilesInput.files.length > 0) {
-            for (const f of Array.from(localFilesInput.files)) {
+            const maxLocal = Math.max(0, 10 - checkedItems.length);
+            for (const f of Array.from(localFilesInput.files).slice(0, maxLocal)) {
                 uploadedFiles.push(await fileToBase64(f));
             }
         }
 
-        const BATCH_SIZE = 2;
+        const BATCH_SIZE = 3;
         const batches = [];
 
         for (let i = 0; i < checkedItems.length; i += BATCH_SIZE) {
@@ -1134,29 +1172,43 @@
                 btn.textContent = `⏳ AI Scanning ${stepLabel}...`;
                 badge.textContent = `🧠 Reading ${stepLabel}...`;
 
-                const res = await fetch('/api/search', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        clientId: currentClient ? currentClient.id : '',
-                        matterId: matterId,
-                        clientName: currentClient ? currentClient.name : '',
-                        fileIds: currentBatch.fileIds,
-                        fileUrls: currentBatch.fileUrls,
-                        uploadedFiles: currentBatch.uploadedFiles
-                    })
-                });
-
-                const rawText = await res.text();
                 let data = null;
-                try {
-                    data = JSON.parse(rawText);
-                } catch (jsonErr) {
-                    throw new Error(`Server timeout on ${stepLabel}. Try scanning 1-2 files at a time.`);
+                let batchErr = '';
+
+                for (let attempt = 1; attempt <= 2; attempt++) {
+                    try {
+                        if (attempt === 2) {
+                            btn.textContent = `⏳ Retrying ${stepLabel} (high demand)...`;
+                            await new Promise(r => setTimeout(r, 2000));
+                        }
+                        const res = await fetch('/api/search', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                clientId: currentClient ? currentClient.id : '',
+                                matterId: matterId,
+                                clientName: currentClient ? currentClient.name : '',
+                                fileIds: currentBatch.fileIds,
+                                fileUrls: currentBatch.fileUrls,
+                                uploadedFiles: currentBatch.uploadedFiles
+                            })
+                        });
+
+                        const rawText = await res.text();
+                        const parsed = JSON.parse(rawText);
+                        if (parsed && parsed.success) {
+                            data = parsed;
+                            break;
+                        } else {
+                            batchErr = parsed?.error || `Error on ${stepLabel}`;
+                        }
+                    } catch (e) {
+                        batchErr = e.message;
+                    }
                 }
 
-                if (!data.success) {
-                    throw new Error(data.error || `AI Scan failed on ${stepLabel}`);
+                if (!data || !data.success) {
+                    throw new Error(batchErr || `AI Scan failed on ${stepLabel}`);
                 }
 
                 totalRead += (data.filesScanned || 0);
@@ -1171,8 +1223,11 @@
                     if (k === 'diagnoses' && Array.isArray(val)) {
                         const existingDiag = Array.isArray(clientMemoryStore.diagnoses) ? clientMemoryStore.diagnoses : [];
                         val.forEach(dItem => {
-                            if (dItem && dItem.problem && !existingDiag.some(e => e.problem.toLowerCase() === dItem.problem.toLowerCase())) {
-                                existingDiag.push(dItem);
+                            if (dItem && dItem.problem) {
+                                const cleanProb = toCleanTitleCase(dItem.problem);
+                                if (!existingDiag.some(e => e.problem.toLowerCase() === cleanProb.toLowerCase())) {
+                                    existingDiag.push({ problem: cleanProb, onsetDate: dItem.onsetDate || '' });
+                                }
                             }
                         });
                         clientMemoryStore.diagnoses = existingDiag;
@@ -1180,21 +1235,29 @@
                         const existingClinics = Array.isArray(clientMemoryStore.clinics) ? clientMemoryStore.clinics : [];
                         val.forEach(cItem => {
                             if (cItem && (cItem.clinicName || cItem.doctorName)) {
+                                const cleanedClinic = {};
+                                Object.keys(cItem).forEach(ck => {
+                                    cleanedClinic[ck] = ck === 'state' ? (cItem[ck] || 'CA').toUpperCase() : toCleanTitleCase(cItem[ck]);
+                                });
                                 const isDup = existingClinics.some(e =>
-                                    (e.clinicName && cItem.clinicName && e.clinicName.toLowerCase() === cItem.clinicName.toLowerCase()) ||
-                                    (e.doctorName && cItem.doctorName && e.doctorName.toLowerCase() === cItem.doctorName.toLowerCase())
+                                    (e.clinicName && cleanedClinic.clinicName && e.clinicName.toLowerCase() === cleanedClinic.clinicName.toLowerCase()) ||
+                                    (e.doctorName && cleanedClinic.doctorName && e.doctorName.toLowerCase() === cleanedClinic.doctorName.toLowerCase())
                                 );
-                                if (!isDup) existingClinics.push(cItem);
+                                if (!isDup) existingClinics.push(cleanedClinic);
                             }
                         });
                         clientMemoryStore.clinics = existingClinics;
                     } else if (Array.isArray(val)) {
-                        const nonEmpty = val.filter(Boolean);
+                        const nonEmpty = val.filter(Boolean).map(v => typeof v === 'string' ? toCleanTitleCase(v) : v);
                         if (nonEmpty.length > 0) clientMemoryStore[k] = nonEmpty;
                     } else if (typeof val === 'object') {
-                        clientMemoryStore[k] = { ...(clientMemoryStore[k] || {}), ...val };
+                        const cleanedObj = {};
+                        Object.keys(val).forEach(ok => {
+                            if (val[ok]) cleanedObj[ok] = toCleanTitleCase(val[ok]);
+                        });
+                        clientMemoryStore[k] = { ...(clientMemoryStore[k] || {}), ...cleanedObj };
                     } else {
-                        clientMemoryStore[k] = val;
+                        clientMemoryStore[k] = k === 'state' ? String(val).toUpperCase() : toCleanTitleCase(val);
                     }
                 });
 
@@ -1265,24 +1328,24 @@
 
     function collectClientDossierForPdf() {
         const m = clientMemoryStore || {};
-        const firstName = (m.firstName || '').trim();
-        const lastName = (m.lastName || '').trim();
-        const fullName = `${firstName} ${lastName}`.trim() || (currentClient ? currentClient.name : '');
+        const firstName = toCleanTitleCase(m.firstName || '');
+        const lastName = toCleanTitleCase(m.lastName || '');
+        const fullName = `${firstName} ${lastName}`.trim() || toCleanTitleCase(currentClient ? currentClient.name : '');
         const lastFirst = lastName ? `${lastName}, ${firstName}` : fullName;
         const phone = document.getElementById('phoneNumber').value.trim() || m.phone || (currentClient ? currentClient.phone : '');
         const ssn = (m.ssn || '').trim();
         const dob = (m.dob || '').trim();
-        const street = (m.street || '').trim();
-        const city = (m.city || 'Glendale').trim();
-        const state = (m.state || 'CA').trim();
+        const street = toCleanTitleCase(m.street || '');
+        const city = toCleanTitleCase(m.city || 'Glendale');
+        const state = (m.state || 'CA').trim().toUpperCase();
         const zip = (m.zip || '').trim();
         const fullAddress = [street, city, state, zip].filter(Boolean).join(', ');
         const cityStateZip = [city, state, zip].filter(Boolean).join(', ');
-        const gender = m.gender || '';
-        const language = (m.language || 'Armenian').trim();
-        const heightFt = String(m.heightFt || '').trim();
-        const heightIn = String(m.heightIn || '').trim();
-        const weight = String(m.weight || '').trim();
+        const gender = toCleanTitleCase(m.gender || '');
+        const language = toCleanTitleCase(m.language || 'Armenian');
+        const heightFt = String(m.heightFt || '').replace(/\D/g, '').trim();
+        const heightIn = String(m.heightIn || '').replace(/\D/g, '').trim();
+        const weight = String(m.weight || '').replace(/\D/g, '').trim();
         const caseNum = (m.caseNum || '').trim();
         const today = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
 
@@ -1322,20 +1385,21 @@
         if (cleanPhone.length === 11 && cleanPhone.startsWith('1')) cleanPhone = cleanPhone.slice(1);
         const phoneArea = cleanPhone.slice(0, 3);
         const phoneRest = cleanPhone.length >= 10 ? `${cleanPhone.slice(3, 6)}-${cleanPhone.slice(6, 10)}` : d.phone;
+        const formattedClientPhone = cleanPhone.length === 10 ? `(${phoneArea}) ${phoneRest}` : d.phone;
 
         const dobParts = (d.dob || '').split(/[\/\-]/);
-        const dobMM = dobParts[0] || '';
-        const dobDD = dobParts[1] || '';
+        const dobMM = dobParts[0] ? dobParts[0].padStart(2, '0') : '';
+        const dobDD = dobParts[1] ? dobParts[1].padStart(2, '0') : '';
         const dobYY = dobParts[2] || '';
 
         const ai = d.ai || {};
-        const diag1 = ai.diagnoses?.[0]?.problem || '';
+        const diag1 = toCleanTitleCase(ai.diagnoses?.[0]?.problem || '');
         const diagDate1 = ai.diagnoses?.[0]?.onsetDate || '';
-        const diag2 = ai.diagnoses?.[1]?.problem || '';
+        const diag2 = toCleanTitleCase(ai.diagnoses?.[1]?.problem || '');
         const diagDate2 = ai.diagnoses?.[1]?.onsetDate || '';
-        const diag3 = ai.diagnoses?.[2]?.problem || '';
+        const diag3 = toCleanTitleCase(ai.diagnoses?.[2]?.problem || '');
         const diagDate3 = ai.diagnoses?.[2]?.onsetDate || '';
-        const diag4 = ai.diagnoses?.[3]?.problem || '';
+        const diag4 = toCleanTitleCase(ai.diagnoses?.[3]?.problem || '');
         const diagDate4 = ai.diagnoses?.[3]?.onsetDate || '';
 
         const c0 = ai.clinics?.[0] || {};
@@ -1356,7 +1420,7 @@
             "1c dob mm": dobMM,
             "1c dob dd": dobDD,
             "1c dob yy": dobYY,
-            "1d other names": ai.otherNames || "",
+            "1d other names": toCleanTitleCase(ai.otherNames || ""),
             "1f height": d.heightFt,
             "1f inches": d.heightIn,
             "1g weight": d.weight,
@@ -1381,67 +1445,67 @@
             "6d medical problem": diag4,
             "6d month year": diagDate4,
 
-            "7 name": c0.clinicName || "",
+            "7 name": toCleanTitleCase(c0.clinicName || ""),
             "7 member": c0.memberId || "",
             "7 area": c0Area,
             "7 phone": c0Rest,
-            "7 doctor": c0.doctorName || "",
-            "7 address": c0.address || "",
-            "7 city": c0.city || "",
-            "7 state": c0.address ? (c0.state || "CA") : "",
+            "7 doctor": toCleanTitleCase(c0.doctorName || ""),
+            "7 address": toCleanTitleCase(c0.address || ""),
+            "7 city": toCleanTitleCase(c0.city || ""),
+            "7 state": c0.address ? (c0.state || "CA").toUpperCase() : "",
             "7 ZIP": c0.zip || "",
             "7 first date": c0.firstSeen || "",
             "7 last date": c0.lastSeen || "",
             "7 next date": c0.nextAppt || "",
-            "7 reason": c0.reason || diag1 || "",
-            "7 medicine": c0.medicines || "",
-            "7 treatment": c0.treatments || "",
+            "7 reason": toCleanTitleCase(c0.reason || diag1 || ""),
+            "7 medicine": toCleanTitleCase(c0.medicines || ""),
+            "7 treatment": toCleanTitleCase(c0.treatments || ""),
 
-            "8 name": c1.clinicName || "",
+            "8 name": toCleanTitleCase(c1.clinicName || ""),
             "8 member": c1.memberId || "",
-            "8 doctor": c1.doctorName || "",
-            "8 address": c1.address || "",
-            "8 city": c1.city || "",
-            "8 state": c1.address ? (c1.state || "CA") : "",
+            "8 doctor": toCleanTitleCase(c1.doctorName || ""),
+            "8 address": toCleanTitleCase(c1.address || ""),
+            "8 city": toCleanTitleCase(c1.city || ""),
+            "8 state": c1.address ? (c1.state || "CA").toUpperCase() : "",
             "8 ZIP": c1.zip || "",
             "8 first date": c1.firstSeen || "",
             "8 last date": c1.lastSeen || "",
             "8 next date": c1.nextAppt || "",
-            "8 reason": c1.reason || "",
-            "8 medicine": c1.medicines || "",
-            "8 treatment": c1.treatments || "",
+            "8 reason": toCleanTitleCase(c1.reason || ""),
+            "8 medicine": toCleanTitleCase(c1.medicines || ""),
+            "8 treatment": toCleanTitleCase(c1.treatments || ""),
 
-            "9 name": c2.doctorName || c2.clinicName || "",
+            "9 name": toCleanTitleCase(c2.doctorName || c2.clinicName || ""),
             "9 member": c2.memberId || "",
-            "9 address": c2.address || "",
-            "9 city": c2.city || "",
-            "9 state": c2.address ? (c2.state || "CA") : "",
+            "9 address": toCleanTitleCase(c2.address || ""),
+            "9 city": toCleanTitleCase(c2.city || ""),
+            "9 state": c2.address ? (c2.state || "CA").toUpperCase() : "",
             "9 ZIP": c2.zip || "",
             "9 first date": c2.firstSeen || "",
             "9 last date": c2.lastSeen || "",
             "9 next date": c2.nextAppt || "",
-            "9 reason": c2.reason || "",
-            "9 medicine": c2.medicines || "",
-            "9 treatment": c2.treatments || "",
+            "9 reason": toCleanTitleCase(c2.reason || ""),
+            "9 medicine": toCleanTitleCase(c2.medicines || ""),
+            "9 treatment": toCleanTitleCase(c2.treatments || ""),
 
             "12 first name": `${d.repName} (${d.repOrg})`,
             "12 first relationship": "Authorized Representative",
             "12 first address": d.repFullAddress,
             "12 first area": d.repArea,
             "12 first phone": d.repPhoneOnly,
-            "14 activities list 1": ai.dailyLimitations?.[0] || "",
-            "14 activities list 2": ai.dailyLimitations?.[1] || "",
-            "14 activities list 3": ai.dailyLimitations?.[2] || "",
-            "14 activities list 4": ai.dailyLimitations?.[3] || "",
+            "14 activities list 1": toCleanTitleCase(ai.dailyLimitations?.[0] || ""),
+            "14 activities list 2": toCleanTitleCase(ai.dailyLimitations?.[1] || ""),
+            "14 activities list 3": toCleanTitleCase(ai.dailyLimitations?.[2] || ""),
+            "14 activities list 4": toCleanTitleCase(ai.dailyLimitations?.[3] || ""),
             "15b date": ai.educationDate || "",
 
-            "17 title": job.title || "",
-            "17 business": job.business || "",
+            "17 title": toCleanTitleCase(job.title || ""),
+            "17 business": toCleanTitleCase(job.business || ""),
             "17 date from": job.dateFrom || "",
             "17 date to": job.dateTo || "",
             "17 hours": job.hoursPerWeek || "",
             "17 pay": job.rateOfPay || "",
-            "job description": job.description || ""
+            "job description": toCleanTitleCase(job.description || "")
         };
 
         const isMc223 = (currentOpenedFormCode === 'MC 223');
@@ -1456,23 +1520,20 @@
             return false;
         }
 
-        function selectRadioByGeometry(field, preferSide = 'left') {
-            try {
-                const opts = typeof field.getOptions === 'function' ? (field.getOptions() || []) : [];
-                const widgets = field.acroField.getWidgets() || [];
-                if (widgets.length >= 2 && opts.length >= 2) {
-                    const x0 = widgets[0].getRectangle().x;
-                    const x1 = widgets[1].getRectangle().x;
-                    const leftIdx = x0 <= x1 ? 0 : 1;
-                    const rightIdx = x0 <= x1 ? 1 : 0;
-                    const chosenIdx = preferSide === 'left' ? leftIdx : rightIdx;
-                    if (opts[chosenIdx] !== undefined) {
-                        field.select(opts[chosenIdx]);
-                        return true;
-                    }
-                }
-            } catch (e) {}
-            return selectRadioByIndex(field, preferSide === 'left' ? 0 : 1);
+        function selectYesOptionMc223Interpreter(field) {
+            if (typeof field.getOptions !== 'function' || typeof field.select !== 'function') return false;
+            const opts = field.getOptions() || [];
+            const yesOpt = opts.find(o => /yes/i.test(String(o)));
+            if (yesOpt !== undefined) {
+                field.select(yesOpt);
+                return true;
+            }
+            const targetIdx = opts.length > 1 ? 1 : 0;
+            if (opts[targetIdx] !== undefined) {
+                field.select(opts[targetIdx]);
+                return true;
+            }
+            return false;
         }
 
         fields.forEach((field, idx) => {
@@ -1525,18 +1586,18 @@
                         const isEng = d.language && d.language.toLowerCase() === 'english';
                         if (selectRadioByIndex(field, isEng ? 0 : 1)) filledCount++;
                     } else if (rawName === '4b interpreter') {
-                        if (selectRadioByGeometry(field, 'left')) filledCount++;
+                        if (selectYesOptionMc223Interpreter(field)) filledCount++;
                     } else if (rawName === '7 care' && c0.clinicName) {
-                        if (selectRadioByGeometry(field, 'left')) filledCount++;
+                        if (selectRadioByIndex(field, 0)) filledCount++;
                     } else if (rawName === '12 contacts') {
-                        if (selectRadioByGeometry(field, 'left')) filledCount++;
+                        if (selectRadioByIndex(field, 0)) filledCount++;
                     } else if (rawName === '13 additional exam') {
-                        if (selectRadioByGeometry(field, 'left')) filledCount++;
+                        if (selectRadioByIndex(field, 0)) filledCount++;
                     }
                     return;
                 }
 
-                // ДЛЯ ОСТАЛЬНЫХ 12 ФОРМ
+                // УНИВЕРСАЛЬНОЕ УМНОЕ ЗАПОЛНЕНИЕ ДЛЯ ОСТАЛЬНЫХ 12 ФОРМ (БЕЗ КАПСЛОКА!)
                 if (typeof field.setText === 'function') {
                     let valToSet = null;
                     const isRepField = key.includes('rep') || key.includes('agent') || key.includes('org') || key.includes('helper') || key.includes('assister') || key.includes('preparer') || key.includes('interpreter') || key.includes('designee') || key.includes('attorney');
@@ -1548,20 +1609,25 @@
                         else if (key.includes('state')) valToSet = d.repState;
                         else if (key.includes('zip')) valToSet = d.repZip;
                         else if (key.includes('addr') || key.includes('street')) valToSet = d.repFullAddress;
+                        else if (key.includes('email')) valToSet = "info@alldocsconsulting.com";
+                        else if (key.includes('title') || key.includes('rel')) valToSet = "Authorized Representative";
                         else if (key.includes('name')) valToSet = `${d.repName} (${d.repOrg})`;
                     } else {
                         if (key.includes('lastfirst') || (key.includes('applicant') && key.includes('name'))) valToSet = d.lastFirst;
-                        else if (key === 'firstname' || key.includes('fname')) valToSet = d.firstName;
-                        else if (key === 'lastname' || key.includes('lname')) valToSet = d.lastName;
-                        else if (key.includes('fullname') || key.includes('clientname') || key.includes('recipientname') || key.includes('claimant') || key === 'name') valToSet = d.fullName;
+                        else if (key === 'firstname' || key.includes('fname') || key.includes('givenname')) valToSet = d.firstName;
+                        else if (key === 'lastname' || key.includes('lname') || key.includes('familyname') || key.includes('surname')) valToSet = d.lastName;
+                        else if (key.includes('fullname') || key.includes('clientname') || key.includes('recipientname') || key.includes('claimant') || key.includes('personname') || key.includes('printname') || key === 'name') valToSet = d.fullName;
                         else if (key.includes('ssn') || key.includes('socialsecurity')) valToSet = formattedSsn;
                         else if (key.includes('dob') || key.includes('birth')) valToSet = d.dob;
-                        else if (key.includes('phone') || key.includes('tel')) valToSet = d.phone;
+                        else if (key.includes('phone') || key.includes('tel') || key.includes('daytime')) valToSet = formattedClientPhone;
                         else if (key.includes('city')) valToSet = d.city;
                         else if (key.includes('state') && !key.includes('statement')) valToSet = d.state;
-                        else if (key.includes('zip')) valToSet = d.zip;
-                        else if (key.includes('address') || key.includes('street')) valToSet = d.street;
-                        else if (key.includes('signdate') || key.includes('datesigned')) valToSet = d.today;
+                        else if (key.includes('zip') || key.includes('postal')) valToSet = d.zip;
+                        else if (key.includes('citystatezip')) valToSet = d.cityStateZip;
+                        else if (key.includes('address') || key.includes('street') || key.includes('residence') || key.includes('homeaddr')) valToSet = d.street;
+                        else if (key.includes('case') || key.includes('cin') || key.includes('anum')) valToSet = d.caseNum;
+                        else if (key.includes('lang')) valToSet = d.language;
+                        else if (key.includes('signdate') || key.includes('datesigned') || key === 'date') valToSet = d.today;
                         else if (key.includes('county')) valToSet = "Los Angeles";
                     }
 
