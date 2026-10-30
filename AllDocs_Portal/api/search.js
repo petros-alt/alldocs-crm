@@ -20,7 +20,29 @@ export default async function handler(req, res) {
     const DW_CSRF_TOKEN = process.env.DOCKETWISE_CSRF_TOKEN || "hPvfgqHTOcjZGfr3rB46I8l0h2G_U0_zPe__5rzApxK3WPWk3gEbhd1ugBcqgwt4Q04FxNFtAc88LcNfIGRuyA";
     const DW_COOKIE = process.env.DOCKETWISE_COOKIE || "__stripe_mid=7a09a5c6-21ec-4d21-886d-c0bf6cc90d9760274d; intercom-device-id-q07v75s8=345a6aa1-5a77-4f02-afd1-47df40c5c1cd; browser.timezone=America/Los_Angeles; browser_id=a6350fa1-3722-4eac-9f81-3a34c6aa9572; _borderwise_session=8f901a47ce2fe3fc9898508ebf9b6160; per_page=50; __stripe_sid=2cd489e7-9fc4-435a-bf3e-1632e9209388ae3582; intercom-session-q07v75s8=azZPUnozMXp3VkJ2Q3RCaFRaSTZFWXFreWc1Q0FnZ0dGMkU3UTNkcEVJVjhDc3BSOXdOdXUvc05ONWZrenROczBiMTVXOWlYeEhId1hGcnNsQXdHR2F3ZlJoZ3ZWQzlqZUM0cEtEZHM5MXBWaGdvdGpiYnZtV05pdDI1Nms5dXJ4ZjZOUnNuMlpKdlZBUFZMY1pIaUQ3OEJkMitZQytxYkxqR3VqY3VBWk1XaS9qNm45d2wrOUx5eDBVN2ZRaTA3RGl2RnF3dFc0STlPZUxsOStXYnIwN3VGZDY1blp1Nkc2MGtkQnR2ODc1WDN2ek5xQStXY2E3Y09IV2J3bTFadXc5YmNuWDlpNXc3L3p6WlFwcTRkODZFUlpHTzgrcUlaNHBBSDhDNXFWU1MrbHNBbUdvVHVvM1ozb0tmd2dqV3YtLTVRTnlyWTVwb3lQbnpZakN5Yjh5SWc9PQ==--1000f00116b54aac3dc7cd422ad3bc993cea116d";
 
-    // Умный парсер ответа Docketwise (/documents?matter_id=... и /documents?folder_id=...&matter_id=...)
+    // Определение настоящего типа файла (PDF / JPEG / PNG) по его первым байтам (Magic Bytes)
+    function detectRealMimeType(buffer) {
+        if (!buffer || buffer.length < 8) return null;
+        // %PDF (25 50 44 46)
+        if (buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46) {
+            return 'application/pdf';
+        }
+        // JPEG (FF D8 FF)
+        if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+            return 'image/jpeg';
+        }
+        // PNG (89 50 4E 47)
+        if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
+            return 'image/png';
+        }
+        // WEBP (RIFF....WEBP)
+        if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 && buffer[8] === 0x57 && buffer[9] === 0x45) {
+            return 'image/webp';
+        }
+        return null;
+    }
+
+    // Точный парсер папок и оригинальных названий файлов из таблицы Docketwise
     function parseDocketwiseDocumentsResponse(rawText, defaultMatterId = '') {
         const folders = [];
         const files = [];
@@ -32,7 +54,7 @@ export default async function handler(req, res) {
             .replace(/\\t/g, ' ')
             .replace(/\\\//g, '/');
 
-        // 1. Ищем все ПАПКИ (ссылки, содержащие folder_id=12345)
+        // 1. Ищем все ПАПКИ (folder_id=...)
         const folderRegex = /href=["']([^"']*folder_id=(\d+)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
         let fMatch;
         while ((fMatch = folderRegex.exec(unescaped)) !== null) {
@@ -51,46 +73,57 @@ export default async function handler(req, res) {
             }
         }
 
-        // 2. Ищем все ФАЙЛЫ внутри папки (ссылки на /documents/12345 или /files/12345 без folder_id)
-        const fileRegex = /href=["']([^"']*\/(?:documents|files|attachments)\/(\d+)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
-        let docMatch;
-        while ((docMatch = fileRegex.exec(unescaped)) !== null) {
-            const href = docMatch[1];
-            const docId = docMatch[2];
-            if (href.includes('folder_id=')) continue;
-            const title = docMatch[3].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
-
-            if (title && title.length > 1 && !/^(edit|delete|trash|remove|download|view|rename|move)$/i.test(title)) {
-                if (!files.some(x => String(x.id) === String(docId))) {
-                    files.push({
-                        id: docId,
-                        name: title,
-                        url: `https://app.docketwise.com/documents/${docId}/download`
-                    });
-                }
-            }
-        }
-
-        // Дополнительный поиск файлов по атрибуту data-document-id или строкам таблицы, если названия лежат отдельно от кнопки скачивания
+        // 2. Разбираем каждую строку <tr> таблицы файлов, чтобы достать ТОЧНОЕ ОРИГИНАЛЬНОЕ ИМЯ из колонки Name!
         const rowBlocks = unescaped.split(/<tr/i);
         rowBlocks.forEach(tr => {
             if (tr.includes('folder_id=')) return;
-            const idMatch = tr.match(/\/(?:documents|files)\/(\d+)/i) || tr.match(/data-id=["'](\d+)["']/i);
-            if (idMatch) {
-                const docId = idMatch[1];
-                if (!files.some(x => String(x.id) === String(docId))) {
-                   // Берем строго колонку Name и игнорируем колонку размера (0.35, 0.22)
-                    const cellTexts = [...tr.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)]
-                        .map(m => m[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim())
-                        .filter(t => t.length > 2 && !/^\d+(\.\d+)?(\s|$)/i.test(t) && !/^(active|all|none|--)$/i.test(t));
-                    if (cellTexts.length > 0) {
-                        files.push({
-                            id: docId,
-                            name: cellTexts[0],
-                            url: `https://app.docketwise.com/documents/${docId}/download`
-                        });
-                    }
-                }
+
+            // Ищем ID документа в строке (из ссылки скачивания, просмотра, чекбокса или кнопки Delete /documents/12345)
+            const idMatch =
+                tr.match(/\/(?:documents|files|attachments)\/(\d+)/i) ||
+                tr.match(/value=["'](\d+)["']/i) ||
+                tr.match(/data-id=["'](\d+)["']/i) ||
+                tr.match(/document[_-]id=["']?(\d+)/i);
+
+            if (!idMatch) return;
+            const docId = idMatch[1];
+            if (files.some(x => String(x.id) === String(docId))) return;
+
+            // Ищем прямую ссылку на скачивание внутри этой строки (если есть)
+            const dlMatch = tr.match(/href=["']([^"']*(?:download|amazonaws\.com|\/documents\/\d+\/[^"']*))["']/i);
+            const directUrl = dlMatch
+                ? (dlMatch[1].startsWith('http') ? dlMatch[1] : `https://app.docketwise.com${dlMatch[1]}`)
+                : `https://app.docketwise.com/documents/${docId}`;
+
+            // Вытаскиваем все ячейки строки (И <th>, И <td>!), так как колонка Name часто лежит в <th> или первой ячейке
+            const allCells = [...tr.matchAll(/<(?:td|th)[^>]*>([\s\S]*?)<\/(?:td|th)>/gi)]
+                .map(m => m[1].replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim())
+                .filter(Boolean);
+
+            let bestFileName = '';
+
+            // Сначала ищем ячейку, где есть расширение файла (.jpeg, .jpg, .pdf, .png, .doc)
+            const extCell = allCells.find(c => /\.(jpeg|jpg|pdf|png|doc|docx|heic)$/i.test(c));
+            if (extCell) {
+                bestFileName = extCell;
+            } else {
+                // Иначе берем первую осмысленную текстовую ячейку, которая НЕ является числом размера (0.35, 0.22) и НЕ является датой или email
+                const textCell = allCells.find(c =>
+                    c.length > 2 &&
+                    !/^\d+(\.\d+)?(\s*(mb|kb|bytes))?$/i.test(c) &&
+                    !/^\d{2}\/\d{2}\/\d{2,4}$/.test(c) &&
+                    !c.includes('@') &&
+                    !/^(delete|edit|download|view|actions|name|size)$/i.test(c)
+                );
+                if (textCell) bestFileName = textCell;
+            }
+
+            if (bestFileName) {
+                files.push({
+                    id: docId,
+                    name: bestFileName,
+                    url: directUrl
+                });
             }
         });
 
@@ -102,7 +135,7 @@ export default async function handler(req, res) {
         if (/(zelle|receipt|invoice|payment|retainer|contract|08\.\s*firm)/i.test(lower)) {
             return { category: 'ignore', badge: '💸 Contract/Fee', priority: 10, autoSelect: false };
         }
-        if (/(01\.|personal|identification|driver|license|dl|passport|birth|ssn|social|id_card|state_id|green_card|greencard|naturalization|medi-cal|bic)/i.test(lower)) {
+        if (/(01\.|personal|identification|driver|license|dl|passport|birth|ssn|social|id_card|state_id|green_card|greencard|permanent resident|naturalization|medi-cal|bic)/i.test(lower)) {
             return { category: 'identity', badge: '🪪 01. Personal ID', priority: 100, autoSelect: true };
         }
         if (/(02\.|mc_223|mc223|mc 223|soc|873|804|814|453|839|medical|doctor|dr\.|clinic|hospital|meds|medication|rx|diagnosis|visit|summary|noa|ssi|capi|disability)/i.test(lower)) {
@@ -114,7 +147,69 @@ export default async function handler(req, res) {
         if (/(05\.|financial|living|bank|lease|rent|utility|expense)/i.test(lower)) {
             return { category: 'financial', badge: '💰 05. Financials', priority: 80, autoSelect: false };
         }
-        return { category: 'other', badge: '📄 Document', priority: 50, autoSelect: false };
+        return { category: 'other', badge: '📄 Document', priority: 50, autoSelect: true };
+    }
+
+    // Функция надежного скачивания файла из Docketwise с проверкой Magic Bytes (PDF / JPEG / PNG)
+    async function downloadValidFileFromDocketwise(docId, customUrl, matterId, clientId) {
+        const urlsToTry = [
+            customUrl,
+            `https://app.docketwise.com/documents/${docId}/download`,
+            `https://app.docketwise.com/documents/${docId}`,
+            `https://app.docketwise.com/en/documents/${docId}`,
+            `https://app.docketwise.com/files/${docId}/download`
+        ].filter(Boolean);
+
+        for (const u of [...new Set(urlsToTry)]) {
+            try {
+                const fRes = await fetch(u, {
+                    headers: {
+                        "cookie": DW_COOKIE,
+                        "x-csrf-token": DW_CSRF_TOKEN,
+                        "Authorization": apiKey ? `Bearer ${apiKey}` : undefined,
+                        "Referer": matterId ? `https://app.docketwise.com/en/matters/${matterId}` : `https://app.docketwise.com/en/contacts/${clientId || ''}`
+                    },
+                    redirect: 'follow'
+                });
+
+                if (!fRes.ok) continue;
+
+                const arrayBuf = await fRes.arrayBuffer();
+                const buf = Buffer.from(arrayBuf);
+
+                // Проверяем первые байты: это настоящий PDF, JPEG или PNG?
+                const detectedMime = detectRealMimeType(buf);
+                if (detectedMime && buf.length < 10 * 1024 * 1024) {
+                    return {
+                        mime_type: detectedMime,
+                        data: buf.toString('base64')
+                    };
+                }
+
+                // Если Docketwise вернул HTML/JS страницу предпросмотра, ищем внутри неё прямую ссылку на S3 (amazonaws.com) или /rails/active_storage/...
+                const textContent = buf.toString('utf8');
+                const s3Regex = /(https:\/\/[^"'\s>]+(?:amazonaws\.com|cloudfront\.net|active_storage)[^"'\s>]*)|(\/rails\/active_storage\/[^"'\s>]+)/i;
+                const s3Match = textContent.match(s3Regex);
+                if (s3Match) {
+                    const rawS3Url = s3Match[0].replace(/&amp;/g, '&').replace(/\\"/g, '');
+                    const fullS3Url = rawS3Url.startsWith('http') ? rawS3Url : `https://app.docketwise.com${rawS3Url}`;
+                    const s3Res = await fetch(fullS3Url, {
+                        headers: rawS3Url.startsWith('http') ? {} : { "cookie": DW_COOKIE }
+                    });
+                    if (s3Res.ok) {
+                        const s3Buf = Buffer.from(await s3Res.arrayBuffer());
+                        const s3Mime = detectRealMimeType(s3Buf);
+                        if (s3Mime && s3Buf.length < 10 * 1024 * 1024) {
+                            return {
+                                mime_type: s3Mime,
+                                data: s3Buf.toString('base64')
+                            };
+                        }
+                    }
+                }
+            } catch (e) {}
+        }
+        return null;
     }
 
     // =========================================================================
@@ -129,17 +224,19 @@ export default async function handler(req, res) {
                 });
             }
 
-            const { clientId, matterId = '', fileIds = [], uploadedFiles = [], clientName = '' } = req.body || {};
+            const { clientId, matterId = '', fileIds = [], fileUrls = [], uploadedFiles = [], clientName = '' } = req.body || {};
             const inlineParts = [];
             let textContext = `Target Client Full Name: ${clientName}\nIMPORTANT: Extract data ONLY for ${clientName}!\n`;
 
-            // 1. Прикрепленные локальные файлы с компьютера
+            // 1. Прикрепленные локальные файлы с компьютера (проверяем их реальный тип по первым байтам!)
             if (Array.isArray(uploadedFiles)) {
                 uploadedFiles.slice(0, 4).forEach(uf => {
-                    if (uf.base64 && uf.mimeType) {
+                    if (uf.base64) {
+                        const rawBuf = Buffer.from(uf.base64, 'base64');
+                        const realMime = detectRealMimeType(rawBuf) || uf.mimeType || 'image/jpeg';
                         inlineParts.push({
                             inline_data: {
-                                mime_type: uf.mimeType,
+                                mime_type: realMime,
                                 data: uf.base64
                             }
                         });
@@ -149,65 +246,12 @@ export default async function handler(req, res) {
 
             // 2. Скачиваем отмеченные галочками файлы из выбранного Matter / Папки в Docketwise
             const uniqueDocIds = [...new Set(Array.isArray(fileIds) ? fileIds : [])].slice(0, 5);
-
-            for (const docId of uniqueDocIds) {
-                const candidateUrls = [
-                    `https://app.docketwise.com/documents/${docId}/download`,
-                    `https://app.docketwise.com/documents/${docId}`,
-                    `https://app.docketwise.com/files/${docId}/download`
-                ];
-                let downloaded = false;
-
-                for (const dUrl of candidateUrls) {
-                    if (downloaded) break;
-                    try {
-                        const fRes = await fetch(dUrl, {
-                            headers: {
-                                "cookie": DW_COOKIE,
-                                "x-csrf-token": DW_CSRF_TOKEN,
-                                "Referer": matterId ? `https://app.docketwise.com/en/matters/${matterId}` : `https://app.docketwise.com/en/contacts/${clientId || ''}`
-                            },
-                            redirect: 'follow'
-                        });
-
-                        if (fRes.ok) {
-                            const contentType = (fRes.headers.get('content-type') || '').toLowerCase();
-                            if (contentType.includes('pdf') || contentType.includes('image') || contentType.includes('octet-stream')) {
-                                const arrayBuf = await fRes.arrayBuffer();
-                                if (arrayBuf.byteLength > 300 && arrayBuf.byteLength < 8 * 1024 * 1024) {
-                                    const b64 = Buffer.from(arrayBuf).toString('base64');
-                                    let mime = 'application/pdf';
-                                    if (contentType.includes('jpeg') || contentType.includes('jpg')) mime = 'image/jpeg';
-                                    else if (contentType.includes('png')) mime = 'image/png';
-                                    inlineParts.push({
-                                        inline_data: { mime_type: mime, data: b64 }
-                                    });
-                                    downloaded = true;
-                                }
-                            } else if (contentType.includes('html') || contentType.includes('javascript')) {
-                                // Если страница документа вернула HTML-обертку с прямой ссылкой на S3 (amazonaws.com), вытаскиваем её!
-                                const pageHtml = await fRes.text();
-                                const s3Match = pageHtml.match(/https:\/\/[^"'\s>]+(?:amazonaws\.com|cloudfront\.net|docketwise)[^"'\s>]+/i);
-                                if (s3Match) {
-                                    const s3Res = await fetch(s3Match[0].replace(/&amp;/g, '&'));
-                                    if (s3Res.ok) {
-                                        const s3Type = (s3Res.headers.get('content-type') || '').toLowerCase();
-                                        const arrayBuf = await s3Res.arrayBuffer();
-                                        if (arrayBuf.byteLength > 300 && arrayBuf.byteLength < 8 * 1024 * 1024) {
-                                            const b64 = Buffer.from(arrayBuf).toString('base64');
-                                            let mime = 'application/pdf';
-                                            if (s3Type.includes('jpeg') || s3Type.includes('jpg') || s3Match[0].includes('.jpg')) mime = 'image/jpeg';
-                                            else if (s3Type.includes('png') || s3Match[0].includes('.png')) mime = 'image/png';
-                                            inlineParts.push({
-                                                inline_data: { mime_type: mime, data: b64 }
-                                            });
-                                            downloaded = true;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    } catch (e) {}
+            for (let i = 0; i < uniqueDocIds.length; i++) {
+                const docId = uniqueDocIds[i];
+                const customUrl = Array.isArray(fileUrls) ? fileUrls[i] : '';
+                const validFilePart = await downloadValidFileFromDocketwise(docId, customUrl, matterId, clientId);
+                if (validFilePart) {
+                    inlineParts.push({ inline_data: validFilePart });
                 }
             }
 
@@ -225,11 +269,9 @@ export default async function handler(req, res) {
             }
 
             const systemPrompt = `You are an expert California Medi-Cal / IHSS / CAPI Legal Document Extraction AI.
-Analyze all attached client documents (Driver's License, Passport, Birth Certificate, SSN Card, Medical Records, Visit Summaries, Prescriptions, Prior MC 223 / SOC forms) and the Docketwise context for client "${clientName}".
+Analyze all attached client documents (California Driver's License, Permanent Resident Card / Green Card, Social Security Card, Medi-Cal Card, Passport, Birth Certificate, Medical Records, Visit Summaries, Prescriptions, Prior MC 223 / SOC forms) and the Docketwise context for client "${clientName}".
 If any document is in Armenian or Russian, translate all extracted values into English.
-Convert any dates of birth to MM/DD/YYYY format.
-Convert height to Feet and Inches (if in cm, convert to feet and inches, e.g. 162 cm -> 5 ft 4 in).
-Convert weight to Pounds/lbs (if in kg, convert to lbs).
+From California Driver's License or Green Card: carefully extract Date of Birth (DOB in MM/DD/YYYY), Sex (M -> Male, F -> Female), Height (HGT, e.g. 5'-04" -> heightFt: "5", heightIn: "4"), Weight (WGT in lbs -> weight: "155"), Home Address, and A-Number (USCIS#).
 Do NOT confuse a doctor's or hospital's address with the applicant's home address.
 
 Return ONLY valid JSON matching this exact structure (leave empty string "" if unknown):
@@ -312,7 +354,6 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                 'gemini-2.0-flash',
                 'gemini-2.0-flash-lite',
                 'gemini-1.5-flash',
-                'gemini-1.5-flash-8b',
                 'gemini-2.5-pro'
             ];
 
@@ -328,7 +369,7 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
             let usedModel = '';
             let lastErr = '';
 
-            for (const modelName of modelsToTry.slice(0, 6)) {
+            for (const modelName of modelsToTry.slice(0, 5)) {
                 try {
                     const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`, {
                         method: 'POST',
@@ -336,8 +377,7 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                         body: JSON.stringify({
                             contents: [{ parts: requestParts }],
                             generationConfig: {
-                                temperature: 0.1,
-                                responseMimeType: "application/json"
+                                temperature: 0.1
                             }
                         })
                     });
@@ -345,7 +385,8 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                     if (gRes.ok) {
                         const gData = await gRes.json();
                         const rawText = gData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-                        const cleaned = rawText.replace(/```json|```/g, '').trim();
+                        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                        const cleaned = jsonMatch ? jsonMatch[0] : rawText.replace(/```json|```/g, '').trim();
                         aiJson = JSON.parse(cleaned);
                         usedModel = modelName;
                         break;
@@ -381,7 +422,6 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
 
     if (!apiKey) return res.status(500).json({ success: false, error: "Ключ не найден" });
 
-    // ЕСЛИ ЗАПРОШЕНЫ ПАПКИ И ФАЙЛЫ КОНКРЕТНОГО MATTER (КЕЙСА) ИЛИ ПАПКИ (?matterId=...&folderId=...)
     if (matterId || folderId) {
         try {
             let targetUrl = `https://app.docketwise.com/documents?matter_id=${matterId || ''}`;
@@ -408,8 +448,6 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                 ...classifyClientFile(f.name, '')
             }));
 
-            // Если мы открыли сам Matter (или выбрано "Auto-Load Key Folders") и внутри него лежат папки (00, 01, 02, 04...),
-            // автоматически заглядываем внутрь ключевых папок (00, 01, 02, 04, 05), чтобы сразу показать лежащие там файлы клиента!
             if ((!folderId || folderId === 'ALL_KEY_FOLDERS') && parsed.folders.length > 0) {
                 const keyFolders = parsed.folders.filter(fld =>
                     /(00\.|01\.|02\.|04\.|05\.|personal|medical|upload|inbox|education|work|financial)/i.test(fld.name)
@@ -453,7 +491,6 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
 
             allFiles.sort((a, b) => b.priority - a.priority);
 
-            // Автоматически отмечаем галочками до 4 самых важных файлов этого клиента
             let checkedCount = 0;
             allFiles = allFiles.map(f => {
                 if (f.autoSelect && checkedCount < 4) {
@@ -473,7 +510,6 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
         }
     }
 
-    // ПОЛНОЕ ДОСЬЕ КЛИЕНТА (?clientId=...)
     if (clientId) {
         try {
             let contact = {};
