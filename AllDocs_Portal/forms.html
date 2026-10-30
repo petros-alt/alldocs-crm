@@ -370,48 +370,79 @@
             box-sizing: border-box;
         }
 
-        /* УВЕЛИЧЕННОЕ И НАГЛЯДНОЕ ОКНО ПУНКТА 4 (СПИСОК ФАЙЛОВ) */
+     /* НАГЛЯДНОЕ 3D ОКНО ПУНКТА 4 (СПИСОК ФАЙЛОВ С ПОЛНЫМИ НАЗВАНИЯМИ) */
         #dwSmartFilesList {
-            max-height: 285px !important;
-            min-height: 110px;
+            max-height: 320px !important;
+            min-height: 130px;
             overflow-y: auto;
             overflow-x: hidden;
-            padding: 6px;
-            background: linear-gradient(180deg, #f5efe6 0%, #faf7f2 100%);
-            border: 1.5px solid rgba(161, 104, 58, 0.25);
-            border-radius: 13px;
-            box-shadow: inset 0 2px 6px rgba(44, 26, 20, 0.06);
+            padding: 8px;
+            background: linear-gradient(180deg, #e9dfd1 0%, #f4efe6 100%);
+            border: 1.5px solid rgba(139, 85, 43, 0.38);
+            border-radius: 14px;
+            box-shadow: inset 0 3px 8px rgba(44, 26, 20, 0.12);
         }
 
-        /* 3D-КАПСУЛЫ ФАЙЛОВ ВНУТРИ СПИСКА */
+        /* 3D-КАРТОЧКА ФАЙЛА (ВЕСЬ ТЕКСТ ВИДЕН ЦЕЛИКОМ) */
         .dw-file-3d-row {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            padding: 9px 10px;
-            margin-bottom: 7px;
-            background: linear-gradient(145deg, #ffffff 0%, #faf6ef 100%);
-            border: 1.5px solid rgba(184, 115, 51, 0.28);
-            border-bottom: 3px solid rgba(161, 104, 58, 0.4);
-            border-radius: 12px;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            background: linear-gradient(145deg, #ffffff 0%, #f9f4ec 100%);
+            border: 1.5px solid rgba(184, 115, 51, 0.35);
+            border-bottom: 3.5px solid rgba(139, 85, 43, 0.5);
+            border-radius: 13px;
             cursor: pointer;
             transition: all 0.18s ease;
             box-sizing: border-box;
             text-transform: none;
-            box-shadow: 0 3px 8px rgba(44, 26, 20, 0.05);
+            box-shadow: 0 4px 10px rgba(44, 26, 20, 0.07);
         }
         .dw-file-3d-row:last-child { margin-bottom: 0; }
         .dw-file-3d-row:hover {
             transform: translateY(-1px);
             border-color: #b87333;
-            box-shadow: 0 6px 14px rgba(184, 115, 51, 0.16);
+            box-shadow: 0 7px 15px rgba(184, 115, 51, 0.2);
         }
+
+        /* ВЫБРАННЫЙ ФАЙЛ — ЯРКИЙ КОНТРАСТНЫЙ 3D ESPRESSO & GOLD */
         .dw-file-3d-row:has(.dw-file-cb:checked) {
-            background: linear-gradient(145deg, #eff6ff 0%, #dbeafe 100%);
-            border-color: #60a5fa;
-            border-bottom: 3px solid #2563eb;
-            box-shadow: 0 5px 14px rgba(37, 99, 235, 0.14);
+            background: linear-gradient(145deg, #3a2318 0%, #21120b 100%);
+            border: 1.5px solid #e59849;
+            border-bottom: 4px solid #100804;
+            box-shadow: 0 8px 18px rgba(36, 20, 14, 0.32), inset 0 1px 1px rgba(255, 255, 255, 0.18);
+        }
+        .dw-file-3d-row .file-title-link {
+            color: #24140e;
+            text-decoration: none;
+            display: block;
+            font-size: 12.5px;
+            font-weight: 800;
+            line-height: 1.35;
+            word-break: break-word;
+            white-space: normal;
+            margin-bottom: 5px;
+        }
+        .dw-file-3d-row:has(.dw-file-cb:checked) .file-title-link {
+            color: #ffffff !important;
+        }
+        .dw-file-3d-row .file-folder-sub {
+            font-size: 10px;
+            color: #7c5844;
+            font-weight: 700;
+        }
+        .dw-file-3d-row:has(.dw-file-cb:checked) .file-folder-sub {
+            color: #f5cba7 !important;
+        }
+        .dw-file-cb {
+            width: 18px !important;
+            height: 18px !important;
+            margin: 2px 0 0 0 !important;
+            flex-shrink: 0 !important;
+            accent-color: #10b981;
+            cursor: pointer;
         }
         .dw-file-cb {
             width: 17px !important;
@@ -1002,11 +1033,22 @@
         if (countTag) countTag.textContent = `${selectedFilesBasket.size}/${Math.max(total, selectedFilesBasket.size)} selected`;
     };
 
+  window.clearSelectedFilesBasket = function() {
+        selectedFilesBasket.clear();
+        document.querySelectorAll('.dw-file-cb').forEach(cb => { cb.checked = false; });
+        const countTag = document.getElementById('dwFilesCountTag');
+        const total = document.querySelectorAll('.dw-file-cb').length;
+        if (countTag) countTag.textContent = `0/${total} selected`;
+    };
+
+    function cleanHtmlEntities(text = '') {
+        return String(text).replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+    }
+
     function renderMatterFilesList(files = [], isInitialMatterLoad = false) {
         const countTag = document.getElementById('dwFilesCountTag');
         const listEl = document.getElementById('dwSmartFilesList');
 
-        // При первой загрузке Matter автоматически кладем autoSelect файлы в корзину
         if (isInitialMatterLoad) {
             selectedFilesBasket.clear();
             files.forEach(f => {
@@ -1014,14 +1056,70 @@
                     selectedFilesBasket.set(String(f.id), {
                         id: String(f.id),
                         url: f.url || '',
-                        name: f.name || 'Document',
-                        folderName: f.folderName || '',
+                        name: cleanHtmlEntities(f.name || 'Document'),
+                        folderName: cleanHtmlEntities(f.folderName || ''),
                         badge: f.badge || '📄 File',
                         category: f.category || 'other'
                     });
                 }
             });
         }
+
+        const mergedList = [];
+        selectedFilesBasket.forEach(item => {
+            mergedList.push({ ...item, isPinnedFromBasket: true });
+        });
+        files.forEach(f => {
+            if (!mergedList.some(m => String(m.id) === String(f.id))) {
+                mergedList.push({
+                    ...f,
+                    name: cleanHtmlEntities(f.name),
+                    folderName: cleanHtmlEntities(f.folderName)
+                });
+            }
+        });
+
+        if (mergedList.length === 0) {
+            countTag.textContent = `0 files`;
+            listEl.innerHTML = '<div style="color:#6e5549; font-weight:700; font-size:11.5px; padding:10px 6px; text-align:center;">No files inside this folder.<br>Choose another folder above or attach local file below.</div>';
+            return;
+        }
+
+        let html = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:7px; padding:0 2px;">
+                <span style="font-size:10px; font-weight:800; color:#5c3d2e;">Click any card to check/uncheck (up to 10 across folders):</span>
+                <button type="button" onclick="window.clearSelectedFilesBasket()" style="background:#ffffff; border:1px solid rgba(184,115,51,0.45); color:#8b552b; border-radius:7px; padding:2px 7px; font-size:9.5px; font-weight:800; cursor:pointer;">✕ Clear All</button>
+            </div>
+        `;
+
+        mergedList.forEach(f => {
+            const isChecked = selectedFilesBasket.has(String(f.id));
+            const badgeColor = f.category === 'identity' ? '#2563eb' : (f.category === 'medical_form' ? '#059669' : '#8b552b');
+            const cleanFolder = cleanHtmlEntities(f.folderName || '');
+            const folderLabel = cleanFolder && cleanFolder !== 'Root'
+                ? `<span class="file-folder-sub">📁 ${cleanFolder}</span>`
+                : `<span class="file-folder-sub">📁 Matter Root</span>`;
+            const safeName = cleanHtmlEntities(f.name || '').replace(/"/g, '&quot;');
+
+            html += `
+                <label class="dw-file-3d-row">
+                    <input type="checkbox" class="dw-file-cb" value="${f.id}" data-url="${f.url || ''}" data-name="${safeName}" data-folder="${cleanFolder}" data-badge="${f.badge || ''}" data-cat="${f.category || ''}" onchange="window.toggleFileInBasket(this)" ${isChecked ? 'checked' : ''}>
+                    <div style="flex:1; min-width:0;">
+                        <div class="file-title-link">${cleanHtmlEntities(f.name)}</div>
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap;">
+                            ${folderLabel}
+                            <div style="display:flex; align-items:center; gap:5px;">
+                                <span style="background:${badgeColor}; color:#fff; font-size:9px; font-weight:800; padding:2px 7px; border-radius:6px; white-space:nowrap;">${f.badge || '📄 File'}</span>
+                                <a href="https://app.docketwise.com/documents/${f.id}" target="_blank" onclick="event.stopPropagation()" style="background:rgba(184,115,51,0.18); color:#d48c46; border:1px solid rgba(212,140,70,0.4); font-size:9.5px; font-weight:800; padding:1px 6px; border-radius:6px; text-decoration:none; white-space:nowrap;" title="Open original in Docketwise">Open ↗</a>
+                            </div>
+                        </div>
+                    </div>
+                </label>
+            `;
+        });
+        listEl.innerHTML = html;
+        countTag.textContent = `${selectedFilesBasket.size}/${mergedList.length} selected`;
+    }
 
         // Объединяем файлы, уже выбранные в других папках (Pinned), с файлами текущей папки!
         const mergedList = [];
@@ -1096,7 +1194,7 @@
                 data.folders.forEach(fld => {
                     const opt = document.createElement('option');
                     opt.value = fld.folderId;
-                    opt.textContent = `📁 ${fld.name}`;
+                    opt.textContent = '📁 ' + cleanHtmlEntities(fld.name);
                     folderSel.appendChild(opt);
                 });
             }
