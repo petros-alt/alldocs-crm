@@ -35,7 +35,7 @@ export default async function handler(req, res) {
         const trimmed = str.trim();
         if (!trimmed) return '';
         if (/^\d/.test(trimmed) && !/[a-zA-Z]{3,}/.test(trimmed)) return trimmed;
-        if (/^(CA|NY|TX|FL|NV|AZ|WA|OR|IL|PA|OH|GA|NC|MI|NJ|VA|MA|MD|SSI|SSDI|CAPI|IHSS|NOA|SOC|MC|USCIS|USA|PO|APT|STE|DR|ST|AVE|BLVD|RD|LN|CT|PL|NW|NE|SW|SE|II|III|IV|LLC|INC|MD|DO|RN|NP|PA-C)$/i.test(trimmed)) {
+        if (/^(CA|NY|TX|FL|NV|AZ|WA|OR|IL|PA|OH|GA|NC|MI|NJ|VA|MA|MD|SSI|SSDI|CAPI|IHSS|NOA|SOC|MC|USCIS|USA|PO|APT|STE|DR|ST|AVE|BLVD|RD|LN|CT|PL|NW|NE|SW|SE|II|III|IV|LLC|INC|MD|DO|RN|NP|PA-C|N\/A)$/i.test(trimmed)) {
             return trimmed.toUpperCase();
         }
         const upperCount = (trimmed.match(/[A-Z]/g) || []).length;
@@ -43,7 +43,7 @@ export default async function handler(req, res) {
         if ((upperCount > 2 && lowerCount === 0) || (lowerCount > 2 && upperCount === 0)) {
             return trimmed.toLowerCase().replace(/\b([a-z])([a-z']*)/g, (match, first, rest) => {
                 const wordUp = match.toUpperCase();
-                if (/^(CA|SSI|SSDI|CAPI|IHSS|NOA|MD|DO|RN|LLC|INC|PO|II|III|IV|UCLA|USC|DMV|EDD|IRS)$/.test(wordUp)) {
+                if (/^(CA|SSI|SSDI|CAPI|IHSS|NOA|MD|DO|RN|NP|LLC|INC|PO|II|III|IV|UCLA|USC|DMV|EDD|IRS|EKG|PFT|BNP|CBC|CMP|UTI)$/.test(wordUp)) {
                     return wordUp;
                 }
                 if (/^(and|or|of|in|on|at|to|for|with|from|by|the|a|an)$/.test(match) && match !== trimmed.toLowerCase().slice(0, match.length)) {
@@ -63,7 +63,7 @@ export default async function handler(req, res) {
             const val = obj[key];
             if (typeof val === 'string') {
                 if (key === 'state') out[key] = val.trim().toUpperCase() || 'CA';
-                else if (['ssn', 'dob', 'phone', 'zip', 'heightFt', 'heightIn', 'weight', 'caseNum', 'firstSeen', 'lastSeen', 'nextAppt', 'onsetDate', 'ssiDecisionDate', 'educationDate', 'dateFrom', 'dateTo'].includes(key)) {
+                else if (['ssn', 'dob', 'phone', 'zip', 'heightFt', 'heightIn', 'weight', 'caseNum', 'firstSeen', 'lastSeen', 'nextAppt', 'onsetDate', 'ssiDecisionDate', 'educationDate', 'dateFrom', 'dateTo', 'date'].includes(key)) {
                     out[key] = val.trim();
                 } else {
                     out[key] = formatProperCase(val);
@@ -234,9 +234,6 @@ export default async function handler(req, res) {
         return null;
     }
 
-    // =========================================================================
-    // РЕЖИМ POST: МГНОВЕННОЕ СКАНИРОВАНИЕ ЗА 3 СЕКУНДЫ (FLASH-LITE ПЕРВАЯ!)
-    // =========================================================================
     if (req.method === 'POST') {
         try {
             if (!geminiKey) {
@@ -277,19 +274,18 @@ export default async function handler(req, res) {
             });
 
             const systemPrompt = `You are an expert California Medi-Cal / IHSS / CAPI / SSI Legal Document Extraction AI.
-Analyze all attached client documents (California Driver's License, Permanent Resident Card / Green Card, Social Security Card, Medi-Cal BIC Card, Passport, Birth Certificate, Medical Records, Visit Summaries, Medication Lists, Prior MC 223 or SOC forms) for client "${clientName}".
+Analyze all attached client documents (California Driver's License, Permanent Resident Card / Green Card, Social Security Card, Medi-Cal BIC Card, Passport, Medical Records, Visit Summaries, Lab Results, Prior MC 223 or SOC forms) for client "${clientName}".
 
 CRITICAL FORMATTING RULES:
-1. NO ALL-CAPS: Never output names, streets, cities, doctor names, or diagnoses in ALL CAPS (even if printed in ALL CAPS on a Driver's License or Green Card). Always convert them to clean Title Case (e.g., "Susanna", "Khachatryan", "707 E Lomita Ave, Apt 2", "Glendale"). Keep standard abbreviations uppercase (e.g., "CA", "SSI", "CAPI", "IHSS", "MD").
-2. TRANSLATION: If any document is in Armenian or Russian, translate all extracted values into accurate English.
-3. DRIVER LICENSE / ID / GREEN CARD: Carefully extract Date of Birth (MM/DD/YYYY), Sex ("Male" or "Female"), Height (e.g. 5'-03" -> heightFt: "5", heightIn: "3"), Weight in lbs (e.g. 123 -> weight: "123"), Social Security Number (XXX-XX-XXXX), and A-Number / Case Number.
-4. ADDRESS SEPARATION: Do NOT confuse a doctor's or clinic's address with the applicant's home address.
+1. NO ALL-CAPS: Never output names, streets, cities, doctor names, or diagnoses in ALL CAPS. Convert to clean Title Case. Keep medical/state abbreviations uppercase (CA, SSI, CAPI, IHSS, MD, NP, EKG, PFT, BNP, CBC, CMP).
+2. TRANSLATION: Translate any Armenian or Russian text into accurate English.
+3. CHECKBOXES & TESTS (ITEM 10): Carefully extract whether the client stayed overnight in the hospital ("Yes" or "No"), visited the Emergency Room ("Yes" or "No"), applied for SSI ("Yes" or "No"), and all medical tests performed in the last 12 months (EKG, Treadmill, Chest X-ray, Breathing Test/PFT, Blood Tests, Other).
 
 Return ONLY valid JSON matching this exact structure (leave empty string "" if unknown):
 {
   "firstName": "",
   "lastName": "",
-  "otherNames": "",
+  "otherNames": "N/A",
   "ssn": "XXX-XX-XXXX",
   "dob": "MM/DD/YYYY",
   "gender": "Male or Female",
@@ -306,6 +302,8 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
   "ssiApplied": "Yes or No",
   "ssiStatus": "Approved, Denied, Pending, On Appeal, or Unknown",
   "ssiDecisionDate": "MM/DD/YYYY",
+  "ssiWorsened": "Yes or No",
+  "ssiNewProblem": "Yes or No",
   "diagnoses": [
     { "problem": "", "onsetDate": "MM/YYYY" }
   ],
@@ -323,10 +321,22 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
       "lastSeen": "MM/DD/YYYY",
       "nextAppt": "MM/DD/YYYY",
       "reason": "",
+      "overnightStay": "Yes or No",
+      "overnightDates": "",
+      "emergencyRoom": "Yes or No",
+      "erDates": "",
       "medicines": "",
       "treatments": ""
     }
   ],
+  "tests": {
+    "ekg": { "performed": "Yes or No", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" },
+    "treadmill": { "performed": "Yes or No", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" },
+    "chestXray": { "performed": "Yes or No", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" },
+    "breathing": { "performed": "Yes or No", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" },
+    "blood": { "performed": "Yes or No", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" },
+    "other": { "performed": "Yes or No", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" }
+  },
   "dailyLimitations": [
     "",
     "",
@@ -349,7 +359,6 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
 
             const requestParts = [{ text: systemPrompt + "\n\n" + textContext }, ...inlineParts];
 
-            // Ставим gemini-flash-lite-latest и gemini-2.0-flash-lite ПЕРВЫМИ — они всегда свободны от 503 и отвечают за 2.5 секунды!
             const modelsPool = [
                 'gemini-flash-lite-latest',
                 'gemini-2.0-flash-lite',
@@ -415,9 +424,6 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
         }
     }
 
-    // =========================================================================
-    // РЕЖИМ GET: ПОЛУЧЕНИЕ ПАПОК И ФАЙЛОВ ПО ВЫБРАННОМУ MATTER ИЛИ ПАПКЕ
-    // =========================================================================
     const { query, type, clientId, matterId, folderId } = req.query;
 
     if (!apiKey) return res.status(500).json({ success: false, error: "Ключ не найден" });
@@ -450,10 +456,10 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
 
             if ((!folderId || folderId === 'ALL_KEY_FOLDERS') && parsed.folders.length > 0) {
                 const keyFolders = parsed.folders.filter(fld =>
-                    /(00\.|01\.|02\.|04\.|05\.|personal|medical|upload|inbox|education|work|financial)/i.test(fld.name)
-                ).slice(0, 5);
+                    /(00\.|01\.|02\.|04\.|05\.|07\.|personal|medical|upload|inbox|education|work|financial|final|packet)/i.test(fld.name)
+                ).slice(0, 6);
 
-                const foldersToScan = keyFolders.length > 0 ? keyFolders : parsed.folders.slice(0, 4);
+                const foldersToScan = keyFolders.length > 0 ? keyFolders : parsed.folders.slice(0, 5);
 
                 const subResults = await Promise.all(foldersToScan.map(async (fld) => {
                     try {
@@ -577,7 +583,7 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                 const fn = firstName.toLowerCase();
                 if (/(susanna|mariam|gohar|rima|lilit|anna|anahit|karine|narine|marine|gayane|hasmik|lusine|naira|varduhi|knarik|sirarpie|eda|emma|lena|svetlana|elena|olga|tatiana|natalia|irina|armine|seda|sona|nelly|meri|ani|mane|liana)$/i.test(fn)) {
                     gender = 'Female';
-                } else if (/(petros|norayr|artak|argishti|armen|aram|karen|vahan|vahe|davtyan|david|tigran|gevorg|hayk|samvel|gagik|ashot|vigen|levon|ruben|artur|arthur|hovhannes|sargis|sevak|grigor|hakob|harutyun)$/i.test(fn)) {
+                } else if (/(petros|norayr|artak|argishti|armen|aram|karen|vahan|vahe|davtyan|david|tigran|gevorg|hayk|samvel|gagik|ashot|vigen|levon|ruben|artur|arthur|hovhannes|sargis|sevak|grigor|hakob|harutyun|yurik)$/i.test(fn)) {
                     gender = 'Male';
                 }
             }
