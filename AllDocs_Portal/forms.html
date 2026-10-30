@@ -141,12 +141,12 @@
             box-sizing: border-box;
         }
 
-        /* ЛЕВАЯ КОЛОНКА ПОИСКА И ФАЙЛОВ КЛИЕНТА (ЧИСТАЯ И КОМПАКТНАЯ) */
+        /* ЛЕВАЯ КОЛОНКА ПОИСКА И ПАПОК MATTER */
         .search-panel {
-            width: 380px;
+            width: 395px;
             background: linear-gradient(165deg, #ffffff 0%, #f7f2ea 100%);
             border-right: 1.5px solid rgba(184, 115, 51, 0.28);
-            padding: 24px 20px;
+            padding: 22px 20px;
             display: flex;
             flex-direction: column;
             overflow-y: auto;
@@ -159,11 +159,11 @@
         .panel-title-box {
             background: linear-gradient(145deg, #3e271c 0%, #24140e 100%);
             color: #ffffff;
-            padding: 14px 18px;
+            padding: 13px 16px;
             border-radius: 16px;
             border: 1.5px solid rgba(212, 140, 70, 0.5);
             border-bottom: 4px solid #120906;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -171,17 +171,17 @@
         }
         .panel-title-box h2 {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 15px;
+            font-size: 14.5px;
             font-weight: 800;
             margin: 0;
             letter-spacing: 0.4px;
         }
 
-        .form-group { margin-bottom: 12px; }
-        label { display: block; font-size: 11px; font-weight: 800; color: var(--primary-color); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group { margin-bottom: 11px; }
+        label { display: block; font-size: 10.5px; font-weight: 800; color: var(--primary-color); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
         input, select, textarea {
             width: 100%;
-            padding: 10px 13px;
+            padding: 9px 12px;
             border: 1.5px solid rgba(161, 104, 58, 0.28);
             border-radius: 11px;
             font-size: 13px;
@@ -238,14 +238,14 @@
         .client-phone-list { font-size: 12px; color: var(--secondary-color); font-weight: 600; }
         .loading-indicator { position: absolute; right: 12px; color: var(--accent-color); font-size: 11px; display: none; font-weight: 800; }
 
-        /* КОМПАКТНАЯ КАРТОЧКА КЛИЕНТА И ФАЙЛОВ */
+        /* КАРТОЧКА КЛИЕНТА И ВЫБОРА MATTER / ПАПКИ */
         .client-card {
             background: linear-gradient(160deg, #faf6f0 0%, #f1e9dd 100%);
             border: 1.5px solid rgba(184, 115, 51, 0.35);
             border-bottom: 4px solid #8b552b;
             border-radius: 18px;
-            padding: 16px;
-            margin-top: 6px;
+            padding: 15px;
+            margin-top: 4px;
             display: none;
             box-shadow: 0 10px 24px rgba(44, 26, 20, 0.08), inset 0 2px 2px #ffffff;
         }
@@ -259,7 +259,7 @@
         }
         .summary-pill {
             background: #ffffff;
-            border: 1px solid rgba(184, 115, 51, 0.3);
+            border: 1px solid rgba(184, 115, 51, 0.35);
             border-radius: 8px;
             padding: 3px 8px;
             font-size: 11px;
@@ -284,11 +284,11 @@
         }
         .ai-scan-btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
 
-        /* ПРАВАЯ ЧАСТЬ С СЕТКОЙ 13 ФОРМ */
-        .forms-area { flex: 1; padding: 32px 36px; overflow-y: auto; box-sizing: border-box; }
+        /* ПРАВАЯ ЧАСТЬ С ФИЛЬТРОМ ГРУПП ПРОГРАММ И СЕТКОЙ 13 ФОРМ */
+        .forms-area { flex: 1; padding: 28px 34px; overflow-y: auto; box-sizing: border-box; }
         .area-header {
             background: linear-gradient(135deg, #24140e 0%, #3e2723 55%, #5d3618 100%);
-            padding: 24px 30px;
+            padding: 22px 28px;
             border-radius: 24px;
             border: 1.5px solid rgba(245, 203, 167, 0.4);
             border-bottom: 5px solid #140a07;
@@ -296,14 +296,46 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 28px;
+            margin-bottom: 18px;
         }
-        .area-header h1 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 26px; font-weight: 800; color: #ffffff; margin: 0 0 4px 0; }
-        .area-header p { color: #f5cba7; font-size: 13.5px; margin: 0; font-weight: 600; }
+        .area-header h1 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 25px; font-weight: 800; color: #ffffff; margin: 0 0 4px 0; }
+        .area-header p { color: #f5cba7; font-size: 13px; margin: 0; font-weight: 600; }
+
+        /* КНОПКИ ГРУППИРОВКИ ФОРМ ПО ПРОГРАММАМ (ALL | MEDI-CAL | CAPI / SSI | IHSS | APPEALS) */
+        .program-filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 22px;
+            flex-wrap: wrap;
+        }
+        .prog-tab-btn {
+            background: linear-gradient(180deg, #ffffff 0%, #f3ece0 100%);
+            color: #4a352b;
+            border: 1.5px solid rgba(184, 115, 51, 0.28);
+            border-bottom: 3px solid rgba(139, 85, 43, 0.4);
+            border-radius: 13px;
+            padding: 8px 16px;
+            font-size: 12.5px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .prog-tab-btn:hover {
+            transform: translateY(-2px);
+            border-color: #b87333;
+        }
+        .prog-tab-btn.active {
+            background: linear-gradient(135deg, #3e271c 0%, #24140e 100%);
+            color: #ffffff;
+            border-color: #d48c46;
+            border-bottom: 3px solid #8b552b;
+            box-shadow: 0 6px 14px rgba(36, 20, 14, 0.25);
+        }
 
         .forms-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
             gap: 18px;
             opacity: 0.45;
             pointer-events: none;
@@ -316,7 +348,7 @@
             border: 1.5px solid rgba(184, 115, 51, 0.28);
             border-bottom: 4.5px solid rgba(139, 85, 43, 0.45);
             border-radius: 20px;
-            padding: 22px;
+            padding: 20px;
             box-shadow: 0 12px 26px rgba(44, 26, 20, 0.06), inset 0 2px 2px #ffffff;
             display: flex;
             flex-direction: column;
@@ -330,29 +362,28 @@
         }
         
         .form-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 13px;
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
             background: linear-gradient(135deg, #fdf8f2 0%, #f1e4d1 100%);
             border: 1px solid rgba(184, 115, 51, 0.25);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
-            margin-bottom: 12px;
-            box-shadow: 0 4px 10px rgba(44, 26, 20, 0.05);
+            font-size: 20px;
+            margin-bottom: 10px;
         }
-        .form-item h4 { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0 0 6px 0; font-size: 17.5px; color: var(--primary-color); font-weight: 800; }
-        .form-item p { margin: 0 0 18px 0; font-size: 12.5px; color: var(--secondary-color); line-height: 1.45; flex: 1; font-weight: 600; }
+        .form-item h4 { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0 0 5px 0; font-size: 17px; color: var(--primary-color); font-weight: 800; }
+        .form-item p { margin: 0 0 16px 0; font-size: 12px; color: var(--secondary-color); line-height: 1.45; flex: 1; font-weight: 600; }
 
         .btn-download {
             background: linear-gradient(135deg, #3e271c 0%, #24140e 100%);
             color: #ffffff;
             border: 1px solid #d48c46;
             border-bottom: 3.5px solid #8b552b;
-            padding: 11px 14px;
+            padding: 10px 14px;
             border-radius: 12px;
-            font-size: 12.5px;
+            font-size: 12px;
             font-weight: 800;
             cursor: pointer;
             text-align: center;
@@ -362,7 +393,6 @@
         .btn-download:hover {
             background: linear-gradient(135deg, #c88240 0%, #8b552b 100%);
             transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(184, 115, 51, 0.35);
         }
 
         /* МОДАЛЬНОЕ ОКНО РЕДАКТОРА PDF */
@@ -414,7 +444,7 @@
     
     <div class="search-panel">
         <div class="panel-title-box">
-            <h2>🔍 1. Client Lookup</h2>
+            <h2>🔍 1. Client & Matter</h2>
             <span style="background:rgba(16,185,129,0.2); color:#6ee7b7; border:1px solid #10b981; padding:3px 9px; border-radius:12px; font-size:10.5px; font-weight:800;">● Docketwise + AI</span>
         </div>
         
@@ -436,46 +466,58 @@
             </div>
         </div>
 
-        <!-- ЧИСТАЯ И КОМПАКТНАЯ КАРТОЧКА КЛИЕНТА (БЕЗ ГРОМОЗДКИХ ПОЛЕЙ!) -->
+        <!-- КАРТОЧКА КЛИЕНТА: ВЫБОР MATTER -> ВЫБОР ПАПКИ -> СПИСОК ФАЙЛОВ ЭТОГО MATTER -->
         <div class="client-card" id="clientCard">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <span class="status-badge" id="dossierStatusBadge">✓ Docketwise Linked</span>
                 <span id="displayDwId" style="font-size:11px; font-weight:800; color:#8b552b;"></span>
             </div>
-            <h3 id="displayClientName" style="margin:0 0 4px 0; font-size:17px; font-weight:800;">Client Name</h3>
-            <div id="displayClientMatters" style="font-size: 11.5px; color: #047857; font-weight: 700; margin-bottom: 6px;"></div>
+            <h3 id="displayClientName" style="margin:0 0 6px 0; font-size:17px; font-weight:800;">Client Name</h3>
 
-            <!-- Краткая сводка найденных данных в виде аккуратных капсул -->
+            <!-- Краткая сводка найденных данных (SSN, DOB, Адрес, Диагнозы, Врачи) -->
             <div class="summary-pills-box" id="clientDataSummaryPills"></div>
 
-            <!-- БЛОК ВЫБОРА ФАЙЛОВ ИЗ ВКЛАДКИ FILES И КНОПКА GEMINI AI SCAN -->
+            <!-- ШАГ 2: ВЫБОР MATTER (КЕЙСА) -->
+            <div style="margin-top: 8px;">
+                <label style="color:#6e4223;">📂 2. Select Active Matter (Case):</label>
+                <select id="dfMatterSelect" onchange="handleMatterChange()" style="background:#ffffff; border-color:#b87333; font-weight:800;"></select>
+            </div>
+
+            <!-- ШАГ 3: ВЫБОР ПАПКИ ВНУТРИ ВЫБРАННОГО MATTER -->
+            <div style="margin-top: 8px;">
+                <label style="color:#6e4223;">📁 3. Folder Inside Matter:</label>
+                <select id="dfFolderSelect" onchange="handleFolderChange()" style="background:#ffffff;">
+                    <option value="ALL_KEY_FOLDERS">⚡ All Key Folders (01. ID, 02. Medical, 04. Work)</option>
+                </select>
+            </div>
+
+            <!-- СПИСОК ФАЙЛОВ ВНУТРИ ЭТОГО MATTER И ПАПКИ -->
             <div id="dwSmartFilesBox" style="margin: 10px 0; padding: 12px; background: #ffffff; border: 1.5px solid rgba(184,115,51,0.35); border-radius: 14px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <span style="font-size:10.5px; font-weight:900; color:#2c1a14; text-transform:uppercase;">📂 Client Files (Select for AI Scan)</span>
+                    <span style="font-size:10px; font-weight:900; color:#2c1a14; text-transform:uppercase;">☑️ 4. Check Files to Scan:</span>
                     <span id="dwFilesCountTag" style="font-size:10px; font-weight:800; color:#059669; background:#d1fae5; padding:2px 7px; border-radius:10px;">0 files</span>
                 </div>
-                <div id="dwSmartFilesList" style="max-height: 150px; overflow-y: auto; font-size: 11.5px;">
-                    <div style="color:#888; font-size:11px; padding:4px 0;">Select client to load Docketwise Files...</div>
+                <div id="dwSmartFilesList" style="max-height: 165px; overflow-y: auto; font-size: 11.5px;">
+                    <div style="color:#888; font-size:11px; padding:4px 0;">Select Matter above to view files...</div>
                 </div>
 
                 <!-- Загрузка дополнительных файлов с компьютера (при необходимости) -->
                 <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(184,115,51,0.25);">
-                    <label style="font-size:9.5px; color:#6e4223; margin-bottom:4px;">📎 Or attach Passport / Medical PDF/JPG:</label>
+                    <label style="font-size:9.5px; color:#6e4223; margin-bottom:4px;">📎 Or attach local file (Passport / Medical PDF/JPG):</label>
                     <input type="file" id="localAiFilesInput" multiple accept=".pdf,image/*" style="padding:5px; font-size:11px; background:#faf6f0;">
                 </div>
 
                 <button type="button" class="ai-scan-btn" id="btnRunAiScan" onclick="runAiDocumentScan()">
-                    🧠 Scan Checked Files with Gemini AI
+                    🧠 5. Scan Checked Files with Gemini AI
                 </button>
             </div>
 
-            <!-- БЫСТРАЯ ЗАМЕТКА В DOCKETWISE -->
-            <div style="margin-top: 12px; padding: 11px; background: #ffffff; border: 1.5px solid rgba(184,115,51,0.3); border-radius: 12px;">
-                <label style="color: #6e4223; margin-bottom: 5px;">📝 Send Quick Note to Docketwise</label>
-                <select id="dfMatterSelect" style="margin-bottom: 6px; padding: 7px 10px; font-size: 12px; background:#faf6f0;"></select>
-                <textarea id="note-input" placeholder="Type clean note for Docketwise..." style="width: 100%; box-sizing: border-box; height: 48px; margin-bottom: 8px; padding: 8px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit; resize: vertical;"></textarea>
-                <button onclick="sendNoteToDocketwise()" style="background: linear-gradient(135deg, #3e271c 0%, #24140e 100%); color: white; padding: 9px 12px; border: 1px solid #d48c46; border-bottom: 3px solid #8b552b; border-radius: 9px; cursor: pointer; font-size: 12px; font-weight: 800; width: 100%;">
-                    🚀 Push Note to Docketwise
+            <!-- БЫСТРАЯ ЗАМЕТКА В ВЫБРАННЫЙ MATTER -->
+            <div style="margin-top: 10px; padding: 11px; background: #ffffff; border: 1.5px solid rgba(184,115,51,0.3); border-radius: 12px;">
+                <label style="color: #6e4223; margin-bottom: 5px;">📝 Quick Note to Selected Matter</label>
+                <textarea id="note-input" placeholder="Type clean note for Docketwise..." style="width: 100%; box-sizing: border-box; height: 44px; margin-bottom: 8px; padding: 8px; font-size: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-family: inherit; resize: vertical;"></textarea>
+                <button onclick="sendNoteToDocketwise()" style="background: linear-gradient(135deg, #3e271c 0%, #24140e 100%); color: white; padding: 8px 12px; border: 1px solid #d48c46; border-bottom: 3px solid #8b552b; border-radius: 9px; cursor: pointer; font-size: 12px; font-weight: 800; width: 100%;">
+                    🚀 Push Note to Matter
                 </button>
                 <p id="note-status" style="margin-top: 6px; font-weight: 800; font-size: 11.5px; text-align: center; margin-bottom: 0;"></p>
             </div>
@@ -486,40 +528,49 @@
         <div class="area-header">
             <div>
                 <h1>Document Generator</h1>
-                <p>Select a client on the left — Gemini AI & Docketwise will auto-fill your PDF forms in 1 click</p>
+                <p>1. Select Client & Matter ➔ 2. Scan Files with Gemini AI ➔ 3. Open & Auto-Fill Form</p>
             </div>
             <div style="background: linear-gradient(135deg, #d48c46 0%, #9a5b22 100%); color: #ffffff; font-size: 11px; font-weight: 800; letter-spacing: 1.2px; padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.35);">
                 ⚡ 13 TEMPLATES READY
             </div>
         </div>
 
+        <!-- ФИЛЬТР ФОРМ ПО ГРУППАМ ПРОГРАММ -->
+        <div class="program-filter-bar" id="programFilterBar">
+            <button type="button" class="prog-tab-btn active" data-prog="all" onclick="filterFormsByProgram('all', this)">📂 All Forms (13)</button>
+            <button type="button" class="prog-tab-btn" data-prog="medical" onclick="filterFormsByProgram('medical', this)">🏥 Medi-Cal & Disability (MC 223, MC 220, MC 382, MC 383)</button>
+            <button type="button" class="prog-tab-btn" data-prog="capi" onclick="filterFormsByProgram('capi', this)">💰 CAPI & SSI (SOC 453, 455, 804, 814, SSP 14)</button>
+            <button type="button" class="prog-tab-btn" data-prog="ihss" onclick="filterFormsByProgram('ihss', this)">🏠 IHSS (SOC 839, SOC 840)</button>
+            <button type="button" class="prog-tab-btn" data-prog="appeals" onclick="filterFormsByProgram('appeals', this)">⚖️ General & Appeals (GEN 853, DPA 19)</button>
+        </div>
+
         <div class="forms-grid" id="formsGrid">
             
-            <div class="form-item">
+            <div class="form-item" data-prog="medical capi">
                 <div><div class="form-icon">📋</div>
                     <h4>MC 223</h4>
-                    <p>Applicant's Supplemental Statement of Facts for Medi-Cal</p>
+                    <p>Applicant's Supplemental Statement of Facts for Medi-Cal / Disability</p>
                 </div>
                 <button class="btn-download" onclick="openEditor('MC 223')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
-            <div class="form-item">
+            <div class="form-item" data-prog="medical capi">
                 <div><div class="form-icon">📋</div>
                     <h4>MC 220</h4>
-                    <p>Authorization for Release of Information</p>
+                    <p>Authorization for Release of Medical Information</p>
                 </div>
                 <button class="btn-download" onclick="openEditor('MC 220')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
-            <div class="form-item">
+            <div class="form-item" data-prog="medical">
                 <div><div class="form-icon">🤝</div>
                     <h4>MC 382</h4>
-                    <p>Appointment of Authorized Representative</p>
+                    <p>Appointment of Authorized Representative (Medi-Cal)</p>
                 </div>
                 <button class="btn-download" onclick="openEditor('MC 382')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
-            <div class="form-item">
+            <div class="form-item" data-prog="medical">
                 <div><div class="form-icon">🏢</div>
                     <h4>MC 383</h4>
                     <p>Authorized Rep. Standard Agreement for Organizations</p>
@@ -527,15 +578,15 @@
                 <button class="btn-download" onclick="openEditor('MC 383')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
-            <div class="form-item">
+            <div class="form-item" data-prog="appeals medical capi ihss">
                 <div><div class="form-icon">📋</div>
                     <h4>GEN 853</h4>
-                    <p>Sworn Statement</p>
+                    <p>Sworn Statement (Universal Declaration)</p>
                 </div>
                 <button class="btn-download" onclick="openEditor('GEN 853')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
-            <div class="form-item">
+            <div class="form-item" data-prog="capi">
                 <div><div class="form-icon">💰</div>
                     <h4>SOC 453</h4>
                     <p>Statement of Household Expenses and Contributions (CAPI)</p>
@@ -543,7 +594,7 @@
                 <button class="btn-download" onclick="openEditor('SOC 453')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
-            <div class="form-item">
+            <div class="form-item" data-prog="capi">
                 <div><div class="form-icon">⚖️</div>
                     <h4>SOC 455</h4>
                     <p>State Interim Assistance Reimbursement Authorization</p>
@@ -551,7 +602,7 @@
                 <button class="btn-download" onclick="openEditor('SOC 455')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
-            <div class="form-item">
+            <div class="form-item" data-prog="capi">
                 <div><div class="form-icon">🔄</div>
                     <h4>SOC 804</h4>
                     <p>Statement of Facts for Determining Continuing Eligibility (CAPI)</p>
@@ -559,15 +610,15 @@
                 <button class="btn-download" onclick="openEditor('SOC 804')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
-            <div class="form-item">
+            <div class="form-item" data-prog="capi">
                 <div><div class="form-icon">📝</div>
                     <h4>SOC 814</h4>
-                    <p>Statement of Facts (CAPI)</p>
+                    <p>Statement of Facts (CAPI Initial / Redetermination)</p>
                 </div>
                 <button class="btn-download" onclick="openEditor('SOC 814')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
-            <div class="form-item">
+            <div class="form-item" data-prog="ihss">
                 <div><div class="form-icon">🏠</div>
                     <h4>SOC 839</h4>
                     <p>IHSS Designation of Authorized Representative</p>
@@ -575,7 +626,7 @@
                 <button class="btn-download" onclick="openEditor('SOC 839')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
-            <div class="form-item">
+            <div class="form-item" data-prog="ihss">
                 <div><div class="form-icon">📍</div>
                     <h4>SOC 840</h4>
                     <p>IHSS Provider or Recipient Change of Address and/or Telephone</p>
@@ -583,18 +634,18 @@
                 <button class="btn-download" onclick="openEditor('SOC 840')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
-            <div class="form-item">
+            <div class="form-item" data-prog="capi">
                 <div><div class="form-icon">🏛️</div>
                     <h4>SSP 14</h4>
-                    <p>Authorization for Reimbursement of Interim Assistance</p>
+                    <p>Authorization for Reimbursement of Interim Assistance (SSI/CAPI)</p>
                 </div>
                 <button class="btn-download" onclick="openEditor('SSP 14')">⚡ Open & Auto-Fill PDF</button>
             </div>
 
-            <div class="form-item">
+            <div class="form-item" data-prog="appeals medical capi ihss">
                 <div><div class="form-icon">👨‍⚖️</div>
                     <h4>DPA 19</h4>
-                    <p>Authorized Representative for Appeals/Hearings</p>
+                    <p>Authorized Representative for Appeals / State Hearings</p>
                 </div>
                 <button class="btn-download" onclick="openEditor('DPA 19')">⚡ Open & Auto-Fill PDF</button>
             </div>
@@ -635,8 +686,27 @@
     let currentClient = null;
     let currentOpenedFormCode = '';
     let lastInspectedPdfFields = [];
-    // Единое хранилище данных клиента в памяти (из Docketwise + из Gemini AI Scan)
     let clientMemoryStore = {};
+
+    // Фильтрация 13 карточек форм по группе программы
+    window.filterFormsByProgram = function(progKey, btnEl) {
+        document.querySelectorAll('#programFilterBar .prog-tab-btn').forEach(b => b.classList.remove('active'));
+        if (btnEl) {
+            btnEl.classList.add('active');
+        } else {
+            const matchBtn = document.querySelector(`#programFilterBar .prog-tab-btn[data-prog="${progKey}"]`);
+            if (matchBtn) matchBtn.classList.add('active');
+        }
+
+        document.querySelectorAll('#formsGrid .form-item').forEach(card => {
+            const cardProgs = card.getAttribute('data-prog') || '';
+            if (progKey === 'all' || cardProgs.includes(progKey)) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    };
 
     function renderSummaryPills() {
         const box = document.getElementById('clientDataSummaryPills');
@@ -646,6 +716,7 @@
         if (m.ssn) pills.push(`🔐 SSN: ${m.ssn}`);
         if (m.dob) pills.push(`🎂 DOB: ${m.dob}`);
         if (m.gender) pills.push(`👤 ${m.gender}`);
+        if (m.heightFt || m.weight) pills.push(`📏 ${m.heightFt || '?'}'${m.heightIn || '0'}", ${m.weight || '?'} lbs`);
         if (m.street) pills.push(`🏠 ${m.street}, ${m.city || ''}`);
         if (Array.isArray(m.diagnoses) && m.diagnoses.length > 0 && m.diagnoses[0].problem) {
             pills.push(`🩺 ${m.diagnoses.length} Diagnoses`);
@@ -655,6 +726,99 @@
         }
         box.innerHTML = pills.map(p => `<span class="summary-pill">${p}</span>`).join('');
     }
+
+    // Отрисовка списка файлов выбранного Matter / Папки
+    function renderMatterFilesList(files = []) {
+        const countTag = document.getElementById('dwFilesCountTag');
+        const listEl = document.getElementById('dwSmartFilesList');
+        countTag.textContent = `${files.length} files`;
+
+        if (files.length === 0) {
+            listEl.innerHTML = '<div style="color:#888; font-size:11px; padding:6px 0;">No files inside this folder (choose another folder above or attach local file below).</div>';
+            return;
+        }
+
+        let html = '';
+        files.forEach(f => {
+            const badgeColor = f.category === 'identity' ? '#2563eb' : (f.category === 'medical_form' ? '#059669' : '#8b552b');
+            const folderLabel = f.folderName && f.folderName !== 'Root' ? `<div style="font-size:9.5px; color:#8b552b;">📁 ${f.folderName}</div>` : '';
+            html += `
+                <label style="display:flex; align-items:center; justify-content:space-between; gap:6px; padding:6px 4px; border-bottom:1px dashed #eee; cursor:pointer; text-transform:none; font-weight:600; margin:0;">
+                    <div style="display:flex; align-items:center; gap:7px; overflow:hidden;">
+                        <input type="checkbox" class="dw-file-cb" value="${f.id}" ${f.autoSelect ? 'checked' : ''} style="width:15px; height:15px; margin:0; flex-shrink:0;">
+                        <div style="overflow:hidden;">
+                            <a href="https://app.docketwise.com/documents/${f.id}" target="_blank" style="color:#2c1a14; text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; font-size:11.5px; font-weight:700;" title="${f.name}">${f.name} ↗</a>
+                            ${folderLabel}
+                        </div>
+                    </div>
+                    <span style="background:${badgeColor}; color:#fff; font-size:9px; padding:2px 6px; border-radius:6px; white-space:nowrap; flex-shrink:0;">${f.badge || '📄 File'}</span>
+                </label>
+            `;
+        });
+        listEl.innerHTML = html;
+    }
+
+    // При смене Matter (Кейса): автоматически фильтруем формы справа и загружаем папки и файлы ЭТОГО Matter!
+    window.handleMatterChange = async function() {
+        const matterSel = document.getElementById('dfMatterSelect');
+        const folderSel = document.getElementById('dfFolderSelect');
+        const matterId = matterSel.value;
+        const matterTitle = (matterSel.options[matterSel.selectedIndex]?.text || '').toLowerCase();
+
+        // Авто-переключение вкладки форм справа под выбранный Matter
+        if (matterTitle.includes('capi') || matterTitle.includes('ssi')) {
+            filterFormsByProgram('capi', null);
+        } else if (matterTitle.includes('ihss')) {
+            filterFormsByProgram('ihss', null);
+        } else if (matterTitle.includes('medi-cal') || matterTitle.includes('medical')) {
+            filterFormsByProgram('medical', null);
+        } else {
+            filterFormsByProgram('all', null);
+        }
+
+        if (!matterId) {
+            document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#888; font-size:11px; padding:6px 0;">No active matter selected.</div>';
+            return;
+        }
+
+        document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#b87333; font-weight:700; padding:8px 0;">⏳ Opening Matter folders (01. ID, 02. Medical, 04. Work)...</div>';
+        folderSel.innerHTML = '<option value="ALL_KEY_FOLDERS">⏳ Loading folders...</option>';
+
+        try {
+            const res = await fetch(`/api/search?matterId=${encodeURIComponent(matterId)}`);
+            const data = await res.json();
+
+            folderSel.innerHTML = '<option value="ALL_KEY_FOLDERS">⚡ All Key Folders (01. ID, 02. Medical, 04. Work)</option>';
+            if (data.success && Array.isArray(data.folders)) {
+                data.folders.forEach(fld => {
+                    const opt = document.createElement('option');
+                    opt.value = fld.folderId;
+                    opt.textContent = `📁 ${fld.name}`;
+                    folderSel.appendChild(opt);
+                });
+            }
+
+            renderMatterFilesList(data.files || []);
+        } catch (e) {
+            document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#dc2626; font-size:11px;">Could not load Matter folders.</div>';
+        }
+    };
+
+    // При выборе конкретной папки внутри Matter (например, только 01. PERSONAL ID или 02. MEDICAL RECORDS)
+    window.handleFolderChange = async function() {
+        const matterId = document.getElementById('dfMatterSelect').value;
+        const folderId = document.getElementById('dfFolderSelect').value;
+        if (!matterId) return;
+
+        document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#b87333; font-weight:700; padding:8px 0;">⏳ Loading files from selected folder...</div>';
+        try {
+            const res = await fetch(`/api/search?matterId=${encodeURIComponent(matterId)}&folderId=${encodeURIComponent(folderId)}`);
+            const data = await res.json();
+            if (data.success) {
+                renderMatterFilesList(data.files || []);
+            }
+        } catch (e) {}
+    };
 
     document.addEventListener("DOMContentLoaded", function() {
         const loggedInStaff = localStorage.getItem('loggedInStaff');
@@ -679,7 +843,6 @@
             document.addEventListener('click', (e) => { if (!userProfile.contains(e.target) && !logoutMenu.contains(e.target)) logoutMenu.style.display = 'none'; });
         }
 
-        // Кнопка копирования всех полей любого открытого PDF (всегда возвращает полный массив!)
         const copyBtn = document.getElementById('copyPdfFieldsBtn');
         if (copyBtn) {
             copyBtn.onclick = function() {
@@ -801,16 +964,15 @@
             const matterSel = document.getElementById('dfMatterSelect');
             matterSel.innerHTML = '';
             if (client.matters && client.matters.length > 0) {
-                document.getElementById('displayClientMatters').innerHTML = client.matters.map(m => `📂 ${m.title}`).join('<br>');
                 client.matters.forEach(m => {
                     const opt = document.createElement('option');
                     opt.value = m.id;
                     opt.textContent = `📂 ${m.title}`;
                     matterSel.appendChild(opt);
                 });
+                matterSel.selectedIndex = 0;
             } else {
-                document.getElementById('displayClientMatters').innerHTML = 'No active matters';
-                matterSel.innerHTML = '<option value="">General Profile (No active matter)</option>';
+                matterSel.innerHTML = '<option value="">No active matters found</option>';
             }
 
             const parts = (client.name || '').trim().split(/\s+/);
@@ -826,8 +988,11 @@
             document.getElementById('clientCard').style.display = 'block';
             document.getElementById('formsGrid').classList.add('active');
             document.getElementById('dossierStatusBadge').textContent = '⏳ Loading Docketwise Dossier...';
-            document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#b87333; font-weight:700; padding:6px 0;">⏳ Loading files from Docketwise...</div>';
 
+            // 1. Загружаем папки и файлы выбранного Matter
+            await window.handleMatterChange();
+
+            // 2. Параллельно загружаем анкетные данные самого клиента (SSN, Адрес, Пол)
             try {
                 const res = await fetch(`/api/search?clientId=${encodeURIComponent(client.id)}`);
                 const fullData = await res.json();
@@ -837,43 +1002,20 @@
                         ...clientMemoryStore,
                         firstName: p.firstName || clientMemoryStore.firstName,
                         lastName: p.lastName || clientMemoryStore.lastName,
-                        ssn: p.ssn || '',
-                        dob: p.dob || '',
-                        street: p.street || '',
+                        ssn: p.ssn || clientMemoryStore.ssn || '',
+                        dob: p.dob || clientMemoryStore.dob || '',
+                        street: p.street || clientMemoryStore.street || '',
                         city: p.city || 'Glendale',
                         state: p.state || 'CA',
-                        zip: p.zip || '',
-                        gender: p.gender || '',
+                        zip: p.zip || clientMemoryStore.zip || '',
+                        gender: p.gender || clientMemoryStore.gender || '',
                         language: p.language || 'Armenian',
-                        heightFt: p.heightFeet || '',
-                        heightIn: p.heightInches || '',
-                        weight: p.weight || '',
-                        caseNum: p.aNumber || ''
+                        heightFt: p.heightFeet || clientMemoryStore.heightFt || '',
+                        heightIn: p.heightInches || clientMemoryStore.heightIn || '',
+                        weight: p.weight || clientMemoryStore.weight || '',
+                        caseNum: p.aNumber || clientMemoryStore.caseNum || ''
                     };
                     renderSummaryPills();
-
-                    const files = p.files || [];
-                    document.getElementById('dwFilesCountTag').textContent = `${files.length} files`;
-                    if (files.length > 0) {
-                        let filesHtml = '';
-                        files.forEach(f => {
-                            const badgeColor = f.category === 'identity' ? '#2563eb' : (f.category === 'medical_form' ? '#059669' : '#64748b');
-                            const rowOpacity = f.category === 'ignore' ? '0.55' : '1';
-                            filesHtml += `
-                                <label style="display:flex; align-items:center; justify-content:space-between; gap:6px; padding:5px 4px; border-bottom:1px dashed #eee; cursor:pointer; text-transform:none; font-weight:600; margin:0; opacity:${rowOpacity};">
-                                    <div style="display:flex; align-items:center; gap:6px; overflow:hidden;">
-                                        <input type="checkbox" class="dw-file-cb" value="${f.id}" data-url="${f.url || ''}" ${f.autoSelect ? 'checked' : ''} style="width:15px; height:15px; margin:0; flex-shrink:0;">
-                                        <a href="${f.url}" target="_blank" style="color:#2c1a14; text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:11.5px;" title="${f.name}">${f.name} ↗</a>
-                                    </div>
-                                    <span style="background:${badgeColor}; color:#fff; font-size:9px; padding:2px 6px; border-radius:6px; white-space:nowrap; flex-shrink:0;">${f.badge}</span>
-                                </label>
-                            `;
-                        });
-                        document.getElementById('dwSmartFilesList').innerHTML = filesHtml;
-                    } else {
-                        document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#888; font-size:11px; padding:4px 0;">No files listed in Docketwise tab (or attach below).</div>';
-                    }
-
                     document.getElementById('dossierStatusBadge').textContent = '✓ Docketwise Profile Ready';
                 } else {
                     document.getElementById('dossierStatusBadge').textContent = '✓ Client Linked';
@@ -948,10 +1090,10 @@
     async function runAiDocumentScan() {
         const btn = document.getElementById('btnRunAiScan');
         const badge = document.getElementById('dossierStatusBadge');
+        const matterId = document.getElementById('dfMatterSelect').value;
 
         const checkedBoxes = Array.from(document.querySelectorAll('.dw-file-cb:checked'));
         const checkedDwFileIds = checkedBoxes.map(cb => cb.value);
-        const checkedDwFileUrls = checkedBoxes.map(cb => cb.getAttribute('data-url')).filter(Boolean);
 
         const localFilesInput = document.getElementById('localAiFilesInput');
         const uploadedFiles = [];
@@ -963,7 +1105,7 @@
         }
 
         btn.disabled = true;
-        btn.textContent = '⏳ Gemini AI Scanning Files...';
+        btn.textContent = '⏳ Gemini AI Scanning Matter Files...';
         badge.textContent = '🧠 AI Analyzing Documents...';
 
         try {
@@ -972,9 +1114,9 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     clientId: currentClient ? currentClient.id : '',
+                    matterId: matterId,
                     clientName: currentClient ? currentClient.name : '',
                     fileIds: checkedDwFileIds,
-                    fileUrls: checkedDwFileUrls,
                     uploadedFiles: uploadedFiles
                 })
             });
@@ -986,7 +1128,6 @@
 
             const ex = data.extracted || {};
 
-            // Аккуратно объединяем найденные ИИ данные с теми, что уже были из Docketwise
             Object.keys(ex).forEach(k => {
                 const val = ex[k];
                 if (val !== null && val !== undefined && val !== '' && (!Array.isArray(val) || val.length > 0)) {
@@ -995,13 +1136,13 @@
             });
 
             renderSummaryPills();
-            badge.textContent = `✅ AI Scan Complete (${data.model || 'Gemini'})`;
-            btn.textContent = '✅ All Data Extracted! Open Any Form →';
-            setTimeout(() => { btn.textContent = '🧠 Scan Checked Files with Gemini AI'; }, 4500);
+            badge.textContent = `✅ AI Scan Complete (${data.filesScanned || 1} docs read)`;
+            btn.textContent = '✅ All Data Extracted! Click Form on Right →';
+            setTimeout(() => { btn.textContent = '🧠 5. Scan Checked Files with Gemini AI'; }, 4500);
         } catch (err) {
             alert('❌ ' + err.message);
             badge.textContent = '⚠️ AI Scan Error';
-            btn.textContent = '🧠 Scan Checked Files with Gemini AI';
+            btn.textContent = '🧠 5. Scan Checked Files with Gemini AI';
         } finally {
             btn.disabled = false;
         }
@@ -1074,9 +1215,9 @@
         const cityStateZip = [city, state, zip].filter(Boolean).join(', ');
         const gender = m.gender || '';
         const language = (m.language || 'Armenian').trim();
-        const heightFt = (m.heightFt || '').trim();
-        const heightIn = (m.heightIn || '').trim();
-        const weight = (m.weight || '').trim();
+        const heightFt = String(m.heightFt || '').trim();
+        const heightIn = String(m.heightIn || '').trim();
+        const weight = String(m.weight || '').trim();
         const caseNum = (m.caseNum || '').trim();
         const today = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
 
@@ -1100,7 +1241,6 @@
         };
     }
 
-    // УМНЫЙ МАППЕР ВСЕХ 301 ПОЛЯ MC 223 + ЗАПИСЬ ИМЕН ПОЛЕЙ ДЛЯ КНОПКИ COPY
     function smartAutoFillPdfForm(form, d, pdfDoc) {
         const fields = form.getFields();
         const pages = pdfDoc ? pdfDoc.getPages() : [];
@@ -1241,18 +1381,11 @@
 
         const isMc223 = (currentOpenedFormCode === 'MC 223');
 
-        // Helper для точного выбора Yes / No / Male / Female в радио-группах PDF
-        function selectRadioSmart(field, desiredKeyword, fallbackIndex) {
+        function selectRadioByIndex(field, targetIdx) {
             if (typeof field.getOptions !== 'function' || typeof field.select !== 'function') return false;
             const opts = field.getOptions() || [];
-            if (opts.length === 0) return false;
-            const kw = desiredKeyword.toLowerCase();
-            let match = opts.find(o => o.toLowerCase().includes(kw) || o.toLowerCase() === kw.charAt(0));
-            if (!match && opts[fallbackIndex] !== undefined) {
-                match = opts[fallbackIndex];
-            }
-            if (match) {
-                field.select(match);
+            if (opts[targetIdx] !== undefined) {
+                field.select(opts[targetIdx]);
                 return true;
             }
             return false;
@@ -1263,7 +1396,6 @@
             const typeName = field.constructor.name;
             const key = rawName.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-            // Записываем каждое поле в массив для кнопки Copy PDF Field Names!
             let pageNum = 1, xPct = 50, yPct = 50;
             try {
                 const widgets = field.acroField.getWidgets();
@@ -1302,22 +1434,23 @@
                         }
                     }
 
-                    // Корректная расстановка галочек в радио-группах MC 223:
+                    // Точная установка радио-кнопок MC 223:
+                    // opts[0] = первый квадратик (Male / Yes), opts[1] = второй квадратик (Female / No)
                     if (rawName === 'sex' && d.gender) {
                         const isFem = d.gender.toLowerCase().startsWith('f');
-                        if (selectRadioSmart(field, isFem ? 'female' : 'male', isFem ? 1 : 0)) filledCount++;
+                        if (selectRadioByIndex(field, isFem ? 1 : 0)) filledCount++;
                     } else if (rawName === '4a english') {
                         const isEng = d.language && d.language.toLowerCase() === 'english';
-                        if (selectRadioSmart(field, isEng ? 'yes' : 'no', isEng ? 0 : 1)) filledCount++;
+                        if (selectRadioByIndex(field, isEng ? 0 : 1)) filledCount++;
                     } else if (rawName === '4b interpreter') {
-                        // В поле 4b interpreter opts[1] — это YES, а opts[0] было NO!
-                        if (selectRadioSmart(field, 'yes', 1)) filledCount++;
+                        // В 4b interpreter: индекс 0 = YES (левый квадратик), индекс 1 = NO (правый квадратик)!
+                        if (selectRadioByIndex(field, 0)) filledCount++;
                     } else if (rawName === '7 care' && c0.clinicName) {
-                        if (selectRadioSmart(field, 'yes', 0)) filledCount++;
+                        if (selectRadioByIndex(field, 0)) filledCount++;
                     } else if (rawName === '12 contacts') {
-                        if (selectRadioSmart(field, 'yes', 0)) filledCount++;
+                        if (selectRadioByIndex(field, 0)) filledCount++;
                     } else if (rawName === '13 additional exam') {
-                        if (selectRadioSmart(field, 'yes', 0)) filledCount++;
+                        if (selectRadioByIndex(field, 0)) filledCount++;
                     }
                     return;
                 }
