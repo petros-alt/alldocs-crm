@@ -34,8 +34,9 @@ export default async function handler(req, res) {
         if (!str || typeof str !== 'string') return str;
         const trimmed = str.trim();
         if (!trimmed) return '';
+        if (/^(n\/a|none|unknown|null|-)$/i.test(trimmed)) return '';
         if (/^\d/.test(trimmed) && !/[a-zA-Z]{3,}/.test(trimmed)) return trimmed;
-        if (/^(CA|NY|TX|FL|NV|AZ|WA|OR|IL|PA|OH|GA|NC|MI|NJ|VA|MA|MD|SSI|SSDI|CAPI|IHSS|NOA|SOC|MC|USCIS|USA|PO|APT|STE|DR|ST|AVE|BLVD|RD|LN|CT|PL|NW|NE|SW|SE|II|III|IV|LLC|INC|MD|DO|RN|NP|PA-C|N\/A)$/i.test(trimmed)) {
+        if (/^(CA|NY|TX|FL|NV|AZ|WA|OR|IL|PA|OH|GA|NC|MI|NJ|VA|MA|MD|SSI|SSDI|CAPI|IHSS|NOA|SOC|MC|USCIS|USA|PO|APT|STE|DR|ST|AVE|BLVD|RD|LN|CT|PL|NW|NE|SW|SE|II|III|IV|LLC|INC|MD|DO|RN|NP|PA-C|GED|12\+)$/i.test(trimmed)) {
             return trimmed.toUpperCase();
         }
         const upperCount = (trimmed.match(/[A-Z]/g) || []).length;
@@ -43,7 +44,7 @@ export default async function handler(req, res) {
         if ((upperCount > 2 && lowerCount === 0) || (lowerCount > 2 && upperCount === 0)) {
             return trimmed.toLowerCase().replace(/\b([a-z])([a-z']*)/g, (match, first, rest) => {
                 const wordUp = match.toUpperCase();
-                if (/^(CA|SSI|SSDI|CAPI|IHSS|NOA|MD|DO|RN|NP|LLC|INC|PO|II|III|IV|UCLA|USC|DMV|EDD|IRS|EKG|PFT|BNP|CBC|CMP|UTI)$/.test(wordUp)) {
+                if (/^(CA|SSI|SSDI|CAPI|IHSS|NOA|MD|DO|RN|NP|LLC|INC|PO|II|III|IV|UCLA|USC|DMV|EDD|IRS|EKG|PFT|BNP|CBC|CMP|UTI|GED)$/.test(wordUp)) {
                     return wordUp;
                 }
                 if (/^(and|or|of|in|on|at|to|for|with|from|by|the|a|an)$/.test(match) && match !== trimmed.toLowerCase().slice(0, match.length)) {
@@ -62,8 +63,11 @@ export default async function handler(req, res) {
         for (const key of Object.keys(obj)) {
             const val = obj[key];
             if (typeof val === 'string') {
-                if (key === 'state') out[key] = val.trim().toUpperCase() || 'CA';
-                else if (['ssn', 'dob', 'phone', 'zip', 'heightFt', 'heightIn', 'weight', 'caseNum', 'firstSeen', 'lastSeen', 'nextAppt', 'onsetDate', 'ssiDecisionDate', 'educationDate', 'dateFrom', 'dateTo', 'date'].includes(key)) {
+                if (/^(n\/a|none|unknown|null)$/i.test(val.trim()) && key !== 'otherNames') {
+                    out[key] = '';
+                } else if (key === 'state') {
+                    out[key] = val.trim().toUpperCase() || 'CA';
+                } else if (['ssn', 'dob', 'phone', 'zip', 'heightFt', 'heightIn', 'weight', 'caseNum', 'firstSeen', 'lastSeen', 'nextAppt', 'onsetDate', 'ssiDecisionDate', 'educationDate', 'educationGrade', 'dateFrom', 'dateTo', 'date', 'signatureDate'].includes(key)) {
                     out[key] = val.trim();
                 } else {
                     out[key] = formatProperCase(val);
@@ -273,15 +277,37 @@ export default async function handler(req, res) {
                 if (part) inlineParts.push({ inline_data: part });
             });
 
-            const systemPrompt = `You are an expert California Medi-Cal / IHSS / CAPI / SSI Legal Document Extraction AI.
-Analyze all attached client documents (California Driver's License, Permanent Resident Card / Green Card, Social Security Card, Medi-Cal BIC Card, Passport, Medical Records, Visit Summaries, Lab Results, Prior MC 223 or SOC forms) for client "${clientName}".
+            const systemPrompt = `You are a high-precision California Medi-Cal / IHSS / CAPI / SSI Legal Document & Handwriting Extraction AI.
+Analyze all attached client documents (California Driver's License, Green Card, Social Security Card, Medi-Cal BIC Card, Medical Records, Visit Summaries, Lab Results, Medication Lists, and any filled or handwritten MC 223 / SOC forms) for client "${clientName}".
 
-CRITICAL FORMATTING RULES:
-1. NO ALL-CAPS: Never output names, streets, cities, doctor names, or diagnoses in ALL CAPS. Convert to clean Title Case. Keep medical/state abbreviations uppercase (CA, SSI, CAPI, IHSS, MD, NP, EKG, PFT, BNP, CBC, CMP).
-2. TRANSLATION: Translate any Armenian or Russian text into accurate English.
-3. CHECKBOXES & TESTS (ITEM 10): Carefully extract whether the client stayed overnight in the hospital ("Yes" or "No"), visited the Emergency Room ("Yes" or "No"), applied for SSI ("Yes" or "No"), and all medical tests performed in the last 12 months (EKG, Treadmill, Chest X-ray, Breathing Test/PFT, Blood Tests, Other).
+CRITICAL EXTRACTION RULES:
+1. HANDWRITING & CHECKMARKS: Read all handwritten text, handwritten dates (e.g. "06/12/2026" on Page 7 Part V Signature Date), and all checked boxes (☑ or ✓) with 100% accuracy.
+2. NO ALL-CAPS: Convert ALL-CAPS text into clean Title Case. Keep standard abbreviations uppercase (CA, SSI, CAPI, IHSS, MD, NP, EKG, PFT, BNP, CBC, CMP, GED).
+3. ITEM 7, 8, 9 (CLINICS & DOCTORS):
+   - Extract each clinic/hospital/doctor separately in order:
+     * clinics[0] = Item 7 (Primary clinic/hospital)
+     * clinics[1] = Item 8 (Second clinic/hospital)
+     * clinics[2] = Item 9 (Doctor seen outside of clinic/hospital, e.g. Dignity Health / specialist)
+   - If Item 9 in the scanned form is blank/empty, leave clinics[2] empty!
+   - If medicines are "None" or "None administered during outpatient lab visits", copy that exact phrase into medicines; if completely blank, leave "".
+4. ITEM 10 (MEDICAL TESTS TABLE - PAGE 3):
+   - Carefully check each of the 6 rows in Item 10 (or infer from medical records):
+     * ekg (Electrocardiogram)
+     * treadmill (Treadmill exercise heart test)
+     * chestXray (Chest X-ray)
+     * breathing (Breathing Test / PFT)
+     * blood (Blood Tests - e.g. Quest Diagnostics / LabCorp / clinic lab)
+     * other (Other test - e.g. Quest Diagnostics / 24-hour urine / Ultrasound)
+   - For each test, set "performed": "Yes" (if YES column is checked ✓ or test was done) or "No" (if NO column is checked ✓), and extract the exact facility "name", "address", "city", "state", "zip", and "date" (MM/YYYY).
+5. ITEM 13, 15, 16, 17 & PAGE 7 SIGNATURE DATE:
+   - "willingAdditionalExam": "Yes" or "No" (from Item 13 on Page 4).
+   - "educationGrade": exact box checked in Item 15a ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "GED", or "12+").
+   - "educationDate": MM/YYYY from Item 15b (e.g. "05/1983").
+   - "specialEd": "Yes" or "No" from Item 15c.
+   - "workedLast15Years": "Yes" or "No" from Item 16. If "No", leave all fields inside "job" as empty string "" (NEVER write "N/A" in job title!).
+   - "signatureDate": any handwritten or typed date in Part V Signature section on Page 7 (e.g. "06/12/2026").
 
-Return ONLY valid JSON matching this exact structure (leave empty string "" if unknown):
+Return ONLY valid JSON matching this exact structure (use empty string "" if unknown or blank):
 {
   "firstName": "",
   "lastName": "",
@@ -337,14 +363,17 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
     "blood": { "performed": "Yes or No", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" },
     "other": { "performed": "Yes or No", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" }
   },
+  "otherMedicalTreatment11": "Yes or No",
+  "willingAdditionalExam": "Yes or No",
   "dailyLimitations": [
     "",
     "",
     "",
     ""
   ],
-  "educationGrade": "",
+  "educationGrade": "12+",
   "educationDate": "MM/YYYY",
+  "specialEd": "Yes or No",
   "workedLast15Years": "Yes or No",
   "job": {
     "title": "",
@@ -354,18 +383,19 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
     "hoursPerWeek": "",
     "rateOfPay": "",
     "description": ""
-  }
+  },
+  "signatureDate": "MM/DD/YYYY"
 }`;
 
             const requestParts = [{ text: systemPrompt + "\n\n" + textContext }, ...inlineParts];
 
+            // Ставим первыми самые умные Vision-модели (2.5-flash с отключенным thinkingBudget и 2.0-flash), которые идеально читают почерк и чекбоксы!
             const modelsPool = [
-                'gemini-flash-lite-latest',
-                'gemini-2.0-flash-lite',
-                'gemini-2.5-flash-lite',
+                'gemini-2.5-flash',
                 'gemini-2.0-flash',
                 'gemini-flash-latest',
-                'gemini-2.5-flash'
+                'gemini-flash-lite-latest',
+                'gemini-2.0-flash-lite'
             ];
 
             let aiJson = null;
@@ -374,7 +404,7 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
 
             for (const modelName of modelsPool) {
                 try {
-                    const genConfig = { temperature: 0.1 };
+                    const genConfig = { temperature: 0.05 };
                     if (modelName.includes('2.5')) {
                         genConfig.thinkingConfig = { thinkingBudget: 0 };
                     }
