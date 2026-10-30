@@ -79,10 +79,10 @@ export default async function handler(req, res) {
             if (idMatch) {
                 const docId = idMatch[1];
                 if (!files.some(x => String(x.id) === String(docId))) {
-                    // Ищем осмысленное название файла в ячейке таблицы
+                   // Берем строго колонку Name и игнорируем колонку размера (0.35, 0.22)
                     const cellTexts = [...tr.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)]
                         .map(m => m[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim())
-                        .filter(t => t.length > 2 && !/^\d+(\.\d+)?\s*(mb|kb|bytes)$/i.test(t) && !/^(active|all|none|--)$/i.test(t));
+                        .filter(t => t.length > 2 && !/^\d+(\.\d+)?(\s|$)/i.test(t) && !/^(active|all|none|--)$/i.test(t));
                     if (cellTexts.length > 0) {
                         files.push({
                             id: docId,
