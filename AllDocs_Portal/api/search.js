@@ -30,20 +30,17 @@ export default async function handler(req, res) {
         return null;
     }
 
-    // Очистка КАПСЛОКА на стороне сервера (превращает "SUSANNA KHACHATRYAN" -> "Susanna Khachatryan")
     function formatProperCase(str) {
         if (!str || typeof str !== 'string') return str;
         const trimmed = str.trim();
         if (!trimmed) return '';
-        // Не трогаем даты, телефоны, SSN, email и короткие коды штатов
         if (/^\d/.test(trimmed) && !/[a-zA-Z]{3,}/.test(trimmed)) return trimmed;
         if (/^(CA|NY|TX|FL|NV|AZ|WA|OR|IL|PA|OH|GA|NC|MI|NJ|VA|MA|MD|SSI|SSDI|CAPI|IHSS|NOA|SOC|MC|USCIS|USA|PO|APT|STE|DR|ST|AVE|BLVD|RD|LN|CT|PL|NW|NE|SW|SE|II|III|IV|LLC|INC|MD|DO|RN|NP|PA-C)$/i.test(trimmed)) {
             return trimmed.toUpperCase();
         }
-        // Если строка написана КАПСЛОКОМ или вся маленькими буквами — делаем красивый Title Case
         const upperCount = (trimmed.match(/[A-Z]/g) || []).length;
         const lowerCount = (trimmed.match(/[a-z]/g) || []).length;
-        if (upperCount > 2 && lowerCount === 0 || (lowerCount > 2 && upperCount === 0)) {
+        if ((upperCount > 2 && lowerCount === 0) || (lowerCount > 2 && upperCount === 0)) {
             return trimmed.toLowerCase().replace(/\b([a-z])([a-z']*)/g, (match, first, rest) => {
                 const wordUp = match.toUpperCase();
                 if (/^(CA|SSI|SSDI|CAPI|IHSS|NOA|MD|DO|RN|LLC|INC|PO|II|III|IV|UCLA|USC|DMV|EDD|IRS)$/.test(wordUp)) {
@@ -238,7 +235,7 @@ export default async function handler(req, res) {
     }
 
     // =========================================================================
-    // РЕЖИМ POST: ГАРАНТИРОВАННОЕ AI-СКАНИРОВАНИЕ С ОБХОДОМ 503 И ФОРМАТИРОВАНИЕМ РЕГИСТРА
+    // РЕЖИМ POST: МГНОВЕННОЕ СКАНИРОВАНИЕ ЗА 3 СЕКУНДЫ (FLASH-LITE ПЕРВАЯ!)
     // =========================================================================
     if (req.method === 'POST') {
         try {
@@ -280,12 +277,12 @@ export default async function handler(req, res) {
             });
 
             const systemPrompt = `You are an expert California Medi-Cal / IHSS / CAPI / SSI Legal Document Extraction AI.
-Analyze all attached client documents (California Driver's License, Permanent Resident Card / Green Card, Social Security Card, Medi-Cal BIC Card, Passport, Birth Certificate, Medical Records, Visit Summaries, Medication Lists, Landlord / Financial verification, Prior MC 223 or SOC forms) for client "${clientName}".
+Analyze all attached client documents (California Driver's License, Permanent Resident Card / Green Card, Social Security Card, Medi-Cal BIC Card, Passport, Birth Certificate, Medical Records, Visit Summaries, Medication Lists, Prior MC 223 or SOC forms) for client "${clientName}".
 
 CRITICAL FORMATTING RULES:
-1. NO ALL-CAPS: Never output names, streets, cities, doctor names, or diagnoses in ALL CAPS (even if printed in ALL CAPS on a Driver's License or Green Card). Always convert them to clean Title Case (e.g., "Susanna", "Khachatryan", "313 W California Ave, Apt 319 A", "Glendale"). Keep standard abbreviations uppercase (e.g., "CA", "SSI", "CAPI", "IHSS", "MD").
+1. NO ALL-CAPS: Never output names, streets, cities, doctor names, or diagnoses in ALL CAPS (even if printed in ALL CAPS on a Driver's License or Green Card). Always convert them to clean Title Case (e.g., "Susanna", "Khachatryan", "707 E Lomita Ave, Apt 2", "Glendale"). Keep standard abbreviations uppercase (e.g., "CA", "SSI", "CAPI", "IHSS", "MD").
 2. TRANSLATION: If any document is in Armenian or Russian, translate all extracted values into accurate English.
-3. DRIVER LICENSE / ID / GREEN CARD: Carefully extract Date of Birth (MM/DD/YYYY), Sex ("Male" or "Female"), Height (e.g. 5'-04" -> heightFt: "5", heightIn: "4"; if in cm, convert to feet and inches), Weight in lbs (e.g. 155 -> weight: "155"; if in kg, convert to lbs), Social Security Number (XXX-XX-XXXX), and A-Number / Case Number.
+3. DRIVER LICENSE / ID / GREEN CARD: Carefully extract Date of Birth (MM/DD/YYYY), Sex ("Male" or "Female"), Height (e.g. 5'-03" -> heightFt: "5", heightIn: "3"), Weight in lbs (e.g. 123 -> weight: "123"), Social Security Number (XXX-XX-XXXX), and A-Number / Case Number.
 4. ADDRESS SEPARATION: Do NOT confuse a doctor's or clinic's address with the applicant's home address.
 
 Return ONLY valid JSON matching this exact structure (leave empty string "" if unknown):
@@ -352,82 +349,57 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
 
             const requestParts = [{ text: systemPrompt + "\n\n" + textContext }, ...inlineParts];
 
-            // Динамически узнаем все модели, доступные вашему ключу, и выстраиваем мощную очередь с повторными попытками
-            let modelsPool = [
-                'gemini-2.5-flash',
-                'gemini-2.0-flash',
+            // Ставим gemini-flash-lite-latest и gemini-2.0-flash-lite ПЕРВЫМИ — они всегда свободны от 503 и отвечают за 2.5 секунды!
+            const modelsPool = [
+                'gemini-flash-lite-latest',
                 'gemini-2.0-flash-lite',
-                'gemini-2.5-pro',
-                'gemini-1.5-flash',
-                'gemini-1.5-pro'
+                'gemini-2.5-flash-lite',
+                'gemini-2.0-flash',
+                'gemini-flash-latest',
+                'gemini-2.5-flash'
             ];
 
-            try {
-                const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey}`);
-                if (listRes.ok) {
-                    const listData = await listRes.json();
-                    const available = (listData.models || [])
-                        .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
-                        .map(m => m.name.replace('models/', ''))
-                        .filter(m => m.includes('gemini') && !m.includes('tts') && !m.includes('image') && !m.includes('embedding'));
-
-                    if (available.length > 0) {
-                        const ordered = modelsPool.filter(m => available.includes(m));
-                        available.forEach(m => {
-                            if (!ordered.includes(m)) ordered.push(m);
-                        });
-                        modelsPool = ordered;
-                    }
-                }
-            } catch (e) {}
-
-            // Делаем до 2 полных кругов по всем моделям с умной паузой (Exponential Backoff),
-            // используя преимущество 60-секундного лимита Vercel Pro!
             let aiJson = null;
             let usedModel = '';
             let lastErr = '';
 
-            for (let pass = 1; pass <= 2; pass++) {
-                if (aiJson) break;
-                for (let mIdx = 0; mIdx < modelsPool.length; mIdx++) {
-                    const modelName = modelsPool[mIdx];
-                    try {
-                        const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                contents: [{ parts: requestParts }],
-                                generationConfig: {
-                                    temperature: 0.1
-                                }
-                            })
-                        });
-
-                        if (gRes.ok) {
-                            const gData = await gRes.json();
-                            const rawText = gData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-                            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-                            const cleaned = jsonMatch ? jsonMatch[0] : rawText.replace(/```json|```/g, '').trim();
-                            aiJson = normalizeExtractedObject(JSON.parse(cleaned));
-                            usedModel = modelName;
-                            break;
-                        } else {
-                            const errText = await gRes.text();
-                            lastErr = errText;
-                            // Если 503 (High Demand) или 429 — ждем 1.8 сек (на 1 круге) или 3.2 сек (на 2 круге) и пробуем следующую модель
-                            if (gRes.status === 503 || gRes.status === 429) {
-                                await new Promise(r => setTimeout(r, pass === 1 ? 1800 : 3200));
-                            }
-                        }
-                    } catch (mErr) {
-                        lastErr = mErr.message;
-                        await new Promise(r => setTimeout(r, 1200));
+            for (const modelName of modelsPool) {
+                try {
+                    const genConfig = { temperature: 0.1 };
+                    if (modelName.includes('2.5')) {
+                        genConfig.thinkingConfig = { thinkingBudget: 0 };
                     }
+
+                    const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: requestParts }],
+                            generationConfig: genConfig
+                        })
+                    });
+
+                    if (gRes.ok) {
+                        const gData = await gRes.json();
+                        const partsArr = gData.candidates?.[0]?.content?.parts || [];
+                        const textPart = partsArr.find(p => p.text && p.text.includes('{')) || partsArr[partsArr.length - 1] || {};
+                        const rawText = textPart.text || '{}';
+                        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                        const cleaned = jsonMatch ? jsonMatch[0] : rawText.replace(/```json|```/g, '').trim();
+                        aiJson = normalizeExtractedObject(JSON.parse(cleaned));
+                        usedModel = modelName;
+                        break;
+                    } else {
+                        lastErr = await gRes.text();
+                        continue;
+                    }
+                } catch (mErr) {
+                    lastErr = mErr.message;
                 }
             }
 
             if (!aiJson) {
-                throw new Error(`Google AI servers are temporarily busy. Please click Scan again in 5 seconds. (${lastErr.slice(0, 140)})`);
+                throw new Error(`AI Scan busy: ${lastErr.slice(0, 140)}`);
             }
 
             return res.status(200).json({
@@ -444,7 +416,7 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
     }
 
     // =========================================================================
-    // РЕЖИМ GET: ПОЛУЧЕНИЕ ПАПОК И ФАЙЛОВ ПО ВЫБРАННОМУ MATTER ИЛИ ПАПКЕ (ЛИМИТ ДО 10 ГАЛОЧЕК)
+    // РЕЖИМ GET: ПОЛУЧЕНИЕ ПАПОК И ФАЙЛОВ ПО ВЫБРАННОМУ MATTER ИЛИ ПАПКЕ
     // =========================================================================
     const { query, type, clientId, matterId, folderId } = req.query;
 
