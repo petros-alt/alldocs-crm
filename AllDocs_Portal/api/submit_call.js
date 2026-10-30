@@ -7,13 +7,11 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: "Method not allowed" });
 
-    // Используем ТОЛЬКО рабочий ключ из Vercel (тот же самый, что в search.js!)
     const apiKey = process.env.DOCKETWISE_CLIENT_SECRET || process.env.DOCKETWISE_CLIENT_ID;
     if (!apiKey) {
         return res.status(500).json({ success: false, error: "API ключ DOCKETWISE не найден в переменных Vercel" });
     }
 
-    // Официальные ID сотрудников в Docketwise (из search.js)
     const staffNameToDwId = {
         "Norayr Badalyan": 332487,
         "Petros Eghiazaryan": 418892,
@@ -55,9 +53,7 @@ export default async function handler(req, res) {
         const data = req.body || {};
         const actionType = data.actionType || 'Note';
         let clientId = data.clientId;
-
-        // Определяем Docketwise User ID того сотрудника, от чьего имени идет запрос
-        const authorDwId = staffNameToDwId[data.operatorName] || 332487; // По умолчанию ID админа Норайра (332487)
+        const authorDwId = staffNameToDwId[data.operatorName] || 332487;
 
         // === 1. СОЗДАНИЕ НОВОГО КЛИЕНТА В DOCKETWISE ===
         if (actionType === 'CreateContact') {
@@ -68,7 +64,7 @@ export default async function handler(req, res) {
 
             const createAttempts = [
                 { first_name: firstName, last_name: lastName, phone_numbers_attributes: data.phone ? [{ number: data.phone }] : [] },
-                { contact: { first_name: firstName, last_name: lastName, phone: data.phone || '' } }
+                { contact: { first_name: firstName, last_name: lastName, phone_numbers_attributes: data.phone ? [{ number: data.phone }] : [] } }
             ];
 
             let lastRes = null;
@@ -110,120 +106,161 @@ export default async function handler(req, res) {
             });
         }
 
+        const cId = Number(clientId);
+        const mId = data.matterId ? Number(data.matterId) : null;
         const cleanMatterTitle = (data.matterTitle || '').replace('📂', '').trim();
         const subjectLine = `Call Note: ${data.fullName || 'Client'} (${new Date().toLocaleDateString()})`;
         const fullNoteText = `[CRM Call Note | Logged by: ${data.operatorName || 'Staff'}${cleanMatterTitle ? ' | Case: ' + cleanMatterTitle : ''}]\nDate: ${data.date || new Date().toLocaleString()}\nClient: ${data.fullName || ''} (${data.phone || ''})\n\n${data.description || ''}`;
 
         // === 3. СОЗДАНИЕ ЗАМЕТКИ (NOTE) В DOCKETWISE ===
         if (actionType === 'Note') {
-            const cId = Number(clientId);
-            const mId = data.matterId ? Number(data.matterId) : null;
-
-            // Пробуем все официальные маршруты и структуры Docketwise API для заметок
-            const noteRoutesToTry = [];
-
-            if (mId) {
-                noteRoutesToTry.push({
-                    path: `/matters/${mId}/notes`,
-                    body: { title: subjectLine, content: fullNoteText, body: fullNoteText, user_id: authorDwId, created_by_id: authorDwId }
-                });
-                noteRoutesToTry.push({
-                    path: `/notes`,
-                    body: { title: subjectLine, content: fullNoteText, body: fullNoteText, matter_id: mId, contact_id: cId, client_id: cId, user_id: authorDwId, created_by_id: authorDwId }
-                });
-                noteRoutesToTry.push({
-                    path: `/notes`,
-                    body: { note: { title: subjectLine, content: fullNoteText, body: fullNoteText, matter_id: mId, contact_id: cId, user_id: authorDwId } }
-                });
+            // Сначала проверяем структуру заметок в вашем аккаунте через GET /notes
+            const sampleCheck = await callDw('/notes?per_page=1', 'GET');
+            let sampleKeys = '';
+            if (sampleCheck.ok && sampleCheck.data) {
+                const arr = Array.isArray(sampleCheck.data) ? sampleCheck.data : (sampleCheck.data.notes || [sampleCheck.data]);
+                if (arr.length > 0 && arr[0]) {
+                    sampleKeys = Object.keys(arr[0]).join(',');
+                }
             }
 
-            noteRoutesToTry.push({
-                path: `/contacts/${cId}/notes`,
-                body: { title: subjectLine, content: fullNoteText, body: fullNoteText, user_id: authorDwId, created_by_id: authorDwId }
-            });
-            noteRoutesToTry.push({
-                path: `/notes`,
-                body: { title: subjectLine, content: fullNoteText, body: fullNoteText, contact_id: cId, client_id: cId, user_id: authorDwId }
-            });
+            const notePayloads = [
+                // 1. Чистый минимальный формат Docketwise API v1 (без лишних полей!)
+                { title: subjectLine, content: fullNoteText, contact_id: cId, ...(mId ? { matter_id: mId } : {}) },
+                // 2. Полиморфный формат Rails (noteable_type / noteable_id)
+                ...(mId ? [
+                    { title: subjectLine, content: fullNoteText, noteable_id: mId, noteable_type: "Matter" },
+                    { note: { title: subjectLine, content: fullNoteText, noteable_id: mId, noteable_type: "Matter" } }
+                ] : []),
+                { title: subjectLine, content: fullNoteText, noteable_id: cId, noteable_type: "Contact" },
+                // 3. Обернутый в note только с чистыми полями
+                { note: { title: subjectLine, content: fullNoteText, contact_id: cId, ...(mId ? { matter_id: mId } : {}) } },
+                // 4. С полем body вместо content
+                { note: { title: subjectLine, body: fullNoteText, contact_id: cId, ...(mId ? { matter_id: mId } : {}) } }
+            ];
 
-            let diagnosticLog = [];
-            for (const attempt of noteRoutesToTry) {
-                const resAttempt = await callDw(attempt.path, 'POST', attempt.body);
-                if (resAttempt.ok) {
+            let diag = [`GET /notes -> ${sampleCheck.status} [keys: ${sampleKeys || 'none'}]`];
+
+            for (const body of notePayloads) {
+                const r = await callDw('/notes', 'POST', body);
+                if (r.ok) {
                     return res.status(200).json({
                         success: true,
                         clientId,
-                        message: `Заметка (Note) успешно сохранена в Docketwise! (${attempt.path})`
+                        message: `Заметка (Note) успешно сохранена в Docketwise!`
                     });
                 }
-                diagnosticLog.push(`${attempt.path} -> ${resAttempt.status} (${resAttempt.text.slice(0, 80)})`);
+                diag.push(`POST /notes -> ${r.status}`);
             }
 
-            throw new Error(`Docketwise отклонил запись Note. Ответы сервера: ${diagnosticLog.join(' | ')}`);
+            // РЕЗЕРВНЫЙ МЕТОД: Если /notes закрыт правами 403, пробуем сохранить в описание самого Кейса (PUT /matters/{mId})
+            if (mId) {
+                const getMatter = await callDw(`/matters/${mId}`, 'GET');
+                if (getMatter.ok) {
+                    const mObj = getMatter.data?.data || getMatter.data?.matter || getMatter.data || {};
+                    const oldNotes = mObj.notes || mObj.description || '';
+                    const updatedNotes = oldNotes ? `${oldNotes}\n\n---\n${fullNoteText}` : fullNoteText;
+
+                    const putMatter = await callDw(`/matters/${mId}`, 'PUT', {
+                        matter: { description: updatedNotes, notes: updatedNotes },
+                        description: updatedNotes,
+                        notes: updatedNotes
+                    });
+                    if (putMatter.ok) {
+                        return res.status(200).json({
+                            success: true,
+                            clientId,
+                            message: `Заметка успешно добавлена в карточку дела (Matter #${mId}) в Docketwise!`
+                        });
+                    }
+                    diag.push(`PUT /matters/${mId} -> ${putMatter.status}`);
+                }
+            }
+
+            throw new Error(`Диагностика Note: ${diag.join(' | ')}`);
         }
 
-        // === 4. СОЗДАНИЕ ЗАДАЧИ (TASK) В DOCKETWISE ===
+        // === 4. СОЗДАНИЕ ЗАДАЧИ (TASK / TODO) В DOCKETWISE ===
         if (actionType === 'Task') {
-            const cId = Number(clientId);
-            const mId = data.matterId ? Number(data.matterId) : null;
             const targetUserId = data.assigneeId ? Number(data.assigneeId) : authorDwId;
             const dueDate = data.dueDate || new Date().toISOString().split('T')[0];
 
             const taskTitle = `📞 Call Follow-Up: ${data.fullName || 'Client'}${cleanMatterTitle ? ' [' + cleanMatterTitle + ']' : ''}`;
             const taskDesc = `[Assigned via CRM by ${data.operatorName || 'Operator'}]\nClient: ${data.fullName || ''} | Phone: ${data.phone || ''}\nCase: ${cleanMatterTitle || 'General'}\n\nTask / Inquiry:\n${data.description || ''}`;
 
-            const taskRoutesToTry = [
+            // В Docketwise задачи называются /todos (или /calendar_events / /events)!
+            const todoRoutes = [
                 {
-                    path: `/tasks`,
+                    path: '/todos',
                     body: {
                         title: taskTitle,
                         name: taskTitle,
                         description: taskDesc,
+                        content: taskDesc,
                         due_date: dueDate,
                         contact_id: cId,
-                        client_id: cId,
                         ...(mId ? { matter_id: mId } : {}),
+                        user_id: targetUserId,
                         assignee_id: targetUserId,
-                        user_id: targetUserId
+                        user_ids: [targetUserId]
                     }
                 },
                 {
-                    path: `/tasks`,
+                    path: '/todos',
                     body: {
-                        task: {
+                        todo: {
                             title: taskTitle,
                             name: taskTitle,
                             description: taskDesc,
                             due_date: dueDate,
                             contact_id: cId,
                             ...(mId ? { matter_id: mId } : {}),
-                            user_id: targetUserId
+                            user_id: targetUserId,
+                            user_ids: [targetUserId]
                         }
+                    }
+                },
+                ...(mId ? [{
+                    path: `/matters/${mId}/todos`,
+                    body: { title: taskTitle, description: taskDesc, due_date: dueDate, user_id: targetUserId }
+                }] : []),
+                {
+                    path: '/events',
+                    body: {
+                        title: taskTitle,
+                        description: taskDesc,
+                        start_time: new Date().toISOString(),
+                        end_time: new Date(Date.now() + 1800000).toISOString(),
+                        contact_id: cId,
+                        ...(mId ? { matter_id: mId } : {}),
+                        user_ids: [targetUserId]
                     }
                 }
             ];
 
-            if (mId) {
-                taskRoutesToTry.unshift({
-                    path: `/matters/${mId}/tasks`,
-                    body: { title: taskTitle, name: taskTitle, description: taskDesc, due_date: dueDate, user_id: targetUserId, assignee_id: targetUserId }
-                });
+            // Также проверим GET /todos, чтобы увидеть статус и ключи
+            const checkTodos = await callDw('/todos?per_page=1', 'GET');
+            let todoKeys = '';
+            if (checkTodos.ok && checkTodos.data) {
+                const arr = Array.isArray(checkTodos.data) ? checkTodos.data : (checkTodos.data.todos || [checkTodos.data]);
+                if (arr.length > 0 && arr[0]) todoKeys = Object.keys(arr[0]).join(',');
             }
 
-            let diagnosticLog = [];
-            for (const attempt of taskRoutesToTry) {
-                const resAttempt = await callDw(attempt.path, 'POST', attempt.body);
-                if (resAttempt.ok) {
+            let diag = [`GET /todos -> ${checkTodos.status} [keys: ${todoKeys || 'none'}]`];
+
+            for (const route of todoRoutes) {
+                const r = await callDw(route.path, 'POST', route.body);
+                if (r.ok) {
                     return res.status(200).json({
                         success: true,
                         clientId,
-                        message: `Задача (Task) успешно назначена на ${data.assignedStaff || 'сотрудника'} в Docketwise!`
+                        message: `Задача успешно создана в Docketwise для ${data.assignedStaff || 'сотрудника'}! (${route.path})`
                     });
                 }
-                diagnosticLog.push(`${attempt.path} -> ${resAttempt.status} (${resAttempt.text.slice(0, 80)})`);
+                diag.push(`POST ${route.path} -> ${r.status} (${r.text.slice(0, 60)})`);
             }
 
-            throw new Error(`Docketwise отклонил запись Task. Ответы сервера: ${diagnosticLog.join(' | ')}`);
+            throw new Error(`Диагностика Task/Todo: ${diag.join(' | ')}`);
         }
 
         return res.status(400).json({ success: false, error: "Неизвестный тип действия" });
