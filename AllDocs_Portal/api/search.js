@@ -17,11 +17,108 @@ export default async function handler(req, res) {
     const apiKey = process.env.DOCKETWISE_CLIENT_SECRET || process.env.DOCKETWISE_CLIENT_ID;
     const geminiKey = process.env.GEMINI_API_KEY;
 
-    const DW_CSRF_TOKEN = process.env.DOCKETWISE_CSRF_TOKEN || "S2SIaBjTm3Al8iBwva92n1nhRwwpFyMfZF08ry5lEFR4x6JOZwG5PSGFWpA7MkfE09vFqUcpbSNlnwAWssHZjg";
-    const DW_COOKIE = process.env.DOCKETWISE_COOKIE || "__stripe_mid=7a09a5c6-21ec-4d21-886d-c0bf6cc90d9760274d; intercom-device-id-q07v75s8=345a6aa1-5a77-4f02-afd1-47df40c5c1cd; browser.timezone=America/Los_Angeles; browser_id=a6350fa1-3722-4eac-9f81-3a34c6aa9572; _borderwise_session=8f901a47ce2fe3fc9898508ebf9b6160; intercom-session-q07v75s8=TnFLcXM3Q2RNcm9sRTRQTW5CazZjaGhQUllpU0NiVTQ0Yi84ekwvTDZwTEhjRHZqU2ZDdzNTTytzQWlsYjNPdDgzd3FiQk1idkhCa1cyb0FoRW9wRGkxekpHL3E3Y3MzVmlxbEVtaWo2SVkwckdsV1hSa1lPS0V6V3ROVEFNSEtTVWtnN3FHVDNkWUg5bnFXYnEwM2FGQnRvS1l3ZTYxaDloaGN0V052M2k4d1ErSEhwRlAwRTRHdkhacUUydW9MNFZtKzVoQTBxQUxzNFVQN1pweTZPVklSR0RjMG96b2NPMUVZdlJkdzZKSTBSQWl4NENHZlA3ZGFtS25yVFBEWjZnaU5admlzQWNHK1I1VFhSNkZSbzkvRDRpdCt4YXVjcDF1bUN4U1RQVlRyb3JOSjNzRUd3QmU3QnhkdGl0WEMtLUV6UmN5dVYvNzlkV3NiNi9TN0IvbXc9PQ==--f033a28c53b8aec83838622733173f9f2dc41aba; __stripe_sid=2cd489e7-9fc4-435a-bf3e-1632e9209388ae3582; per_page=50";
+    const DW_CSRF_TOKEN = process.env.DOCKETWISE_CSRF_TOKEN || "hPvfgqHTOcjZGfr3rB46I8l0h2G_U0_zPe__5rzApxK3WPWk3gEbhd1ugBcqgwt4Q04FxNFtAc88LcNfIGRuyA";
+    const DW_COOKIE = process.env.DOCKETWISE_COOKIE || "__stripe_mid=7a09a5c6-21ec-4d21-886d-c0bf6cc90d9760274d; intercom-device-id-q07v75s8=345a6aa1-5a77-4f02-afd1-47df40c5c1cd; browser.timezone=America/Los_Angeles; browser_id=a6350fa1-3722-4eac-9f81-3a34c6aa9572; _borderwise_session=8f901a47ce2fe3fc9898508ebf9b6160; per_page=50; __stripe_sid=2cd489e7-9fc4-435a-bf3e-1632e9209388ae3582; intercom-session-q07v75s8=azZPUnozMXp3VkJ2Q3RCaFRaSTZFWXFreWc1Q0FnZ0dGMkU3UTNkcEVJVjhDc3BSOXdOdXUvc05ONWZrenROczBiMTVXOWlYeEhId1hGcnNsQXdHR2F3ZlJoZ3ZWQzlqZUM0cEtEZHM5MXBWaGdvdGpiYnZtV05pdDI1Nms5dXJ4ZjZOUnNuMlpKdlZBUFZMY1pIaUQ3OEJkMitZQytxYkxqR3VqY3VBWk1XaS9qNm45d2wrOUx5eDBVN2ZRaTA3RGl2RnF3dFc0STlPZUxsOStXYnIwN3VGZDY1blp1Nkc2MGtkQnR2ODc1WDN2ek5xQStXY2E3Y09IV2J3bTFadXc5YmNuWDlpNXc3L3p6WlFwcTRkODZFUlpHTzgrcUlaNHBBSDhDNXFWU1MrbHNBbUdvVHVvM1ozb0tmd2dqV3YtLTVRTnlyWTVwb3lQbnpZakN5Yjh5SWc9PQ==--1000f00116b54aac3dc7cd422ad3bc993cea116d";
+
+    // Умный парсер ответа Docketwise (/documents?matter_id=... и /documents?folder_id=...&matter_id=...)
+    function parseDocketwiseDocumentsResponse(rawText, defaultMatterId = '') {
+        const folders = [];
+        const files = [];
+
+        const unescaped = rawText
+            .replace(/\\"/g, '"')
+            .replace(/\\'/g, "'")
+            .replace(/\\n/g, '\n')
+            .replace(/\\t/g, ' ')
+            .replace(/\\\//g, '/');
+
+        // 1. Ищем все ПАПКИ (ссылки, содержащие folder_id=12345)
+        const folderRegex = /href=["']([^"']*folder_id=(\d+)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
+        let fMatch;
+        while ((fMatch = folderRegex.exec(unescaped)) !== null) {
+            const href = fMatch[1];
+            const folderId = fMatch[2];
+            const mIdMatch = href.match(/matter_id=(\d+)/i);
+            const mId = mIdMatch ? mIdMatch[1] : defaultMatterId;
+            const title = fMatch[3].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+
+            if (title && title.length > 1 && !folders.some(x => String(x.folderId) === String(folderId))) {
+                folders.push({
+                    folderId: folderId,
+                    matterId: mId,
+                    name: title
+                });
+            }
+        }
+
+        // 2. Ищем все ФАЙЛЫ внутри папки (ссылки на /documents/12345 или /files/12345 без folder_id)
+        const fileRegex = /href=["']([^"']*\/(?:documents|files|attachments)\/(\d+)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
+        let docMatch;
+        while ((docMatch = fileRegex.exec(unescaped)) !== null) {
+            const href = docMatch[1];
+            const docId = docMatch[2];
+            if (href.includes('folder_id=')) continue;
+            const title = docMatch[3].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+
+            if (title && title.length > 1 && !/^(edit|delete|trash|remove|download|view|rename|move)$/i.test(title)) {
+                if (!files.some(x => String(x.id) === String(docId))) {
+                    files.push({
+                        id: docId,
+                        name: title,
+                        url: `https://app.docketwise.com/documents/${docId}/download`
+                    });
+                }
+            }
+        }
+
+        // Дополнительный поиск файлов по атрибуту data-document-id или строкам таблицы, если названия лежат отдельно от кнопки скачивания
+        const rowBlocks = unescaped.split(/<tr/i);
+        rowBlocks.forEach(tr => {
+            if (tr.includes('folder_id=')) return;
+            const idMatch = tr.match(/\/(?:documents|files)\/(\d+)/i) || tr.match(/data-id=["'](\d+)["']/i);
+            if (idMatch) {
+                const docId = idMatch[1];
+                if (!files.some(x => String(x.id) === String(docId))) {
+                    // Ищем осмысленное название файла в ячейке таблицы
+                    const cellTexts = [...tr.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)]
+                        .map(m => m[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim())
+                        .filter(t => t.length > 2 && !/^\d+(\.\d+)?\s*(mb|kb|bytes)$/i.test(t) && !/^(active|all|none|--)$/i.test(t));
+                    if (cellTexts.length > 0) {
+                        files.push({
+                            id: docId,
+                            name: cellTexts[0],
+                            url: `https://app.docketwise.com/documents/${docId}/download`
+                        });
+                    }
+                }
+            }
+        });
+
+        return { folders, files };
+    }
+
+    function classifyClientFile(fileName = '', folderName = '') {
+        const lower = (fileName + ' ' + folderName).toLowerCase();
+        if (/(zelle|receipt|invoice|payment|retainer|contract|08\.\s*firm)/i.test(lower)) {
+            return { category: 'ignore', badge: '💸 Contract/Fee', priority: 10, autoSelect: false };
+        }
+        if (/(01\.|personal|identification|driver|license|dl|passport|birth|ssn|social|id_card|state_id|green_card|greencard|naturalization|medi-cal|bic)/i.test(lower)) {
+            return { category: 'identity', badge: '🪪 01. Personal ID', priority: 100, autoSelect: true };
+        }
+        if (/(02\.|mc_223|mc223|mc 223|soc|873|804|814|453|839|medical|doctor|dr\.|clinic|hospital|meds|medication|rx|diagnosis|visit|summary|noa|ssi|capi|disability)/i.test(lower)) {
+            return { category: 'medical_form', badge: '🩺 02. Medical', priority: 95, autoSelect: true };
+        }
+        if (/(04\.|education|work|job|employment|school)/i.test(lower)) {
+            return { category: 'work_edu', badge: '🏫 04. Edu/Work', priority: 85, autoSelect: true };
+        }
+        if (/(05\.|financial|living|bank|lease|rent|utility|expense)/i.test(lower)) {
+            return { category: 'financial', badge: '💰 05. Financials', priority: 80, autoSelect: false };
+        }
+        return { category: 'other', badge: '📄 Document', priority: 50, autoSelect: false };
+    }
 
     // =========================================================================
-    // РЕЖИМ POST: AI-СКАНИРОВАНИЕ ФАЙЛОВ КЛИЕНТА ИЗ DOCKETWISE ИЛИ КОМПЬЮТЕРА
+    // РЕЖИМ POST: AI-СКАНИРОВАНИЕ ВЫБРАННЫХ ФАЙЛОВ КЛИЕНТА ЧЕРЕЗ GEMINI VISION
     // =========================================================================
     if (req.method === 'POST') {
         try {
@@ -32,13 +129,13 @@ export default async function handler(req, res) {
                 });
             }
 
-            const { clientId, fileIds = [], uploadedFiles = [], clientName = '' } = req.body || {};
+            const { clientId, matterId = '', fileIds = [], uploadedFiles = [], clientName = '' } = req.body || {};
             const inlineParts = [];
-            let textContext = `Client Name: ${clientName}\n`;
+            let textContext = `Target Client Full Name: ${clientName}\nIMPORTANT: Extract data ONLY for ${clientName}!\n`;
 
-            // 1. Прикрепленные файлы с компьютера (если есть)
+            // 1. Прикрепленные локальные файлы с компьютера
             if (Array.isArray(uploadedFiles)) {
-                uploadedFiles.slice(0, 3).forEach(uf => {
+                uploadedFiles.slice(0, 4).forEach(uf => {
                     if (uf.base64 && uf.mimeType) {
                         inlineParts.push({
                             inline_data: {
@@ -50,8 +147,8 @@ export default async function handler(req, res) {
                 });
             }
 
-            // 2. Скачиваем отмеченные галочками файлы из Docketwise (до 4 файлов за раз, чтобы не превышать квоту токенов!)
-            const uniqueDocIds = [...new Set(Array.isArray(fileIds) ? fileIds : [])].slice(0, 4);
+            // 2. Скачиваем отмеченные галочками файлы из выбранного Matter / Папки в Docketwise
+            const uniqueDocIds = [...new Set(Array.isArray(fileIds) ? fileIds : [])].slice(0, 5);
 
             for (const docId of uniqueDocIds) {
                 const candidateUrls = [
@@ -59,23 +156,25 @@ export default async function handler(req, res) {
                     `https://app.docketwise.com/documents/${docId}`,
                     `https://app.docketwise.com/files/${docId}/download`
                 ];
+                let downloaded = false;
+
                 for (const dUrl of candidateUrls) {
+                    if (downloaded) break;
                     try {
                         const fRes = await fetch(dUrl, {
                             headers: {
                                 "cookie": DW_COOKIE,
                                 "x-csrf-token": DW_CSRF_TOKEN,
-                                "Authorization": apiKey ? `Bearer ${apiKey}` : undefined,
-                                "Referer": `https://app.docketwise.com/en/contacts/${clientId || ''}`
+                                "Referer": matterId ? `https://app.docketwise.com/en/matters/${matterId}` : `https://app.docketwise.com/en/contacts/${clientId || ''}`
                             },
                             redirect: 'follow'
                         });
+
                         if (fRes.ok) {
                             const contentType = (fRes.headers.get('content-type') || '').toLowerCase();
                             if (contentType.includes('pdf') || contentType.includes('image') || contentType.includes('octet-stream')) {
                                 const arrayBuf = await fRes.arrayBuffer();
-                                // Берем файлы до 6 МБ, чтобы мгновенно проходить в бесплатную квоту Gemini
-                                if (arrayBuf.byteLength > 400 && arrayBuf.byteLength < 6 * 1024 * 1024) {
+                                if (arrayBuf.byteLength > 300 && arrayBuf.byteLength < 8 * 1024 * 1024) {
                                     const b64 = Buffer.from(arrayBuf).toString('base64');
                                     let mime = 'application/pdf';
                                     if (contentType.includes('jpeg') || contentType.includes('jpg')) mime = 'image/jpeg';
@@ -83,7 +182,28 @@ export default async function handler(req, res) {
                                     inlineParts.push({
                                         inline_data: { mime_type: mime, data: b64 }
                                     });
-                                    break;
+                                    downloaded = true;
+                                }
+                            } else if (contentType.includes('html') || contentType.includes('javascript')) {
+                                // Если страница документа вернула HTML-обертку с прямой ссылкой на S3 (amazonaws.com), вытаскиваем её!
+                                const pageHtml = await fRes.text();
+                                const s3Match = pageHtml.match(/https:\/\/[^"'\s>]+(?:amazonaws\.com|cloudfront\.net|docketwise)[^"'\s>]+/i);
+                                if (s3Match) {
+                                    const s3Res = await fetch(s3Match[0].replace(/&amp;/g, '&'));
+                                    if (s3Res.ok) {
+                                        const s3Type = (s3Res.headers.get('content-type') || '').toLowerCase();
+                                        const arrayBuf = await s3Res.arrayBuffer();
+                                        if (arrayBuf.byteLength > 300 && arrayBuf.byteLength < 8 * 1024 * 1024) {
+                                            const b64 = Buffer.from(arrayBuf).toString('base64');
+                                            let mime = 'application/pdf';
+                                            if (s3Type.includes('jpeg') || s3Type.includes('jpg') || s3Match[0].includes('.jpg')) mime = 'image/jpeg';
+                                            else if (s3Type.includes('png') || s3Match[0].includes('.png')) mime = 'image/png';
+                                            inlineParts.push({
+                                                inline_data: { mime_type: mime, data: b64 }
+                                            });
+                                            downloaded = true;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -91,7 +211,7 @@ export default async function handler(req, res) {
                 }
             }
 
-            // 3. Собираем текстовую анкету и заметки клиента из Docketwise
+            // 3. Добавляем текстовый профиль и заметки клиента из Docketwise
             if (clientId) {
                 try {
                     const cRes = await fetch(`https://app.docketwise.com/contacts/${clientId}.json`, {
@@ -102,23 +222,14 @@ export default async function handler(req, res) {
                         textContext += `Docketwise Contact Profile: ${JSON.stringify(cJson).slice(0, 6000)}\n`;
                     }
                 } catch (e) {}
-
-                try {
-                    const notesRes = await fetch(`https://app.docketwise.com/en/contacts/${clientId}/notes`, {
-                        headers: { "cookie": DW_COOKIE, "x-csrf-token": DW_CSRF_TOKEN }
-                    });
-                    if (notesRes.ok) {
-                        const notesHtml = await notesRes.text();
-                        const cleanNotes = notesHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 5000);
-                        textContext += `Docketwise Client Notes: ${cleanNotes}\n`;
-                    }
-                } catch (e) {}
             }
 
             const systemPrompt = `You are an expert California Medi-Cal / IHSS / CAPI Legal Document Extraction AI.
-Analyze all attached client documents (Driver's License, Birth Certificate, Passport, SSN Card, Medical Records, Visit Summaries, Prior Forms) and the Docketwise context.
+Analyze all attached client documents (Driver's License, Passport, Birth Certificate, SSN Card, Medical Records, Visit Summaries, Prescriptions, Prior MC 223 / SOC forms) and the Docketwise context for client "${clientName}".
 If any document is in Armenian or Russian, translate all extracted values into English.
-Infer gender ("Male" or "Female") from the documents or first name.
+Convert any dates of birth to MM/DD/YYYY format.
+Convert height to Feet and Inches (if in cm, convert to feet and inches, e.g. 162 cm -> 5 ft 4 in).
+Convert weight to Pounds/lbs (if in kg, convert to lbs).
 Do NOT confuse a doctor's or hospital's address with the applicant's home address.
 
 Return ONLY valid JSON matching this exact structure (leave empty string "" if unknown):
@@ -185,7 +296,6 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
 
             const requestParts = [{ text: systemPrompt + "\n\n" + textContext }, ...inlineParts];
 
-            // Запрашиваем список доступных моделей для вашего ключа
             let availableModels = [];
             try {
                 const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey}`);
@@ -197,8 +307,6 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                 }
             } catch (e) {}
 
-            // ВАЖНО: Сначала используем высоколимитные модели Flash (у которых огромная бесплатная квота и нет ошибки 429!),
-            // а если первая модель вернет 429 — мгновенно переключаемся на следующую!
             const highQuotaOrder = [
                 'gemini-2.5-flash',
                 'gemini-2.0-flash',
@@ -243,34 +351,9 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                         break;
                     } else {
                         lastErr = await gRes.text();
-                        // Если на модели с файлами превышен лимит 429, пробуем следующую модель в списке
-                        continue;
                     }
                 } catch (mErr) {
                     lastErr = mErr.message;
-                }
-            }
-
-            // Если все модели вернули 429 из-за слишком тяжелых PDF, делаем легкий запрос по текстовому досье
-            if (!aiJson && inlineParts.length > 0) {
-                for (const fallbackModel of ['gemini-2.0-flash', 'gemini-2.5-flash', 'gemini-1.5-flash']) {
-                    try {
-                        const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${fallbackModel}:generateContent?key=${geminiKey}`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                contents: [{ parts: [requestParts[0], ...inlineParts.slice(0, 2)] }],
-                                generationConfig: { temperature: 0.1, responseMimeType: "application/json" }
-                            })
-                        });
-                        if (gRes.ok) {
-                            const gData = await gRes.json();
-                            const rawText = gData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-                            aiJson = JSON.parse(rawText.replace(/```json|```/g, '').trim());
-                            usedModel = fallbackModel;
-                            break;
-                        }
-                    } catch (e) {}
                 }
             }
 
@@ -292,28 +375,105 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
     }
 
     // =========================================================================
-    // РЕЖИМ GET: ПОИСК КЛИЕНТА ИЛИ ЗАГРУЗКА ЕГО ДОСЬЕ И ФАЙЛОВ ИЗ ВКЛАДКИ FILES
+    // РЕЖИМ GET: ПОЛУЧЕНИЕ ПАПОК И ФАЙЛОВ ПО ВЫБРАННОМУ MATTER ИЛИ ПАПКЕ
     // =========================================================================
-    const { query, type, clientId } = req.query;
+    const { query, type, clientId, matterId, folderId } = req.query;
 
     if (!apiKey) return res.status(500).json({ success: false, error: "Ключ не найден" });
 
-    function classifyClientFile(fileName = '') {
-        const lower = fileName.toLowerCase();
-        if (/(zelle|receipt|invoice|payment|retainer|contract|check|bill_paid)/i.test(lower)) {
-            return { category: 'ignore', badge: '💸 Ignore', priority: 0, autoSelect: false };
+    // ЕСЛИ ЗАПРОШЕНЫ ПАПКИ И ФАЙЛЫ КОНКРЕТНОГО MATTER (КЕЙСА) ИЛИ ПАПКИ (?matterId=...&folderId=...)
+    if (matterId || folderId) {
+        try {
+            let targetUrl = `https://app.docketwise.com/documents?matter_id=${matterId || ''}`;
+            if (folderId && folderId !== 'ALL_KEY_FOLDERS') {
+                targetUrl = `https://app.docketwise.com/documents?folder_id=${folderId}&matter_id=${matterId || ''}`;
+            }
+
+            const docRes = await fetch(targetUrl, {
+                headers: {
+                    "accept": "*/*;q=0.5, text/javascript, application/javascript",
+                    "x-csrf-token": DW_CSRF_TOKEN,
+                    "x-requested-with": "XMLHttpRequest",
+                    "cookie": DW_COOKIE,
+                    "Referer": `https://app.docketwise.com/en/matters/${matterId || ''}`
+                }
+            });
+
+            const rawText = await docRes.text();
+            const parsed = parseDocketwiseDocumentsResponse(rawText, matterId);
+
+            let allFiles = parsed.files.map(f => ({
+                ...f,
+                folderName: 'Root',
+                ...classifyClientFile(f.name, '')
+            }));
+
+            // Если мы открыли сам Matter (или выбрано "Auto-Load Key Folders") и внутри него лежат папки (00, 01, 02, 04...),
+            // автоматически заглядываем внутрь ключевых папок (00, 01, 02, 04, 05), чтобы сразу показать лежащие там файлы клиента!
+            if ((!folderId || folderId === 'ALL_KEY_FOLDERS') && parsed.folders.length > 0) {
+                const keyFolders = parsed.folders.filter(fld =>
+                    /(00\.|01\.|02\.|04\.|05\.|personal|medical|upload|inbox|education|work|financial)/i.test(fld.name)
+                ).slice(0, 5);
+
+                const foldersToScan = keyFolders.length > 0 ? keyFolders : parsed.folders.slice(0, 4);
+
+                const subResults = await Promise.all(foldersToScan.map(async (fld) => {
+                    try {
+                        const subUrl = `https://app.docketwise.com/documents?folder_id=${fld.folderId}&matter_id=${matterId}`;
+                        const subRes = await fetch(subUrl, {
+                            headers: {
+                                "accept": "*/*;q=0.5, text/javascript, application/javascript",
+                                "x-csrf-token": DW_CSRF_TOKEN,
+                                "x-requested-with": "XMLHttpRequest",
+                                "cookie": DW_COOKIE,
+                                "Referer": `https://app.docketwise.com/en/matters/${matterId}`
+                            }
+                        });
+                        const subText = await subRes.text();
+                        const subParsed = parseDocketwiseDocumentsResponse(subText, matterId);
+                        return subParsed.files.map(f => ({
+                            ...f,
+                            folderId: fld.folderId,
+                            folderName: fld.name,
+                            ...classifyClientFile(f.name, fld.name)
+                        }));
+                    } catch (e) {
+                        return [];
+                    }
+                }));
+
+                subResults.forEach(arr => {
+                    arr.forEach(fileItem => {
+                        if (!allFiles.some(existing => String(existing.id) === String(fileItem.id))) {
+                            allFiles.push(fileItem);
+                        }
+                    });
+                });
+            }
+
+            allFiles.sort((a, b) => b.priority - a.priority);
+
+            // Автоматически отмечаем галочками до 4 самых важных файлов этого клиента
+            let checkedCount = 0;
+            allFiles = allFiles.map(f => {
+                if (f.autoSelect && checkedCount < 4) {
+                    checkedCount++;
+                    return { ...f, autoSelect: true };
+                }
+                return { ...f, autoSelect: false };
+            });
+
+            return res.status(200).json({
+                success: true,
+                folders: parsed.folders,
+                files: allFiles
+            });
+        } catch (err) {
+            return res.status(500).json({ success: false, error: err.message });
         }
-        // Самый высокий приоритет (100): Права (Driver License), Паспорт, Свидетельство о рождении, SSN
-        if (/(driver|license|dl|passport|birth|ssn|social|id_card|state_id|green_card|greencard|naturalization|medi-cal|bic)/i.test(lower)) {
-            return { category: 'identity', badge: '🪪 ID / Personal', priority: 100, autoSelect: true };
-        }
-        // Приоритет 90: Медицинские выписки и формы MC 223 / SOC
-        if (/(mc_223|mc223|mc 223|soc|873|804|814|453|839|medical|doctor|dr\.|clinic|hospital|meds|medication|rx|diagnosis|visit|summary|noa|ssi|capi|disability)/i.test(lower)) {
-            return { category: 'medical_form', badge: '🩺 Medical / Form', priority: 90, autoSelect: true };
-        }
-        return { category: 'other', badge: '📄 Document', priority: 40, autoSelect: false };
     }
 
+    // ПОЛНОЕ ДОСЬЕ КЛИЕНТА (?clientId=...)
     if (clientId) {
         try {
             let contact = {};
@@ -342,97 +502,6 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                     contact = { ...contact, ...webContact };
                 }
             } catch (e) {}
-
-            let rawFiles = [];
-            const embeddedDocs = contact.documents || contact.files || contact.attachments || [];
-            if (Array.isArray(embeddedDocs)) {
-                embeddedDocs.forEach(doc => {
-                    const name = doc.title || doc.name || doc.file_name || doc.filename;
-                    if (doc.id && name) {
-                        rawFiles.push({
-                            id: doc.id,
-                            name: name,
-                            url: doc.url || doc.download_url || `https://app.docketwise.com/documents/${doc.id}/download`
-                        });
-                    }
-                });
-            }
-
-            const urlsToTry = [
-                `https://app.docketwise.com/documents?client_id=${clientId}`,
-                `https://app.docketwise.com/api/v1/documents?client_id=${clientId}`
-            ];
-
-            for (const docUrl of urlsToTry) {
-                try {
-                    const docRes = await fetch(docUrl, {
-                        headers: {
-                            "accept": "*/*;q=0.5, text/javascript, application/javascript, application/json",
-                            "Authorization": apiKey ? `Bearer ${apiKey}` : undefined,
-                            "x-csrf-token": DW_CSRF_TOKEN,
-                            "x-requested-with": "XMLHttpRequest",
-                            "cookie": DW_COOKIE,
-                            "Referer": `https://app.docketwise.com/en/contacts/${clientId}`
-                        }
-                    });
-                    if (!docRes.ok) continue;
-
-                    const rawText = await docRes.text();
-                    try {
-                        const parsed = JSON.parse(rawText);
-                        const arr = Array.isArray(parsed) ? parsed : (parsed.documents || parsed.files || parsed.data || []);
-                        arr.forEach(item => {
-                            const title = item.title || item.name || item.file_name || item.filename || `File #${item.id}`;
-                            if (item.id && !rawFiles.some(f => String(f.id) === String(item.id))) {
-                                rawFiles.push({
-                                    id: item.id,
-                                    name: title,
-                                    url: item.url || item.download_url || `https://app.docketwise.com/documents/${item.id}/download`
-                                });
-                            }
-                        });
-                    } catch (notJson) {
-                        const unescaped = rawText
-                            .replace(/\\"/g, '"')
-                            .replace(/\\'/g, "'")
-                            .replace(/\\n/g, '\n')
-                            .replace(/\\t/g, ' ')
-                            .replace(/\\\//g, '/');
-
-                        const linkRegex = /href=["']([^"']*\/(?:documents|files|attachments)\/(\d+)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
-                        let match;
-                        while ((match = linkRegex.exec(unescaped)) !== null) {
-                            const href = match[1];
-                            const id = match[2];
-                            const innerText = match[3].replace(/<[^>]+>/g, '').trim();
-                            if (innerText && innerText.length > 1 && !/^(edit|delete|trash|remove|download|view)$/i.test(innerText)) {
-                                if (!rawFiles.some(f => String(f.id) === String(id))) {
-                                    rawFiles.push({
-                                        id: id,
-                                        name: innerText,
-                                        url: href.startsWith('http') ? href : `https://app.docketwise.com${href}`
-                                    });
-                                }
-                            }
-                        }
-                    }
-                } catch (e) {}
-            }
-
-            let classifiedFiles = rawFiles.map(f => {
-                const meta = classifyClientFile(f.name);
-                return { ...f, ...meta };
-            }).sort((a, b) => b.priority - a.priority);
-
-            // Автоматически ставим галочки только на 3 самых важных документах (например Driver License + Birth Certificate + Medical), чтобы сканирование шло мгновенно
-            let autoSelectedCount = 0;
-            classifiedFiles = classifiedFiles.map(f => {
-                if (f.autoSelect && autoSelectedCount < 3) {
-                    autoSelectedCount++;
-                    return { ...f, autoSelect: true };
-                }
-                return { ...f, autoSelect: false };
-            });
 
             let notesTextBlob = JSON.stringify(contact);
             const firstName = contact.first_name || (contact.name ? contact.name.split(' ')[0] : '') || '';
@@ -506,8 +575,7 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
                     language,
                     heightFeet,
                     heightInches,
-                    weight,
-                    files: classifiedFiles
+                    weight
                 }
             });
         } catch (err) {
