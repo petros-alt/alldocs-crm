@@ -370,7 +370,7 @@
             box-sizing: border-box;
         }
 
-     /* НАГЛЯДНОЕ 3D ОКНО ПУНКТА 4 (СПИСОК ФАЙЛОВ С ПОЛНЫМИ НАЗВАНИЯМИ) */
+        /* НАГЛЯДНОЕ 3D ОКНО ПУНКТА 4 (СПИСОК ФАЙЛОВ С ПОЛНЫМИ НАЗВАНИЯМИ) */
         #dwSmartFilesList {
             max-height: 320px !important;
             min-height: 130px;
@@ -444,7 +444,6 @@
             accent-color: #10b981;
             cursor: pointer;
         }
-       
 
         .ai-scan-btn {
             width: 100%;
@@ -732,9 +731,9 @@
                 </div>
             </div>
 
-            <!-- 3D СПИСОК ФАЙЛОВ ВНУТРИ ЭТОГО MATTER И ПАПКИ (УВЕЛИЧЕННОЕ ОКНО С ПАМЯТЬЮ МЕЖДУ ПАПКАМИ) -->
-            <div id="dwSmartFilesBox" ="margin: 0 0 10px 0; padding: 12px; background: linear-gradient(180deg, #ffffff 0%, #f8f3eb 100%); border: 1.5px solid rgba(184,115,51,0.35); border-bottom: 4px solid rgba(139,85,43,0.42); border-radius: 16px; box-shadow: 0 8px 20px rgba(44,26,20,0.06); box-sizing:border-box;">
-                <div ="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <!-- 3D СПИСОК ФАЙЛОВ ВНУТРИ ЭТОГО MATTER И ПАПКИ -->
+            <div id="dwSmartFilesBox" style="margin: 0 0 10px 0; padding: 12px; background: linear-gradient(180deg, #ffffff 0%, #f8f3eb 100%); border: 1.5px solid rgba(184,115,51,0.35); border-bottom: 4px solid rgba(139,85,43,0.42); border-radius: 16px; box-shadow: 0 8px 20px rgba(44,26,20,0.06); box-sizing:border-box;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                     <span style="font-size:10.5px; font-weight:900; color:#2c1a14; text-transform:uppercase;">☑️ 4. Check Files to Scan:</span>
                     <span id="dwFilesCountTag" style="font-size:10px; font-weight:800; color:#047857; background:#d1fae5; border:1px solid #6ee7b7; padding:2px 8px; border-radius:10px;">0 files</span>
                 </div>
@@ -939,7 +938,6 @@
     let currentOpenedFormCode = '';
     let lastInspectedPdfFields = [];
     let clientMemoryStore = {};
-    // Корзина выбранных файлов между разными папками одного Matter!
     let selectedFilesBasket = new Map();
 
     function toCleanTitleCase(str) {
@@ -1001,7 +999,6 @@
         box.innerHTML = pills.map(p => `<span class="summary-pill">${p}</span>`).join('');
     }
 
-    // Сохранение выбранных галочек в общую корзину между папками (лимит 10 файлов)
     window.toggleFileInBasket = function(cbEl) {
         const fId = String(cbEl.value);
         if (cbEl.checked) {
@@ -1026,7 +1023,7 @@
         if (countTag) countTag.textContent = `${selectedFilesBasket.size}/${Math.max(total, selectedFilesBasket.size)} selected`;
     };
 
-  window.clearSelectedFilesBasket = function() {
+    window.clearSelectedFilesBasket = function() {
         selectedFilesBasket.clear();
         document.querySelectorAll('.dw-file-cb').forEach(cb => { cb.checked = false; });
         const countTag = document.getElementById('dwFilesCountTag');
@@ -1111,42 +1108,6 @@
             `;
         });
 
-        // Объединяем файлы, уже выбранные в других папках (Pinned), с файлами текущей папки!
-        const mergedList = [];
-        selectedFilesBasket.forEach(item => {
-            mergedList.push({ ...item, isPinnedFromBasket: true });
-        });
-        files.forEach(f => {
-            if (!mergedList.some(m => String(m.id) === String(f.id))) {
-                mergedList.push(f);
-            }
-        });
-
-        if (mergedList.length === 0) {
-            countTag.textContent = `0 files`;
-            listEl.innerHTML = '<div style="color:#888; font-size:11px; padding:6px 0;">No files inside this folder (choose another folder above or attach local file below).</div>';
-            return;
-        }
-
-        let html = '';
-        mergedList.forEach(f => {
-            const isChecked = selectedFilesBasket.has(String(f.id));
-            const badgeColor = f.category === 'identity' ? '#2563eb' : (f.category === 'medical_form' ? '#059669' : '#8b552b');
-            const folderLabel = f.folderName && f.folderName !== 'Root' ? `<div style="font-size:9.5px; color:#8b552b; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📁 ${f.folderName}</div>` : '';
-            const safeName = (f.name || '').replace(/"/g, '&quot;');
-            html += `
-                <label class="dw-file-3d-row">
-                    <div style="display:flex; align-items:center; gap:8px; overflow:hidden; min-width:0; flex:1;">
-                        <input type="checkbox" class="dw-file-cb" value="${f.id}" data-url="${f.url || ''}" data-name="${safeName}" data-folder="${f.folderName || ''}" data-badge="${f.badge || ''}" data-cat="${f.category || ''}" onchange="window.toggleFileInBasket(this)" ${isChecked ? 'checked' : ''}>
-                        <div style="overflow:hidden; min-width:0; flex:1;">
-                            <a href="https://app.docketwise.com/documents/${f.id}" target="_blank" onclick="event.stopPropagation()" style="color:#24140e; text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; font-size:12px; font-weight:800;" title="${safeName}">${f.name} ↗</a>
-                            ${folderLabel}
-                        </div>
-                    </div>
-                    <span style="background:${badgeColor}; color:#fff; font-size:9px; font-weight:800; padding:3px 7px; border-radius:7px; white-space:nowrap; flex-shrink:0;">${f.badge || '📄 File'}</span>
-                </label>
-            `;
-        });
         listEl.innerHTML = html;
         countTag.textContent = `${selectedFilesBasket.size}/${mergedList.length} selected`;
     }
@@ -1508,7 +1469,6 @@
         const badge = document.getElementById('dossierStatusBadge');
         const matterId = document.getElementById('dfMatterSelect').value;
 
-        // Берем файлы из глобальной корзины (чтобы работали файлы, выбранные из разных папок!)
         let checkedItems = Array.from(selectedFilesBasket.values()).slice(0, 10);
         if (checkedItems.length === 0) {
             const checkedBoxes = Array.from(document.querySelectorAll('.dw-file-cb:checked')).slice(0, 10);
@@ -1914,19 +1874,6 @@
 
         const isMc223 = (currentOpenedFormCode === 'MC 223');
 
-        function selectRadioByIndex(field, targetIdx) {
-            if (typeof field.getOptions !== 'function' || typeof field.select !== 'function') return false;
-            const opts = field.getOptions() || [];
-            if (opts[targetIdx] !== undefined) {
-                field.select(opts[targetIdx]);
-                return true;
-            }
-            return false;
-        }
-
-        // ПРЯМОЕ ВКЛЮЧЕНИЕ КВАДРАТИКА (ВИДЖЕТА) В PDF ПО ЕГО ФИЗИЧЕСКОЙ КООРДИНАТЕ НА СТРАНИЦЕ!
-        // Это обходит любую путаницу индексов в шаблоне MC 223:
-        // preferPosition: 'left' (меньший X = Yes в 4b), 'right' (больший X = No), 'top' (больший Y = Male в 1e), 'bottom' (меньший Y = Female в 1e)
         function forceSelectPdfWidgetByPosition(field, preferPosition) {
             try {
                 const widgets = field.acroField.getWidgets() || [];
@@ -2000,13 +1947,11 @@
 
                     if (rawName === 'sex' && d.gender) {
                         const isFem = d.gender.toLowerCase().startsWith('f');
-                        // В 1e. Sex: Male — это ВЕРХНИЙ квадратик ('top'), Female — НИЖНИЙ квадратик ('bottom')!
                         if (forceSelectPdfWidgetByPosition(field, isFem ? 'bottom' : 'top')) filledCount++;
                     } else if (rawName === '4a english') {
                         const isEng = d.language && d.language.toLowerCase() === 'english';
                         if (forceSelectPdfWidgetByPosition(field, isEng ? 'top' : 'bottom')) filledCount++;
                     } else if (rawName === '4b interpreter') {
-                        // В 4b. Do you have an interpreter?: Yes — это ЛЕВЫЙ квадратик ('left')!
                         if (forceSelectPdfWidgetByPosition(field, 'left')) filledCount++;
                     } else if (rawName === '7 care' && c0.clinicName) {
                         if (forceSelectPdfWidgetByPosition(field, 'left')) filledCount++;
@@ -2018,7 +1963,7 @@
                     return;
                 }
 
-                // УНИВЕРСАЛЬНОЕ УМНОЕ ЗАПОЛНЕНИЕ ДЛЯ ОСТАЛЬНЫХ 12 ФОРМ (БЕЗ КАПСЛОКА!)
+                // УНИВЕРСАЛЬНОЕ УМНОЕ ЗАПОЛНЕНИЕ ДЛЯ ОСТАЛЬНЫХ 12 ФОРМ
                 if (typeof field.setText === 'function') {
                     let valToSet = null;
                     const isRepField = key.includes('rep') || key.includes('agent') || key.includes('org') || key.includes('helper') || key.includes('assister') || key.includes('preparer') || key.includes('interpreter') || key.includes('designee') || key.includes('attorney');
