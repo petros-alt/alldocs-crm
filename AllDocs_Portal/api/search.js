@@ -21,6 +21,19 @@ export default async function handler(req, res) {
     const DW_CSRF_TOKEN = process.env.DOCKETWISE_CSRF_TOKEN || "hPvfgqHTOcjZGfr3rB46I8l0h2G_U0_zPe__5rzApxK3WPWk3gEbhd1ugBcqgwt4Q04FxNFtAc88LcNfIGRuyA";
     const DW_COOKIE = process.env.DOCKETWISE_COOKIE || "__stripe_mid=7a09a5c6-21ec-4d21-886d-c0bf6cc90d9760274d; intercom-device-id-q07v75s8=345a6aa1-5a77-4f02-afd1-47df40c5c1cd; browser.timezone=America/Los_Angeles; browser_id=a6350fa1-3722-4eac-9f81-3a34c6aa9572; _borderwise_session=8f901a47ce2fe3fc9898508ebf9b6160; per_page=50; __stripe_sid=2cd489e7-9fc4-435a-bf3e-1632e9209388ae3582; intercom-session-q07v75s8=azZPUnozMXp3VkJ2Q3RCaFRaSTZFWXFreWc1Q0FnZ0dGMkU3UTNkcEVJVjhDc3BSOXdOdXUvc05ONWZrenROczBiMTVXOWlYeEhId1hGcnNsQXdHR2F3ZlJoZ3ZWQzlqZUM0cEtEZHM5MXBWaGdvdGpiYnZtV05pdDI1Nms5dXJ4ZjZOUnNuMlpKdlZBUFZMY1pIaUQ3OEJkMitZQytxYkxqR3VqY3VqNm45d2wrOUx5eDBVN2ZRaTA3RGl2RnF3dFc0STlPZUxsOStXYnIwN3VGZDY1blp1Nkc2MGtkQnR2ODc1WDN2ek5xQStXY2E3Y09IV2J3bTFadXc5YmNuWDlpNXc3L3p6WlFwcTRkODZFUlpHTzgrcUlaNHBBSDhDNXFWU1MrbHNBbUdvVHVvM1ozb0tmd2dqV3YtLTVRTnlyWTVwb3lQbnpZakN5Yjh5SWc9PQ==--1000f00116b54aac3dc7cd422ad3bc993cea116d";
 
+    async function fetchWithTimeout(url, options = {}, timeoutMs = 11000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const response = await fetch(url, { ...options, signal: controller.signal });
+            clearTimeout(timer);
+            return response;
+        } catch (err) {
+            clearTimeout(timer);
+            throw err;
+        }
+    }
+
     function detectRealMimeType(buffer) {
         if (!buffer || buffer.length < 8) return null;
         if (buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46) return 'application/pdf';
@@ -44,7 +57,7 @@ export default async function handler(req, res) {
         if ((upperCount > 2 && lowerCount === 0) || (lowerCount > 2 && upperCount === 0)) {
             return trimmed.toLowerCase().replace(/\b([a-z])([a-z']*)/g, (match, first, rest) => {
                 const wordUp = match.toUpperCase();
-                if (/^(CA|SSI|SSDI|CAPI|IHSS|NOA|MD|DO|RN|NP|LLC|INC|PO|II|III|IV|UCLA|USC|DMV|EDD|IRS|EKG|PFT|BNP|CBC|CMP|UTI|GED)$/.test(wordUp)) {
+                if (/^(CA|SSI|SSDI|CAPI|IHSS|NOA|MD|DO|RN|NP|LLC|INC|PO|II|III|IV|UCLA|USC|DMV|EDD|IRS|EKG|PFT|BNP|CBC|CMP|UTI|GED|EGFR)$/.test(wordUp)) {
                     return wordUp;
                 }
                 if (/^(and|or|of|in|on|at|to|for|with|from|by|the|a|an)$/.test(match) && match !== trimmed.toLowerCase().slice(0, match.length)) {
@@ -67,7 +80,7 @@ export default async function handler(req, res) {
                     out[key] = '';
                 } else if (key === 'state') {
                     out[key] = val.trim().toUpperCase() || 'CA';
-                } else if (['ssn', 'dob', 'phone', 'zip', 'heightFt', 'heightIn', 'weight', 'caseNum', 'firstSeen', 'lastSeen', 'nextAppt', 'onsetDate', 'ssiDecisionDate', 'educationDate', 'educationGrade', 'dateFrom', 'dateTo', 'date', 'signatureDate'].includes(key)) {
+                } else if (['ssn', 'dob', 'phone', 'zip', 'heightFt', 'heightIn', 'weight', 'caseNum', 'firstSeen', 'lastSeen', 'nextAppt', 'onsetDate', 'ssiDecisionDate', 'educationDate', 'educationGrade', 'dateFrom', 'dateTo', 'date'].includes(key)) {
                     out[key] = val.trim();
                 } else {
                     out[key] = formatProperCase(val);
@@ -170,7 +183,7 @@ export default async function handler(req, res) {
         if (/(01\.|personal|identification|driver|license|dl|passport|birth|ssn|social|id_card|state_id|green_card|greencard|permanent resident|naturalization|medi-cal|bic)/i.test(lower)) {
             return { category: 'identity', badge: '🪪 01. Personal ID', priority: 100, autoSelect: true };
         }
-        if (/(02\.|mc_223|mc223|mc 223|soc|873|804|814|453|839|medical|doctor|dr\.|clinic|hospital|meds|medication|rx|diagnosis|visit|summary|noa|ssi|capi|disability)/i.test(lower)) {
+        if (/(02\.|mc_223|mc223|mc 223|soc|873|804|814|453|839|medical|doctor|dr\.|clinic|hospital|meds|medication|rx|diagnosis|visit|summary|noa|ssi|capi|disability|pharmacy|discharge|lab|quest)/i.test(lower)) {
             return { category: 'medical_form', badge: '🩺 02. Medical', priority: 95, autoSelect: true };
         }
         if (/(04\.|education|work|job|employment|school)/i.test(lower)) {
@@ -191,14 +204,14 @@ export default async function handler(req, res) {
 
         for (const u of urlsToTry.slice(0, 2)) {
             try {
-                const fRes = await fetch(u, {
+                const fRes = await fetchWithTimeout(u, {
                     headers: {
                         "cookie": DW_COOKIE,
                         "x-csrf-token": DW_CSRF_TOKEN,
                         "Referer": matterId ? `https://app.docketwise.com/en/matters/${matterId}` : `https://app.docketwise.com/en/contacts/${clientId || ''}`
                     },
                     redirect: 'follow'
-                });
+                }, 5000);
 
                 if (!fRes.ok) continue;
 
@@ -206,7 +219,7 @@ export default async function handler(req, res) {
                 const buf = Buffer.from(arrayBuf);
 
                 const detectedMime = detectRealMimeType(buf);
-                if (detectedMime && buf.length < 12 * 1024 * 1024) {
+                if (detectedMime && buf.length < 9 * 1024 * 1024) {
                     return {
                         mime_type: detectedMime,
                         data: buf.toString('base64')
@@ -219,13 +232,13 @@ export default async function handler(req, res) {
                 if (s3Match) {
                     const rawS3Url = s3Match[0].replace(/&amp;/g, '&').replace(/\\"/g, '');
                     const fullS3Url = rawS3Url.startsWith('http') ? rawS3Url : `https://app.docketwise.com${rawS3Url}`;
-                    const s3Res = await fetch(fullS3Url, {
+                    const s3Res = await fetchWithTimeout(fullS3Url, {
                         headers: rawS3Url.startsWith('http') ? {} : { "cookie": DW_COOKIE }
-                    });
+                    }, 5000);
                     if (s3Res.ok) {
                         const s3Buf = Buffer.from(await s3Res.arrayBuffer());
                         const s3Mime = detectRealMimeType(s3Buf);
-                        if (s3Mime && s3Buf.length < 12 * 1024 * 1024) {
+                        if (s3Mime && s3Buf.length < 9 * 1024 * 1024) {
                             return {
                                 mime_type: s3Mime,
                                 data: s3Buf.toString('base64')
@@ -252,7 +265,7 @@ export default async function handler(req, res) {
             let textContext = `Target Client Full Name: ${clientName}\nIMPORTANT: Extract data ONLY for ${clientName}!\n`;
 
             if (Array.isArray(uploadedFiles)) {
-                uploadedFiles.slice(0, 5).forEach(uf => {
+                uploadedFiles.slice(0, 3).forEach(uf => {
                     if (uf.base64) {
                         const rawBuf = Buffer.from(uf.base64, 'base64');
                         const realMime = detectRealMimeType(rawBuf) || uf.mimeType || 'image/jpeg';
@@ -266,7 +279,7 @@ export default async function handler(req, res) {
                 });
             }
 
-            const uniqueDocIds = [...new Set(Array.isArray(fileIds) ? fileIds : [])].slice(0, 5);
+            const uniqueDocIds = [...new Set(Array.isArray(fileIds) ? fileIds : [])].slice(0, 3);
             const downloadedParts = await Promise.all(
                 uniqueDocIds.map((docId, idx) => {
                     const customUrl = Array.isArray(fileUrls) ? fileUrls[idx] : '';
@@ -277,59 +290,55 @@ export default async function handler(req, res) {
                 if (part) inlineParts.push({ inline_data: part });
             });
 
-            const systemPrompt = `You are a high-precision California Medi-Cal / IHSS / CAPI / SSI Legal Document & Handwriting Extraction AI.
-Analyze all attached client documents (California Driver's License, Green Card, Social Security Card, Medi-Cal BIC Card, Medical Records, Visit Summaries, Lab Results, Medication Lists, and any filled or handwritten MC 223 / SOC forms) for client "${clientName}".
+            const systemPrompt = `You are an expert California Medi-Cal / Disability (Form MC 223) Clinical & Legal Document Synthesizer AI.
+Analyze all attached raw client documents (Driver's License, Green Card, Social Security Card, Emergency Department Discharge Instructions, Pharmacy Patient History Reports, Clinic Visit Summaries, Lab Results from Quest Diagnostics / hospitals, or prior forms) for client "${clientName}".
 
-CRITICAL EXTRACTION RULES:
-1. HANDWRITING & CHECKMARKS: Read all handwritten text, handwritten dates (e.g. "06/12/2026" on Page 7 Part V Signature Date), and all checked boxes (☑ or ✓) with 100% accuracy.
-2. NO ALL-CAPS: Convert ALL-CAPS text into clean Title Case. Keep standard abbreviations uppercase (CA, SSI, CAPI, IHSS, MD, NP, EKG, PFT, BNP, CBC, CMP, GED).
-3. ITEM 7, 8, 9 (CLINICS & DOCTORS):
-   - Extract each clinic/hospital/doctor separately in order:
-     * clinics[0] = Item 7 (Primary clinic/hospital)
-     * clinics[1] = Item 8 (Second clinic/hospital)
-     * clinics[2] = Item 9 (Doctor seen outside of clinic/hospital, e.g. Dignity Health / specialist)
-   - If Item 9 in the scanned form is blank/empty, leave clinics[2] empty!
-   - If medicines are "None" or "None administered during outpatient lab visits", copy that exact phrase into medicines; if completely blank, leave "".
-4. ITEM 10 (MEDICAL TESTS TABLE - PAGE 3):
-   - Carefully check each of the 6 rows in Item 10 (or infer from medical records):
-     * ekg (Electrocardiogram)
+CRITICAL RULES FOR SYNTHESIZING RAW DOCUMENTS INTO FORM MC 223:
+1. HANDWRITING FILTER (WHAT TO READ vs WHAT TO IGNORE):
+   - DO EXTRACT handwritten factual/medical data: handwritten medication names, dosages, doctor names, clinic addresses, phone numbers, diagnoses, onset dates, and checkmarks (☑ / ✓).
+   - DO NOT EXTRACT signatures or signature dates: completely ignore handwritten signatures, initials, and dates written next to signatures in certification blocks.
+2. NO ALL-CAPS: Convert ALL-CAPS text into clean Title Case. Keep medical/state abbreviations uppercase (CA, SSI, CAPI, IHSS, MD, NP, EKG, PFT, BNP, CBC, CMP, GED, eGFR).
+3. ITEM 6 (DIAGNOSES):
+   - Extract up to 4 primary disabling medical problems/diagnoses from the clinical records (e.g., "Nonspecific chest pain requiring emergency evaluation with elevated BNP", "Chronic macrocytic anemia secondary to drug therapy", "Moderate renal insufficiency with an eGFR of 47", "Active urinary tract infection due to E. coli") and their start/visit date in MM/YYYY format.
+4. ITEM 7, 8, 9 (CLINICS, HOSPITALS & PHARMACY REPORTS):
+   - Extract outpatient clinics and hospitals where the patient was treated (e.g., "All For Health, Health For All", "Glendale Medical Group Inc").
+   - For each clinic, extract: clinicName, memberId (patient account/member number), doctorName (e.g. "Anna Karagyan, NP", "Noralie Raudszus, NP"), address, city, state, zip, phone, firstSeen (MM/DD/YYYY), lastSeen (MM/DD/YYYY), reason for visit, overnightStay ("Yes" or "No"), emergencyRoom ("Yes" or "No"), medicines (list medications & dosages from Pharmacy Reports or visit notes), and treatments (list labs/panels/procedures and dates).
+   - Note: If a hospital (like "Dignity Health - Glendale Memorial Hospital") or lab (like "Quest Diagnostics") was ONLY used for diagnostic tests (EKG, Chest X-ray, Blood tests, 24-hour urine), put it into the "tests" object (Item 10) rather than duplicating it in Item 9, unless it was a separate doctor consultation.
+5. ITEM 10 (MEDICAL TESTS TABLE - PAGE 3):
+   - Check the medical records for any of these 6 tests:
+     * ekg (Electrocardiogram / EKG)
      * treadmill (Treadmill exercise heart test)
      * chestXray (Chest X-ray)
      * breathing (Breathing Test / PFT)
-     * blood (Blood Tests - e.g. Quest Diagnostics / LabCorp / clinic lab)
-     * other (Other test - e.g. Quest Diagnostics / 24-hour urine / Ultrasound)
-   - For each test, set "performed": "Yes" (if YES column is checked ✓ or test was done) or "No" (if NO column is checked ✓), and extract the exact facility "name", "address", "city", "state", "zip", and "date" (MM/YYYY).
-5. ITEM 13, 15, 16, 17 & PAGE 7 SIGNATURE DATE:
-   - "willingAdditionalExam": "Yes" or "No" (from Item 13 on Page 4).
-   - "educationGrade": exact box checked in Item 15a ("1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "GED", or "12+").
-   - "educationDate": MM/YYYY from Item 15b (e.g. "05/1983").
-   - "specialEd": "Yes" or "No" from Item 15c.
-   - "workedLast15Years": "Yes" or "No" from Item 16. If "No", leave all fields inside "job" as empty string "" (NEVER write "N/A" in job title!).
-   - "signatureDate": any handwritten or typed date in Part V Signature section on Page 7 (e.g. "06/12/2026").
+     * blood (Blood Tests / CBC / CMP / Lipid / HbA1c / Quest Diagnostics)
+     * other (Other test, e.g. 24-hour urine StoneRisk panel / Urinalysis / Ultrasound)
+   - If a test WAS performed in the medical records, set "performed": "Yes" and fill in the facility "name" (e.g. "Dignity Health - Glendale Memorial Hospital" or "Quest Diagnostics / Glendale Medical Group"), "address", "city", "state", "zip", and "date" (MM/YYYY).
+6. ITEM 14 (DAILY ACTIVITIES LIMITATIONS):
+   - Based on the clinical diagnoses, medications, and discharge instructions, provide up to 4 concise, medically accurate sentences describing how the condition limits daily activities (e.g., "Severe fatigue and weakness from anemia limit my physical stamina.", "Medical orders restrict lifting over 10 lbs due to chest pain.", "Stage 3 kidney disease and stone risk cause constant discomfort.", "Daily activities are restricted by exhaustion and medication side effects.").
 
-Return ONLY valid JSON matching this exact structure (use empty string "" if unknown or blank):
+Return ONLY valid JSON matching this exact structure (use empty string "" if not mentioned in these specific files):
 {
   "firstName": "",
   "lastName": "",
-  "otherNames": "N/A",
-  "ssn": "XXX-XX-XXXX",
-  "dob": "MM/DD/YYYY",
-  "gender": "Male or Female",
+  "otherNames": "",
+  "ssn": "",
+  "dob": "",
+  "gender": "",
   "heightFt": "",
   "heightIn": "",
   "weight": "",
   "street": "",
   "city": "",
-  "state": "CA",
+  "state": "",
   "zip": "",
   "phone": "",
-  "language": "Armenian",
+  "language": "",
   "caseNum": "",
-  "ssiApplied": "Yes or No",
-  "ssiStatus": "Approved, Denied, Pending, On Appeal, or Unknown",
-  "ssiDecisionDate": "MM/DD/YYYY",
-  "ssiWorsened": "Yes or No",
-  "ssiNewProblem": "Yes or No",
+  "ssiApplied": "",
+  "ssiStatus": "",
+  "ssiDecisionDate": "",
+  "ssiWorsened": "",
+  "ssiNewProblem": "",
   "diagnoses": [
     { "problem": "", "onsetDate": "MM/YYYY" }
   ],
@@ -347,55 +356,47 @@ Return ONLY valid JSON matching this exact structure (use empty string "" if unk
       "lastSeen": "MM/DD/YYYY",
       "nextAppt": "MM/DD/YYYY",
       "reason": "",
-      "overnightStay": "Yes or No",
+      "overnightStay": "",
       "overnightDates": "",
-      "emergencyRoom": "Yes or No",
+      "emergencyRoom": "",
       "erDates": "",
       "medicines": "",
       "treatments": ""
     }
   ],
   "tests": {
-    "ekg": { "performed": "Yes or No", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" },
-    "treadmill": { "performed": "Yes or No", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" },
-    "chestXray": { "performed": "Yes or No", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" },
-    "breathing": { "performed": "Yes or No", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" },
-    "blood": { "performed": "Yes or No", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" },
-    "other": { "performed": "Yes or No", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" }
+    "ekg": { "performed": "", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" },
+    "treadmill": { "performed": "", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" },
+    "chestXray": { "performed": "", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" },
+    "breathing": { "performed": "", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" },
+    "blood": { "performed": "", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" },
+    "other": { "performed": "", "name": "", "address": "", "city": "", "state": "CA", "zip": "", "date": "MM/YYYY" }
   },
-  "otherMedicalTreatment11": "Yes or No",
-  "willingAdditionalExam": "Yes or No",
-  "dailyLimitations": [
-    "",
-    "",
-    "",
-    ""
-  ],
-  "educationGrade": "12+",
-  "educationDate": "MM/YYYY",
-  "specialEd": "Yes or No",
-  "workedLast15Years": "Yes or No",
+  "otherMedicalTreatment11": "",
+  "willingAdditionalExam": "",
+  "dailyLimitations": [],
+  "educationGrade": "",
+  "educationDate": "",
+  "specialEd": "",
+  "workedLast15Years": "",
   "job": {
     "title": "",
     "business": "",
-    "dateFrom": "MM/YYYY",
-    "dateTo": "MM/YYYY",
+    "dateFrom": "",
+    "dateTo": "",
     "hoursPerWeek": "",
     "rateOfPay": "",
     "description": ""
-  },
-  "signatureDate": "MM/DD/YYYY"
+  }
 }`;
 
             const requestParts = [{ text: systemPrompt + "\n\n" + textContext }, ...inlineParts];
 
-            // Ставим первыми самые умные Vision-модели (2.5-flash с отключенным thinkingBudget и 2.0-flash), которые идеально читают почерк и чекбоксы!
             const modelsPool = [
-                'gemini-2.5-flash',
                 'gemini-2.0-flash',
-                'gemini-flash-latest',
                 'gemini-flash-lite-latest',
-                'gemini-2.0-flash-lite'
+                'gemini-2.0-flash-lite',
+                'gemini-2.5-flash'
             ];
 
             let aiJson = null;
@@ -409,14 +410,14 @@ Return ONLY valid JSON matching this exact structure (use empty string "" if unk
                         genConfig.thinkingConfig = { thinkingBudget: 0 };
                     }
 
-                    const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`, {
+                    const gRes = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             contents: [{ parts: requestParts }],
                             generationConfig: genConfig
                         })
-                    });
+                    }, 12000);
 
                     if (gRes.ok) {
                         const gData = await gRes.json();
@@ -433,7 +434,7 @@ Return ONLY valid JSON matching this exact structure (use empty string "" if unk
                         continue;
                     }
                 } catch (mErr) {
-                    lastErr = mErr.message;
+                    lastErr = mErr.name === 'AbortError' ? `${modelName} timeout` : mErr.message;
                 }
             }
 
