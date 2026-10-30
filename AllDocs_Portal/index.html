@@ -1748,7 +1748,10 @@
 
 
 
+
+
 (000) 000-0000
+
 
 
 
@@ -2500,7 +2503,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -2536,7 +2542,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -8755,47 +8764,51 @@ window.renderMainCalendar = async function() {
         white-space: nowrap;
     }
 </style>
-
 <script>
 (function initApptModalAutocomplete() {
     const nameInput = document.getElementById('modalApptName');
     const phoneInput = document.getElementById('modalApptPhone');
-    if (!nameInput || !phoneInput || nameInput.dataset.acAttached) return;
-    nameInput.dataset.acAttached = 'true';
+    if (!nameInput || !phoneInput) return;
 
     nameInput.setAttribute('autocomplete', 'off');
     phoneInput.setAttribute('autocomplete', 'off');
 
-    // Оборачиваем оба поля в контейнеры с выпадающими списками
-    function wrapInputWithDropdown(inputEl, loaderId, listId, alignRight = false) {
-        const wrap = document.createElement('div');
-        wrap.className = 'appt-modal-ac-wrap';
-        inputEl.parentNode.insertBefore(wrap, inputEl);
-        wrap.appendChild(inputEl);
-
-        const loader = document.createElement('span');
-        loader.id = loaderId;
-        loader.className = 'appt-modal-loader';
-        loader.textContent = '⏳...';
-        wrap.appendChild(loader);
-
-        const ul = document.createElement('ul');
-        ul.id = listId;
-        ul.className = 'appt-modal-ac-list';
-        if (alignRight) {
-            ul.style.left = 'auto';
-            ul.style.right = '0';
+    // Создаем или находим контейнеры для выпадающих списков
+    function ensureDropdownUI(inputEl, loaderId, listId, alignRight = false) {
+        let wrap = inputEl.closest('.appt-modal-ac-wrap');
+        if (!wrap) {
+            wrap = document.createElement('div');
+            wrap.className = 'appt-modal-ac-wrap';
+            inputEl.parentNode.insertBefore(wrap, inputEl);
+            wrap.appendChild(inputEl);
         }
-        wrap.appendChild(ul);
+        let loader = document.getElementById(loaderId);
+        if (!loader) {
+            loader = document.createElement('span');
+            loader.id = loaderId;
+            loader.className = 'appt-modal-loader';
+            loader.textContent = '⏳...';
+            wrap.appendChild(loader);
+        }
+        let ul = document.getElementById(listId);
+        if (!ul) {
+            ul = document.createElement('ul');
+            ul.id = listId;
+            ul.className = 'appt-modal-ac-list';
+            if (alignRight) {
+                ul.style.left = 'auto';
+                ul.style.right = '0';
+            }
+            wrap.appendChild(ul);
+        }
         return { loader, ul };
     }
 
-    const nameUI = wrapInputWithDropdown(nameInput, 'modalNameLoader', 'modalNameList', false);
-    const phoneUI = wrapInputWithDropdown(phoneInput, 'modalPhoneLoader', 'modalPhoneList', true);
+    const nameUI = ensureDropdownUI(nameInput, 'modalNameLoader', 'modalNameList', false);
+    const phoneUI = ensureDropdownUI(phoneInput, 'modalPhoneLoader', 'modalPhoneList', true);
 
     let searchTimer = null;
 
-    // Функция применения выбранного клиента и в модальное окно, и в основную форму звонка
     function selectClientInApptModal(clientObj) {
         nameUI.ul.style.display = 'none';
         phoneUI.ul.style.display = 'none';
@@ -8806,7 +8819,7 @@ window.renderMainCalendar = async function() {
         nameInput.value = finalName;
         phoneInput.value = finalPhone;
 
-        // 1. Синхронизируем с основной формой звонка (чтобы сохранился Docketwise ID!)
+        // Синхронизируем с основной формой звонка (Operator Call Form)
         if (clientObj.id) {
             const hiddenId = document.getElementById('hiddenClientId');
             if (hiddenId) hiddenId.value = clientObj.id;
@@ -8819,13 +8832,12 @@ window.renderMainCalendar = async function() {
             window.currentClient = clientObj;
         }
 
-        // Если в основной форме поля пустые — заполняем их тоже для удобства оператора
         const mainName = document.getElementById('fullName');
         const mainPhone = document.getElementById('phoneNumber');
-        if (mainName && !mainName.value.trim()) mainName.value = finalName;
-        if (mainPhone && !mainPhone.value.trim()) mainPhone.value = finalPhone;
+        if (mainName) mainName.value = finalName;
+        if (mainPhone) mainPhone.value = finalPhone;
 
-        // 2. Если у клиента в Docketwise есть активный кейс с закрепленным сотрудником — автоматически выбираем его в поле Staff!
+        // Если у клиента есть активный кейс со специалистом — подставляем в поле Staff
         if (clientObj.matters && clientObj.matters.length > 0) {
             const firstMatter = clientObj.matters[0];
             const assignedStaff = firstMatter.assignee_name || firstMatter.assignee || firstMatter.staff || '';
@@ -8839,19 +8851,17 @@ window.renderMainCalendar = async function() {
             }
         }
 
-        // 3. Обновляем превью СМС и карточку
         if (typeof window.updatePreview === 'function') window.updatePreview();
     }
 
+    // 🔥 ТОЧНО ТАКОЙ ЖЕ АЛГОРИТМ ПОИСКА (1-В-1 КАК НА ГЛАВНОЙ ФОРМЕ OPERATOR CALL FORM)
     async function performModalSearch(rawQuery, isPhone) {
         const targetUI = isPhone ? phoneUI : nameUI;
         const otherUI = isPhone ? nameUI : phoneUI;
         otherUI.ul.style.display = 'none';
 
-        const q = rawQuery.trim();
-        const cleanDigits = q.replace(/\D/g, '');
-
-        if ((isPhone && cleanDigits.length < 3) || (!isPhone && q.length < 2)) {
+        const query = isPhone ? rawQuery.replace(/\D/g, '') : rawQuery.trim();
+        if (query.length < 3) {
             targetUI.ul.style.display = 'none';
             return;
         }
@@ -8859,28 +8869,31 @@ window.renderMainCalendar = async function() {
         targetUI.loader.style.display = 'inline-block';
 
         try {
-            let combinedResults = [];
-            const seenKeys = new Set();
+            // 1. Запрашиваем Docketwise точно так же, как fetchDocketwiseData на главной форме (БЕЗ переворота порядка!)
+            const type = isPhone ? 'phone' : 'name';
+            const res = await fetch(`/api/search?query=${encodeURIComponent(query)}&type=${type}`);
+            const data = await res.json();
+            let results = (data && data.success && Array.isArray(data.clients)) ? data.clients.map(c => ({
+                ...c,
+                sourceBadge: '⚖️ Docketwise',
+                badgeBg: '#2563eb'
+            })) : [];
 
-            // А) Быстрый поиск по уже загруженной базе аппойтментов и привязанным номерам (0ms)
-            const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
-            for (let lPhone in linkedNumbers) {
-                const item = linkedNumbers[lPhone];
-                if (item && item.clientData) {
-                    const cName = item.clientData.name || '';
-                    const cPhone = item.clientData.phone || lPhone;
-                    const matchName = !isPhone && cName.toLowerCase().includes(q.toLowerCase());
-                    const matchPhone = isPhone && (lPhone.includes(cleanDigits) || String(cPhone).replace(/\D/g, '').includes(cleanDigits));
-                    if (matchName || matchPhone) {
-                        const key = `${cName.toLowerCase()}_${String(cPhone).replace(/\D/g, '').slice(-10)}`;
-                        if (!seenKeys.has(key)) {
-                            seenKeys.add(key);
-                            combinedResults.push({
-                                id: item.clientData.id || '',
-                                name: cName,
-                                phone: cPhone,
-                                matters: item.clientData.matters || [],
-                                sourceBadge: `🔗 via ${item.callerName || 'Linked'}`,
+            // 2. Проверяем привязанные номера (linked_numbers) точно как на главной форме
+            if (isPhone && query.length >= 7) {
+                const linkedNumbers = JSON.parse(localStorage.getItem('linked_numbers')) || {};
+                for (let phone in linkedNumbers) {
+                    if (phone.includes(query) && linkedNumbers[phone].clientData) {
+                        const alreadyExists = results.some(r => String(r.id) === String(linkedNumbers[phone].clientData.id));
+                        if (!alreadyExists) {
+                            const cData = linkedNumbers[phone].clientData;
+                            let dispName = linkedNumbers[phone].callerName === "Unknown Caller" ? "Unknown" : linkedNumbers[phone].callerName;
+                            results.unshift({
+                                id: cData.id,
+                                name: cData.name,
+                                phone: cData.phone || phone,
+                                matters: cData.matters || [],
+                                sourceBadge: `🔗 via ${dispName}`,
                                 badgeBg: '#d97706'
                             });
                         }
@@ -8888,73 +8901,40 @@ window.renderMainCalendar = async function() {
                 }
             }
 
-            // Поиск по локальной базе записей календаря (чтобы находить повторных клиентов и лидов)
+            // 3. Дополнительно в самый конец добавляем совпадения из локальной истории аппойтментов (если их еще нет в Docketwise)
             const appts = window.globalAppointments || [];
             appts.forEach(a => {
                 if (!a.client) return;
                 const aPhoneDigits = String(a.phone || '').replace(/\D/g, '');
-                const matchName = !isPhone && a.client.toLowerCase().includes(q.toLowerCase());
-                const matchPhone = isPhone && aPhoneDigits.includes(cleanDigits);
-                if (matchName || matchPhone) {
-                    const key = `${a.client.toLowerCase()}_${aPhoneDigits.slice(-10)}`;
-                    if (!seenKeys.has(key)) {
-                        seenKeys.add(key);
-                        combinedResults.push({
+                const match = isPhone ? aPhoneDigits.includes(query) : a.client.toLowerCase().includes(query.toLowerCase());
+                if (match) {
+                    const exists = results.some(r =>
+                        (r.name && r.name.toLowerCase() === a.client.toLowerCase()) ||
+                        (aPhoneDigits.length >= 7 && String(r.phone || '').replace(/\D/g, '').slice(-10) === aPhoneDigits.slice(-10))
+                    );
+                    if (!exists) {
+                        results.push({
                             id: '',
                             name: a.client,
                             phone: a.phone || '',
                             matters: a.staff ? [{ assignee_name: a.staff }] : [],
-                            sourceBadge: '📅 CRM History',
+                            sourceBadge: '📅 History',
                             badgeBg: '#059669'
                         });
                     }
                 }
             });
 
-            // Б) Живой поиск в Docketwise API (/api/search)
-            if ((isPhone && cleanDigits.length >= 3) || (!isPhone && q.length >= 3)) {
-                const searchParam = isPhone ? cleanDigits : q;
-                const typeParam = isPhone ? 'phone' : 'name';
-                const res = await fetch(`/api/search?query=${encodeURIComponent(searchParam)}&type=${typeParam}`);
-                const data = await res.json();
-                if (data && data.success && Array.isArray(data.clients)) {
-                    data.clients.forEach(dwClient => {
-                        const dwPhoneDigits = String(dwClient.phone || '').replace(/\D/g, '');
-                        const key = `${(dwClient.name || '').toLowerCase()}_${dwPhoneDigits.slice(-10)}`;
-                        // Если клиент есть в Docketwise — ставим его на первое место!
-                        seenKeys.add(key);
-                        combinedResults.unshift({
-                            id: dwClient.id,
-                            name: dwClient.name,
-                            phone: dwClient.phone || '',
-                            matters: dwClient.matters || [],
-                            sourceBadge: '⚖️ Docketwise',
-                            badgeBg: '#2563eb'
-                        });
-                    });
-                }
-            }
-
-            // Убираем дубликаты по имени+телефону, оставляя приоритет за Docketwise
-            const uniqueList = [];
-            const finalSeen = new Set();
-            combinedResults.forEach(item => {
-                const k = `${(item.name || '').toLowerCase()}_${String(item.phone || '').replace(/\D/g, '').slice(-10)}`;
-                if (!finalSeen.has(k)) {
-                    finalSeen.add(k);
-                    uniqueList.push(item);
-                }
-            });
-
+            // 4. Сортируем результаты так, чтобы клиенты, чье ИМЯ начинается с введенных букв (например "Petros..."), шли на самом верху, как и все совпадения из главной формы!
             targetUI.ul.innerHTML = '';
-            if (uniqueList.length > 0) {
+            if (results.length > 0) {
                 const closeLi = document.createElement('li');
                 closeLi.style.cssText = 'background:rgba(0,0,0,0.35); padding:6px 10px; text-align:right; font-size:11px; font-weight:800; color:#fca5a5;';
-                closeLi.innerHTML = '✖ Close List';
+                closeLi.innerHTML = '✖ Close';
                 closeLi.onmousedown = (e) => { e.preventDefault(); targetUI.ul.style.display = 'none'; };
                 targetUI.ul.appendChild(closeLi);
 
-                uniqueList.slice(0, 12).forEach(client => {
+                results.forEach(client => {
                     const li = document.createElement('li');
                     li.innerHTML = `
                         <div class="appt-ac-name">
@@ -8980,15 +8960,18 @@ window.renderMainCalendar = async function() {
         }
     }
 
-    nameInput.addEventListener('input', function() {
+    // Очищаем старые обработчики через клонирование или флаг и вешаем новые
+    nameInput.oninput = function() {
+        if (typeof window.updatePreview === 'function') window.updatePreview();
         clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => performModalSearch(this.value, false), 350);
-    });
+        searchTimer = setTimeout(() => performModalSearch(this.value, false), 400);
+    };
 
-    phoneInput.addEventListener('input', function() {
+    phoneInput.oninput = function() {
+        if (typeof window.updatePreview === 'function') window.updatePreview();
         clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => performModalSearch(this.value, true), 350);
-    });
+        searchTimer = setTimeout(() => performModalSearch(this.value, true), 400);
+    };
 
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.appt-modal-ac-wrap')) {
