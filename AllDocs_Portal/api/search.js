@@ -3,7 +3,8 @@ export const config = {
         bodyParser: {
             sizeLimit: '20mb'
         }
-    }
+    },
+    maxDuration: 60
 };
 
 export default async function handler(req, res) {
@@ -19,6 +20,19 @@ export default async function handler(req, res) {
 
     const DW_CSRF_TOKEN = process.env.DOCKETWISE_CSRF_TOKEN || "hPvfgqHTOcjZGfr3rB46I8l0h2G_U0_zPe__5rzApxK3WPWk3gEbhd1ugBcqgwt4Q04FxNFtAc88LcNfIGRuyA";
     const DW_COOKIE = process.env.DOCKETWISE_COOKIE || "__stripe_mid=7a09a5c6-21ec-4d21-886d-c0bf6cc90d9760274d; intercom-device-id-q07v75s8=345a6aa1-5a77-4f02-afd1-47df40c5c1cd; browser.timezone=America/Los_Angeles; browser_id=a6350fa1-3722-4eac-9f81-3a34c6aa9572; _borderwise_session=8f901a47ce2fe3fc9898508ebf9b6160; per_page=50; __stripe_sid=2cd489e7-9fc4-435a-bf3e-1632e9209388ae3582; intercom-session-q07v75s8=azZPUnozMXp3VkJ2Q3RCaFRaSTZFWXFreWc1Q0FnZ0dGMkU3UTNkcEVJVjhDc3BSOXdOdXUvc05ONWZrenROczBiMTVXOWlYeEhId1hGcnNsQXdHR2F3ZlJoZ3ZWQzlqZUM0cEtEZHM5MXBWaGdvdGpiYnZtV05pdDI1Nms5dXJ4ZjZOUnNuMlpKdlZBUFZMY1pIaUQ3OEJkMitZQytxYkxqR3VqY3VqNm45d2wrOUx5eDBVN2ZRaTA3RGl2RnF3dFc0STlPZUxsOStXYnIwN3VGZDY1blp1Nkc2MGtkQnR2ODc1WDN2ek5xQStXY2E3Y09IV2J3bTFadXc5YmNuWDlpNXc3L3p6WlFwcTRkODZFUlpHTzgrcUlaNHBBSDhDNXFWU1MrbHNBbUdvVHVvM1ozb0tmd2dqV3YtLTVRTnlyWTVwb3lQbnpZakN5Yjh5SWc9PQ==--1000f00116b54aac3dc7cd422ad3bc993cea116d";
+
+    async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const response = await fetch(url, { ...options, signal: controller.signal });
+            clearTimeout(timer);
+            return response;
+        } catch (err) {
+            clearTimeout(timer);
+            throw err;
+        }
+    }
 
     function detectRealMimeType(buffer) {
         if (!buffer || buffer.length < 8) return null;
@@ -72,7 +86,7 @@ export default async function handler(req, res) {
             const docId = idMatch[1];
             if (files.some(x => String(x.id) === String(docId))) return;
 
-            const dlMatch = tr.match(/href=["']([^"']*(?:download|amazonaws\.com|\/documents\/\d+\/[^"']*))["']/i);
+            const dlMatch = tr.match(/href=["']([^"']*(?:download|amazonaws\.com|active_storage|\/documents\/\d+)[^"']*)["']/i);
             const directUrl = dlMatch
                 ? (dlMatch[1].startsWith('http') ? dlMatch[1] : `https://app.docketwise.com${dlMatch[1]}`)
                 : `https://app.docketwise.com/documents/${docId}`;
@@ -131,22 +145,20 @@ export default async function handler(req, res) {
     async function downloadValidFileFromDocketwise(docId, customUrl, matterId, clientId) {
         const urlsToTry = [
             `https://app.docketwise.com/documents/${docId}/download`,
-            customUrl,
-            `https://app.docketwise.com/documents/${docId}`,
-            `https://app.docketwise.com/files/${docId}/download`
-        ].filter(Boolean);
+            `https://app.docketwise.com/documents/${docId}`
+        ];
+        if (customUrl && !urlsToTry.includes(customUrl)) urlsToTry.unshift(customUrl);
 
-        for (const u of [...new Set(urlsToTry)]) {
+        for (const u of urlsToTry.slice(0, 2)) {
             try {
-                const fRes = await fetch(u, {
+                const fRes = await fetchWithTimeout(u, {
                     headers: {
                         "cookie": DW_COOKIE,
                         "x-csrf-token": DW_CSRF_TOKEN,
-                        "Authorization": apiKey ? `Bearer ${apiKey}` : undefined,
                         "Referer": matterId ? `https://app.docketwise.com/en/matters/${matterId}` : `https://app.docketwise.com/en/contacts/${clientId || ''}`
                     },
                     redirect: 'follow'
-                });
+                }, 3500);
 
                 if (!fRes.ok) continue;
 
@@ -167,9 +179,9 @@ export default async function handler(req, res) {
                 if (s3Match) {
                     const rawS3Url = s3Match[0].replace(/&amp;/g, '&').replace(/\\"/g, '');
                     const fullS3Url = rawS3Url.startsWith('http') ? rawS3Url : `https://app.docketwise.com${rawS3Url}`;
-                    const s3Res = await fetch(fullS3Url, {
+                    const s3Res = await fetchWithTimeout(fullS3Url, {
                         headers: rawS3Url.startsWith('http') ? {} : { "cookie": DW_COOKIE }
-                    });
+                    }, 3500);
                     if (s3Res.ok) {
                         const s3Buf = Buffer.from(await s3Res.arrayBuffer());
                         const s3Mime = detectRealMimeType(s3Buf);
@@ -187,7 +199,7 @@ export default async function handler(req, res) {
     }
 
     // =========================================================================
-    // РЕЖИМ POST: БЫСТРОЕ AI-СКАНИРОВАНИЕ С ЗАЩИТОЙ ОТ 503 HIGH DEMAND
+    // РЕЖИМ POST: ПАРАЛЛЕЛЬНАЯ ГОНКА МОДЕЛЕЙ GEMINI (БЕЗ ОЖИДАНИЯ И ЗАВИСАНИЙ!)
     // =========================================================================
     if (req.method === 'POST') {
         try {
@@ -202,7 +214,6 @@ export default async function handler(req, res) {
             const inlineParts = [];
             let textContext = `Target Client Full Name: ${clientName}\nIMPORTANT: Extract data ONLY for ${clientName}!\n`;
 
-            // 1. Локальные файлы
             if (Array.isArray(uploadedFiles)) {
                 uploadedFiles.slice(0, 4).forEach(uf => {
                     if (uf.base64) {
@@ -218,8 +229,7 @@ export default async function handler(req, res) {
                 });
             }
 
-            // 2. ПАРАЛЛЕЛЬНОЕ скачивание всех выбранных файлов из Docketwise за 0.7 секунды!
-            const uniqueDocIds = [...new Set(Array.isArray(fileIds) ? fileIds : [])].slice(0, 5);
+            const uniqueDocIds = [...new Set(Array.isArray(fileIds) ? fileIds : [])].slice(0, 4);
             const downloadedParts = await Promise.all(
                 uniqueDocIds.map((docId, idx) => {
                     const customUrl = Array.isArray(fileUrls) ? fileUrls[idx] : '';
@@ -230,21 +240,8 @@ export default async function handler(req, res) {
                 if (part) inlineParts.push({ inline_data: part });
             });
 
-            // 3. Добавляем профиль клиента из Docketwise
-            if (clientId) {
-                try {
-                    const cRes = await fetch(`https://app.docketwise.com/contacts/${clientId}.json`, {
-                        headers: { "accept": "application/json", "cookie": DW_COOKIE, "x-csrf-token": DW_CSRF_TOKEN }
-                    });
-                    if (cRes.ok) {
-                        const cJson = await cRes.json();
-                        textContext += `Docketwise Contact Profile: ${JSON.stringify(cJson).slice(0, 5000)}\n`;
-                    }
-                } catch (e) {}
-            }
-
             const systemPrompt = `You are an expert California Medi-Cal / IHSS / CAPI Legal Document Extraction AI.
-Analyze all attached client documents (California Driver's License, Permanent Resident Card / Green Card, Social Security Card, Medi-Cal Card, Passport, Birth Certificate, Medical Records, Visit Summaries, Prescriptions, Prior MC 223 / SOC forms) and the Docketwise context for client "${clientName}".
+Analyze all attached client documents (California Driver's License, Permanent Resident Card / Green Card, Social Security Card, Medi-Cal Card, Passport, Birth Certificate, Medical Records, Visit Summaries, Prescriptions, Prior MC 223 / SOC forms) for client "${clientName}".
 If any document is in Armenian or Russian, translate all extracted values into English.
 From California Driver's License or Green Card: carefully extract Date of Birth (DOB in MM/DD/YYYY), Sex (M -> Male, F -> Female), Height (HGT, e.g. 5'-04" -> heightFt: "5", heightIn: "4"), Weight (WGT in lbs -> weight: "155"), Home Address, and A-Number (USCIS#).
 Do NOT confuse a doctor's or hospital's address with the applicant's home address.
@@ -313,86 +310,55 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
 
             const requestParts = [{ text: systemPrompt + "\n\n" + textContext }, ...inlineParts];
 
-            // Каскад из 8 моделей от самых быстрых и ненагруженных (чтобы мгновенно обходить 503 High Demand!)
-            let modelsToTry = [
-                'gemini-2.0-flash',
-                'gemini-2.0-flash-lite',
-                'gemini-2.5-flash',
-                'gemini-2.5-flash-lite',
-                'gemini-flash-latest',
-                'gemini-1.5-flash-latest',
-                'gemini-2.5-pro',
-                'gemini-pro-latest'
-            ];
+            // Запускаем ОДНОВРЕМЕННО параллельную гонку 3 моделей Gemini:
+            // Первая модель, которая ответит без 503/429 (обычно за 2.5 - 4 сек), сразу отдает результат!
+            const callSingleGeminiModel = async (modelName) => {
+                const gRes = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: requestParts }],
+                        generationConfig: {
+                            temperature: 0.1
+                        }
+                    })
+                }, 14000);
 
+                if (!gRes.ok) {
+                    const errTxt = await gRes.text();
+                    throw new Error(`${modelName}: ${errTxt.slice(0, 120)}`);
+                }
+
+                const gData = await gRes.json();
+                const rawText = gData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+                const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                const cleaned = jsonMatch ? jsonMatch[0] : rawText.replace(/```json|```/g, '').trim();
+                const parsedJson = JSON.parse(cleaned);
+                return { modelName, parsedJson };
+            };
+
+            let winner = null;
             try {
-                const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey}`);
-                if (listRes.ok) {
-                    const listData = await listRes.json();
-                    const available = (listData.models || [])
-                        .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
-                        .map(m => m.name.replace('models/', ''));
-                    if (available.length > 0) {
-                        const filtered = modelsToTry.filter(m => available.includes(m));
-                        available.forEach(m => {
-                            if (m.includes('gemini') && !m.includes('tts') && !m.includes('image') && !filtered.includes(m)) {
-                                filtered.push(m);
-                            }
-                        });
-                        if (filtered.length > 0) modelsToTry = filtered;
-                    }
-                }
-            } catch (e) {}
-
-            let aiJson = null;
-            let usedModel = '';
-            let lastErr = '';
-
-            for (const modelName of modelsToTry) {
-                try {
-                    const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: requestParts }],
-                            generationConfig: {
-                                temperature: 0.1
-                            }
-                        })
-                    });
-
-                    if (gRes.ok) {
-                        const gData = await gRes.json();
-                        const rawText = gData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-                        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-                        const cleaned = jsonMatch ? jsonMatch[0] : rawText.replace(/```json|```/g, '').trim();
-                        aiJson = JSON.parse(cleaned);
-                        usedModel = modelName;
-                        break;
-                    } else {
-                        lastErr = await gRes.text();
-                        // Если 503 (High Demand), 429 или 404 — сразу переходим к следующей модели в списке!
-                        continue;
-                    }
-                } catch (mErr) {
-                    lastErr = mErr.message;
-                }
-            }
-
-            if (!aiJson) {
-                throw new Error(`AI Scan error: ${lastErr.slice(0, 220)}`);
+                winner = await Promise.any([
+                    callSingleGeminiModel('gemini-2.0-flash'),
+                    callSingleGeminiModel('gemini-2.5-flash'),
+                    callSingleGeminiModel('gemini-2.0-flash-lite')
+                ]);
+            } catch (aggErr) {
+                // Запасной вызов, если все 3 первые модели одновременно заняты
+                winner = await callSingleGeminiModel('gemini-flash-latest');
             }
 
             return res.status(200).json({
                 success: true,
-                model: usedModel,
-                extracted: aiJson,
+                model: winner.modelName,
+                extracted: winner.parsedJson,
                 filesScanned: inlineParts.length
             });
 
         } catch (error) {
             console.error("AI Scan Error:", error);
-            return res.status(500).json({ success: false, error: error.message });
+            return res.status(500).json({ success: false, error: error.message || "AI Scan failed" });
         }
     }
 
