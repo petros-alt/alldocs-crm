@@ -9554,117 +9554,7 @@ window.renderMainCalendar = async function() {
     }
 })();
 </script>
-    <!-- ⚖️ DOCKETWISE MANUAL CONTROL PANEL: ОТПРАВКА NOTE, TASK И СОЗДАНИЕ КЛИЕНТА ПО КНОПКЕ -->
-<style>
-    .dw-action-bar {
-        margin-top: 16px;
-        padding: 14px 16px;
-        background: linear-gradient(145deg, #24140e 0%, #160c08 100%);
-        border: 1.5px solid rgba(212, 140, 70, 0.55);
-        border-radius: 18px;
-        box-shadow: 0 12px 28px rgba(28, 16, 12, 0.25), inset 0 1px 2px rgba(255, 255, 255, 0.15);
-        color: #fff8f0;
-    }
-    .dw-action-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        font-size: 11px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #f5cba7;
-        margin-bottom: 10px;
-    }
-    .dw-action-btns {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-    }
-    .dw-act-btn {
-        background: linear-gradient(180deg, #3a2316 0%, #26160d 100%);
-        color: #ffffff;
-        border: 1px solid rgba(212, 140, 70, 0.5);
-        border-bottom: 3px solid #0f0805;
-        border-radius: 12px;
-        padding: 9px 8px;
-        font-size: 12px;
-        font-weight: 800;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
-        white-space: nowrap;
-    }
-    .dw-act-btn:hover {
-        transform: translateY(-2px);
-        background: linear-gradient(145deg, #c88240 0%, #8b552b 100%);
-        border-color: #ffd8a8;
-        box-shadow: 0 6px 15px rgba(212, 140, 70, 0.35);
-    }
-    .dw-act-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        transform: none;
-    }
-
-    /* Раскрывающаяся мини-форма внутри карточки для настройки Note / Task */
-    .dw-Compose-box {
-        display: none;
-        margin-top: 12px;
-        padding-top: 12px;
-        border-top: 1px dashed rgba(212, 140, 70, 0.35);
-        animation: fadeIn 0.2s ease;
-    }
-    .dw-Compose-box select,
-    .dw-Compose-box input,
-    .dw-Compose-box textarea {
-        width: 100%;
-        background: #ffffff !important;
-        color: #24140e !important;
-        border: 1.5px solid #d48c46 !important;
-        border-radius: 10px !important;
-        padding: 8px 12px !important;
-        font-size: 13px !important;
-        font-weight: 600 !important;
-        margin-bottom: 8px !important;
-        box-sizing: border-box !important;
-    }
-    .dw-send-confirm-btn {
-        width: 100%;
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: #ffffff;
-        border: none;
-        border-bottom: 3px solid #065f46;
-        border-radius: 10px;
-        padding: 10px;
-        font-size: 13px;
-        font-weight: 800;
-        cursor: pointer;
-    }
-
-    /* Мини-кнопка создания клиента на главной форме */
-    .create-dw-lead-pill {
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-        color: #ffffff;
-        border: 1px solid #93c5fd;
-        border-radius: 12px;
-        padding: 2px 9px;
-        font-size: 10.5px;
-        font-weight: 800;
-        margin-left: 8px;
-        cursor: pointer;
-        box-shadow: 0 3px 8px rgba(37, 99, 235, 0.35);
-        transition: 0.2s;
-    }
-    .create-dw-lead-pill:hover {
-        transform: translateY(-1px) scale(1.04);
-    }
-</style>
-
-<script>
+ <script>
 (function initDocketwiseManualActions() {
     // Официальные сотрудники и их Docketwise ID
     const DW_STAFF_LIST = [
@@ -9678,7 +9568,7 @@ window.renderMainCalendar = async function() {
         { name: "Lilit Avetisyan", id: "1009" }
     ];
 
-    // 1. Мини-кнопка "➕ Create in DW" на главной форме рядом с Full Name
+    // 1. Мини-кнопка "➕ Create in Docketwise" на главной форме рядом с Full Name
     const nameLabel = document.querySelector('#callForm .input-with-button-wrap label');
     if (nameLabel && !document.getElementById('mainCreateDwBtn')) {
         const createBtn = document.createElement('button');
@@ -9725,11 +9615,56 @@ window.renderMainCalendar = async function() {
         };
         nameLabel.appendChild(createBtn);
 
-        // Прячем кнопку, если у клиента уже есть зеленый бейдж ID Docketwise
         setInterval(() => {
             const hasId = document.getElementById('hiddenClientId')?.value;
             createBtn.style.display = hasId ? 'none' : 'inline-block';
         }, 600);
+    }
+
+    // Функция живой подгрузки кейсов (Matters) клиента из Docketwise для выпадающего списка
+    async function loadClientMattersIntoSelect(clientName, clientPhone, clientId, selectEl) {
+        selectEl.innerHTML = '<option value="">⏳ Loading client matters from Docketwise...</option>';
+        try {
+            const cleanPhone = (clientPhone || '').replace(/\D/g, '');
+            const query = cleanPhone.length >= 7 ? cleanPhone : clientName;
+            const type = cleanPhone.length >= 7 ? 'phone' : 'name';
+
+            const res = await fetch(`/api/search?query=${encodeURIComponent(query)}&type=${type}`);
+            const data = await res.json();
+
+            if (data && data.success && Array.isArray(data.clients) && data.clients.length > 0) {
+                const matchedClient = data.clients.find(c =>
+                    (clientId && String(c.id) === String(clientId)) ||
+                    (clientName && c.name.toLowerCase().includes(clientName.toLowerCase().split(' ')[0]))
+                ) || data.clients[0];
+
+                if (matchedClient && matchedClient.id) {
+                    window.currentJmClientId = matchedClient.id;
+                    const statusTag = document.getElementById('jmDwStatusTag');
+                    if (statusTag) statusTag.textContent = `✓ DW ID: ${matchedClient.id}`;
+                }
+
+                const matters = matchedClient.matters || [];
+                if (matters.length > 0) {
+                    selectEl.innerHTML = '<option value="">-- Select Matter (Required) --</option>';
+                    matters.forEach((m, idx) => {
+                        const staff = m.assignee_name || m.assignee || m.staff || '';
+                        const opt = document.createElement('option');
+                        opt.value = m.id;
+                        opt.textContent = `📂 ${m.title}${staff ? ' (' + staff + ')' : ''}`;
+                        selectEl.appendChild(opt);
+                    });
+                    // Автоматически выбираем первый активный кейс, чтобы сэкономить клик!
+                    selectEl.selectedIndex = 1;
+                } else {
+                    selectEl.innerHTML = '<option value="GENERAL_PROFILE">⚠️ No active matters (Save to General Client Profile)</option>';
+                }
+            } else {
+                selectEl.innerHTML = '<option value="">❌ Client not found in Docketwise (Click + New Client first)</option>';
+            }
+        } catch (err) {
+            selectEl.innerHTML = '<option value="GENERAL_PROFILE">⚠️ Could not load matters (Save to General Profile)</option>';
+        }
     }
 
     // 2. Встраиваем пульт Docketwise Actions внутрь карточки звонка (#journalViewModal)
@@ -9753,12 +9688,21 @@ window.renderMainCalendar = async function() {
                 <button type="button" class="dw-act-btn" id="btnDwCreateClient">👤 + New Client</button>
             </div>
             <div class="dw-Compose-box" id="jmDwComposeBox">
+                <!-- ОБЯЗАТЕЛЬНЫЙ ВЫБОР MATTER (КЕЙСА) -->
+                <div id="jmDwMatterField">
+                    <label style="color:#ffd8a8; font-size:11px; font-weight:800; margin-bottom:4px; display:block;">📂 Select Matter (Active Case) *:</label>
+                    <select id="jmDwMatterSelect" required>
+                        <option value="">-- Loading matters... --</option>
+                    </select>
+                </div>
+
                 <div id="jmDwTaskFields" style="display:none;">
-                    <label style="color:#f5cba7; font-size:11px; font-weight:800; margin-bottom:4px; display:block;">Assign Docketwise Task To:</label>
+                    <label style="color:#f5cba7; font-size:11px; font-weight:800; margin-bottom:4px; display:block;">👤 Assign Docketwise Task To *:</label>
                     <select id="jmDwAssignee">${staffOptionsHtml}</select>
-                    <label style="color:#f5cba7; font-size:11px; font-weight:800; margin-bottom:4px; display:block;">Due Date:</label>
+                    <label style="color:#f5cba7; font-size:11px; font-weight:800; margin-bottom:4px; display:block;">📅 Due Date:</label>
                     <input type="date" id="jmDwDueDate" value="${todayIso}" />
                 </div>
+
                 <label style="color:#f5cba7; font-size:11px; font-weight:800; margin-bottom:4px; display:block;" id="jmDwTextLabel">Note / Task Text for Docketwise:</label>
                 <textarea id="jmDwTextInput" rows="3"></textarea>
                 <button type="button" class="dw-send-confirm-btn" id="jmDwConfirmSendBtn">🚀 Push to Docketwise Now</button>
@@ -9767,25 +9711,30 @@ window.renderMainCalendar = async function() {
 
         journalModalContent.appendChild(dwBar);
 
-        let currentMode = 'Note'; // 'Note' | 'Task'
+        let currentMode = 'Note';
 
-        document.getElementById('btnDwOpenNote').onclick = () => {
-            currentMode = 'Note';
-            document.getElementById('jmDwTaskFields').style.display = 'none';
-            document.getElementById('jmDwTextLabel').textContent = '📝 Note Text (will be saved to Client Notes in Docketwise):';
-            document.getElementById('jmDwTextInput').value = document.getElementById('jmNotes')?.textContent.trim() || '';
-            document.getElementById('jmDwConfirmSendBtn').textContent = '📝 Send Note to Docketwise ✓';
-            document.getElementById('jmDwComposeBox').style.display = 'block';
-        };
+        async function openComposePanel(mode) {
+            currentMode = mode;
+            const cName = document.getElementById('jmClient')?.innerText.replace('🔗', '').trim() || '';
+            const cPhone = (document.getElementById('jmPhone')?.innerText || '').replace('📞', '').trim();
+            const matterSel = document.getElementById('jmDwMatterSelect');
 
-        document.getElementById('btnDwOpenTask').onclick = () => {
-            currentMode = 'Task';
-            document.getElementById('jmDwTaskFields').style.display = 'block';
-            document.getElementById('jmDwTextLabel').textContent = '✅ Task Description (for selected Staff in Docketwise):';
+            document.getElementById('jmDwTaskFields').style.display = (mode === 'Task') ? 'block' : 'none';
+            document.getElementById('jmDwTextLabel').textContent = (mode === 'Note')
+                ? '📝 Note Text (will be saved to selected Matter in Docketwise):'
+                : '✅ Task Description (for selected Matter & Staff in Docketwise):';
             document.getElementById('jmDwTextInput').value = document.getElementById('jmNotes')?.textContent.trim() || '';
-            document.getElementById('jmDwConfirmSendBtn').textContent = '✅ Assign Task in Docketwise ✓';
+            document.getElementById('jmDwConfirmSendBtn').textContent = (mode === 'Note')
+                ? '📝 Send Note to Matter ✓'
+                : '✅ Assign Task to Matter ✓';
             document.getElementById('jmDwComposeBox').style.display = 'block';
-        };
+
+            // Автоматически подгружаем список кейсов (Matters) этого клиента!
+            await loadClientMattersIntoSelect(cName, cPhone, window.currentJmClientId, matterSel);
+        }
+
+        document.getElementById('btnDwOpenNote').onclick = () => openComposePanel('Note');
+        document.getElementById('btnDwOpenTask').onclick = () => openComposePanel('Task');
 
         document.getElementById('btnDwCreateClient').onclick = async function() {
             const cName = document.getElementById('jmClient')?.innerText.replace('🔗', '').trim() || 'Client';
@@ -9826,15 +9775,28 @@ window.renderMainCalendar = async function() {
             const cName = document.getElementById('jmClient')?.innerText.replace('🔗', '').trim() || 'Client';
             const cPhone = (document.getElementById('jmPhone')?.innerText || '').replace('📞', '').trim();
             const textVal = document.getElementById('jmDwTextInput').value.trim();
+            const matterSel = document.getElementById('jmDwMatterSelect');
+            const selectedMatterVal = matterSel.value;
+            const selectedMatterTitle = matterSel.options[matterSel.selectedIndex]?.text || '';
+
+            // ЖЕСТКАЯ ПРОВЕРКА: Выбран ли Matter!
+            if (!selectedMatterVal) {
+                alert('⚠️ Please select an Active Matter (Case) from the dropdown list before sending to Docketwise!');
+                matterSel.focus();
+                return;
+            }
+
+            if (!textVal) {
+                alert('⚠️ Please enter Note / Task text first.');
+                return;
+            }
+
             const assigneeSel = document.getElementById('jmDwAssignee');
             const assigneeId = assigneeSel.value;
             const assigneeName = assigneeSel.options[assigneeSel.selectedIndex]?.text || '';
             const dueDate = document.getElementById('jmDwDueDate').value;
 
-            if (!textVal) {
-                alert('⚠️ Please enter text first.');
-                return;
-            }
+            const realMatterId = (selectedMatterVal !== 'GENERAL_PROFILE') ? selectedMatterVal : '';
 
             btn.textContent = '⏳ Sending to Docketwise...';
             btn.disabled = true;
@@ -9846,6 +9808,8 @@ window.renderMainCalendar = async function() {
                     body: JSON.stringify({
                         actionType: currentMode,
                         clientId: window.currentJmClientId || '',
+                        matterId: realMatterId,
+                        matterTitle: selectedMatterTitle,
                         fullName: cName,
                         phone: cPhone,
                         description: textVal,
@@ -9873,7 +9837,6 @@ window.renderMainCalendar = async function() {
         };
     }
 
-    // Сохраняем clientId при открытии карточки звонка, чтобы передавать его в Docketwise
     if (typeof window.openJournalModal === 'function' && !window.openJournalModal._dwWrapped) {
         const origOpenJm = window.openJournalModal;
         window.openJournalModal = function(client, phone, date, op, st, color, notes, reply, trackingBadgeHTML, logId, assignedStaff, isResolved, clientId) {
