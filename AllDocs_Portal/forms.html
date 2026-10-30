@@ -141,9 +141,9 @@
             box-sizing: border-box;
         }
 
-        /* ЛЕВАЯ КОЛОНКА ПОИСКА И ДОСЬЕ КЛИЕНТА */
+        /* ЛЕВАЯ КОЛОНКА ПОИСКА И ФАЙЛОВ КЛИЕНТА (ЧИСТАЯ И КОМПАКТНАЯ) */
         .search-panel {
-            width: 410px;
+            width: 380px;
             background: linear-gradient(165deg, #ffffff 0%, #f7f2ea 100%);
             border-right: 1.5px solid rgba(184, 115, 51, 0.28);
             padding: 24px 20px;
@@ -238,33 +238,45 @@
         .client-phone-list { font-size: 12px; color: var(--secondary-color); font-weight: 600; }
         .loading-indicator { position: absolute; right: 12px; color: var(--accent-color); font-size: 11px; display: none; font-weight: 800; }
 
-        /* DOCKETWISE DOSSIER CARD */
+        /* КОМПАКТНАЯ КАРТОЧКА КЛИЕНТА И ФАЙЛОВ */
         .client-card {
             background: linear-gradient(160deg, #faf6f0 0%, #f1e9dd 100%);
             border: 1.5px solid rgba(184, 115, 51, 0.35);
             border-bottom: 4px solid #8b552b;
             border-radius: 18px;
-            padding: 15px;
+            padding: 16px;
             margin-top: 6px;
             display: none;
             box-shadow: 0 10px 24px rgba(44, 26, 20, 0.08), inset 0 2px 2px #ffffff;
         }
-        .dossier-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 8px; }
-        .dossier-grid .full-col { grid-column: span 2; }
-        .dossier-grid label { font-size: 9.5px; color: #6e4223; margin-bottom: 2px; }
-        .dossier-grid input, .dossier-grid select, .dossier-grid textarea { padding: 6px 9px; font-size: 12px; border-radius: 8px; background: #ffffff; }
         .status-badge { display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 4px 10px; border-radius: 12px; font-size: 10.5px; font-weight: 800; margin-bottom: 6px; }
+
+        .summary-pills-box {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin: 8px 0;
+        }
+        .summary-pill {
+            background: #ffffff;
+            border: 1px solid rgba(184, 115, 51, 0.3);
+            border-radius: 8px;
+            padding: 3px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #2c1a14;
+        }
 
         .ai-scan-btn {
             width: 100%;
-            margin-top: 8px;
+            margin-top: 10px;
             background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
             color: #ffffff;
             border: 1px solid #93c5fd;
             border-bottom: 3.5px solid #1e3a8a;
-            border-radius: 11px;
-            padding: 10px 12px;
-            font-size: 12px;
+            border-radius: 12px;
+            padding: 11px 12px;
+            font-size: 12.5px;
             font-weight: 800;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -424,148 +436,37 @@
             </div>
         </div>
 
-        <!-- ДОСЬЕ КЛИЕНТА ИЗ DOCKETWISE + AI SCANNER -->
+        <!-- ЧИСТАЯ И КОМПАКТНАЯ КАРТОЧКА КЛИЕНТА (БЕЗ ГРОМОЗДКИХ ПОЛЕЙ!) -->
         <div class="client-card" id="clientCard">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <span class="status-badge" id="dossierStatusBadge">✓ Docketwise Linked</span>
                 <span id="displayDwId" style="font-size:11px; font-weight:800; color:#8b552b;"></span>
             </div>
-            <h3 id="displayClientName" style="margin:0 0 4px 0; font-size:16.5px; font-weight:800;">Client Name</h3>
-            <div id="displayClientMatters" style="font-size: 11.5px; color: #047857; font-weight: 700; margin-bottom: 8px;"></div>
+            <h3 id="displayClientName" style="margin:0 0 4px 0; font-size:17px; font-weight:800;">Client Name</h3>
+            <div id="displayClientMatters" style="font-size: 11.5px; color: #047857; font-weight: 700; margin-bottom: 6px;"></div>
 
-            <!-- БЛОК AI-СКАНЕРА ДОКУМЕНТОВ (DOCKETWISE FILES + LOCAL UPLOAD) -->
-            <div id="dwSmartFilesBox" style="margin: 8px 0; padding: 10px 12px; background: #ffffff; border: 1.5px solid rgba(184,115,51,0.32); border-radius: 12px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                    <span style="font-size:10px; font-weight:900; color:#2c1a14; text-transform:uppercase;">📂 Docketwise Files & AI Scanner</span>
+            <!-- Краткая сводка найденных данных в виде аккуратных капсул -->
+            <div class="summary-pills-box" id="clientDataSummaryPills"></div>
+
+            <!-- БЛОК ВЫБОРА ФАЙЛОВ ИЗ ВКЛАДКИ FILES И КНОПКА GEMINI AI SCAN -->
+            <div id="dwSmartFilesBox" style="margin: 10px 0; padding: 12px; background: #ffffff; border: 1.5px solid rgba(184,115,51,0.35); border-radius: 14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <span style="font-size:10.5px; font-weight:900; color:#2c1a14; text-transform:uppercase;">📂 Client Files (Select for AI Scan)</span>
                     <span id="dwFilesCountTag" style="font-size:10px; font-weight:800; color:#059669; background:#d1fae5; padding:2px 7px; border-radius:10px;">0 files</span>
                 </div>
-                <div id="dwSmartFilesList" style="max-height: 110px; overflow-y: auto; font-size: 11.5px;">
-                    <div style="color:#888; font-size:11px; padding:4px 0;">Select client to scan Docketwise Files...</div>
+                <div id="dwSmartFilesList" style="max-height: 150px; overflow-y: auto; font-size: 11.5px;">
+                    <div style="color:#888; font-size:11px; padding:4px 0;">Select client to load Docketwise Files...</div>
                 </div>
 
-                <!-- Загрузка дополнительных файлов с компьютера (Паспорт, Мед. выписки) -->
+                <!-- Загрузка дополнительных файлов с компьютера (при необходимости) -->
                 <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(184,115,51,0.25);">
-                    <label style="font-size:9.5px; color:#6e4223; margin-bottom:4px;">📎 Or attach Passport / ID / Medical PDF/JPG for AI Scan:</label>
+                    <label style="font-size:9.5px; color:#6e4223; margin-bottom:4px;">📎 Or attach Passport / Medical PDF/JPG:</label>
                     <input type="file" id="localAiFilesInput" multiple accept=".pdf,image/*" style="padding:5px; font-size:11px; background:#faf6f0;">
                 </div>
 
                 <button type="button" class="ai-scan-btn" id="btnRunAiScan" onclick="runAiDocumentScan()">
-                    🧠 AI Scan Files & Fill All Fields (Pro/Argon)
+                    🧠 Scan Checked Files with Gemini AI
                 </button>
-            </div>
-
-            <div style="font-size:10px; font-weight:900; color:#8b552b; text-transform:uppercase; border-top:1px dashed rgba(184,115,51,0.35); padding-top:8px; margin-top:6px;">
-                📋 Part I — Personal Info (Page 1):
-            </div>
-
-            <div class="dossier-grid">
-                <div>
-                    <label>1a. Last Name</label>
-                    <input type="text" id="dfLastName" placeholder="Last Name">
-                </div>
-                <div>
-                    <label>1a. First Name</label>
-                    <input type="text" id="dfFirstName" placeholder="First Name">
-                </div>
-                <div>
-                    <label>1b. SSN</label>
-                    <input type="text" id="dfSsn" placeholder="XXX-XX-XXXX">
-                </div>
-                <div>
-                    <label>1c. Date of Birth</label>
-                    <input type="text" id="dfDob" placeholder="MM/DD/YYYY">
-                </div>
-                <div class="full-col">
-                    <label>2a. Home Street Address & Apt</label>
-                    <input type="text" id="dfStreet" placeholder="313 W California Ave, Apt 319 A">
-                </div>
-                <div>
-                    <label>2a. City</label>
-                    <input type="text" id="dfCity" placeholder="Glendale">
-                </div>
-                <div style="display:grid; grid-template-columns: 1fr 1.3fr; gap:5px;">
-                    <div>
-                        <label>State</label>
-                        <input type="text" id="dfState" value="CA">
-                    </div>
-                    <div>
-                        <label>ZIP</label>
-                        <input type="text" id="dfZip" placeholder="91203">
-                    </div>
-                </div>
-                <div>
-                    <label>1e. Sex / Gender</label>
-                    <select id="dfGender">
-                        <option value="">-- Select --</option>
-                        <option value="Female">Female</option>
-                        <option value="Male">Male</option>
-                    </select>
-                </div>
-                <div>
-                    <label>4a. Language</label>
-                    <input type="text" id="dfLanguage" value="Armenian">
-                </div>
-                <div>
-                    <label>1f. Height (Ft / In)</label>
-                    <div style="display:flex; gap:4px;">
-                        <input type="text" id="dfHeightFt" placeholder="5">
-                        <input type="text" id="dfHeightIn" placeholder="4">
-                    </div>
-                </div>
-                <div>
-                    <label>1g. Weight (Lbs)</label>
-                    <input type="text" id="dfWeight" placeholder="155">
-                </div>
-                <div class="full-col">
-                    <label>Case / Medi-Cal / A-Number</label>
-                    <input type="text" id="dfCaseNum" placeholder="Optional Case #">
-                </div>
-            </div>
-
-            <!-- МЕДИЦИНСКИЙ БЛОК ДЛЯ MC 223 (П. 6, 7, 14) -->
-            <div style="font-size:10px; font-weight:900; color:#047857; text-transform:uppercase; border-top:1px dashed rgba(184,115,51,0.35); padding-top:8px; margin-top:10px;">
-                🩺 Part II & III — Medical & Doctors (MC 223 Pages 1–4):
-            </div>
-            <div class="dossier-grid">
-                <div class="full-col">
-                    <label>6a. Medical Problem 1 & Onset (MM/YYYY)</label>
-                    <div style="display:grid; grid-template-columns: 2fr 1fr; gap:4px;">
-                        <input type="text" id="dfDiag1" placeholder="e.g. Hypertension, Diabetes">
-                        <input type="text" id="dfDiagDate1" placeholder="MM/YYYY">
-                    </div>
-                </div>
-                <div class="full-col">
-                    <label>6b. Medical Problem 2 & Onset (MM/YYYY)</label>
-                    <div style="display:grid; grid-template-columns: 2fr 1fr; gap:4px;">
-                        <input type="text" id="dfDiag2" placeholder="e.g. Major Depressive Disorder">
-                        <input type="text" id="dfDiagDate2" placeholder="MM/YYYY">
-                    </div>
-                </div>
-                <div>
-                    <label>7. Clinic / Hospital Name</label>
-                    <input type="text" id="dfClinicName" placeholder="Clinic Name">
-                </div>
-                <div>
-                    <label>7. Doctor Name</label>
-                    <input type="text" id="dfDoctorName" placeholder="Dr. Name">
-                </div>
-                <div class="full-col">
-                    <label>7. Clinic Street Address, City, ZIP & Phone</label>
-                    <div style="display:grid; grid-template-columns: 1.6fr 1fr 0.7fr 1fr; gap:4px;">
-                        <input type="text" id="dfClinicStreet" placeholder="Clinic Street">
-                        <input type="text" id="dfClinicCity" placeholder="City">
-                        <input type="text" id="dfClinicZip" placeholder="ZIP">
-                        <input type="text" id="dfClinicPhone" placeholder="Phone">
-                    </div>
-                </div>
-                <div class="full-col">
-                    <label>7. All Medicines Received</label>
-                    <input type="text" id="dfMedicines" placeholder="e.g. Metformin, Lisinopril, Sertraline...">
-                </div>
-                <div class="full-col">
-                    <label>14. Daily Activity Limitations (Page 4)</label>
-                    <input type="text" id="dfLimitations" placeholder="e.g. Needs daily assistance with cooking, bathing, mobility...">
-                </div>
             </div>
 
             <!-- БЫСТРАЯ ЗАМЕТКА В DOCKETWISE -->
@@ -585,7 +486,7 @@
         <div class="area-header">
             <div>
                 <h1>Document Generator</h1>
-                <p>Select a client on the left to auto-fill official PDF forms from Docketwise & AI Vision in 1 click</p>
+                <p>Select a client on the left — Gemini AI & Docketwise will auto-fill your PDF forms in 1 click</p>
             </div>
             <div style="background: linear-gradient(135deg, #d48c46 0%, #9a5b22 100%); color: #ffffff; font-size: 11px; font-weight: 800; letter-spacing: 1.2px; padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.35);">
                 ⚡ 13 TEMPLATES READY
@@ -715,7 +616,7 @@
         
         <div class="modal-body">
             <div class="loader-overlay" id="pdfLoader">
-                <div>⏳ Загрузка данных из Docketwise и автозаполнение PDF...</div>
+                <div>⏳ Загрузка данных и автозаполнение PDF...</div>
             </div>
             <iframe id="pdfIframe" src="" title="PDF Viewer"></iframe>
         </div>
@@ -734,7 +635,26 @@
     let currentClient = null;
     let currentOpenedFormCode = '';
     let lastInspectedPdfFields = [];
-    let aiExtractedData = null; // Полные данные от AI-сканера (диагнозы, клиники, врачи, работа)
+    // Единое хранилище данных клиента в памяти (из Docketwise + из Gemini AI Scan)
+    let clientMemoryStore = {};
+
+    function renderSummaryPills() {
+        const box = document.getElementById('clientDataSummaryPills');
+        if (!box) return;
+        const m = clientMemoryStore;
+        const pills = [];
+        if (m.ssn) pills.push(`🔐 SSN: ${m.ssn}`);
+        if (m.dob) pills.push(`🎂 DOB: ${m.dob}`);
+        if (m.gender) pills.push(`👤 ${m.gender}`);
+        if (m.street) pills.push(`🏠 ${m.street}, ${m.city || ''}`);
+        if (Array.isArray(m.diagnoses) && m.diagnoses.length > 0 && m.diagnoses[0].problem) {
+            pills.push(`🩺 ${m.diagnoses.length} Diagnoses`);
+        }
+        if (Array.isArray(m.clinics) && m.clinics.length > 0 && (m.clinics[0].clinicName || m.clinics[0].doctorName)) {
+            pills.push(`🏥 ${m.clinics.length} Doctors/Clinics`);
+        }
+        box.innerHTML = pills.map(p => `<span class="summary-pill">${p}</span>`).join('');
+    }
 
     document.addEventListener("DOMContentLoaded", function() {
         const loggedInStaff = localStorage.getItem('loggedInStaff');
@@ -759,6 +679,7 @@
             document.addEventListener('click', (e) => { if (!userProfile.contains(e.target) && !logoutMenu.contains(e.target)) logoutMenu.style.display = 'none'; });
         }
 
+        // Кнопка копирования всех полей любого открытого PDF (всегда возвращает полный массив!)
         const copyBtn = document.getElementById('copyPdfFieldsBtn');
         if (copyBtn) {
             copyBtn.onclick = function() {
@@ -871,7 +792,6 @@
 
         async function applyClientData(client) {
             currentClient = client;
-            aiExtractedData = null;
             fullNameInput.value = client.name || '';
             phoneNumberInput.value = client.phone || '';
 
@@ -894,37 +814,43 @@
             }
 
             const parts = (client.name || '').trim().split(/\s+/);
-            document.getElementById('dfFirstName').value = parts[0] || '';
-            document.getElementById('dfLastName').value = parts.slice(1).join(' ') || '';
+            clientMemoryStore = {
+                firstName: parts[0] || '',
+                lastName: parts.slice(1).join(' ') || '',
+                phone: client.phone || '',
+                state: 'CA',
+                language: 'Armenian'
+            };
+            renderSummaryPills();
 
             document.getElementById('clientCard').style.display = 'block';
             document.getElementById('formsGrid').classList.add('active');
-            document.getElementById('dossierStatusBadge').textContent = '⏳ Scanning Docketwise Files & Profile...';
-            document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#b87333; font-weight:700; padding:6px 0;">⏳ Filtering files in Docketwise...</div>';
+            document.getElementById('dossierStatusBadge').textContent = '⏳ Loading Docketwise Dossier...';
+            document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#b87333; font-weight:700; padding:6px 0;">⏳ Loading files from Docketwise...</div>';
 
             try {
                 const res = await fetch(`/api/search?clientId=${encodeURIComponent(client.id)}`);
                 const fullData = await res.json();
                 if (fullData && fullData.success && fullData.profile) {
                     const p = fullData.profile;
-                    currentClient.fullProfile = p;
-                    document.getElementById('dfFirstName').value = p.firstName || parts[0] || '';
-                    document.getElementById('dfLastName').value = p.lastName || parts.slice(1).join(' ') || '';
-                    document.getElementById('dfSsn').value = p.ssn || '';
-                    document.getElementById('dfDob').value = p.dob || '';
-                    document.getElementById('dfStreet').value = p.street || '';
-                    document.getElementById('dfCity').value = p.city || 'Glendale';
-                    document.getElementById('dfState').value = p.state || 'CA';
-                    document.getElementById('dfZip').value = p.zip || '';
-                    document.getElementById('dfLanguage').value = p.language || 'Armenian';
-                    document.getElementById('dfHeightFt').value = p.heightFeet || '';
-                    document.getElementById('dfHeightIn').value = p.heightInches || '';
-                    document.getElementById('dfWeight').value = p.weight || '';
-                    document.getElementById('dfCaseNum').value = p.aNumber || '';
-                    if (p.gender) {
-                        const gNorm = p.gender.toLowerCase().startsWith('f') ? 'Female' : (p.gender.toLowerCase().startsWith('m') ? 'Male' : '');
-                        document.getElementById('dfGender').value = gNorm;
-                    }
+                    clientMemoryStore = {
+                        ...clientMemoryStore,
+                        firstName: p.firstName || clientMemoryStore.firstName,
+                        lastName: p.lastName || clientMemoryStore.lastName,
+                        ssn: p.ssn || '',
+                        dob: p.dob || '',
+                        street: p.street || '',
+                        city: p.city || 'Glendale',
+                        state: p.state || 'CA',
+                        zip: p.zip || '',
+                        gender: p.gender || '',
+                        language: p.language || 'Armenian',
+                        heightFt: p.heightFeet || '',
+                        heightIn: p.heightInches || '',
+                        weight: p.weight || '',
+                        caseNum: p.aNumber || ''
+                    };
+                    renderSummaryPills();
 
                     const files = p.files || [];
                     document.getElementById('dwFilesCountTag').textContent = `${files.length} files`;
@@ -936,7 +862,7 @@
                             filesHtml += `
                                 <label style="display:flex; align-items:center; justify-content:space-between; gap:6px; padding:5px 4px; border-bottom:1px dashed #eee; cursor:pointer; text-transform:none; font-weight:600; margin:0; opacity:${rowOpacity};">
                                     <div style="display:flex; align-items:center; gap:6px; overflow:hidden;">
-                                        <input type="checkbox" class="dw-file-cb" value="${f.id}" ${f.autoSelect ? 'checked' : ''} style="width:15px; height:15px; margin:0; flex-shrink:0;">
+                                        <input type="checkbox" class="dw-file-cb" value="${f.id}" data-url="${f.url || ''}" ${f.autoSelect ? 'checked' : ''} style="width:15px; height:15px; margin:0; flex-shrink:0;">
                                         <a href="${f.url}" target="_blank" style="color:#2c1a14; text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:11.5px;" title="${f.name}">${f.name} ↗</a>
                                     </div>
                                     <span style="background:${badgeColor}; color:#fff; font-size:9px; padding:2px 6px; border-radius:6px; white-space:nowrap; flex-shrink:0;">${f.badge}</span>
@@ -945,10 +871,10 @@
                         });
                         document.getElementById('dwSmartFilesList').innerHTML = filesHtml;
                     } else {
-                        document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#888; font-size:11px; padding:4px 0;">No uploaded files in Docketwise Files tab. You can attach files below.</div>';
+                        document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#888; font-size:11px; padding:4px 0;">No files listed in Docketwise tab (or attach below).</div>';
                     }
 
-                    document.getElementById('dossierStatusBadge').textContent = '✓ Full Docketwise Dossier Ready';
+                    document.getElementById('dossierStatusBadge').textContent = '✓ Docketwise Profile Ready';
                 } else {
                     document.getElementById('dossierStatusBadge').textContent = '✓ Client Linked';
                 }
@@ -1006,7 +932,6 @@
         });
     });
 
-    // ЧТЕНИЕ ЛОКАЛЬНЫХ ФАЙЛОВ В BASE64 ДЛЯ GEMINI VISION
     function fileToBase64(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -1020,12 +945,14 @@
         });
     }
 
-    // ЗАПУСК AI-СКАНИРОВАНИЯ ДОКУМЕНТОВ (DOCKETWISE + ПРИКРЕПЛЕННЫЕ ФАЙЛЫ)
     async function runAiDocumentScan() {
         const btn = document.getElementById('btnRunAiScan');
         const badge = document.getElementById('dossierStatusBadge');
 
-        const checkedDwFileIds = Array.from(document.querySelectorAll('.dw-file-cb:checked')).map(cb => cb.value);
+        const checkedBoxes = Array.from(document.querySelectorAll('.dw-file-cb:checked'));
+        const checkedDwFileIds = checkedBoxes.map(cb => cb.value);
+        const checkedDwFileUrls = checkedBoxes.map(cb => cb.getAttribute('data-url')).filter(Boolean);
+
         const localFilesInput = document.getElementById('localAiFilesInput');
         const uploadedFiles = [];
 
@@ -1036,8 +963,8 @@
         }
 
         btn.disabled = true;
-        btn.textContent = '⏳ AI Vision Scanning Documents...';
-        badge.textContent = '🧠 AI Analyzing Passport & Medical Files...';
+        btn.textContent = '⏳ Gemini AI Scanning Files...';
+        badge.textContent = '🧠 AI Analyzing Documents...';
 
         try {
             const res = await fetch('/api/search', {
@@ -1047,6 +974,7 @@
                     clientId: currentClient ? currentClient.id : '',
                     clientName: currentClient ? currentClient.name : '',
                     fileIds: checkedDwFileIds,
+                    fileUrls: checkedDwFileUrls,
                     uploadedFiles: uploadedFiles
                 })
             });
@@ -1057,57 +985,23 @@
             }
 
             const ex = data.extracted || {};
-            aiExtractedData = ex;
 
-            // Заполняем поля в левой панели только если ИИ нашел их в документах
-            if (ex.firstName) document.getElementById('dfFirstName').value = ex.firstName;
-            if (ex.lastName) document.getElementById('dfLastName').value = ex.lastName;
-            if (ex.ssn) document.getElementById('dfSsn').value = ex.ssn;
-            if (ex.dob) document.getElementById('dfDob').value = ex.dob;
-            if (ex.street) document.getElementById('dfStreet').value = ex.street;
-            if (ex.city) document.getElementById('dfCity').value = ex.city;
-            if (ex.state) document.getElementById('dfState').value = ex.state;
-            if (ex.zip) document.getElementById('dfZip').value = ex.zip;
-            if (ex.gender) document.getElementById('dfGender').value = ex.gender;
-            if (ex.heightFt) document.getElementById('dfHeightFt').value = ex.heightFt;
-            if (ex.heightIn) document.getElementById('dfHeightIn').value = ex.heightIn;
-            if (ex.weight) document.getElementById('dfWeight').value = ex.weight;
-            if (ex.language) document.getElementById('dfLanguage').value = ex.language;
-            if (ex.caseNum) document.getElementById('dfCaseNum').value = ex.caseNum;
-
-            if (Array.isArray(ex.diagnoses) && ex.diagnoses.length > 0) {
-                if (ex.diagnoses[0]) {
-                    document.getElementById('dfDiag1').value = ex.diagnoses[0].problem || '';
-                    document.getElementById('dfDiagDate1').value = ex.diagnoses[0].onsetDate || '';
+            // Аккуратно объединяем найденные ИИ данные с теми, что уже были из Docketwise
+            Object.keys(ex).forEach(k => {
+                const val = ex[k];
+                if (val !== null && val !== undefined && val !== '' && (!Array.isArray(val) || val.length > 0)) {
+                    clientMemoryStore[k] = val;
                 }
-                if (ex.diagnoses[1]) {
-                    document.getElementById('dfDiag2').value = ex.diagnoses[1].problem || '';
-                    document.getElementById('dfDiagDate2').value = ex.diagnoses[1].onsetDate || '';
-                }
-            }
+            });
 
-            if (Array.isArray(ex.clinics) && ex.clinics.length > 0) {
-                const c0 = ex.clinics[0];
-                if (c0.clinicName) document.getElementById('dfClinicName').value = c0.clinicName;
-                if (c0.doctorName) document.getElementById('dfDoctorName').value = c0.doctorName;
-                if (c0.address) document.getElementById('dfClinicStreet').value = c0.address;
-                if (c0.city) document.getElementById('dfClinicCity').value = c0.city;
-                if (c0.zip) document.getElementById('dfClinicZip').value = c0.zip;
-                if (c0.phone) document.getElementById('dfClinicPhone').value = c0.phone;
-                if (c0.medicines) document.getElementById('dfMedicines').value = c0.medicines;
-            }
-
-            if (Array.isArray(ex.dailyLimitations) && ex.dailyLimitations.length > 0) {
-                document.getElementById('dfLimitations').value = ex.dailyLimitations.filter(Boolean).join('; ');
-            }
-
-            badge.textContent = `✅ AI Extracted Data (${data.filesScanned || 1} sources)`;
-            btn.textContent = '✅ AI Data Ready! Click Any Form on the Right →';
-            setTimeout(() => { btn.textContent = '🧠 AI Scan Files & Fill All Fields (Pro/Argon)'; }, 4500);
+            renderSummaryPills();
+            badge.textContent = `✅ AI Scan Complete (${data.model || 'Gemini'})`;
+            btn.textContent = '✅ All Data Extracted! Open Any Form →';
+            setTimeout(() => { btn.textContent = '🧠 Scan Checked Files with Gemini AI'; }, 4500);
         } catch (err) {
             alert('❌ ' + err.message);
             badge.textContent = '⚠️ AI Scan Error';
-            btn.textContent = '🧠 AI Scan Files & Fill All Fields (Pro/Argon)';
+            btn.textContent = '🧠 Scan Checked Files with Gemini AI';
         } finally {
             btn.disabled = false;
         }
@@ -1164,49 +1058,34 @@
     }
 
     function collectClientDossierForPdf() {
-        const firstName = document.getElementById('dfFirstName').value.trim();
-        const lastName = document.getElementById('dfLastName').value.trim();
+        const m = clientMemoryStore || {};
+        const firstName = (m.firstName || '').trim();
+        const lastName = (m.lastName || '').trim();
         const fullName = `${firstName} ${lastName}`.trim() || (currentClient ? currentClient.name : '');
         const lastFirst = lastName ? `${lastName}, ${firstName}` : fullName;
-        const phone = document.getElementById('phoneNumber').value.trim() || (currentClient ? currentClient.phone : '');
-        const ssn = document.getElementById('dfSsn').value.trim();
-        const dob = document.getElementById('dfDob').value.trim();
-        const street = document.getElementById('dfStreet').value.trim();
-        const city = document.getElementById('dfCity').value.trim();
-        const state = document.getElementById('dfState').value.trim() || 'CA';
-        const zip = document.getElementById('dfZip').value.trim();
+        const phone = document.getElementById('phoneNumber').value.trim() || m.phone || (currentClient ? currentClient.phone : '');
+        const ssn = (m.ssn || '').trim();
+        const dob = (m.dob || '').trim();
+        const street = (m.street || '').trim();
+        const city = (m.city || 'Glendale').trim();
+        const state = (m.state || 'CA').trim();
+        const zip = (m.zip || '').trim();
         const fullAddress = [street, city, state, zip].filter(Boolean).join(', ');
         const cityStateZip = [city, state, zip].filter(Boolean).join(', ');
-        const gender = document.getElementById('dfGender').value;
-        const language = document.getElementById('dfLanguage').value.trim() || 'Armenian';
-        const heightFt = document.getElementById('dfHeightFt').value.trim();
-        const heightIn = document.getElementById('dfHeightIn').value.trim();
-        const weight = document.getElementById('dfWeight').value.trim();
-        const caseNum = document.getElementById('dfCaseNum').value.trim();
+        const gender = m.gender || '';
+        const language = (m.language || 'Armenian').trim();
+        const heightFt = (m.heightFt || '').trim();
+        const heightIn = (m.heightIn || '').trim();
+        const weight = (m.weight || '').trim();
+        const caseNum = (m.caseNum || '').trim();
         const today = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-
-        // Медицинские данные (из панели + из AI-сканера)
-        const diag1 = document.getElementById('dfDiag1').value.trim();
-        const diagDate1 = document.getElementById('dfDiagDate1').value.trim();
-        const diag2 = document.getElementById('dfDiag2').value.trim();
-        const diagDate2 = document.getElementById('dfDiagDate2').value.trim();
-        const clinicName = document.getElementById('dfClinicName').value.trim();
-        const doctorName = document.getElementById('dfDoctorName').value.trim();
-        const clinicStreet = document.getElementById('dfClinicStreet').value.trim();
-        const clinicCity = document.getElementById('dfClinicCity').value.trim();
-        const clinicZip = document.getElementById('dfClinicZip').value.trim();
-        const clinicPhone = document.getElementById('dfClinicPhone').value.trim();
-        const medicines = document.getElementById('dfMedicines').value.trim();
-        const limitations = document.getElementById('dfLimitations').value.trim();
 
         return {
             firstName, lastName, fullName, lastFirst,
             phone, ssn, dob,
             street, city, state, zip, fullAddress, cityStateZip,
             gender, language, heightFt, heightIn, weight, caseNum,
-            diag1, diagDate1, diag2, diagDate2,
-            clinicName, doctorName, clinicStreet, clinicCity, clinicZip, clinicPhone, medicines, limitations,
-            ai: aiExtractedData || {},
+            ai: m,
             today,
             repName: "Mariam Djaradjian",
             repOrg: "All Docs Consulting",
@@ -1221,39 +1100,34 @@
         };
     }
 
-    // ================================================================================
-    // ХИРУРГИЧЕСКИЙ МАППЕР ПОЛЕЙ MC 223 (ПО ВАШЕМУ СПИСКУ ИЗ 301 ПОЛЯ) + ВСЕХ 12 ФОРМ
-    // ================================================================================
+    // УМНЫЙ МАППЕР ВСЕХ 301 ПОЛЯ MC 223 + ЗАПИСЬ ИМЕН ПОЛЕЙ ДЛЯ КНОПКИ COPY
     function smartAutoFillPdfForm(form, d, pdfDoc) {
         const fields = form.getFields();
+        const pages = pdfDoc ? pdfDoc.getPages() : [];
         let filledCount = 0;
+        lastInspectedPdfFields = [];
 
-        // Разбивка SSN клиента (806340477 -> 806 / 34 / 0477)
         const cleanSsn = (d.ssn || '').replace(/\D/g, '');
         const ssn1 = cleanSsn.slice(0, 3);
         const ssn2 = cleanSsn.slice(3, 5);
         const ssn3 = cleanSsn.slice(5, 9);
         const formattedSsn = cleanSsn.length === 9 ? `${ssn1}-${ssn2}-${ssn3}` : d.ssn;
 
-        // Разбивка телефона клиента ((313) 493-2493 -> 313 / 493-2493)
         let cleanPhone = (d.phone || '').replace(/\D/g, '');
         if (cleanPhone.length === 11 && cleanPhone.startsWith('1')) cleanPhone = cleanPhone.slice(1);
         const phoneArea = cleanPhone.slice(0, 3);
         const phoneRest = cleanPhone.length >= 10 ? `${cleanPhone.slice(3, 6)}-${cleanPhone.slice(6, 10)}` : d.phone;
 
-        // Разбивка телефона первой клиники
-        let cPhoneClean = (d.clinicPhone || '').replace(/\D/g, '');
-        if (cPhoneClean.length === 11 && cPhoneClean.startsWith('1')) cPhoneClean = cPhoneClean.slice(1);
-        const cPhoneArea = cPhoneClean.slice(0, 3);
-        const cPhoneRest = cPhoneClean.length >= 10 ? `${cPhoneClean.slice(3, 6)}-${cPhoneClean.slice(6, 10)}` : d.clinicPhone;
-
-        // Разбивка Даты Рождения (MM/DD/YYYY -> mm / dd / yyyy)
         const dobParts = (d.dob || '').split(/[\/\-]/);
         const dobMM = dobParts[0] || '';
         const dobDD = dobParts[1] || '';
         const dobYY = dobParts[2] || '';
 
         const ai = d.ai || {};
+        const diag1 = ai.diagnoses?.[0]?.problem || '';
+        const diagDate1 = ai.diagnoses?.[0]?.onsetDate || '';
+        const diag2 = ai.diagnoses?.[1]?.problem || '';
+        const diagDate2 = ai.diagnoses?.[1]?.onsetDate || '';
         const diag3 = ai.diagnoses?.[2]?.problem || '';
         const diagDate3 = ai.diagnoses?.[2]?.onsetDate || '';
         const diag4 = ai.diagnoses?.[3]?.problem || '';
@@ -1264,9 +1138,12 @@
         const c2 = ai.clinics?.[2] || {};
         const job = ai.job || {};
 
-        // 100% ТОЧНЫЙ СЛОВАРЬ ЗАВОДСКИХ ИМЕН ПОЛЕЙ MC 223 (ИЗ ВАШЕГО JSON)
+        let c0PhoneClean = (c0.phone || '').replace(/\D/g, '');
+        if (c0PhoneClean.length === 11 && c0PhoneClean.startsWith('1')) c0PhoneClean = c0PhoneClean.slice(1);
+        const c0Area = c0PhoneClean.slice(0, 3);
+        const c0Rest = c0PhoneClean.length >= 10 ? `${c0PhoneClean.slice(3, 6)}-${c0PhoneClean.slice(6, 10)}` : (c0.phone || '');
+
         const exactMc223Map = {
-            // СТРАНИЦА 1: PART I — PERSONAL INFORMATION
             "1a name": d.lastFirst,
             "1b 3 SSA": ssn1,
             "1b 2 SSA": ssn2,
@@ -1289,35 +1166,32 @@
             "4a area": d.repArea,
             "4a phone": d.repPhoneOnly,
 
-            // СТРАНИЦА 1: PART II — MEDICAL INFORMATION (ПУНКТ 5 И 6)
             "5b recent date": ai.ssiDecisionDate || "",
-            "6a medical problem": d.diag1,
-            "6a month year": d.diagDate1,
-            "6b medical problem": d.diag2,
-            "6b month year": d.diagDate2,
+            "6a medical problem": diag1,
+            "6a month year": diagDate1,
+            "6b medical problem": diag2,
+            "6b month year": diagDate2,
             "6c medical problem": diag3,
             "6c month year": diagDate3,
             "6d medical problem": diag4,
             "6d month year": diagDate4,
 
-            // СТРАНИЦА 2: ПУНКТ 7 (КЛИНИКА / ГОСПИТАЛЬ №1)
-            "7 name": d.clinicName || c0.clinicName || "",
+            "7 name": c0.clinicName || "",
             "7 member": c0.memberId || "",
-            "7 area": cPhoneArea,
-            "7 phone": cPhoneRest,
-            "7 doctor": d.doctorName || c0.doctorName || "",
-            "7 address": d.clinicStreet || c0.address || "",
-            "7 city": d.clinicCity || c0.city || "",
-            "7 state": (d.clinicStreet || c0.address) ? (c0.state || "CA") : "",
-            "7 ZIP": d.clinicZip || c0.zip || "",
+            "7 area": c0Area,
+            "7 phone": c0Rest,
+            "7 doctor": c0.doctorName || "",
+            "7 address": c0.address || "",
+            "7 city": c0.city || "",
+            "7 state": c0.address ? (c0.state || "CA") : "",
+            "7 ZIP": c0.zip || "",
             "7 first date": c0.firstSeen || "",
             "7 last date": c0.lastSeen || "",
             "7 next date": c0.nextAppt || "",
-            "7 reason": c0.reason || d.diag1 || "",
-            "7 medicine": d.medicines || c0.medicines || "",
+            "7 reason": c0.reason || diag1 || "",
+            "7 medicine": c0.medicines || "",
             "7 treatment": c0.treatments || "",
 
-            // СТРАНИЦА 2: ПУНКТ 8 (ДОПОЛНИТЕЛЬНАЯ КЛИНИКА №2)
             "8 name": c1.clinicName || "",
             "8 member": c1.memberId || "",
             "8 doctor": c1.doctorName || "",
@@ -1332,7 +1206,6 @@
             "8 medicine": c1.medicines || "",
             "8 treatment": c1.treatments || "",
 
-            // СТРАНИЦА 3: ПУНКТ 9 (ДОПОЛНИТЕЛЬНЫЙ ВРАЧ №3)
             "9 name": c2.doctorName || c2.clinicName || "",
             "9 member": c2.memberId || "",
             "9 address": c2.address || "",
@@ -1346,19 +1219,17 @@
             "9 medicine": c2.medicines || "",
             "9 treatment": c2.treatments || "",
 
-            // СТРАНИЦА 4: ПУНКТ 12 (КОНТАКТНОЕ ЛИЦО / ПРЕДСТАВИТЕЛЬ) И ПУНКТ 14 (ОГРАНИЧЕНИЯ)
             "12 first name": `${d.repName} (${d.repOrg})`,
             "12 first relationship": "Authorized Representative",
             "12 first address": d.repFullAddress,
             "12 first area": d.repArea,
             "12 first phone": d.repPhoneOnly,
-            "14 activities list 1": d.limitations || ai.dailyLimitations?.[0] || "",
+            "14 activities list 1": ai.dailyLimitations?.[0] || "",
             "14 activities list 2": ai.dailyLimitations?.[1] || "",
             "14 activities list 3": ai.dailyLimitations?.[2] || "",
             "14 activities list 4": ai.dailyLimitations?.[3] || "",
             "15b date": ai.educationDate || "",
 
-            // СТРАНИЦА 5: ПУНКТ 17 (ИСТОРИЯ РАБОТЫ)
             "17 title": job.title || "",
             "17 business": job.business || "",
             "17 date from": job.dateFrom || "",
@@ -1370,13 +1241,57 @@
 
         const isMc223 = (currentOpenedFormCode === 'MC 223');
 
-        fields.forEach((field) => {
+        // Helper для точного выбора Yes / No / Male / Female в радио-группах PDF
+        function selectRadioSmart(field, desiredKeyword, fallbackIndex) {
+            if (typeof field.getOptions !== 'function' || typeof field.select !== 'function') return false;
+            const opts = field.getOptions() || [];
+            if (opts.length === 0) return false;
+            const kw = desiredKeyword.toLowerCase();
+            let match = opts.find(o => o.toLowerCase().includes(kw) || o.toLowerCase() === kw.charAt(0));
+            if (!match && opts[fallbackIndex] !== undefined) {
+                match = opts[fallbackIndex];
+            }
+            if (match) {
+                field.select(match);
+                return true;
+            }
+            return false;
+        }
+
+        fields.forEach((field, idx) => {
             const rawName = field.getName();
+            const typeName = field.constructor.name;
             const key = rawName.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+            // Записываем каждое поле в массив для кнопки Copy PDF Field Names!
+            let pageNum = 1, xPct = 50, yPct = 50;
+            try {
+                const widgets = field.acroField.getWidgets();
+                if (widgets && widgets.length > 0) {
+                    const rect = widgets[0].getRectangle();
+                    const pageRef = widgets[0].P();
+                    const foundIdx = pages.findIndex(p => p.ref === pageRef);
+                    if (foundIdx !== -1) {
+                        pageNum = foundIdx + 1;
+                        const { width, height } = pages[foundIdx].getSize();
+                        yPct = Math.round(((height - rect.y) / height) * 100);
+                        xPct = Math.round((rect.x / width) * 100);
+                    }
+                }
+            } catch (e) {}
+
+            lastInspectedPdfFields.push({
+                index: idx,
+                page: pageNum,
+                xPct: xPct,
+                yPct: yPct,
+                name: rawName,
+                type: typeName,
+                options: typeof field.getOptions === 'function' ? field.getOptions() : undefined
+            });
 
             try {
                 if (isMc223) {
-                    // 1. Для MC 223 заполняем текстовые поля СТРОГО по точной таблице exactMc223Map!
                     if (typeof field.setText === 'function') {
                         if (Object.prototype.hasOwnProperty.call(exactMc223Map, rawName)) {
                             const val = exactMc223Map[rawName];
@@ -1387,26 +1302,27 @@
                         }
                     }
 
-                    // 2. Радио-группы в MC 223 (тип "r", например поле "sex", "4a english", "4b interpreter")
-                    if (typeof field.select === 'function' && typeof field.getOptions === 'function') {
-                        const opts = field.getOptions() || [];
-                        if (rawName === 'sex' && d.gender) {
-                            const targetOpt = opts.find(o => o.toLowerCase().startsWith(d.gender.toLowerCase().charAt(0))) || (d.gender === 'Male' ? opts[0] : opts[1]);
-                            if (targetOpt) { field.select(targetOpt); filledCount++; }
-                        } else if (rawName === '4a english') {
-                            const isEng = d.language && d.language.toLowerCase() === 'english';
-                            const targetOpt = isEng ? opts[0] : (opts[1] || opts[0]);
-                            if (targetOpt) { field.select(targetOpt); filledCount++; }
-                        } else if (rawName === '4b interpreter') {
-                            if (opts[0]) { field.select(opts[0]); filledCount++; }
-                        } else if (rawName === '7 care' && (d.clinicName || c0.clinicName)) {
-                            if (opts[0]) { field.select(opts[0]); filledCount++; }
-                        }
+                    // Корректная расстановка галочек в радио-группах MC 223:
+                    if (rawName === 'sex' && d.gender) {
+                        const isFem = d.gender.toLowerCase().startsWith('f');
+                        if (selectRadioSmart(field, isFem ? 'female' : 'male', isFem ? 1 : 0)) filledCount++;
+                    } else if (rawName === '4a english') {
+                        const isEng = d.language && d.language.toLowerCase() === 'english';
+                        if (selectRadioSmart(field, isEng ? 'yes' : 'no', isEng ? 0 : 1)) filledCount++;
+                    } else if (rawName === '4b interpreter') {
+                        // В поле 4b interpreter opts[1] — это YES, а opts[0] было NO!
+                        if (selectRadioSmart(field, 'yes', 1)) filledCount++;
+                    } else if (rawName === '7 care' && c0.clinicName) {
+                        if (selectRadioSmart(field, 'yes', 0)) filledCount++;
+                    } else if (rawName === '12 contacts') {
+                        if (selectRadioSmart(field, 'yes', 0)) filledCount++;
+                    } else if (rawName === '13 additional exam') {
+                        if (selectRadioSmart(field, 'yes', 0)) filledCount++;
                     }
                     return;
                 }
 
-                // ДЛЯ ОСТАЛЬНЫХ 12 ФОРМ (MC 220, MC 382, MC 383, SOC 839, SOC 840, GEN 853, SSP 14 и т.д.)
+                // ДЛЯ ОСТАЛЬНЫХ 12 ФОРМ
                 if (typeof field.setText === 'function') {
                     let valToSet = null;
                     const isRepField = key.includes('rep') || key.includes('agent') || key.includes('org') || key.includes('helper') || key.includes('assister') || key.includes('preparer') || key.includes('interpreter') || key.includes('designee') || key.includes('attorney');
@@ -1443,25 +1359,6 @@
             } catch (err) {}
         });
 
-        // Дополнительно ставим сегодняшнюю дату на Странице 7 (Part V - Signature) в MC 223
-        if (isMc223 && pdfDoc) {
-            try {
-                const pages = pdfDoc.getPages();
-                if (pages.length >= 7) {
-                    const page7 = pages[6];
-                    const { width, height } = page7.getSize();
-                    pdfDoc.embedFont(PDFLib.StandardFonts.HelveticaBold).then(font => {
-                        page7.drawText(d.today, {
-                            x: width * 0.74,
-                            y: height * 0.81,
-                            size: 10,
-                            font: font
-                        });
-                    });
-                }
-            } catch (e) {}
-        }
-
         return { totalFields: fields.length, filledCount };
     }
 
@@ -1475,7 +1372,7 @@
         const statsBadge = document.getElementById('fillStatsBadge');
         
         loader.style.display = 'flex';
-        loader.innerHTML = `<div>⏳ Автозаполнение формы <b>${formCode}</b> данными клиента...</div>`;
+        loader.innerHTML = `<div>⏳ Автозаполнение формы <b>${formCode}</b>...</div>`;
         iframe.src = "";
 
         try {
