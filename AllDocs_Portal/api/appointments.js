@@ -100,6 +100,25 @@ export default async function handler(req, res) {
                 let noteMsg = extractFromDescription(desc, 'Note') || '';
                 let loc = event.location || '';
 
+                // ЧИТАЕМ КТО И КОГДА ПОСТАВИЛ АППОЙТМЕНТ
+                let bookedBy = extractFromDescription(desc, 'Booked By') || '';
+                let bookedAt = extractFromDescription(desc, 'Booked At') || '';
+
+                // Если время создания не было записано в текст, берем системное время создания из самого Google Calendar
+                if (!bookedAt && event.created) {
+                    try {
+                        const createdObj = new Date(event.created);
+                        bookedAt = createdObj.toLocaleString('en-US', {
+                            timeZone: 'America/Los_Angeles',
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    } catch (e) {}
+                }
+
                 // УМНЫЙ ПАРСЕР ДЛЯ GOREMINDERS
                 if (event._isGoReminders && event.summary) {
                     const summary = event.summary;
@@ -122,6 +141,8 @@ export default async function handler(req, res) {
                     const ntMatch = summary.match(/Appointment Notes:\s*(.*)$/i);
                     if (ntMatch) noteMsg = ntMatch[1].trim();
                     else if (desc && !noteMsg) noteMsg = desc; 
+
+                    if (!bookedBy) bookedBy = 'GoReminders Sync';
                 }
 
                 return {
@@ -133,6 +154,8 @@ export default async function handler(req, res) {
                     location: loc,
                     phone: phoneNum,
                     staff: staffName,
+                    bookedBy: bookedBy || 'Admin / Front Desk',
+                    bookedAt: bookedAt || '',
                     service: serviceName,
                     length: calcLength,
                     message: noteMsg,
@@ -175,7 +198,19 @@ export default async function handler(req, res) {
             const endDate = new Date(apptDate.getTime() + durationMins * 60000);
             const endTime = endDate.toISOString();
 
-            const descText = `Phone: ${newAppointment.phone}\nService: ${newAppointment.service}\nStaff: ${newAppointment.staff}\nDuration: ${newAppointment.length}\nNote: ${newAppointment.message || ''}\n\nBooked via CRM.`;
+            // Фиксируем кто создал/обновил и точное время по Лос-Анджелесу
+            const operatorName = newAppointment.bookedBy || 'Staff Member';
+            const nowLaStr = new Date().toLocaleString('en-US', {
+                timeZone: 'America/Los_Angeles',
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            const bookedAtTime = newAppointment.bookedAt || nowLaStr;
+
+            const descText = `Phone: ${newAppointment.phone}\nService: ${newAppointment.service}\nStaff: ${newAppointment.staff}\nDuration: ${newAppointment.length}\nBooked By: ${operatorName}\nBooked At: ${bookedAtTime}\nNote: ${newAppointment.message || ''}\n\nBooked via CRM.`;
 
             const event = {
                 summary: `${newAppointment.client}`,
