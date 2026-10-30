@@ -1742,7 +1742,10 @@
 
 
 
+
+
 (000) 000-0000
+
 
 
 
@@ -2439,7 +2442,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -8455,6 +8461,50 @@ window.renderMainCalendar = async function() {
     lockMasterCalendarFunctions();
     setTimeout(lockMasterCalendarFunctions, 400);
     setTimeout(lockMasterCalendarFunctions, 1100);
+})();
+</script>
+    <!-- 🚀 ПРЯМАЯ ОТПРАВКА СМС ЧЕРЕЗ OOMA OFFICE PRO (АВТОМАТИЧЕСКАЯ ЗАМЕНА ZAPIER) -->
+<script>
+(function initDirectOomaSmsGateway() {
+    // 1. Обновляем saveMessagesDb, чтобы при каждом новом исходящем сообщении оно уходило напрямую через Ooma!
+    window.saveMessagesDb = async function(msgs, directSmsPayload = null) {
+        window.globalMessages = msgs;
+        localStorage.setItem('gr_messages', JSON.stringify(msgs));
+        try {
+            await fetch('/api/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messages: msgs, directSms: directSmsPayload })
+            });
+        } catch (e) {
+            console.error('Error saving/sending message:', e);
+        }
+    };
+
+    // 2. Автоматически перехватываем любые старые вызовы hooks.zapier.com и направляем их напрямую в наш Ooma API!
+    const origFetch = window.fetch;
+    window.fetch = async function(url, options) {
+        if (typeof url === 'string' && url.includes('hooks.zapier.com/hooks/catch/')) {
+            try {
+                const urlObj = new URL(url);
+                const phone = urlObj.searchParams.get('phone');
+                const message = urlObj.searchParams.get('message');
+                if (phone && message) {
+                    console.log('🚀 Routing SMS directly via Ooma Office Pro (+17472042404) instead of Zapier...');
+                    return origFetch('/api/messages', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            directSms: { phone: phone, text: message }
+                        })
+                    });
+                }
+            } catch (err) {
+                console.error('Ooma intercept error:', err);
+            }
+        }
+        return origFetch.apply(this, arguments);
+    };
 })();
 </script>
 </body>
