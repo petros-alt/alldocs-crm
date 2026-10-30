@@ -2519,7 +2519,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -2559,7 +2562,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -9554,10 +9560,183 @@ window.renderMainCalendar = async function() {
     }
 })();
 </script>
- <script>
+<!-- ⚖️ DOCKETWISE MANUAL CONTROL PANEL (3D WARM LUXURY DESIGN) -->
+<style>
+#jmDocketwiseBar.dw-action-bar {
+    margin-top: 16px !important;
+    padding: 16px 18px !important;
+    background: linear-gradient(160deg, #faf6f0 0%, #f1e9dd 100%) !important;
+    border: 1.5px solid rgba(184, 115, 51, 0.32) !important;
+    border-bottom: 4px solid rgba(139, 85, 43, 0.45) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 10px 24px rgba(44, 26, 20, 0.08), inset 0 2px 2px #ffffff !important;
+}
+
+#jmDocketwiseBar .dw-action-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 12px !important;
+    padding-bottom: 8px !important;
+    border-bottom: 1px dashed rgba(184, 115, 51, 0.28) !important;
+}
+
+#jmDocketwiseBar .dw-action-title {
+    font-size: 11.5px !important;
+    font-weight: 900 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.9px !important;
+    color: #8b552b !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+#jmDocketwiseBar .dw-status-pill {
+    background: rgba(16, 185, 129, 0.14) !important;
+    color: #047857 !important;
+    border: 1px solid rgba(16, 185, 129, 0.35) !important;
+    padding: 3px 10px !important;
+    border-radius: 20px !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+}
+
+#jmDocketwiseBar .dw-action-btns {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 10px !important;
+}
+
+#jmDocketwiseBar .dw-act-btn {
+    background: linear-gradient(180deg, #ffffff 0%, #f5ede2 100%) !important;
+    color: #2c1a14 !important;
+    border: 1.5px solid rgba(184, 115, 51, 0.32) !important;
+    border-bottom: 3.5px solid #8b552b !important;
+    border-radius: 13px !important;
+    padding: 10px 10px !important;
+    font-size: 12.5px !important;
+    font-weight: 800 !important;
+    cursor: pointer !important;
+    transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    box-shadow: 0 4px 10px rgba(44, 26, 20, 0.06) !important;
+}
+
+#jmDocketwiseBar .dw-act-btn:hover {
+    transform: translateY(-2px) !important;
+    background: linear-gradient(180deg, #ffffff 0%, #fff9f2 100%) !important;
+    border-color: #b87333 !important;
+    box-shadow: 0 8px 16px rgba(184, 115, 51, 0.18) !important;
+}
+
+#jmDocketwiseBar .dw-act-btn.active-mode {
+    background: linear-gradient(135deg, #3e271c 0%, #24140e 100%) !important;
+    color: #ffffff !important;
+    border-color: #d48c46 !important;
+    border-bottom: 3.5px solid #120906 !important;
+    box-shadow: 0 6px 14px rgba(36, 20, 14, 0.28) !important;
+}
+
+#jmDocketwiseBar .dw-compose-box {
+    display: none;
+    margin-top: 14px !important;
+    padding: 14px !important;
+    background: #ffffff !important;
+    border: 1.5px solid rgba(184, 115, 51, 0.25) !important;
+    border-left: 4px solid #b87333 !important;
+    border-radius: 14px !important;
+    box-shadow: inset 0 2px 5px rgba(44, 26, 20, 0.03) !important;
+}
+
+#jmDocketwiseBar .dw-field-label {
+    color: #6e4223 !important;
+    font-size: 11px !important;
+    font-weight: 900 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    margin-bottom: 5px !important;
+    display: block !important;
+}
+
+#jmDocketwiseBar .dw-task-row {
+    display: grid !important;
+    grid-template-columns: 1.3fr 1fr !important;
+    gap: 10px !important;
+    margin-bottom: 4px !important;
+}
+
+#jmDocketwiseBar select,
+#jmDocketwiseBar input[type="date"],
+#jmDocketwiseBar textarea {
+    width: 100% !important;
+    background: #faf6f0 !important;
+    color: #24140e !important;
+    border: 1.5px solid rgba(184, 115, 51, 0.35) !important;
+    border-radius: 11px !important;
+    padding: 9px 12px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    margin-bottom: 10px !important;
+    box-sizing: border-box !important;
+    outline: none !important;
+    transition: border-color 0.2s !important;
+}
+
+#jmDocketwiseBar select:focus,
+#jmDocketwiseBar input[type="date"]:focus,
+#jmDocketwiseBar textarea:focus {
+    border-color: #8b552b !important;
+    background: #ffffff !important;
+    box-shadow: 0 0 0 3px rgba(184, 115, 51, 0.12) !important;
+}
+
+#jmDocketwiseBar .dw-send-confirm-btn {
+    width: 100% !important;
+    background: linear-gradient(135deg, #3e271c 0%, #24140e 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid #d48c46 !important;
+    border-bottom: 3.5px solid #8b552b !important;
+    border-radius: 12px !important;
+    padding: 11px 16px !important;
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 6px 14px rgba(36, 20, 14, 0.22) !important;
+}
+
+#jmDocketwiseBar .dw-send-confirm-btn:hover {
+    transform: translateY(-1px) !important;
+    background: linear-gradient(135deg, #523426 0%, #2f1b13 100%) !important;
+    box-shadow: 0 8px 18px rgba(36, 20, 14, 0.32) !important;
+}
+
+.create-dw-lead-pill {
+    background: linear-gradient(135deg, #3e271c 0%, #24140e 100%) !important;
+    color: #ffd8a8 !important;
+    border: 1px solid #d48c46 !important;
+    border-radius: 12px !important;
+    padding: 3px 10px !important;
+    font-size: 10.5px !important;
+    font-weight: 800 !important;
+    margin-left: 8px !important;
+    cursor: pointer !important;
+    box-shadow: 0 3px 8px rgba(36, 20, 14, 0.25) !important;
+    transition: 0.2s !important;
+}
+
+.create-dw-lead-pill:hover {
+    transform: translateY(-1px) !important;
+    color: #ffffff !important;
+}
+</style>
+
+<script>
 (function initDocketwiseManualActions() {
-    // Официальные сотрудники и их Docketwise ID
-  // Настоящие официальные Docketwise ID всех сотрудников (из search.js)
     const DW_STAFF_LIST = [
         { name: "Mariam Djaradjian", id: "339159" },
         { name: "Norayr Badalyan", id: "332487" },
@@ -9569,7 +9748,6 @@ window.renderMainCalendar = async function() {
         { name: "Nairi Hovhannisyan", id: "379998" }
     ];
 
-    // 1. Мини-кнопка "➕ Create in Docketwise" на главной форме рядом с Full Name
     const nameLabel = document.querySelector('#callForm .input-with-button-wrap label');
     if (nameLabel && !document.getElementById('mainCreateDwBtn')) {
         const createBtn = document.createElement('button');
@@ -9622,7 +9800,6 @@ window.renderMainCalendar = async function() {
         }, 600);
     }
 
-    // Функция живой подгрузки кейсов (Matters) клиента из Docketwise для выпадающего списка
     async function loadClientMattersIntoSelect(clientName, clientPhone, clientId, selectEl) {
         selectEl.innerHTML = '<option value="">⏳ Loading client matters from Docketwise...</option>';
         try {
@@ -9648,14 +9825,13 @@ window.renderMainCalendar = async function() {
                 const matters = matchedClient.matters || [];
                 if (matters.length > 0) {
                     selectEl.innerHTML = '<option value="">-- Select Matter (Required) --</option>';
-                    matters.forEach((m, idx) => {
+                    matters.forEach((m) => {
                         const staff = m.assignee_name || m.assignee || m.staff || '';
                         const opt = document.createElement('option');
                         opt.value = m.id;
                         opt.textContent = `📂 ${m.title}${staff ? ' (' + staff + ')' : ''}`;
                         selectEl.appendChild(opt);
                     });
-                    // Автоматически выбираем первый активный кейс, чтобы сэкономить клик!
                     selectEl.selectedIndex = 1;
                 } else {
                     selectEl.innerHTML = '<option value="GENERAL_PROFILE">⚠️ No active matters (Save to General Client Profile)</option>';
@@ -9668,9 +9844,11 @@ window.renderMainCalendar = async function() {
         }
     }
 
-    // 2. Встраиваем пульт Docketwise Actions внутрь карточки звонка (#journalViewModal)
     const journalModalContent = document.querySelector('#journalViewModal .journal-modal-content');
-    if (journalModalContent && !document.getElementById('jmDocketwiseBar')) {
+    if (journalModalContent) {
+        const oldBar = document.getElementById('jmDocketwiseBar');
+        if (oldBar) oldBar.remove();
+
         const dwBar = document.createElement('div');
         dwBar.id = 'jmDocketwiseBar';
         dwBar.className = 'dw-action-bar';
@@ -9680,32 +9858,37 @@ window.renderMainCalendar = async function() {
 
         dwBar.innerHTML = `
             <div class="dw-action-header">
-                <span>⚖️ Docketwise Direct Actions</span>
-                <span id="jmDwStatusTag" style="color:#10b981;">Ready</span>
+                <span class="dw-action-title">⚖️ DOCKETWISE DIRECT ACTIONS</span>
+                <span id="jmDwStatusTag" class="dw-status-pill">Ready</span>
             </div>
             <div class="dw-action-btns">
                 <button type="button" class="dw-act-btn" id="btnDwOpenNote">📝 Send Note</button>
                 <button type="button" class="dw-act-btn" id="btnDwOpenTask">✅ Create Task</button>
                 <button type="button" class="dw-act-btn" id="btnDwCreateClient">👤 + New Client</button>
             </div>
-            <div class="dw-Compose-box" id="jmDwComposeBox">
-                <!-- ОБЯЗАТЕЛЬНЫЙ ВЫБОР MATTER (КЕЙСА) -->
+            <div class="dw-compose-box" id="jmDwComposeBox">
                 <div id="jmDwMatterField">
-                    <label style="color:#ffd8a8; font-size:11px; font-weight:800; margin-bottom:4px; display:block;">📂 Select Matter (Active Case) *:</label>
+                    <label class="dw-field-label">📂 Select Matter (Active Case) *</label>
                     <select id="jmDwMatterSelect" required>
                         <option value="">-- Loading matters... --</option>
                     </select>
                 </div>
 
                 <div id="jmDwTaskFields" style="display:none;">
-                    <label style="color:#f5cba7; font-size:11px; font-weight:800; margin-bottom:4px; display:block;">👤 Assign Docketwise Task To *:</label>
-                    <select id="jmDwAssignee">${staffOptionsHtml}</select>
-                    <label style="color:#f5cba7; font-size:11px; font-weight:800; margin-bottom:4px; display:block;">📅 Due Date:</label>
-                    <input type="date" id="jmDwDueDate" value="${todayIso}" />
+                    <div class="dw-task-row">
+                        <div>
+                            <label class="dw-field-label">👤 Assign Task To *</label>
+                            <select id="jmDwAssignee">${staffOptionsHtml}</select>
+                        </div>
+                        <div>
+                            <label class="dw-field-label">📅 Due Date</label>
+                            <input type="date" id="jmDwDueDate" value="${todayIso}" />
+                        </div>
+                    </div>
                 </div>
 
-                <label style="color:#f5cba7; font-size:11px; font-weight:800; margin-bottom:4px; display:block;" id="jmDwTextLabel">Note / Task Text for Docketwise:</label>
-                <textarea id="jmDwTextInput" rows="3"></textarea>
+                <label class="dw-field-label" id="jmDwTextLabel">📝 Note Text for Docketwise</label>
+                <textarea id="jmDwTextInput" rows="3" placeholder="Enter clean text for Docketwise..."></textarea>
                 <button type="button" class="dw-send-confirm-btn" id="jmDwConfirmSendBtn">🚀 Push to Docketwise Now</button>
             </div>
         `;
@@ -9716,21 +9899,25 @@ window.renderMainCalendar = async function() {
 
         async function openComposePanel(mode) {
             currentMode = mode;
+            const btnNote = document.getElementById('btnDwOpenNote');
+            const btnTask = document.getElementById('btnDwOpenTask');
+            btnNote.classList.toggle('active-mode', mode === 'Note');
+            btnTask.classList.toggle('active-mode', mode === 'Task');
+
             const cName = document.getElementById('jmClient')?.innerText.replace('🔗', '').trim() || '';
             const cPhone = (document.getElementById('jmPhone')?.innerText || '').replace('📞', '').trim();
             const matterSel = document.getElementById('jmDwMatterSelect');
 
             document.getElementById('jmDwTaskFields').style.display = (mode === 'Task') ? 'block' : 'none';
             document.getElementById('jmDwTextLabel').textContent = (mode === 'Note')
-                ? '📝 Note Text (will be saved to selected Matter in Docketwise):'
-                : '✅ Task Description (for selected Matter & Staff in Docketwise):';
+                ? '📝 Note Text (Saved to selected Matter in Docketwise)'
+                : '✅ Task Description (Assigned to selected Matter & Staff)';
             document.getElementById('jmDwTextInput').value = document.getElementById('jmNotes')?.textContent.trim() || '';
             document.getElementById('jmDwConfirmSendBtn').textContent = (mode === 'Note')
                 ? '📝 Send Note to Matter ✓'
                 : '✅ Assign Task to Matter ✓';
             document.getElementById('jmDwComposeBox').style.display = 'block';
 
-            // Автоматически подгружаем список кейсов (Matters) этого клиента!
             await loadClientMattersIntoSelect(cName, cPhone, window.currentJmClientId, matterSel);
         }
 
@@ -9780,7 +9967,6 @@ window.renderMainCalendar = async function() {
             const selectedMatterVal = matterSel.value;
             const selectedMatterTitle = matterSel.options[matterSel.selectedIndex]?.text || '';
 
-            // ЖЕСТКАЯ ПРОВЕРКА: Выбран ли Matter!
             if (!selectedMatterVal) {
                 alert('⚠️ Please select an Active Matter (Case) from the dropdown list before sending to Docketwise!');
                 matterSel.focus();
@@ -9824,6 +10010,8 @@ window.renderMainCalendar = async function() {
                 const result = await res.json();
                 if (result.success) {
                     document.getElementById('jmDwComposeBox').style.display = 'none';
+                    document.getElementById('btnDwOpenNote').classList.remove('active-mode');
+                    document.getElementById('btnDwOpenTask').classList.remove('active-mode');
                     document.getElementById('jmDwStatusTag').textContent = `✅ ${currentMode} Sent!`;
                     alert(`✅ ${result.message}`);
                 } else {
@@ -9844,6 +10032,8 @@ window.renderMainCalendar = async function() {
             window.currentJmClientId = clientId || '';
             const composeBox = document.getElementById('jmDwComposeBox');
             if (composeBox) composeBox.style.display = 'none';
+            document.getElementById('btnDwOpenNote')?.classList.remove('active-mode');
+            document.getElementById('btnDwOpenTask')?.classList.remove('active-mode');
             const statusTag = document.getElementById('jmDwStatusTag');
             if (statusTag) statusTag.textContent = clientId ? `✓ DW ID: ${clientId}` : 'Ready';
             return origOpenJm.apply(this, arguments);
@@ -9852,5 +10042,7 @@ window.renderMainCalendar = async function() {
     }
 })();
 </script>
+</body>
+</html>
 </body>
 </html>
