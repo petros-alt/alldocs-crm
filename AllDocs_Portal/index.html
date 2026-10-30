@@ -1746,7 +1746,10 @@
 
 
 
+
+
 (000) 000-0000
+
 
 
 
@@ -2447,7 +2450,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -8558,6 +8564,100 @@ window.renderMainCalendar = async function() {
     upgradePreviewModalWithBookedAt();
     setTimeout(upgradePreviewModalWithBookedAt, 400);
     setTimeout(upgradePreviewModalWithBookedAt, 1000);
+})();
+</script>
+    <!-- ⚡ TURBO CALENDAR ENGINE: МГНОВЕННОЕ ОТКРЫТИЕ БЕЗ ПАУЗ И ЗАДЕРЖЕК (0ms UI) -->
+<script>
+(function initTurboCalendarCache() {
+    let lastFetchTime = 0;
+    let isFetchingPromise = null;
+    const CACHE_TTL_MS = 25000; // Кэш живет 25 секунд (не дергает сервер на каждый клик!)
+
+    // Сохраняем оригинальную функцию загрузки с сервера
+    const networkLoadAppointments = window.loadAppointments;
+
+    // 1. При старте страницы сразу подгружаем сохраненный кэш из памяти, чтобы база была готова в 0мс
+    try {
+        const cached = localStorage.getItem('gr_db_cache');
+        if (cached && (!window.globalAppointments || window.globalAppointments.length === 0)) {
+            window.globalAppointments = JSON.parse(cached);
+        }
+    } catch (e) {}
+
+    // Тихое фоновое обновление из Google Calendar
+    async function fetchFromServerInBackground(force = false) {
+        if (isFetchingPromise && !force) return isFetchingPromise;
+
+        isFetchingPromise = (async () => {
+            try {
+                const res = await fetch('/api/appointments?t=' + Date.now(), { cache: 'no-store' });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && Array.isArray(data.appointments)) {
+                        const oldJson = JSON.stringify(window.globalAppointments || []);
+                        const newJson = JSON.stringify(data.appointments);
+                        window.globalAppointments = data.appointments;
+                        lastFetchTime = Date.now();
+                        localStorage.setItem('gr_db_cache', newJson);
+
+                        // Если в Google Calendar появились изменения — плавно обновляем сетку на экране
+                        if (oldJson !== newJson && document.getElementById('tabCalendarContent')?.classList.contains('active')) {
+                            if (typeof window._fastRenderCalendar === 'function') {
+                                window._fastRenderCalendar();
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('Background calendar sync skipped:', e);
+            } finally {
+                isFetchingPromise = null;
+            }
+        })();
+
+        return isFetchingPromise;
+    }
+
+    // 2. Умный перехватчик loadAppointments:
+    // Если данные уже есть в памяти — отдаем их МГНОВЕННО (0мс), а сервер опрашиваем в фоне!
+    window.loadAppointments = async function(forceRefresh = false) {
+        const now = Date.now();
+        const hasData = Array.isArray(window.globalAppointments) && window.globalAppointments.length > 0;
+
+        if (forceRefresh || !hasData) {
+            await fetchFromServerInBackground(true);
+            return;
+        }
+
+        // Если прошло больше 25 секунд — запускаем тихую проверку в фоне, НЕ задерживая клик пользователя!
+        if (now - lastFetchTime > CACHE_TTL_MS) {
+            fetchFromServerInBackground(false);
+        }
+        return Promise.resolve();
+    };
+
+    // 3. Когда мы сами СОЗДАЕМ, РЕДАКТИРУЕМ или УДАЛЯЕМ встречу — принудительно обновляем кэш с сервера!
+    const origFetch = window.fetch;
+    window.fetch = async function(url, options) {
+        const response = await origFetch.apply(this, arguments);
+        if (typeof url === 'string' && url.includes('/api/appointments') && options && ['POST', 'PUT', 'DELETE'].includes((options.method || '').toUpperCase())) {
+            lastFetchTime = 0; // Сбрасываем таймер кэша, чтобы сразу подтянуть новую запись
+            await fetchFromServerInBackground(true);
+        }
+        return response;
+    };
+
+    // 4. Запускаем предварительную загрузку календаря в фоне сразу при входе на портал!
+    setTimeout(() => {
+        fetchFromServerInBackground(true);
+    }, 300);
+
+    // Периодическая тихая синхронизация каждые 45 секунд
+    setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            fetchFromServerInBackground(false);
+        }
+    }, 45000);
 })();
 </script>
 </body>
