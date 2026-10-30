@@ -1,7 +1,7 @@
 export const config = {
     api: {
         bodyParser: {
-            sizeLimit: '20mb'
+            sizeLimit: '25mb'
         }
     },
     maxDuration: 60
@@ -28,6 +28,58 @@ export default async function handler(req, res) {
         if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) return 'image/png';
         if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 && buffer[8] === 0x57 && buffer[9] === 0x45) return 'image/webp';
         return null;
+    }
+
+    // Очистка КАПСЛОКА на стороне сервера (превращает "SUSANNA KHACHATRYAN" -> "Susanna Khachatryan")
+    function formatProperCase(str) {
+        if (!str || typeof str !== 'string') return str;
+        const trimmed = str.trim();
+        if (!trimmed) return '';
+        // Не трогаем даты, телефоны, SSN, email и короткие коды штатов
+        if (/^\d/.test(trimmed) && !/[a-zA-Z]{3,}/.test(trimmed)) return trimmed;
+        if (/^(CA|NY|TX|FL|NV|AZ|WA|OR|IL|PA|OH|GA|NC|MI|NJ|VA|MA|MD|SSI|SSDI|CAPI|IHSS|NOA|SOC|MC|USCIS|USA|PO|APT|STE|DR|ST|AVE|BLVD|RD|LN|CT|PL|NW|NE|SW|SE|II|III|IV|LLC|INC|MD|DO|RN|NP|PA-C)$/i.test(trimmed)) {
+            return trimmed.toUpperCase();
+        }
+        // Если строка написана КАПСЛОКОМ или вся маленькими буквами — делаем красивый Title Case
+        const upperCount = (trimmed.match(/[A-Z]/g) || []).length;
+        const lowerCount = (trimmed.match(/[a-z]/g) || []).length;
+        if (upperCount > 2 && lowerCount === 0 || (lowerCount > 2 && upperCount === 0)) {
+            return trimmed.toLowerCase().replace(/\b([a-z])([a-z']*)/g, (match, first, rest) => {
+                const wordUp = match.toUpperCase();
+                if (/^(CA|SSI|SSDI|CAPI|IHSS|NOA|MD|DO|RN|LLC|INC|PO|II|III|IV|UCLA|USC|DMV|EDD|IRS)$/.test(wordUp)) {
+                    return wordUp;
+                }
+                if (/^(and|or|of|in|on|at|to|for|with|from|by|the|a|an)$/.test(match) && match !== trimmed.toLowerCase().slice(0, match.length)) {
+                    return match;
+                }
+                return first.toUpperCase() + rest;
+            });
+        }
+        return trimmed;
+    }
+
+    function normalizeExtractedObject(obj) {
+        if (!obj || typeof obj !== 'object') return obj;
+        if (Array.isArray(obj)) return obj.map(item => normalizeExtractedObject(item));
+        const out = {};
+        for (const key of Object.keys(obj)) {
+            const val = obj[key];
+            if (typeof val === 'string') {
+                if (key === 'state') out[key] = val.trim().toUpperCase() || 'CA';
+                else if (['ssn', 'dob', 'phone', 'zip', 'heightFt', 'heightIn', 'weight', 'caseNum', 'firstSeen', 'lastSeen', 'nextAppt', 'onsetDate', 'ssiDecisionDate', 'educationDate', 'dateFrom', 'dateTo'].includes(key)) {
+                    out[key] = val.trim();
+                } else {
+                    out[key] = formatProperCase(val);
+                }
+            } else if (Array.isArray(val)) {
+                out[key] = val.map(v => typeof v === 'string' ? formatProperCase(v) : normalizeExtractedObject(v));
+            } else if (typeof val === 'object' && val !== null) {
+                out[key] = normalizeExtractedObject(val);
+            } else {
+                out[key] = val;
+            }
+        }
+        return out;
     }
 
     function parseDocketwiseDocumentsResponse(rawText, defaultMatterId = '') {
@@ -153,7 +205,7 @@ export default async function handler(req, res) {
                 const buf = Buffer.from(arrayBuf);
 
                 const detectedMime = detectRealMimeType(buf);
-                if (detectedMime && buf.length < 10 * 1024 * 1024) {
+                if (detectedMime && buf.length < 12 * 1024 * 1024) {
                     return {
                         mime_type: detectedMime,
                         data: buf.toString('base64')
@@ -172,7 +224,7 @@ export default async function handler(req, res) {
                     if (s3Res.ok) {
                         const s3Buf = Buffer.from(await s3Res.arrayBuffer());
                         const s3Mime = detectRealMimeType(s3Buf);
-                        if (s3Mime && s3Buf.length < 10 * 1024 * 1024) {
+                        if (s3Mime && s3Buf.length < 12 * 1024 * 1024) {
                             return {
                                 mime_type: s3Mime,
                                 data: s3Buf.toString('base64')
@@ -186,7 +238,7 @@ export default async function handler(req, res) {
     }
 
     // =========================================================================
-    // РЕЖИМ POST: НАДЕЖНОЕ СКАНИРОВАНИЕ БЕЗ ABORTCONTROLLER И С АВТО-ПАУЗОЙ
+    // РЕЖИМ POST: ГАРАНТИРОВАННОЕ AI-СКАНИРОВАНИЕ С ОБХОДОМ 503 И ФОРМАТИРОВАНИЕМ РЕГИСТРА
     // =========================================================================
     if (req.method === 'POST') {
         try {
@@ -202,7 +254,7 @@ export default async function handler(req, res) {
             let textContext = `Target Client Full Name: ${clientName}\nIMPORTANT: Extract data ONLY for ${clientName}!\n`;
 
             if (Array.isArray(uploadedFiles)) {
-                uploadedFiles.slice(0, 4).forEach(uf => {
+                uploadedFiles.slice(0, 5).forEach(uf => {
                     if (uf.base64) {
                         const rawBuf = Buffer.from(uf.base64, 'base64');
                         const realMime = detectRealMimeType(rawBuf) || uf.mimeType || 'image/jpeg';
@@ -216,7 +268,7 @@ export default async function handler(req, res) {
                 });
             }
 
-            const uniqueDocIds = [...new Set(Array.isArray(fileIds) ? fileIds : [])].slice(0, 4);
+            const uniqueDocIds = [...new Set(Array.isArray(fileIds) ? fileIds : [])].slice(0, 5);
             const downloadedParts = await Promise.all(
                 uniqueDocIds.map((docId, idx) => {
                     const customUrl = Array.isArray(fileUrls) ? fileUrls[idx] : '';
@@ -227,11 +279,14 @@ export default async function handler(req, res) {
                 if (part) inlineParts.push({ inline_data: part });
             });
 
-            const systemPrompt = `You are an expert California Medi-Cal / IHSS / CAPI Legal Document Extraction AI.
-Analyze all attached client documents (California Driver's License, Permanent Resident Card / Green Card, Social Security Card, Medi-Cal Card, Passport, Birth Certificate, Medical Records, Visit Summaries, Prescriptions, Prior MC 223 / SOC forms) for client "${clientName}".
-If any document is in Armenian or Russian, translate all extracted values into English.
-From California Driver's License or Green Card: carefully extract Date of Birth (DOB in MM/DD/YYYY), Sex (M -> Male, F -> Female), Height (HGT, e.g. 5'-04" -> heightFt: "5", heightIn: "4"), Weight (WGT in lbs -> weight: "155"), Home Address, and A-Number (USCIS#).
-Do NOT confuse a doctor's or hospital's address with the applicant's home address.
+            const systemPrompt = `You are an expert California Medi-Cal / IHSS / CAPI / SSI Legal Document Extraction AI.
+Analyze all attached client documents (California Driver's License, Permanent Resident Card / Green Card, Social Security Card, Medi-Cal BIC Card, Passport, Birth Certificate, Medical Records, Visit Summaries, Medication Lists, Landlord / Financial verification, Prior MC 223 or SOC forms) for client "${clientName}".
+
+CRITICAL FORMATTING RULES:
+1. NO ALL-CAPS: Never output names, streets, cities, doctor names, or diagnoses in ALL CAPS (even if printed in ALL CAPS on a Driver's License or Green Card). Always convert them to clean Title Case (e.g., "Susanna", "Khachatryan", "313 W California Ave, Apt 319 A", "Glendale"). Keep standard abbreviations uppercase (e.g., "CA", "SSI", "CAPI", "IHSS", "MD").
+2. TRANSLATION: If any document is in Armenian or Russian, translate all extracted values into accurate English.
+3. DRIVER LICENSE / ID / GREEN CARD: Carefully extract Date of Birth (MM/DD/YYYY), Sex ("Male" or "Female"), Height (e.g. 5'-04" -> heightFt: "5", heightIn: "4"; if in cm, convert to feet and inches), Weight in lbs (e.g. 155 -> weight: "155"; if in kg, convert to lbs), Social Security Number (XXX-XX-XXXX), and A-Number / Case Number.
+4. ADDRESS SEPARATION: Do NOT confuse a doctor's or clinic's address with the applicant's home address.
 
 Return ONLY valid JSON matching this exact structure (leave empty string "" if unknown):
 {
@@ -297,50 +352,82 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
 
             const requestParts = [{ text: systemPrompt + "\n\n" + textContext }, ...inlineParts];
 
-            const modelsOrder = [
+            // Динамически узнаем все модели, доступные вашему ключу, и выстраиваем мощную очередь с повторными попытками
+            let modelsPool = [
+                'gemini-2.5-flash',
                 'gemini-2.0-flash',
                 'gemini-2.0-flash-lite',
-                'gemini-2.5-flash',
-                'gemini-flash-latest'
+                'gemini-2.5-pro',
+                'gemini-1.5-flash',
+                'gemini-1.5-pro'
             ];
 
+            try {
+                const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey}`);
+                if (listRes.ok) {
+                    const listData = await listRes.json();
+                    const available = (listData.models || [])
+                        .filter(m => Array.isArray(m.supportedGenerationMethods) && m.supportedGenerationMethods.includes('generateContent'))
+                        .map(m => m.name.replace('models/', ''))
+                        .filter(m => m.includes('gemini') && !m.includes('tts') && !m.includes('image') && !m.includes('embedding'));
+
+                    if (available.length > 0) {
+                        const ordered = modelsPool.filter(m => available.includes(m));
+                        available.forEach(m => {
+                            if (!ordered.includes(m)) ordered.push(m);
+                        });
+                        modelsPool = ordered;
+                    }
+                }
+            } catch (e) {}
+
+            // Делаем до 2 полных кругов по всем моделям с умной паузой (Exponential Backoff),
+            // используя преимущество 60-секундного лимита Vercel Pro!
             let aiJson = null;
             let usedModel = '';
             let lastErr = '';
 
-            for (const modelName of modelsOrder) {
-                try {
-                    const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            contents: [{ parts: requestParts }],
-                            generationConfig: {
-                                temperature: 0.1
-                            }
-                        })
-                    });
+            for (let pass = 1; pass <= 2; pass++) {
+                if (aiJson) break;
+                for (let mIdx = 0; mIdx < modelsPool.length; mIdx++) {
+                    const modelName = modelsPool[mIdx];
+                    try {
+                        const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                contents: [{ parts: requestParts }],
+                                generationConfig: {
+                                    temperature: 0.1
+                                }
+                            })
+                        });
 
-                    if (gRes.ok) {
-                        const gData = await gRes.json();
-                        const rawText = gData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-                        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-                        const cleaned = jsonMatch ? jsonMatch[0] : rawText.replace(/```json|```/g, '').trim();
-                        aiJson = JSON.parse(cleaned);
-                        usedModel = modelName;
-                        break;
-                    } else {
-                        lastErr = await gRes.text();
-                        // Короткая пауза 1 сек перед переключением на следующую модель
-                        await new Promise(r => setTimeout(r, 1000));
+                        if (gRes.ok) {
+                            const gData = await gRes.json();
+                            const rawText = gData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+                            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                            const cleaned = jsonMatch ? jsonMatch[0] : rawText.replace(/```json|```/g, '').trim();
+                            aiJson = normalizeExtractedObject(JSON.parse(cleaned));
+                            usedModel = modelName;
+                            break;
+                        } else {
+                            const errText = await gRes.text();
+                            lastErr = errText;
+                            // Если 503 (High Demand) или 429 — ждем 1.8 сек (на 1 круге) или 3.2 сек (на 2 круге) и пробуем следующую модель
+                            if (gRes.status === 503 || gRes.status === 429) {
+                                await new Promise(r => setTimeout(r, pass === 1 ? 1800 : 3200));
+                            }
+                        }
+                    } catch (mErr) {
+                        lastErr = mErr.message;
+                        await new Promise(r => setTimeout(r, 1200));
                     }
-                } catch (mErr) {
-                    lastErr = mErr.message;
                 }
             }
 
             if (!aiJson) {
-                throw new Error(`AI Scan error: ${lastErr.slice(0, 200)}`);
+                throw new Error(`Google AI servers are temporarily busy. Please click Scan again in 5 seconds. (${lastErr.slice(0, 140)})`);
             }
 
             return res.status(200).json({
@@ -357,7 +444,7 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
     }
 
     // =========================================================================
-    // РЕЖИМ GET: ПОЛУЧЕНИЕ ПАПОК И ФАЙЛОВ ПО ВЫБРАННОМУ MATTER ИЛИ ПАПКЕ
+    // РЕЖИМ GET: ПОЛУЧЕНИЕ ПАПОК И ФАЙЛОВ ПО ВЫБРАННОМУ MATTER ИЛИ ПАПКЕ (ЛИМИТ ДО 10 ГАЛОЧЕК)
     // =========================================================================
     const { query, type, clientId, matterId, folderId } = req.query;
 
@@ -481,10 +568,10 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
             } catch (e) {}
 
             let notesTextBlob = JSON.stringify(contact);
-            const firstName = contact.first_name || (contact.name ? contact.name.split(' ')[0] : '') || '';
-            const lastName = contact.last_name || (contact.name ? contact.name.split(' ').slice(1).join(' ') : '') || '';
-            const middleName = contact.middle_name || '';
-            const fullName = `${firstName} ${lastName}`.trim() || contact.name || '';
+            const firstName = formatProperCase(contact.first_name || (contact.name ? contact.name.split(' ')[0] : '') || '');
+            const lastName = formatProperCase(contact.last_name || (contact.name ? contact.name.split(' ').slice(1).join(' ') : '') || '');
+            const middleName = formatProperCase(contact.middle_name || '');
+            const fullName = `${firstName} ${lastName}`.trim() || formatProperCase(contact.name || '');
             const lastFirstMI = lastName ? `${lastName}, ${firstName}${middleName ? ' ' + middleName.charAt(0) : ''}` : fullName;
 
             let phone = contact.mobile_number || contact.home_number || contact.work_number || contact.phone || '';
@@ -493,11 +580,11 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
             }
 
             const addrObj = contact.physical_address || contact.mailing_address || (Array.isArray(contact.addresses) ? contact.addresses[0] : {}) || {};
-            let street = addrObj.street_number_and_name || addrObj.street || addrObj.address_1 || addrObj.line1 || contact.street_address || contact.address || '';
-            const apt = addrObj.apartment_number || addrObj.apt || addrObj.suite || addrObj.address_2 || '';
-            if (apt && street && !street.includes(apt)) street = `${street}, Apt ${apt}`;
-            let city = addrObj.city || contact.city || 'Glendale';
-            let state = addrObj.state || addrObj.province || contact.state || 'CA';
+            let street = formatProperCase(addrObj.street_number_and_name || addrObj.street || addrObj.address_1 || addrObj.line1 || contact.street_address || contact.address || '');
+            const apt = formatProperCase(addrObj.apartment_number || addrObj.apt || addrObj.suite || addrObj.address_2 || '');
+            if (apt && street && !street.toLowerCase().includes(apt.toLowerCase())) street = `${street}, Apt ${apt}`;
+            let city = formatProperCase(addrObj.city || contact.city || 'Glendale');
+            let state = (addrObj.state || addrObj.province || contact.state || 'CA').toUpperCase();
             let zip = addrObj.zip_code || addrObj.postal_code || addrObj.zip || contact.zip || '';
 
             let rawDob = contact.birthday || contact.date_of_birth || contact.dob || contact.birth_date || '';
@@ -525,7 +612,7 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
 
             const aNumber = contact.alien_number || contact.a_number || contact.uscis_number || '';
             const email = contact.email || (Array.isArray(contact.email_addresses) && contact.email_addresses[0]?.address) || '';
-            const language = contact.primary_language || contact.language || 'Armenian';
+            const language = formatProperCase(contact.primary_language || contact.language || 'Armenian');
             const heightFeet = contact.height_feet || '';
             const heightInches = contact.height_inches || '';
             const weight = contact.weight || '';
@@ -630,7 +717,7 @@ Return ONLY valid JSON matching this exact structure (leave empty string "" if u
         const topMatches = contacts.slice(0, 15);
 
         const clientsData = await Promise.all(topMatches.map(async (contact) => {
-            const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || contact.name || "Unknown Name";
+            const fullName = formatProperCase(`${contact.first_name || ''} ${contact.last_name || ''}`.trim() || contact.name || "Unknown Name");
             
             let phoneStr = contact.mobile_number || contact.home_number || contact.work_number || contact.phone || "";
             if (!phoneStr && Array.isArray(contact.phone_numbers) && contact.phone_numbers.length > 0) {
