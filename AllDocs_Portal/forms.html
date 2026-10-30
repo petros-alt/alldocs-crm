@@ -39,7 +39,7 @@
 
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: var(--surface-color); border-radius: 8px; }
-        ::-webkit-scrollbar-thumb { background: rgba(161, 104, 58, 0.35); border-radius: 8px; }
+        ::-webkit-scrollbar-thumb { background: rgba(161, 104, 58, 0.45); border-radius: 8px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--accent-color); }
 
         body {
@@ -150,9 +150,9 @@
             box-sizing: border-box;
         }
 
-        /* ЛЕВАЯ 3D-КОЛОНКА ПОИСКА И ПАПОК MATTER (СТРОГО В РАМКАХ 415px) */
+        /* ЛЕВАЯ 3D-КОЛОНКА ПОИСКА И ПАПОК MATTER */
         .search-panel {
-            width: 415px;
+            width: 425px;
             background: linear-gradient(165deg, #ffffff 0%, #f5efe6 100%);
             border-right: 1.5px solid rgba(184, 115, 51, 0.32);
             padding: 18px 18px 24px 18px;
@@ -286,7 +286,7 @@
         .client-phone-list { font-size: 12px; color: var(--secondary-color); font-weight: 600; }
         .loading-indicator { position: absolute; right: 12px; color: var(--accent-color); font-size: 11px; display: none; font-weight: 800; }
 
-        /* 3D КАРТОЧКА КЛИЕНТА (СТРОГО В РАМКАХ БЕЗ ВЫЛЕЗОВ) */
+        /* 3D КАРТОЧКА КЛИЕНТА */
         .client-card {
             background: linear-gradient(160deg, #fbf8f3 0%, #efe6d8 100%);
             border: 1.5px solid rgba(184, 115, 51, 0.38);
@@ -370,36 +370,52 @@
             box-sizing: border-box;
         }
 
+        /* УВЕЛИЧЕННОЕ И НАГЛЯДНОЕ ОКНО ПУНКТА 4 (СПИСОК ФАЙЛОВ) */
+        #dwSmartFilesList {
+            max-height: 285px !important;
+            min-height: 110px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 6px;
+            background: linear-gradient(180deg, #f5efe6 0%, #faf7f2 100%);
+            border: 1.5px solid rgba(161, 104, 58, 0.25);
+            border-radius: 13px;
+            box-shadow: inset 0 2px 6px rgba(44, 26, 20, 0.06);
+        }
+
         /* 3D-КАПСУЛЫ ФАЙЛОВ ВНУТРИ СПИСКА */
         .dw-file-3d-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 8px;
-            padding: 7px 9px;
-            margin-bottom: 6px;
+            padding: 9px 10px;
+            margin-bottom: 7px;
             background: linear-gradient(145deg, #ffffff 0%, #faf6ef 100%);
-            border: 1px solid rgba(184, 115, 51, 0.25);
-            border-bottom: 2.5px solid rgba(161, 104, 58, 0.35);
-            border-radius: 11px;
+            border: 1.5px solid rgba(184, 115, 51, 0.28);
+            border-bottom: 3px solid rgba(161, 104, 58, 0.4);
+            border-radius: 12px;
             cursor: pointer;
             transition: all 0.18s ease;
             box-sizing: border-box;
             text-transform: none;
+            box-shadow: 0 3px 8px rgba(44, 26, 20, 0.05);
         }
+        .dw-file-3d-row:last-child { margin-bottom: 0; }
         .dw-file-3d-row:hover {
             transform: translateY(-1px);
             border-color: #b87333;
-            box-shadow: 0 5px 12px rgba(184, 115, 51, 0.14);
+            box-shadow: 0 6px 14px rgba(184, 115, 51, 0.16);
         }
         .dw-file-3d-row:has(.dw-file-cb:checked) {
             background: linear-gradient(145deg, #eff6ff 0%, #dbeafe 100%);
             border-color: #60a5fa;
-            border-bottom: 2.5px solid #2563eb;
+            border-bottom: 3px solid #2563eb;
+            box-shadow: 0 5px 14px rgba(37, 99, 235, 0.14);
         }
         .dw-file-cb {
-            width: 16px !important;
-            height: 16px !important;
+            width: 17px !important;
+            height: 17px !important;
             margin: 0 !important;
             flex-shrink: 0 !important;
             accent-color: #2563eb;
@@ -666,7 +682,7 @@
             </div>
         </div>
 
-        <!-- 3D КАРТОЧКА КЛИЕНТА (СТРОГО В РАМКАХ) -->
+        <!-- 3D КАРТОЧКА КЛИЕНТА -->
         <div class="client-card" id="clientCard">
             <div class="client-card-top-row">
                 <span class="status-badge" id="dossierStatusBadge">✓ Docketwise Linked</span>
@@ -692,13 +708,13 @@
                 </div>
             </div>
 
-            <!-- 3D СПИСОК ФАЙЛОВ ВНУТРИ ЭТОГО MATTER И ПАПКИ -->
+            <!-- 3D СПИСОК ФАЙЛОВ ВНУТРИ ЭТОГО MATTER И ПАПКИ (УВЕЛИЧЕННОЕ ОКНО С ПАМЯТЬЮ МЕЖДУ ПАПКАМИ) -->
             <div id="dwSmartFilesBox" style="margin: 0 0 10px 0; padding: 12px; background: linear-gradient(180deg, #ffffff 0%, #f8f3eb 100%); border: 1.5px solid rgba(184,115,51,0.35); border-bottom: 4px solid rgba(139,85,43,0.42); border-radius: 16px; box-shadow: 0 8px 20px rgba(44,26,20,0.06); box-sizing:border-box;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <span style="font-size:10px; font-weight:900; color:#2c1a14; text-transform:uppercase;">☑️ 4. Check Files to Scan:</span>
+                    <span style="font-size:10.5px; font-weight:900; color:#2c1a14; text-transform:uppercase;">☑️ 4. Check Files to Scan:</span>
                     <span id="dwFilesCountTag" style="font-size:10px; font-weight:800; color:#047857; background:#d1fae5; border:1px solid #6ee7b7; padding:2px 8px; border-radius:10px;">0 files</span>
                 </div>
-                <div id="dwSmartFilesList" style="max-height: 175px; overflow-y: auto; overflow-x: hidden; padding-right: 2px;">
+                <div id="dwSmartFilesList">
                     <div style="color:#888; font-size:11px; padding:4px 0;">Select Matter above to view files...</div>
                 </div>
 
@@ -899,6 +915,8 @@
     let currentOpenedFormCode = '';
     let lastInspectedPdfFields = [];
     let clientMemoryStore = {};
+    // Корзина выбранных файлов между разными папками одного Matter!
+    let selectedFilesBasket = new Map();
 
     function toCleanTitleCase(str) {
         if (str === null || str === undefined) return '';
@@ -959,38 +977,81 @@
         box.innerHTML = pills.map(p => `<span class="summary-pill">${p}</span>`).join('');
     }
 
-    window.enforceMaxTenFiles = function(cbEl) {
-        const checked = document.querySelectorAll('.dw-file-cb:checked');
-        const countTag = document.getElementById('dwFilesCountTag');
-        if (checked.length > 10) {
-            cbEl.checked = false;
-            alert('⚠️ Maximum 10 files can be selected for Gemini AI Scan at once.');
+    // Сохранение выбранных галочек в общую корзину между папками (лимит 10 файлов)
+    window.toggleFileInBasket = function(cbEl) {
+        const fId = String(cbEl.value);
+        if (cbEl.checked) {
+            if (selectedFilesBasket.size >= 10 && !selectedFilesBasket.has(fId)) {
+                cbEl.checked = false;
+                alert('⚠️ Maximum 10 files can be selected for Gemini AI Scan at once.');
+                return;
+            }
+            selectedFilesBasket.set(fId, {
+                id: fId,
+                url: cbEl.getAttribute('data-url') || '',
+                name: cbEl.getAttribute('data-name') || 'Document',
+                folderName: cbEl.getAttribute('data-folder') || '',
+                badge: cbEl.getAttribute('data-badge') || '📄 File',
+                category: cbEl.getAttribute('data-cat') || 'other'
+            });
+        } else {
+            selectedFilesBasket.delete(fId);
         }
-        const nowChecked = document.querySelectorAll('.dw-file-cb:checked').length;
+        const countTag = document.getElementById('dwFilesCountTag');
         const total = document.querySelectorAll('.dw-file-cb').length;
-        if (countTag) countTag.textContent = `${nowChecked}/${Math.min(total, 10)} selected`;
+        if (countTag) countTag.textContent = `${selectedFilesBasket.size}/${Math.max(total, selectedFilesBasket.size)} selected`;
     };
 
-    function renderMatterFilesList(files = []) {
+    function renderMatterFilesList(files = [], isInitialMatterLoad = false) {
         const countTag = document.getElementById('dwFilesCountTag');
         const listEl = document.getElementById('dwSmartFilesList');
 
-        if (files.length === 0) {
+        // При первой загрузке Matter автоматически кладем autoSelect файлы в корзину
+        if (isInitialMatterLoad) {
+            selectedFilesBasket.clear();
+            files.forEach(f => {
+                if (f.autoSelect && selectedFilesBasket.size < 10) {
+                    selectedFilesBasket.set(String(f.id), {
+                        id: String(f.id),
+                        url: f.url || '',
+                        name: f.name || 'Document',
+                        folderName: f.folderName || '',
+                        badge: f.badge || '📄 File',
+                        category: f.category || 'other'
+                    });
+                }
+            });
+        }
+
+        // Объединяем файлы, уже выбранные в других папках (Pinned), с файлами текущей папки!
+        const mergedList = [];
+        selectedFilesBasket.forEach(item => {
+            mergedList.push({ ...item, isPinnedFromBasket: true });
+        });
+        files.forEach(f => {
+            if (!mergedList.some(m => String(m.id) === String(f.id))) {
+                mergedList.push(f);
+            }
+        });
+
+        if (mergedList.length === 0) {
             countTag.textContent = `0 files`;
             listEl.innerHTML = '<div style="color:#888; font-size:11px; padding:6px 0;">No files inside this folder (choose another folder above or attach local file below).</div>';
             return;
         }
 
         let html = '';
-        files.forEach(f => {
+        mergedList.forEach(f => {
+            const isChecked = selectedFilesBasket.has(String(f.id));
             const badgeColor = f.category === 'identity' ? '#2563eb' : (f.category === 'medical_form' ? '#059669' : '#8b552b');
-            const folderLabel = f.folderName && f.folderName !== 'Root' ? `<div style="font-size:9px; color:#8b552b; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📁 ${f.folderName}</div>` : '';
+            const folderLabel = f.folderName && f.folderName !== 'Root' ? `<div style="font-size:9.5px; color:#8b552b; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">📁 ${f.folderName}</div>` : '';
+            const safeName = (f.name || '').replace(/"/g, '&quot;');
             html += `
                 <label class="dw-file-3d-row">
                     <div style="display:flex; align-items:center; gap:8px; overflow:hidden; min-width:0; flex:1;">
-                        <input type="checkbox" class="dw-file-cb" value="${f.id}" data-url="${f.url || ''}" onchange="window.enforceMaxTenFiles(this)" ${f.autoSelect ? 'checked' : ''}>
+                        <input type="checkbox" class="dw-file-cb" value="${f.id}" data-url="${f.url || ''}" data-name="${safeName}" data-folder="${f.folderName || ''}" data-badge="${f.badge || ''}" data-cat="${f.category || ''}" onchange="window.toggleFileInBasket(this)" ${isChecked ? 'checked' : ''}>
                         <div style="overflow:hidden; min-width:0; flex:1;">
-                            <a href="https://app.docketwise.com/documents/${f.id}" target="_blank" onclick="event.stopPropagation()" style="color:#24140e; text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; font-size:11.5px; font-weight:800;" title="${f.name}">${f.name} ↗</a>
+                            <a href="https://app.docketwise.com/documents/${f.id}" target="_blank" onclick="event.stopPropagation()" style="color:#24140e; text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block; font-size:12px; font-weight:800;" title="${safeName}">${f.name} ↗</a>
                             ${folderLabel}
                         </div>
                     </div>
@@ -999,8 +1060,7 @@
             `;
         });
         listEl.innerHTML = html;
-        const initChecked = document.querySelectorAll('.dw-file-cb:checked').length;
-        countTag.textContent = `${initChecked}/${Math.min(files.length, 10)} selected`;
+        countTag.textContent = `${selectedFilesBasket.size}/${mergedList.length} selected`;
     }
 
     window.handleMatterChange = async function() {
@@ -1041,7 +1101,7 @@
                 });
             }
 
-            renderMatterFilesList(data.files || []);
+            renderMatterFilesList(data.files || [], true);
         } catch (e) {
             document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#dc2626; font-size:11px;">Could not load Matter folders.</div>';
         }
@@ -1052,12 +1112,12 @@
         const folderId = document.getElementById('dfFolderSelect').value;
         if (!matterId) return;
 
-        document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#b87333; font-weight:800; font-size:11.5px; padding:8px 0;">⏳ Loading files from selected folder...</div>';
+        document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#b87333; font-weight:800; font-size:11.5px; padding:8px 0;">⏳ Loading files from selected folder (keeping your checked files)...</div>';
         try {
             const res = await fetch(`/api/search?matterId=${encodeURIComponent(matterId)}&folderId=${encodeURIComponent(folderId)}`);
             const data = await res.json();
             if (data.success) {
-                renderMatterFilesList(data.files || []);
+                renderMatterFilesList(data.files || [], false);
             }
         } catch (e) {}
     };
@@ -1327,7 +1387,6 @@
         });
     }
 
-    // УПРАВЛЕНИЕ 3D ШКАЛОЙ ПРОГРЕССА (ОТ 1% ДО 100% В РЕАЛЬНОМ ВРЕМЕНИ)
     let liveProgressInterval = null;
     let currentPctValue = 0;
 
@@ -1361,11 +1420,15 @@
         const badge = document.getElementById('dossierStatusBadge');
         const matterId = document.getElementById('dfMatterSelect').value;
 
-        const checkedBoxes = Array.from(document.querySelectorAll('.dw-file-cb:checked')).slice(0, 10);
-        const checkedItems = checkedBoxes.map(cb => ({
-            id: cb.value,
-            url: cb.getAttribute('data-url') || ''
-        }));
+        // Берем файлы из глобальной корзины (чтобы работали файлы, выбранные из разных папок!)
+        let checkedItems = Array.from(selectedFilesBasket.values()).slice(0, 10);
+        if (checkedItems.length === 0) {
+            const checkedBoxes = Array.from(document.querySelectorAll('.dw-file-cb:checked')).slice(0, 10);
+            checkedItems = checkedBoxes.map(cb => ({
+                id: cb.value,
+                url: cb.getAttribute('data-url') || ''
+            }));
+        }
 
         const localFilesInput = document.getElementById('localAiFilesInput');
         const uploadedFiles = [];
@@ -1773,16 +1836,34 @@
             return false;
         }
 
-        // Железный выбор левого квадратика YES в 4b interpreter (opts[1] в MC 223)
-        function selectYesOptionMc223Interpreter(field) {
-            if (typeof field.getOptions !== 'function' || typeof field.select !== 'function') return false;
-            const opts = field.getOptions() || [];
-            // В шаблоне MC 223 opts[0] ставит галочку в правый квадратик No, а opts[1] ставит галочку в левый квадратик Yes!
-            const targetIdx = opts.length > 1 ? 1 : 0;
-            if (opts[targetIdx] !== undefined) {
-                field.select(opts[targetIdx]);
-                return true;
-            }
+        // ПРЯМОЕ ВКЛЮЧЕНИЕ КВАДРАТИКА (ВИДЖЕТА) В PDF ПО ЕГО ФИЗИЧЕСКОЙ КООРДИНАТЕ НА СТРАНИЦЕ!
+        // Это обходит любую путаницу индексов в шаблоне MC 223:
+        // preferPosition: 'left' (меньший X = Yes в 4b), 'right' (больший X = No), 'top' (больший Y = Male в 1e), 'bottom' (меньший Y = Female в 1e)
+        function forceSelectPdfWidgetByPosition(field, preferPosition) {
+            try {
+                const widgets = field.acroField.getWidgets() || [];
+                if (widgets.length >= 2) {
+                    let targetWIdx = 0;
+                    if (preferPosition === 'left') {
+                        targetWIdx = widgets[0].getRectangle().x <= widgets[1].getRectangle().x ? 0 : 1;
+                    } else if (preferPosition === 'right') {
+                        targetWIdx = widgets[0].getRectangle().x <= widgets[1].getRectangle().x ? 1 : 0;
+                    } else if (preferPosition === 'top') {
+                        targetWIdx = widgets[0].getRectangle().y >= widgets[1].getRectangle().y ? 0 : 1;
+                    } else if (preferPosition === 'bottom') {
+                        targetWIdx = widgets[0].getRectangle().y >= widgets[1].getRectangle().y ? 1 : 0;
+                    }
+
+                    const onStateName = widgets[targetWIdx].getOnValue();
+                    if (onStateName) {
+                        field.acroField.setValue(onStateName);
+                        widgets.forEach((w, wIdx) => {
+                            w.setAppearanceState(wIdx === targetWIdx ? onStateName : PDFLib.PDFName.of('Off'));
+                        });
+                        return true;
+                    }
+                }
+            } catch (e) {}
             return false;
         }
 
@@ -1831,18 +1912,20 @@
 
                     if (rawName === 'sex' && d.gender) {
                         const isFem = d.gender.toLowerCase().startsWith('f');
-                        if (selectRadioByIndex(field, isFem ? 1 : 0)) filledCount++;
+                        // В 1e. Sex: Male — это ВЕРХНИЙ квадратик ('top'), Female — НИЖНИЙ квадратик ('bottom')!
+                        if (forceSelectPdfWidgetByPosition(field, isFem ? 'bottom' : 'top')) filledCount++;
                     } else if (rawName === '4a english') {
                         const isEng = d.language && d.language.toLowerCase() === 'english';
-                        if (selectRadioByIndex(field, isEng ? 0 : 1)) filledCount++;
+                        if (forceSelectPdfWidgetByPosition(field, isEng ? 'top' : 'bottom')) filledCount++;
                     } else if (rawName === '4b interpreter') {
-                        if (selectYesOptionMc223Interpreter(field)) filledCount++;
+                        // В 4b. Do you have an interpreter?: Yes — это ЛЕВЫЙ квадратик ('left')!
+                        if (forceSelectPdfWidgetByPosition(field, 'left')) filledCount++;
                     } else if (rawName === '7 care' && c0.clinicName) {
-                        if (selectRadioByIndex(field, 0)) filledCount++;
+                        if (forceSelectPdfWidgetByPosition(field, 'left')) filledCount++;
                     } else if (rawName === '12 contacts') {
-                        if (selectRadioByIndex(field, 0)) filledCount++;
+                        if (forceSelectPdfWidgetByPosition(field, 'left')) filledCount++;
                     } else if (rawName === '13 additional exam') {
-                        if (selectRadioByIndex(field, 0)) filledCount++;
+                        if (forceSelectPdfWidgetByPosition(field, 'left')) filledCount++;
                     }
                     return;
                 }
