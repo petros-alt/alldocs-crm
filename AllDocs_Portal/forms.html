@@ -1087,7 +1087,7 @@
         });
     }
 
-    async function runAiDocumentScan() {
+   async function runAiDocumentScan() {
         const btn = document.getElementById('btnRunAiScan');
         const badge = document.getElementById('dossierStatusBadge');
         const matterId = document.getElementById('dfMatterSelect').value;
@@ -1099,49 +1099,116 @@
         const uploadedFiles = [];
 
         if (localFilesInput && localFilesInput.files.length > 0) {
-            for (const f of Array.from(localFilesInput.files).slice(0, 4)) {
+            for (const f of Array.from(localFilesInput.files)) {
                 uploadedFiles.push(await fileToBase64(f));
             }
         }
 
+        // Делим выбранные файлы на легкие пачки по 2 файла, чтобы не перегружать память и квоту Gemini
+        const BATCH_SIZE = 2;
+        const batches = [];
+
+        for (let i = 0; i < checkedDwFileIds.length; i += BATCH_SIZE) {
+            batches.push({
+                fileIds: checkedDwFileIds.slice(i, i + BATCH_SIZE),
+                uploadedFiles: []
+            });
+        }
+        for (let i = 0; i < uploadedFiles.length; i += BATCH_SIZE) {
+            batches.push({
+                fileIds: [],
+                uploadedFiles: uploadedFiles.slice(i, i + BATCH_SIZE)
+            });
+        }
+
+        if (batches.length === 0) {
+            batches.push({ fileIds: [], uploadedFiles: [] });
+        }
+
         btn.disabled = true;
-        btn.textContent = '⏳ Gemini AI Scanning Matter Files...';
-        badge.textContent = '🧠 AI Analyzing Documents...';
+        let totalRead = 0;
+        let lastModelUsed = 'Gemini';
 
         try {
-            const res = await fetch('/api/search', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    clientId: currentClient ? currentClient.id : '',
-                    matterId: matterId,
-                    clientName: currentClient ? currentClient.name : '',
-                    fileIds: checkedDwFileIds,
-                    uploadedFiles: uploadedFiles
-                })
-            });
+            for (let bIdx = 0; bIdx < batches.length; bIdx++) {
+                const currentBatch = batches[bIdx];
+                const stepLabel = batches.length > 1 ? `Batch ${bIdx + 1}/${batches.length}` : 'Files';
+                btn.textContent = `⏳ AI Scanning ${stepLabel}...`;
+                badge.textContent = `🧠 Reading ${stepLabel}...`;
 
-            const data = await res.json();
-            if (!data.success) {
-                throw new Error(data.error || 'AI Scan failed');
+                const res = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        clientId: currentClient ? currentClient.id : '',
+                        matterId: matterId,
+                        clientName: currentClient ? currentClient.name : '',
+                        fileIds: currentBatch.fileIds,
+                        uploadedFiles: currentBatch.uploadedFiles
+                    })
+                });
+
+                const rawText = await res.text();
+                let data = null;
+                try {
+                    data = JSON.parse(rawText);
+                } catch (jsonErr) {
+                    throw new Error(`Server timeout on ${stepLabel}. Please update api/search.js and try again.`);
+                }
+
+                if (!data.success) {
+                    throw new Error(data.error || `AI Scan failed on ${stepLabel}`);
+                }
+
+                totalRead += (data.filesScanned || 0);
+                if (data.model) lastModelUsed = data.model;
+
+                const ex = data.extracted || {};
+
+                // Умное слияние данных из каждой пачки в единую память клиента
+                Object.keys(ex).forEach(k => {
+                    const val = ex[k];
+                    if (val === null || val === undefined || val === '') return;
+
+                    if (k === 'diagnoses' && Array.isArray(val)) {
+                        const existingDiag = Array.isArray(clientMemoryStore.diagnoses) ? clientMemoryStore.diagnoses : [];
+                        val.forEach(dItem => {
+                            if (dItem && dItem.problem && !existingDiag.some(e => e.problem.toLowerCase() === dItem.problem.toLowerCase())) {
+                                existingDiag.push(dItem);
+                            }
+                        });
+                        clientMemoryStore.diagnoses = existingDiag;
+                    } else if (k === 'clinics' && Array.isArray(val)) {
+                        const existingClinics = Array.isArray(clientMemoryStore.clinics) ? clientMemoryStore.clinics : [];
+                        val.forEach(cItem => {
+                            if (cItem && (cItem.clinicName || cItem.doctorName)) {
+                                const isDup = existingClinics.some(e =>
+                                    (e.clinicName && cItem.clinicName && e.clinicName.toLowerCase() === cItem.clinicName.toLowerCase()) ||
+                                    (e.doctorName && cItem.doctorName && e.doctorName.toLowerCase() === cItem.doctorName.toLowerCase())
+                                );
+                                if (!isDup) existingClinics.push(cItem);
+                            }
+                        });
+                        clientMemoryStore.clinics = existingClinics;
+                    } else if (Array.isArray(val)) {
+                        const nonEmpty = val.filter(Boolean);
+                        if (nonEmpty.length > 0) clientMemoryStore[k] = nonEmpty;
+                    } else if (typeof val === 'object') {
+                        clientMemoryStore[k] = { ...(clientMemoryStore[k] || {}), ...val };
+                    } else {
+                        clientMemoryStore[k] = val;
+                    }
+                });
+
+                renderSummaryPills();
             }
 
-            const ex = data.extracted || {};
-
-            Object.keys(ex).forEach(k => {
-                const val = ex[k];
-                if (val !== null && val !== undefined && val !== '' && (!Array.isArray(val) || val.length > 0)) {
-                    clientMemoryStore[k] = val;
-                }
-            });
-
-            renderSummaryPills();
-            badge.textContent = `✅ AI Scan Complete (${data.filesScanned || 1} docs read)`;
+            badge.textContent = `✅ AI Scan Complete (${totalRead} docs via ${lastModelUsed})`;
             btn.textContent = '✅ All Data Extracted! Click Form on Right →';
             setTimeout(() => { btn.textContent = '🧠 5. Scan Checked Files with Gemini AI'; }, 4500);
         } catch (err) {
             alert('❌ ' + err.message);
-            badge.textContent = '⚠️ AI Scan Error';
+            badge.textContent = '⚠️ AI Scan Interrupted';
             btn.textContent = '🧠 5. Scan Checked Files with Gemini AI';
         } finally {
             btn.disabled = false;
