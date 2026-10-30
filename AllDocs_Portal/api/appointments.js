@@ -37,25 +37,28 @@ export default async function handler(req, res) {
             const minDate = new Date(); minDate.setMonth(now.getMonth() - 1);
             const maxDate = new Date(); maxDate.setMonth(now.getMonth() + 6);
 
-            let allEvents = [];
             const calendarsToFetch = [mainCalendarId, goRemindersCalendarId];
 
-            for (const calId of calendarsToFetch) {
-                if(!calId) continue;
-                try {
-                    const response = await calendar.events.list({
-                        calendarId: calId,
-                        timeMin: minDate.toISOString(),
-                        timeMax: maxDate.toISOString(),
-                        singleEvents: true,
-                        orderBy: 'startTime',
-                    });
-                    const items = response.data.items || [];
-                    allEvents.push(...items.map(ev => ({ ...ev, _isGoReminders: calId === goRemindersCalendarId })));
-                } catch (err) {
-                    console.error(`Ошибка при чтении календаря ${calId}:`, err);
-                }
-            }
+            // ⚡ УСКОРЕНИЕ В 2 РАЗА: Загружаем оба календаря параллельно одновременно!
+            const results = await Promise.all(
+                calendarsToFetch.filter(Boolean).map(async (calId) => {
+                    try {
+                        const response = await calendar.events.list({
+                            calendarId: calId,
+                            timeMin: minDate.toISOString(),
+                            timeMax: maxDate.toISOString(),
+                            singleEvents: true,
+                            orderBy: 'startTime',
+                        });
+                        const items = response.data.items || [];
+                        return items.map(ev => ({ ...ev, _isGoReminders: calId === goRemindersCalendarId }));
+                    } catch (err) {
+                        console.error(`Ошибка при чтении календаря ${calId}:`, err);
+                        return [];
+                    }
+                })
+            );
+            const allEvents = results.flat();
             
             const mappedAppointments = allEvents.map(event => {
                 const startDateTime = event.start?.dateTime || event.start?.date;
@@ -172,8 +175,11 @@ export default async function handler(req, res) {
             const { id } = req.body;
             if (!id) return res.status(400).json({ success: false, error: 'No ID provided' });
             
-            try { await calendar.events.delete({ calendarId: mainCalendarId, eventId: id }); } catch(e) {}
-            try { await calendar.events.delete({ calendarId: goRemindersCalendarId, eventId: id }); } catch(e) {}
+            // ⚡ Параллельное удаление без задержек
+            await Promise.allSettled([
+                calendar.events.delete({ calendarId: mainCalendarId, eventId: id }),
+                calendar.events.delete({ calendarId: goRemindersCalendarId, eventId: id })
+            ]);
             
             return res.status(200).json({ success: true, message: 'Deleted successfully' });
         }
