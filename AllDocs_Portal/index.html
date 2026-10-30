@@ -1744,7 +1744,10 @@
 
 
 
+
+
 (000) 000-0000
+
 
 
 
@@ -2484,7 +2487,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -2516,7 +2522,10 @@
 
 
 
+
+
 (747) 204-2404
+
 
 
 
@@ -8505,6 +8514,50 @@ window.renderMainCalendar = async function() {
         }
         return origFetch.apply(this, arguments);
     };
+})();
+</script>
+    <!-- 👤 АВТОРСКИЙ ШТАМП ЗАПИСИ: КТО ПОСТАВИЛ АППОЙТМЕНТ И ВО СКОЛЬКО -->
+<script>
+(function initBookedByTimestampUpgrade() {
+    function upgradePreviewModalWithBookedAt() {
+        if (typeof window.openPreviewModal !== 'function' || window.openPreviewModal._bookedAtUpgraded) return;
+
+        const origOpenPreview = window.openPreviewModal;
+        window.openPreviewModal = async function(id) {
+            await origOpenPreview.apply(this, arguments);
+
+            const records = window.globalAppointments || [];
+            const appt = records.find(a => String(a.id) === String(id));
+            if (!appt) return;
+
+            const previewBody = document.getElementById('previewBody');
+            if (!previewBody) return;
+
+            const bookedByName = appt.bookedBy || 'Admin / Front Desk';
+            const bookedAtTime = appt.bookedAt || '';
+
+            // Находим строку "📝 Booked By:" внутри карточки Appt. Details и делаем её информативной
+            const rows = previewBody.querySelectorAll('div');
+            rows.forEach(row => {
+                if (row.children.length === 2 && row.firstElementChild.textContent.includes('Booked By:')) {
+                    row.style.alignItems = 'center';
+                    row.innerHTML = `
+                        <span style="color: #f5cba7; font-size: 13px; font-weight: 700;">📝 Booked By:</span>
+                        <div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 3px;">
+                            <span style="font-size: 14px; color: #ffffff; font-weight: 800;">👤 ${bookedByName}</span>
+                            ${bookedAtTime ? `<span style="font-size: 11px; color: #f5cba7; background: rgba(212, 140, 70, 0.22); border: 1px solid rgba(212, 140, 70, 0.45); padding: 2px 8px; border-radius: 8px; font-weight: 700;">🕒 ${bookedAtTime}</span>` : ''}
+                        </div>
+                    `;
+                }
+            });
+        };
+
+        window.openPreviewModal._bookedAtUpgraded = true;
+    }
+
+    upgradePreviewModalWithBookedAt();
+    setTimeout(upgradePreviewModalWithBookedAt, 400);
+    setTimeout(upgradePreviewModalWithBookedAt, 1000);
 })();
 </script>
 </body>
