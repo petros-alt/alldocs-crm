@@ -49,7 +49,7 @@ export default async function handler(req, res) {
         if (!trimmed) return '';
         if (/^(n\/a|none|unknown|null|-)$/i.test(trimmed)) return '';
         if (/^\d/.test(trimmed) && !/[a-zA-Z]{3,}/.test(trimmed)) return trimmed;
-        if (/^(CA|NY|TX|FL|NV|AZ|WA|OR|IL|PA|OH|GA|NC|MI|NJ|VA|MA|MD|SSI|SSDI|CAPI|IHSS|NOA|SOC|MC|USCIS|USA|PO|APT|STE|DR|ST|AVE|BLVD|RD|LN|CT|PL|NW|NE|SW|SE|II|III|IV|LLC|INC|MD|DO|RN|NP|PA-C|GED|12\+)$/i.test(trimmed)) {
+        if (/^(CA|NY|TX|FL|NV|AZ|WA|OR|IL|PA|OH|GA|NC|MI|NJ|VA|MA|MD|SSI|SSDI|CAPI|IHSS|NOA|SOC|MC|USCIS|USA|PO|APT|STE|DR|ST|AVE|BLVD|RD|LN|CT|PL|NW|NE|SW|SE|II|III|IV|LLC|INC|MD|DO|RN|NP|PA-C|GED|12\+|B1|B2|B1\/B2|F1|J1|CBP|ICE|EOIR)$/i.test(trimmed)) {
             return trimmed.toUpperCase();
         }
         const upperCount = (trimmed.match(/[A-Z]/g) || []).length;
@@ -57,7 +57,7 @@ export default async function handler(req, res) {
         if ((upperCount > 2 && lowerCount === 0) || (lowerCount > 2 && upperCount === 0)) {
             return trimmed.toLowerCase().replace(/\b([a-z])([a-z']*)/g, (match, first, rest) => {
                 const wordUp = match.toUpperCase();
-                if (/^(CA|SSI|SSDI|CAPI|IHSS|NOA|MD|DO|RN|NP|LLC|INC|PO|II|III|IV|UCLA|USC|DMV|EDD|IRS|EKG|PFT|BNP|CBC|CMP|UTI|GED|EGFR)$/.test(wordUp)) {
+                if (/^(CA|SSI|SSDI|CAPI|IHSS|NOA|MD|DO|RN|NP|LLC|INC|PO|II|III|IV|UCLA|USC|DMV|EDD|IRS|EKG|PFT|BNP|CBC|CMP|UTI|GED|EGFR|USA|USSR|USCIS|CBP)$/.test(wordUp)) {
                     return wordUp;
                 }
                 if (/^(and|or|of|in|on|at|to|for|with|from|by|the|a|an)$/.test(match) && match !== trimmed.toLowerCase().slice(0, match.length)) {
@@ -80,7 +80,7 @@ export default async function handler(req, res) {
                     out[key] = '';
                 } else if (key === 'state') {
                     out[key] = val.trim().toUpperCase() || 'CA';
-                } else if (['ssn', 'dob', 'phone', 'zip', 'heightFt', 'heightIn', 'weight', 'caseNum', 'firstSeen', 'lastSeen', 'nextAppt', 'onsetDate', 'ssiDecisionDate', 'educationDate', 'educationGrade', 'dateFrom', 'dateTo', 'date'].includes(key)) {
+                } else if (['ssn', 'dob', 'phone', 'zip', 'heightFt', 'heightIn', 'weight', 'caseNum', 'aNumber', 'i94Number', 'passportNumber', 'passportExp', 'lastEntryDate', 'statusExpDate', 'marriageDate', 'firstSeen', 'lastSeen', 'nextAppt', 'onsetDate', 'ssiDecisionDate', 'educationDate', 'educationGrade', 'dateFrom', 'dateTo', 'date'].includes(key)) {
                     out[key] = val.trim();
                 } else {
                     out[key] = formatProperCase(val);
@@ -180,13 +180,13 @@ export default async function handler(req, res) {
         if (/(zelle|receipt|invoice|payment|retainer|contract|08\.\s*firm)/i.test(lower)) {
             return { category: 'ignore', badge: '💸 Contract/Fee', priority: 10, autoSelect: false };
         }
-        if (/(01\.|personal|identification|driver|license|dl|passport|birth|ssn|social|id_card|state_id|green_card|greencard|permanent resident|naturalization|medi-cal|bic)/i.test(lower)) {
-            return { category: 'identity', badge: '🪪 01. Personal ID', priority: 100, autoSelect: true };
+        if (/(01\.|personal|identification|driver|license|dl|passport|birth|marriage|ssn|social|id_card|state_id|green_card|greencard|permanent resident|naturalization|medi-cal|bic|i-94|i94|visa)/i.test(lower)) {
+            return { category: 'identity', badge: '🪪 01. Personal/Civil ID', priority: 100, autoSelect: true };
         }
-        if (/(02\.|mc_223|mc223|mc 223|soc|873|804|814|453|839|medical|doctor|dr\.|clinic|hospital|meds|medication|rx|diagnosis|visit|summary|noa|ssi|capi|disability|pharmacy|discharge|lab|quest)/i.test(lower)) {
-            return { category: 'medical_form', badge: '🩺 02. Medical', priority: 95, autoSelect: true };
+        if (/(02\.|589|asylum|declaration|statement|story|persecution|mc_223|mc223|mc 223|soc|873|804|814|453|839|medical|doctor|dr\.|clinic|hospital|meds|medication|rx|diagnosis|visit|summary|noa|ssi|capi|disability|pharmacy|discharge|lab|quest)/i.test(lower)) {
+            return { category: 'medical_form', badge: '🩺 02. Case/Medical/Decl', priority: 95, autoSelect: true };
         }
-        if (/(04\.|education|work|job|employment|school)/i.test(lower)) {
+        if (/(04\.|education|work|job|employment|school|diploma)/i.test(lower)) {
             return { category: 'work_edu', badge: '🏫 04. Edu/Work', priority: 85, autoSelect: true };
         }
         if (/(05\.|financial|living|bank|lease|rent|utility|expense)/i.test(lower)) {
@@ -262,7 +262,7 @@ export default async function handler(req, res) {
 
             const { clientId, matterId = '', fileIds = [], fileUrls = [], uploadedFiles = [], clientName = '' } = req.body || {};
             const inlineParts = [];
-            let textContext = `Target Client Full Name: ${clientName}\nIMPORTANT: Extract data ONLY for ${clientName}!\n`;
+            let textContext = `Target Client Full Name: ${clientName}\nIMPORTANT: Extract data ONLY for ${clientName} (and their spouse/children/parents where applicable for I-589)!\n`;
 
             if (Array.isArray(uploadedFiles)) {
                 uploadedFiles.slice(0, 3).forEach(uf => {
@@ -290,50 +290,182 @@ export default async function handler(req, res) {
                 if (part) inlineParts.push({ inline_data: part });
             });
 
-            const systemPrompt = `You are an expert California Medi-Cal / Disability (Form MC 223) Clinical & Legal Document Synthesizer AI.
-Analyze all attached raw client documents (Driver's License, Green Card, Social Security Card, Emergency Department Discharge Instructions, Pharmacy Patient History Reports, Clinic Visit Summaries, Lab Results from Quest Diagnostics / hospitals, or prior forms) for client "${clientName}".
+            const systemPrompt = `You are a high-precision USCIS Form I-589 (Asylum) & California Medi-Cal/Disability (MC 223 / SOC) Legal Document Synthesizer AI.
+Analyze all attached client documents (Passports, I-94 Arrival/Departure Records, Visas, Birth Certificates with English translations, Marriage Certificates, Personal Asylum Declarations/Statements, Driver's Licenses, SSN cards, Medical Records, Pharmacy Reports, Lab Results) for client "${clientName}".
 
-CRITICAL RULES FOR SYNTHESIZING RAW DOCUMENTS INTO FORM MC 223:
-1. HANDWRITING FILTER (WHAT TO READ vs WHAT TO IGNORE):
-   - DO EXTRACT handwritten factual/medical data: handwritten medication names, dosages, doctor names, clinic addresses, phone numbers, diagnoses, onset dates, and checkmarks (☑ / ✓).
-   - DO NOT EXTRACT signatures or signature dates: completely ignore handwritten signatures, initials, and dates written next to signatures in certification blocks.
-2. NO ALL-CAPS: Convert ALL-CAPS text into clean Title Case. Keep medical/state abbreviations uppercase (CA, SSI, CAPI, IHSS, MD, NP, EKG, PFT, BNP, CBC, CMP, GED, eGFR).
-3. ITEM 6 (DIAGNOSES):
-   - Extract up to 4 primary disabling medical problems/diagnoses from the clinical records (e.g., "Nonspecific chest pain requiring emergency evaluation with elevated BNP", "Chronic macrocytic anemia secondary to drug therapy", "Moderate renal insufficiency with an eGFR of 47", "Active urinary tract infection due to E. coli") and their start/visit date in MM/YYYY format.
-4. ITEM 7, 8, 9 (CLINICS, HOSPITALS & PHARMACY REPORTS):
-   - Extract outpatient clinics and hospitals where the patient was treated (e.g., "All For Health, Health For All", "Glendale Medical Group Inc").
-   - For each clinic, extract: clinicName, memberId (patient account/member number), doctorName (e.g. "Anna Karagyan, NP", "Noralie Raudszus, NP"), address, city, state, zip, phone, firstSeen (MM/DD/YYYY), lastSeen (MM/DD/YYYY), reason for visit, overnightStay ("Yes" or "No"), emergencyRoom ("Yes" or "No"), medicines (list medications & dosages from Pharmacy Reports or visit notes), and treatments (list labs/panels/procedures and dates).
-   - Note: If a hospital (like "Dignity Health - Glendale Memorial Hospital") or lab (like "Quest Diagnostics") was ONLY used for diagnostic tests (EKG, Chest X-ray, Blood tests, 24-hour urine), put it into the "tests" object (Item 10) rather than duplicating it in Item 9, unless it was a separate doctor consultation.
-5. ITEM 10 (MEDICAL TESTS TABLE - PAGE 3):
-   - Check the medical records for any of these 6 tests:
-     * ekg (Electrocardiogram / EKG)
-     * treadmill (Treadmill exercise heart test)
-     * chestXray (Chest X-ray)
-     * breathing (Breathing Test / PFT)
-     * blood (Blood Tests / CBC / CMP / Lipid / HbA1c / Quest Diagnostics)
-     * other (Other test, e.g. 24-hour urine StoneRisk panel / Urinalysis / Ultrasound)
-   - If a test WAS performed in the medical records, set "performed": "Yes" and fill in the facility "name" (e.g. "Dignity Health - Glendale Memorial Hospital" or "Quest Diagnostics / Glendale Medical Group"), "address", "city", "state", "zip", and "date" (MM/YYYY).
-6. ITEM 14 (DAILY ACTIVITIES LIMITATIONS):
-   - Based on the clinical diagnoses, medications, and discharge instructions, provide up to 4 concise, medically accurate sentences describing how the condition limits daily activities (e.g., "Severe fatigue and weakness from anemia limit my physical stamina.", "Medical orders restrict lifting over 10 lbs due to chest pain.", "Stage 3 kidney disease and stone risk cause constant discomfort.", "Daily activities are restricted by exhaustion and medication side effects.").
+CRITICAL RULES FOR I-589 & MC 223 EXTRACTION:
+1. HANDWRITING FILTER:
+   - DO EXTRACT handwritten factual/medical/biographical info (medications, addresses, dates of birth, entry dates, checkmarks ☑/✓).
+   - DO NOT EXTRACT signatures or signature dates from certification blocks.
+2. NO ALL-CAPS: Convert ALL-CAPS text into clean Title Case. Keep standard abbreviations uppercase (CA, USA, USCIS, B1/B2, F1, SSI, CAPI, IHSS, MD, NP, EKG, PFT, BNP, CBC, CMP, GED, eGFR).
+3. FORM I-589 SPECIFIC EXTRACTION (FROM BIRTH CERTIFICATES, MARRIAGE CERTIFICATES, PASSPORTS, I-94, AND DECLARATIONS):
+   - Birth Certificate: Extract the applicant's City/Town and Country of Birth, AND extract Mother's Full Name ("motherName", "motherBirthPlace") and Father's Full Name ("fatherName", "fatherBirthPlace") for Part A.III Item 5!
+   - Marriage Certificate & Spouse Docs: Extract "maritalStatus" ("Single", "Married", "Divorced", "Widowed"), "marriageDate" (MM/DD/YYYY), "marriagePlace" (City, Country), and full "spouse" details (lastName, firstName, middleName, dob, nationality, cityCountryBirth, gender, inUS, placeLastEntry, dateLastEntry, i94Number, lastEntryStatus, currentStatus, includeInApp).
+   - Children Docs (Birth Certificates / Passports): Extract up to 4 children into "children" array.
+   - Passport & I-94: Extract "aNumber", "uscisAccount", "nationality", "raceEthnicTribal", "religion", "nativeLanguage", "fluentEnglish" ("Yes" or "No"), "otherLanguages", "passportNumber", "passportCountry", "passportExp" (MM/DD/YYYY), "lastEntryDate" (MM/DD/YYYY), "i94Number", "lastEntryPlace" (e.g. "Los Angeles, CA" or "San Ysidro, CA"), "lastEntryStatus" (e.g. "B2", "Parole"), "statusExpDate" (MM/DD/YYYY), "leftHomeCountryDate" (MM/DD/YYYY).
+   - Asylum Declaration / Personal Statement (Part B & Part C):
+     * Identify asylum grounds ("asylumGrounds": array of any applicable from ["Race", "Religion", "Nationality", "Political Opinion", "Particular Social Group", "Torture Convention"]).
+     * Summarize the client's declaration into concise, factual, 3-to-4 sentence summaries (MAX 360 characters each so they fit inside the I-589 PDF boxes without overflowing!) for:
+       - "harmSummary" (Part B.1.A: past mistreatment/threats, who caused it, and why)
+       - "fearSummary" (Part B.1.B: why the applicant fears harm if returned)
+       - "arrestSummary" (Part B.2: any arrests, detentions, or interrogations)
+       - "orgSummary" (Part B.3.A: membership in political, religious, or social organizations)
+       - "tortureSummary" (Part B.4: fear of torture by government or officials)
+       - "priorReturnSummary" (Part C.1/C.2: any prior applications or travel through other countries)
+       - "oneYearReason" (Part C.5: if filing more than 1 year after arrival, explain changed/extraordinary circumstances)
+     * Always end each summary box with: "Please see attached detailed Personal Declaration and supporting evidence."
+4. AI FEEDBACK / MISSING INFO AUDIT ("aiFeedback"):
+   - List any ambiguous, missing, or unverified items that the legal specialist must clarify with the client (e.g., whether parents are deceased or their current city/country of residence, siblings' names, exact 5-year address/employment dates, or missing I-94 expiration date).
 
-Return ONLY valid JSON matching this exact structure (use empty string "" if not mentioned in these specific files):
+Return ONLY valid JSON matching this exact structure (leave "" if not mentioned in the current batch of files):
 {
   "firstName": "",
   "lastName": "",
+  "middleName": "",
   "otherNames": "",
   "ssn": "",
-  "dob": "",
-  "gender": "",
+  "aNumber": "",
+  "uscisAccount": "",
+  "dob": "MM/DD/YYYY",
+  "gender": "Male or Female",
+  "maritalStatus": "Single, Married, Divorced, or Widowed",
+  "cityCountryBirth": "",
+  "nationality": "",
+  "nationalityAtBirth": "",
+  "raceEthnicTribal": "",
+  "religion": "",
+  "nativeLanguage": "Armenian",
+  "fluentEnglish": "Yes or No",
+  "otherLanguages": "",
   "heightFt": "",
   "heightIn": "",
   "weight": "",
   "street": "",
+  "apt": "",
   "city": "",
-  "state": "",
+  "state": "CA",
   "zip": "",
   "phone": "",
-  "language": "",
+  "language": "Armenian",
   "caseNum": "",
+  "immigrationCourtStatus": "never, now, or past",
+  "leftHomeCountryDate": "MM/DD/YYYY",
+  "lastEntryDate": "MM/DD/YYYY",
+  "lastEntryPlace": "",
+  "lastEntryStatus": "",
+  "i94Number": "",
+  "statusExpDate": "MM/DD/YYYY",
+  "passportCountry": "",
+  "passportNumber": "",
+  "passportExp": "MM/DD/YYYY",
+  "spouse": {
+    "aNumber": "",
+    "passportNumber": "",
+    "dob": "MM/DD/YYYY",
+    "ssn": "",
+    "lastName": "",
+    "firstName": "",
+    "middleName": "",
+    "maidenName": "",
+    "marriageDate": "MM/DD/YYYY",
+    "marriagePlace": "",
+    "cityCountryBirth": "",
+    "nationality": "",
+    "race": "",
+    "gender": "Male or Female",
+    "inUS": "Yes or No",
+    "locationIfNotUS": "",
+    "placeLastEntry": "",
+    "dateLastEntry": "MM/DD/YYYY",
+    "i94Number": "",
+    "lastEntryStatus": "",
+    "currentStatus": "",
+    "statusExpDate": "MM/DD/YYYY",
+    "inCourt": "Yes or No",
+    "includeInApp": "Yes or No"
+  },
+  "children": [
+    {
+      "aNumber": "",
+      "passportNumber": "",
+      "maritalStatus": "Single",
+      "ssn": "",
+      "lastName": "",
+      "firstName": "",
+      "middleName": "",
+      "dob": "MM/DD/YYYY",
+      "cityCountryBirth": "",
+      "nationality": "",
+      "race": "",
+      "gender": "Male or Female",
+      "inUS": "Yes or No",
+      "locationIfNotUS": "",
+      "placeLastEntry": "",
+      "dateLastEntry": "MM/DD/YYYY",
+      "i94Number": "",
+      "lastEntryStatus": "",
+      "currentStatus": "",
+      "statusExpDate": "MM/DD/YYYY",
+      "inCourt": "Yes or No",
+      "includeInApp": "Yes or No"
+    }
+  ],
+  "lastAddressBeforeUS": {
+    "street": "",
+    "city": "",
+    "departmentState": "",
+    "country": "",
+    "dateFrom": "MM/YYYY",
+    "dateTo": "MM/YYYY"
+  },
+  "residences5Years": [
+    { "street": "", "city": "", "state": "", "country": "", "dateFrom": "MM/YYYY", "dateTo": "MM/YYYY" }
+  ],
+  "educationHistory": [
+    { "schoolName": "", "schoolType": "", "location": "", "dateFrom": "MM/YYYY", "dateTo": "MM/YYYY" }
+  ],
+  "employment5Years": [
+    { "employerAndAddress": "", "occupation": "", "dateFrom": "MM/YYYY", "dateTo": "MM/YYYY" }
+  ],
+  "family": {
+    "motherName": "",
+    "motherBirthPlace": "",
+    "motherDeceased": "",
+    "motherLocation": "",
+    "fatherName": "",
+    "fatherBirthPlace": "",
+    "fatherDeceased": "",
+    "fatherLocation": "",
+    "siblings": [
+      { "name": "", "birthPlace": "", "deceased": "", "location": "" }
+    ]
+  },
+  "asylum": {
+    "grounds": [],
+    "experiencedHarm": "Yes or No",
+    "harmSummary": "",
+    "fearReturn": "Yes or No",
+    "fearSummary": "",
+    "arrestedAbroad": "Yes or No",
+    "arrestSummary": "",
+    "orgMember": "Yes or No",
+    "orgSummary": "",
+    "continueOrg": "Yes or No",
+    "continueOrgSummary": "",
+    "fearTorture": "Yes or No",
+    "tortureSummary": "",
+    "priorAsylumApp": "Yes or No",
+    "priorAsylumSummary": "",
+    "traveledOtherCountries": "Yes or No",
+    "lawfulStatusOtherCountry": "Yes or No",
+    "otherCountriesSummary": "",
+    "causedHarm": "No",
+    "returnedToHomeCountry": "Yes or No",
+    "returnedSummary": "",
+    "filedAfterOneYear": "Yes or No",
+    "oneYearReason": "",
+    "usCrimes": "No"
+  },
   "ssiApplied": "",
   "ssiStatus": "",
   "ssiDecisionDate": "",
@@ -387,7 +519,10 @@ Return ONLY valid JSON matching this exact structure (use empty string "" if not
     "hoursPerWeek": "",
     "rateOfPay": "",
     "description": ""
-  }
+  },
+  "aiFeedback": [
+    ""
+  ]
 }`;
 
             const requestParts = [{ text: systemPrompt + "\n\n" + textContext }, ...inlineParts];
@@ -487,7 +622,7 @@ Return ONLY valid JSON matching this exact structure (use empty string "" if not
 
             if ((!folderId || folderId === 'ALL_KEY_FOLDERS') && parsed.folders.length > 0) {
                 const keyFolders = parsed.folders.filter(fld =>
-                    /(00\.|01\.|02\.|04\.|05\.|07\.|personal|medical|upload|inbox|education|work|financial|final|packet)/i.test(fld.name)
+                    /(00\.|01\.|02\.|03\.|04\.|05\.|07\.|personal|medical|upload|inbox|education|work|financial|final|packet|asylum|declaration|id)/i.test(fld.name)
                 ).slice(0, 6);
 
                 const foldersToScan = keyFolders.length > 0 ? keyFolders : parsed.folders.slice(0, 5);
@@ -642,6 +777,7 @@ Return ONLY valid JSON matching this exact structure (use empty string "" if not
                     dob: formattedDob,
                     gender,
                     street,
+                    apt,
                     city,
                     state,
                     zip,
