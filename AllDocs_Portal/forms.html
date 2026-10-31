@@ -788,6 +788,7 @@
 
         <!-- ФИЛЬТР ФОРМ ПО ГРУППАМ ПРОГРАММ -->
         <div class="program-filter-bar" id="programFilterBar">
+            <button type="button" class="prog-tab-btn" data-prog="uscis" onclick="filterFormsByProgram('uscis', this)">🛂 USCIS & Asylum (I-589)</button>
             <button type="button" class="prog-tab-btn active" data-prog="all" onclick="filterFormsByProgram('all', this)">📂 All Forms (13)</button>
             <button type="button" class="prog-tab-btn" data-prog="medical" onclick="filterFormsByProgram('medical', this)">🏥 Medi-Cal & Disability (MC 223, MC 220, MC 382, MC 383)</button>
             <button type="button" class="prog-tab-btn" data-prog="capi" onclick="filterFormsByProgram('capi', this)">💰 CAPI & SSI (SOC 453, 455, 804, 814, SSP 14)</button>
@@ -796,6 +797,13 @@
         </div>
 
         <div class="forms-grid" id="formsGrid">
+            <div class="form-item" data-prog="uscis">
+                <div><div class="form-icon">🛂</div>
+                    <h4>I-589</h4>
+                    <p>Application for Asylum and for Withholding of Removal (USCIS)</p>
+                </div>
+                <button class="btn-download" onclick="openEditor('I-589')">⚡ Open & Auto-Fill PDF</button>
+            </div>
             
             <div class="form-item" data-prog="medical capi">
                 <div><div class="form-icon">📋</div>
@@ -1117,8 +1125,10 @@
         const folderSel = document.getElementById('dfFolderSelect');
         const matterId = matterSel.value;
         const matterTitle = (matterSel.options[matterSel.selectedIndex]?.text || '').toLowerCase();
-
-        if (matterTitle.includes('capi') || matterTitle.includes('ssi')) {
+        
+if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle.includes('uscis')) {
+            filterFormsByProgram('uscis', null);
+        } else if (matterTitle.includes('capi') || matterTitle.includes('ssi')) {
             filterFormsByProgram('capi', null);
         } else if (matterTitle.includes('ihss')) {
             filterFormsByProgram('ihss', null);
