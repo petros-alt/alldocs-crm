@@ -1966,7 +1966,9 @@
         };
     }
 
-    // Генерация умного отчета обратной связи (AI Audit & Missing Info) для любой открытой формы!
+  let generatedPdfBlobCache = {}; // Кэш готовых PDF, чтобы при повторном открытии форма НЕ перезаполнялась заново!
+
+    // Генерация понятного, строго хронологического отчета на РУССКОМ языке!
     function buildAndRenderAiAuditReport(formCode, d) {
         const ai = d.ai || {};
         const items = [];
@@ -1974,64 +1976,76 @@
         if (!ai.aiScanned) {
             items.push({
                 type: 'critical',
-                title: '🔴 AI Scan Not Run Yet',
-                text: 'Вы еще не нажали синюю кнопку "5. Scan Checked Files with Gemini AI". Сейчас заполнены только базовые контактные данные из профиля Docketwise.'
+                title: '🔴 Шаг 0 — Скан документов еще не запущен',
+                text: 'Вы еще не нажали синюю кнопку "5. Scan Checked Files with Gemini AI". Выберите файлы клиента (Паспорт, I-94, Св-во о рождении, Декларацию) и нажмите Scan.'
             });
         }
 
         if (formCode === 'I-589') {
+            // СТРАНИЦА 1 (Хронология сверху вниз)
             if (!cleanVal(d.caseNum) && !cleanVal(ai.aNumber)) {
-                items.push({ type: 'warn', title: '🟡 Part A.I Line 1 — A-Number', text: 'A-Number не найден в документах. Если у клиента уже есть A-Number (например, из NTA или EAD), впишите его.' });
+                items.push({ type: 'critical', title: '🔴 Стр. 1, Часть A.I, Пункт 1 — A-Number', text: 'Номер A-Number (9 цифр) не найден. Проверьте Notice to Appear (NTA) или укажите вручную, если есть.' });
             }
-            if (!cleanVal(ai.i94Number) || !cleanVal(ai.lastEntryDate)) {
-                items.push({ type: 'critical', title: '🔴 Part A.I Line 19 — I-94 & Last Entry Date', text: 'Не найден номер I-94 или точная дата последнего въезда в США. Прикрепите форму I-94 или визу/штамп в паспорте.' });
+            if (!cleanVal(ai.maritalStatus)) {
+                items.push({ type: 'warn', title: '🟡 Стр. 1, Часть A.I, Пункт 11 — Семейное положение (Marital Status)', text: 'Уточните семейное положение клиента (Single / Married / Divorced / Widowed).' });
+            }
+            if (!cleanVal(ai.i94Number) || !cleanVal(ai.lastEntryDate) || !cleanVal(ai.lastEntryPlace)) {
+                items.push({ type: 'critical', title: '🔴 Стр. 1, Часть A.I, Пункт 19 — Дата, место въезда и номер I-94', text: 'Не все данные о въезде в США найдены (Дата выезда из страны, Дата въезда в США, Место въезда, Статус и 11-значный номер I-94). Проверьте файл I-94 или штамп в паспорте.' });
             }
             if (!cleanVal(ai.passportNumber) || !cleanVal(ai.passportExp)) {
-                items.push({ type: 'warn', title: '🟡 Part A.I Line 20-25 — Passport Details', text: 'Проверьте номер паспорта, страну выдачи и срок действия паспорта (Expiration Date).' });
+                items.push({ type: 'warn', title: '🟡 Стр. 1, Часть A.I, Пункт 20–25 — Паспортные данные', text: 'Проверьте номер паспорта, страну выдачи и срок его действия (Expiration Date).' });
             }
-            const fam = ai.family || {};
-            if (!cleanVal(fam.motherName) || !cleanVal(fam.fatherName)) {
-                items.push({ type: 'critical', title: '🔴 Part A.III Line 5 (Page 4) — Parents (Birth Certificate)', text: 'Имена родителей (Мать и Отец) не найдены. Отсканируйте Свидетельство о рождении клиента (Birth Certificate) для автозаполнения родителей.' });
-            } else if (!cleanVal(fam.motherLocation) || !cleanVal(fam.fatherLocation)) {
-                items.push({ type: 'warn', title: '🟡 Part A.III Line 5 (Page 4) — Parents Current Location / Deceased', text: `Имена родителей (${fam.motherName || ''} / ${fam.fatherName || ''}) внесены из св-ва о рождении! Уточните со слов клиента: живы ли родители и в каком городе/стране находятся сейчас.` });
+
+            // СТРАНИЦЫ 2–3 (Супруг и Дети)
+            if (/marr/i.test(ai.maritalStatus || '') && !cleanVal(ai.spouse?.firstName)) {
+                items.push({ type: 'critical', title: '🔴 Стр. 2, Часть A.II — Сведения о супруге (Spouse)', text: 'Клиент указан как состоящий в браке, но данные супруга(и) не найдены. Отсканируйте свидетельство о браке и паспорт супруга(и).' });
             }
-            if (!Array.isArray(fam.siblings) || fam.siblings.length === 0) {
-                items.push({ type: 'warn', title: '🟡 Part A.III Line 5 (Page 4) — Siblings (Братья / Сестры)', text: 'В официальных документах нет сведений о родных братьях/сестрах. Уточните у клиента их ФИО, место рождения и текущий город проживания.' });
+
+            // СТРАНИЦА 4 (Адреса, Школа, Работа, Родители, Братья/Сестры)
+            if (!cleanVal(ai.lastAddressBeforeUS?.street) && (!Array.isArray(ai.residences5Years) || ai.residences5Years.length < 2)) {
+                items.push({ type: 'warn', title: '🟡 Стр. 4, Часть A.III, Пункты 1–2 — Адреса за последние 5 лет', text: 'В документах нет полного списка адресов проживания за последние 5 лет (включая последний адрес в родной стране и даты MM/YYYY). Уточните со слов клиента.' });
             }
-            if (!Array.isArray(ai.residences5Years) || ai.residences5Years.length === 0) {
-                items.push({ type: 'warn', title: '🟡 Part A.III Line 1-2 (Page 4) — 5-Year Address History', text: 'Уточните у клиента точные даты (MM/YYYY) проживания по последнему адресу в родной стране и в США за последние 5 лет.' });
+            if (!Array.isArray(ai.educationHistory) || ai.educationHistory.length === 0) {
+                items.push({ type: 'warn', title: '🟡 Стр. 4, Часть A.III, Пункт 3 — Образование (Школа / Университет)', text: 'Сведения об образовании (название школы/вуза, тип, город и годы учебы MM/YYYY) не найдены в документах. Уточните у клиента.' });
             }
             if (!Array.isArray(ai.employment5Years) || ai.employment5Years.length === 0) {
-                items.push({ type: 'warn', title: '🟡 Part A.III Line 4 (Page 4) — 5-Year Employment History', text: 'Сведения о местах работы за последние 5 лет не найдены в документах. Уточните со слов клиента (работодатель, должность, даты MM/YYYY).' });
+                items.push({ type: 'warn', title: '🟡 Стр. 4, Часть A.III, Пункт 4 — Работа за последние 5 лет', text: 'Сведения о местах работы за последние 5 лет (работодатель, должность, даты MM/YYYY) не найдены. Уточните у клиента.' });
             }
+
+            const fam = ai.family || {};
+            if (!cleanVal(fam.motherName) || !cleanVal(fam.fatherName)) {
+                items.push({ type: 'critical', title: '🔴 Стр. 4, Часть A.III, Пункт 5 — ФИО Родителей (Мать и Отец)', text: 'Имена родителей не найдены. Выберите Свидетельство о рождении клиента (Birth Certificate) в папке 01. Identity и нажмите Scan.' });
+            } else if (!cleanVal(fam.motherLocation) || !cleanVal(fam.fatherLocation)) {
+                items.push({ type: 'warn', title: '🟡 Стр. 4, Часть A.III, Пункт 5 — Где сейчас находятся родители', text: `Имена родителей (Мать: ${fam.motherName || '?'}, Отец: ${fam.fatherName || '?'}) внесены. Уточните у клиента: живы ли они и их текущий город/страну проживания (Current Location).` });
+            }
+            if (!Array.isArray(fam.siblings) || fam.siblings.length === 0) {
+                items.push({ type: 'warn', title: '🟡 Стр. 4, Часть A.III, Пункт 5 — Родные братья и сестры (Siblings)', text: 'Уточните со слов клиента наличие родных братьев/сестер: их полные ФИО, страну рождения и где они живут сейчас.' });
+            }
+
+            // СТРАНИЦЫ 5–8 (Мотив преследования из Декларации — Part B и Part C)
             if (!cleanVal(ai.asylum?.harmSummary)) {
-                items.push({ type: 'critical', title: '🔴 Part B (Pages 5-6) — Asylum Declaration / Persecution', text: 'Декларация клиента (Personal Statement) не была отсканирована. Выберите файл Декларации и нажмите Scan, чтобы ИИ заполнил мотив преследования в Part B и Part C.' });
+                items.push({ type: 'critical', title: '🔴 Стр. 5–6, Часть B — Мотив преследования (Декларация клиента)', text: 'Декларация клиента (Sarik Sevada Full Version.docx / Affidavit) еще не отсканирована! Выберите файл Декларации в папке 02. Evidence of Persecution и нажмите Scan, чтобы ИИ заполнил ответы и поставил галочки Yes в Части B.' });
+            }
+            if (!cleanVal(ai.asylum?.otherCountriesSummary)) {
+                items.push({ type: 'warn', title: '🟡 Стр. 7, Часть C, Пункт 2A/2B — Транзитные страны (Travel History)', text: 'Уточните у клиента: через какие страны он проезжал по пути в США, сколько дней там находился и в каком статусе (например, транзит/турист).' });
             }
         } else if (formCode === 'MC 223') {
             if (!Array.isArray(ai.diagnoses) || ai.diagnoses.length === 0) {
-                items.push({ type: 'critical', title: '🔴 Item 6 — Medical Problems / Diagnoses', text: 'Диагнозы еще не загружены. Выберите медицинские выписки клиента в папке 02. Medical и нажмите Scan.' });
+                items.push({ type: 'critical', title: '🔴 Стр. 1, Пункт 6 — Диагнозы (Medical Problems)', text: 'Диагнозы не найдены. Выберите медицинские выписки клиента и нажмите Scan.' });
             }
             if (!Array.isArray(ai.clinics) || ai.clinics.length === 0) {
-                items.push({ type: 'warn', title: '🟡 Item 7-9 — Clinics & Doctors', text: 'Не найдены клиники или врачи за последние 12 месяцев.' });
+                items.push({ type: 'warn', title: '🟡 Стр. 2–3, Пункты 7–9 — Клиники и Врачи', text: 'Не найдены сведения о клиниках и врачах за последние 12 месяцев.' });
             }
             if (!cleanVal(ai.educationDate)) {
-                items.push({ type: 'warn', title: '🟡 Item 15b (Page 4) — School Completion Date', text: 'Уточните у клиента месяц и год окончания школы/вуза (MM/YYYY).' });
+                items.push({ type: 'warn', title: '🟡 Стр. 4, Пункт 15b — Дата окончания школы', text: 'Уточните у клиента месяц и год окончания школы (MM/YYYY).' });
             }
-        }
-
-        if (Array.isArray(ai.aiFeedback)) {
-            ai.aiFeedback.forEach(note => {
-                if (note && String(note).trim().length > 4) {
-                    items.push({ type: 'warn', title: '🧠 Gemini AI Note', text: String(note).trim() });
-                }
-            });
         }
 
         if (items.length === 0) {
             items.push({
                 type: 'ok',
-                title: '🟢 All Key Sections Populated',
-                text: 'Все основные разделы формы успешно заполнены из документов клиента! Проверьте даты и подписи перед скачиванием.'
+                title: '🟢 Все разделы успешно заполнены!',
+                text: 'Все основные разделы и галочки формы заполнены на основе документов и декларации клиента.'
             });
         }
 
@@ -2128,7 +2142,7 @@
             performed: 'Yes', name: otherCl.clinicName, address: otherCl.address, city: otherCl.city, state: otherCl.state || 'CA', zip: otherCl.zip, date: (otherCl.lastSeen || otherCl.firstSeen || '').replace(/^(\d{2})\/\d{2}\/(\d{4})$/, '$1/$2')
         } : { performed: 'No' });
 
-        // 2. ДАННЫЕ ДЛЯ FORM I-589 (ВСЕ 12 СТРАНИЦ!)
+        // 2. ДАННЫЕ ДЛЯ FORM I-589
         let streetOnly = d.street;
         let aptOnly = d.apt || '';
         const aptMatch = streetOnly.match(/^(.*?),\s*(?:Apt|Suite|Ste|Unit|#)\s*([A-Za-z0-9\-]+)$/i);
@@ -2159,6 +2173,15 @@
         const emp2 = ai.employment5Years?.[2] || {};
 
         const fam = ai.family || {};
+        // Дополнительная защита от перепутывания мужского и женского имени в полях Mother / Father!
+        let motherNameClean = cleanVal(fam.motherName);
+        let fatherNameClean = cleanVal(fam.fatherName);
+        if (motherNameClean && fatherNameClean && /^(zhirayr|taron|armen|karen|artak|gevorg|hayk|samvel|gagik|ashot|vigen|levon|ruben|artur|hovhannes|sargis|grigor|hakob|harutyun|tigran|david|vahan|vahe|aram)\b/i.test(motherNameClean) && /^(shoghik|anahit|gohar|mariam|susanna|karine|narine|gayane|hasmik|lusine|naira|varduhi|emma|elena|anna|lilit|rima|seda|sona)\b/i.test(fatherNameClean)) {
+            const temp = motherNameClean;
+            motherNameClean = fatherNameClean;
+            fatherNameClean = temp;
+        }
+
         const sib0 = fam.siblings?.[0] || {};
         const sib1 = fam.siblings?.[1] || {};
         const sib2 = fam.siblings?.[2] || {};
@@ -2270,11 +2293,11 @@
             "form1[0].#subform[4].TextField13[0]": cleanVal(lastAddr.street),
             "form1[0].#subform[4].TextField13[2]": cleanVal(lastAddr.city),
             "form1[0].#subform[4].TextField13[4]": cleanVal(lastAddr.departmentState),
-            "form1[0].#subform[4].TextField13[6]": cleanVal(lastAddr.country) || cleanVal(ai.nationality),
+            "form1[0].#subform[4].TextField13[6]": cleanVal(lastAddr.country) || (cleanVal(lastAddr.street) ? cleanVal(ai.nationality) : ""),
             "form1[0].#subform[4].DateTimeField21[0]": cleanVal(lastAddr.dateFrom),
             "form1[0].#subform[4].DateTimeField20[0]": cleanVal(lastAddr.dateTo),
 
-            // Residences last 5 years (Line 2)
+            // Residences last 5 years (Line 2 — all 5 rows)
             "form1[0].#subform[4].TextField13[8]": cleanVal(res0.street),
             "form1[0].#subform[4].TextField13[10]": cleanVal(res0.city),
             "form1[0].#subform[4].TextField13[12]": cleanVal(res0.state),
@@ -2296,7 +2319,21 @@
             "form1[0].#subform[4].DateTimeField28[0]": cleanVal(res2.dateFrom),
             "form1[0].#subform[4].DateTimeField29[0]": cleanVal(res2.dateTo),
 
-            // Education (Line 3)
+            "form1[0].#subform[4].TextField13[20]": cleanVal(res3.street),
+            "form1[0].#subform[4].TextField13[21]": cleanVal(res3.city),
+            "form1[0].#subform[4].TextField13[22]": cleanVal(res3.state),
+            "form1[0].#subform[4].TextField13[23]": cleanVal(res3.country),
+            "form1[0].#subform[4].DateTimeField30[0]": cleanVal(res3.dateFrom),
+            "form1[0].#subform[4].DateTimeField31[0]": cleanVal(res3.dateTo),
+
+            "form1[0].#subform[4].TextField13[24]": cleanVal(res4.street),
+            "form1[0].#subform[4].TextField13[25]": cleanVal(res4.city),
+            "form1[0].#subform[4].TextField13[26]": cleanVal(res4.state),
+            "form1[0].#subform[4].TextField13[27]": cleanVal(res4.country),
+            "form1[0].#subform[4].DateTimeField32[0]": cleanVal(res4.dateFrom),
+            "form1[0].#subform[4].DateTimeField33[0]": cleanVal(res4.dateTo),
+
+            // Education (Line 3 — all 4 rows)
             "form1[0].#subform[4].TextField13[28]": cleanVal(edu0.schoolName),
             "form1[0].#subform[4].TextField13[30]": cleanVal(edu0.schoolType),
             "form1[0].#subform[4].TextField13[32]": cleanVal(edu0.location),
@@ -2308,6 +2345,18 @@
             "form1[0].#subform[4].TextField13[33]": cleanVal(edu1.location),
             "form1[0].#subform[4].DateTimeField38[0]": cleanVal(edu1.dateFrom),
             "form1[0].#subform[4].DateTimeField39[0]": cleanVal(edu1.dateTo),
+
+            "form1[0].#subform[4].TextField13[34]": cleanVal(edu2.schoolName),
+            "form1[0].#subform[4].TextField13[35]": cleanVal(edu2.schoolType),
+            "form1[0].#subform[4].TextField13[36]": cleanVal(edu2.location),
+            "form1[0].#subform[4].DateTimeField37[0]": cleanVal(edu2.dateFrom),
+            "form1[0].#subform[4].DateTimeField36[0]": cleanVal(edu2.dateTo),
+
+            "form1[0].#subform[4].TextField13[37]": cleanVal(edu3.schoolName),
+            "form1[0].#subform[4].TextField13[38]": cleanVal(edu3.schoolType),
+            "form1[0].#subform[4].TextField13[39]": cleanVal(edu3.location),
+            "form1[0].#subform[4].DateTimeField34[0]": cleanVal(edu3.dateFrom),
+            "form1[0].#subform[4].DateTimeField35[0]": cleanVal(edu3.dateTo),
 
             // Employment last 5 years (Line 4)
             "form1[0].#subform[4].TextField13[40]": cleanVal(emp0.employerAndAddress),
@@ -2325,12 +2374,12 @@
             "form1[0].#subform[4].DateTimeField46[0]": cleanVal(emp2.dateFrom),
             "form1[0].#subform[4].DateTimeField47[0]": cleanVal(emp2.dateTo),
 
-            // Mother, Father & Siblings (Line 5 — from Birth Certificate!)
-            "form1[0].#subform[4].TextField13[46]": cleanVal(fam.motherName),
+            // Mother, Father & Siblings (Line 5 — Mother is row 1, Father is row 2!)
+            "form1[0].#subform[4].TextField13[46]": motherNameClean,
             "form1[0].#subform[4].TextField13[49]": cleanVal(fam.motherBirthPlace),
             "form1[0].#subform[4].TextField35[0]": cleanVal(fam.motherLocation),
 
-            "form1[0].#subform[4].TextField13[47]": cleanVal(fam.fatherName),
+            "form1[0].#subform[4].TextField13[47]": fatherNameClean,
             "form1[0].#subform[4].TextField13[50]": cleanVal(fam.fatherBirthPlace),
             "form1[0].#subform[4].TextField35[1]": cleanVal(fam.fatherLocation),
 
@@ -2646,7 +2695,7 @@
 
             try {
                 // =========================================================
-                // 1. ТОЧНОЕ АВТОЗАПОЛНЕНИЕ FORM I-589 (ВСЕ 12 СТРАНИЦ!)
+                // 1. ТОЧНОЕ АВТОЗАПОЛНЕНИЕ FORM I-589 (С КООРДИНАТНОЙ ЗАЩИТОЙ ГАЛОЧЕК!)
                 // =========================================================
                 if (isI589) {
                     if (typeof field.setText === 'function') {
@@ -2655,6 +2704,8 @@
                             if (val !== null && val !== undefined && String(val).trim() !== '') {
                                 field.setText(String(val));
                                 filledCount++;
+                            } else {
+                                field.setText('');
                             }
                         }
                     }
@@ -2667,6 +2718,10 @@
                     const hasSpouse = Boolean(cleanVal(sp.lastName) || cleanVal(sp.firstName) || mStat.includes('marr'));
                     const hasChildren = Array.isArray(ai.children) && ai.children.length > 0 && Boolean(cleanVal(ch1.firstName));
                     const groundsArr = Array.isArray(asy.grounds) ? asy.grounds.map(g => String(g).toLowerCase()) : [];
+
+                    // В I-589 на страницах 5-8: левый чекбокс (xPct < 16) = ВСЕГДА "No", правый чекбокс (xPct >= 16) = ВСЕГДА "Yes"!
+                    const isLeftNoBox = (xPct < 16);
+                    const isRightYesBox = (xPct >= 16);
 
                     // Пол и Семейное положение (Страница 1)
                     if (rawName === 'form1[0].#subform[0].PartALine9Sex[0]' && isMale) {
@@ -2682,10 +2737,8 @@
                     } else if (rawName === 'form1[0].#subform[0].Marital[3]' && mStat.includes('widow')) {
                         if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
                     } else if (rawName === 'form1[0].#subform[0].CheckBox31[0]') {
-                        // Also apply for Withholding under Torture Convention
                         if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
                     } else if (rawName === 'form1[0].#subform[0].CheckBox3[2]' && (!ai.immigrationCourtStatus || /never/i.test(ai.immigrationCourtStatus))) {
-                        // Line 18a: I have never been in Immigration Court proceedings
                         if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
                     } else if (rawName === 'form1[0].#subform[0].CheckBox3[0]' && /now/i.test(ai.immigrationCourtStatus || '')) {
                         if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
@@ -2723,45 +2776,87 @@
                         if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
                     }
 
-                    // Страницы 5-8 — Галочки Part B & Part C (ставятся только после AI Scan декларации!)
-                    if (!hasAiScanRun && !asy.harmSummary) return;
+                    if (!hasAiScanRun && !cleanVal(asy.harmSummary)) return;
 
-                    if (rawName === 'form1[0].#subform[5].#subform[6].CheckBoxrace[0]' && groundsArr.some(g => g.includes('race'))) {
+                    // Страницы 5-8 — Галочки Part B & Part C (выбираются СТРОГО по координате: правый xPct>=16 это Yes, левый xPct<16 это No!)
+                    const hasHarmYes = isYes(asy.experiencedHarm) || Boolean(cleanVal(asy.harmSummary));
+                    const hasFearYes = isYes(asy.fearReturn) || Boolean(cleanVal(asy.fearSummary)) || hasHarmYes;
+                    const hasArrestYes = isYes(asy.arrestedAbroad) || Boolean(cleanVal(asy.arrestSummary));
+                    const hasOrgYes = isYes(asy.orgMember) || Boolean(cleanVal(asy.orgSummary));
+                    const hasContOrgYes = isYes(asy.continueOrg) || Boolean(cleanVal(asy.continueOrgSummary));
+                    const hasTortureYes = isYes(asy.fearTorture) || Boolean(cleanVal(asy.tortureSummary)) || hasFearYes;
+                    const hasPriorAsylumYes = isYes(asy.priorAsylumApp) || Boolean(cleanVal(asy.priorAsylumSummary));
+                    const hasTravelYes = isYes(asy.traveledOtherCountries) || Boolean(cleanVal(asy.otherCountriesSummary));
+                    const hasLawfulOtherYes = isYes(asy.lawfulStatusOtherCountry);
+                    const hasCausedHarmYes = isYes(asy.causedHarm);
+                    const hasReturnedYes = isYes(asy.returnedToHomeCountry) || Boolean(cleanVal(asy.returnedSummary));
+                    const hasOneYearYes = isYes(asy.filedAfterOneYear) || Boolean(cleanVal(asy.oneYearReason));
+                    const hasUsCrimesYes = isYes(asy.usCrimes);
+
+                    if (rawName.includes('CheckBoxrace') && groundsArr.some(g => g.includes('race'))) {
                         if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === 'form1[0].#subform[5].#subform[6].CheckBoxreligion[0]' && groundsArr.some(g => g.includes('relig'))) {
+                    } else if (rawName.includes('CheckBoxreligion') && groundsArr.some(g => g.includes('relig'))) {
                         if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === 'form1[0].#subform[5].#subform[6].CheckBoxnationality[0]' && groundsArr.some(g => g.includes('nation'))) {
+                    } else if (rawName.includes('CheckBoxnationality') && groundsArr.some(g => g.includes('nation'))) {
                         if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === 'form1[0].#subform[5].#subform[6].CheckBoxpolitics[0]' && (groundsArr.some(g => g.includes('polit')) || cleanVal(asy.harmSummary))) {
+                    } else if (rawName.includes('CheckBoxpolitics') && (groundsArr.some(g => g.includes('polit')) || hasHarmYes)) {
                         if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === 'form1[0].#subform[5].#subform[6].CheckBoxsocial[0]' && groundsArr.some(g => g.includes('social') || g.includes('group'))) {
+                    } else if (rawName.includes('CheckBoxsocial') && groundsArr.some(g => g.includes('social') || g.includes('group'))) {
                         if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === 'form1[0].#subform[5].#subform[6].CheckBoxtorture[0]' && (groundsArr.some(g => g.includes('tortur')) || isYes(asy.fearTorture))) {
+                    } else if (rawName.includes('CheckBoxtorture') && (groundsArr.some(g => g.includes('tortur')) || hasTortureYes)) {
                         if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === 'form1[0].#subform[5].#subform[6].ckboxyn1a[1]' && (isYes(asy.experiencedHarm) || cleanVal(asy.harmSummary))) {
-                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === 'form1[0].#subform[5].#subform[6].ckboxyn1a[0]' && isNo(asy.experiencedHarm) && !cleanVal(asy.harmSummary)) {
-                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === 'form1[0].#subform[5].#subform[6].ckboxyn1b[1]' && (isYes(asy.fearReturn) || cleanVal(asy.fearSummary))) {
-                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === 'form1[0].#subform[7].ckboxyn2[1]' && (isYes(asy.arrestedAbroad) || cleanVal(asy.arrestSummary))) {
-                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === 'form1[0].#subform[7].ckboxyn2[0]' && isNo(asy.arrestedAbroad) && !cleanVal(asy.arrestSummary)) {
-                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === 'form1[0].#subform[7].ckboxyn3a[1]' && (isYes(asy.orgMember) || cleanVal(asy.orgSummary))) {
-                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === 'form1[0].#subform[7].ckboxyn3a[0]' && isNo(asy.orgMember) && !cleanVal(asy.orgSummary)) {
-                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === 'form1[0].#subform[7].ckboxyn4[1]' && (isYes(asy.fearTorture) || cleanVal(asy.tortureSummary))) {
-                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === 'form1[0].#subform[7].ckboxyn4[0]' && isNo(asy.fearTorture) && !cleanVal(asy.tortureSummary)) {
-                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === 'form1[0].#subform[8].ckboxync1[0]' && !isYes(asy.priorAsylumApp)) {
-                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === 'form1[0].#subform[8].ckboxync3[0]') {
-                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
-                    } else if (rawName === 'form1[0].#subform[9].ckboxync6[0]') {
-                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName.includes('ckboxyn1a')) {
+                        if ((hasHarmYes && isRightYesBox) || (!hasHarmYes && isLeftNoBox)) {
+                            if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                        }
+                    } else if (rawName.includes('ckboxyn1b')) {
+                        if ((hasFearYes && isRightYesBox) || (!hasFearYes && isLeftNoBox)) {
+                            if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                        }
+                    } else if (rawName.includes('ckboxyn2')) {
+                        if ((hasArrestYes && isRightYesBox) || (!hasArrestYes && isLeftNoBox)) {
+                            if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                        }
+                    } else if (rawName.includes('ckboxyn3a')) {
+                        if ((hasOrgYes && isRightYesBox) || (!hasOrgYes && isLeftNoBox)) {
+                            if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                        }
+                    } else if (rawName.includes('ckboxyn3b')) {
+                        if ((hasContOrgYes && isRightYesBox) || (!hasContOrgYes && isLeftNoBox)) {
+                            if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                        }
+                    } else if (rawName.includes('ckboxyn4')) {
+                        if ((hasTortureYes && isRightYesBox) || (!hasTortureYes && isLeftNoBox)) {
+                            if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                        }
+                    } else if (rawName.includes('ckboxync1')) {
+                        if ((hasPriorAsylumYes && isRightYesBox) || (!hasPriorAsylumYes && isLeftNoBox)) {
+                            if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                        }
+                    } else if (rawName.includes('ckboxync2a')) {
+                        if ((hasTravelYes && isRightYesBox) || (!hasTravelYes && isLeftNoBox)) {
+                            if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                        }
+                    } else if (rawName.includes('ckboxync2b')) {
+                        if ((hasLawfulOtherYes && isRightYesBox) || (!hasLawfulOtherYes && isLeftNoBox)) {
+                            if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                        }
+                    } else if (rawName.includes('ckboxync3')) {
+                        if ((hasCausedHarmYes && isRightYesBox) || (!hasCausedHarmYes && isLeftNoBox)) {
+                            if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                        }
+                    } else if (rawName.includes('PCckboxyn4')) {
+                        if ((hasReturnedYes && isRightYesBox) || (!hasReturnedYes && isLeftNoBox)) {
+                            if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                        }
+                    } else if (rawName.includes('ckboxync5')) {
+                        if ((hasOneYearYes && isRightYesBox) || (!hasOneYearYes && isLeftNoBox)) {
+                            if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                        }
+                    } else if (rawName.includes('ckboxync6')) {
+                        if ((hasUsCrimesYes && isRightYesBox) || (!hasUsCrimesYes && isLeftNoBox)) {
+                            if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                        }
                     }
                     return;
                 }
@@ -2920,7 +3015,7 @@
         return { totalFields: fields.length, filledCount };
     }
 
-    async function openEditor(formCode) {
+    async function openEditor(formCode, forceRefill = false) {
         currentOpenedFormCode = formCode;
         document.getElementById('modalFormName').innerText = formCode;
         document.getElementById('pdfModal').style.display = 'flex';
@@ -2929,6 +3024,17 @@
         const loader = document.getElementById('pdfLoader');
         const iframe = document.getElementById('pdfIframe');
         const statsBadge = document.getElementById('fillStatsBadge');
+
+        const cacheKey = `${currentClient ? currentClient.id : 'anon'}_${formCode}_${clientMemoryStore.aiScanned ? 'scanned' : 'init'}`;
+
+        // Если форма уже была заполнена для этого клиента — открываем сохраненную копию без повторного перезаполнения!
+        if (!forceRefill && generatedPdfBlobCache[cacheKey]) {
+            loader.style.display = 'none';
+            iframe.src = generatedPdfBlobCache[cacheKey].blobUrl;
+            statsBadge.textContent = `✓ Saved Form Ready (${generatedPdfBlobCache[cacheKey].filledCount} fields)`;
+            buildAndRenderAiAuditReport(formCode, collectClientDossierForPdf());
+            return;
+        }
         
         loader.style.display = 'flex';
         loader.innerHTML = `<div>⏳ Автозаполнение формы <b>${formCode}</b>...</div>`;
@@ -2990,6 +3096,11 @@
 
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
             const blobUrl = URL.createObjectURL(blob);
+
+            generatedPdfBlobCache[cacheKey] = {
+                blobUrl: blobUrl,
+                filledCount: stats.filledCount
+            };
             
             iframe.src = blobUrl;
             loader.style.display = 'none';
@@ -3002,11 +3113,6 @@
 
     function closeEditor() {
         document.getElementById('pdfModal').style.display = 'none';
-        const iframe = document.getElementById('pdfIframe');
-        if (iframe.src && iframe.src.startsWith('blob:')) {
-            URL.revokeObjectURL(iframe.src);
-        }
-        iframe.src = ""; 
     }
 
     function downloadPDF() {
