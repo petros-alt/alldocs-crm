@@ -18,8 +18,9 @@ export default async function handler(req, res) {
     const apiKey = process.env.DOCKETWISE_CLIENT_SECRET || process.env.DOCKETWISE_CLIENT_ID;
     const geminiKey = process.env.GEMINI_API_KEY;
 
-    const DW_CSRF_TOKEN = process.env.DOCKETWISE_CSRF_TOKEN || "hPvfgqHTOcjZGfr3rB46I8l0h2G_U0_zPe__5rzApxK3WPWk3gEbhd1ugBcqgwt4Q04FxNFtAc88LcNfIGRuyA";
-    const DW_COOKIE = process.env.DOCKETWISE_COOKIE || "__stripe_mid=7a09a5c6-21ec-4d21-886d-c0bf6cc90d9760274d; intercom-device-id-q07v75s8=345a6aa1-5a77-4f02-afd1-47df40c5c1cd; browser.timezone=America/Los_Angeles; browser_id=a6350fa1-3722-4eac-9f81-3a34c6aa9572; _borderwise_session=8f901a47ce2fe3fc9898508ebf9b6160; per_page=50; __stripe_sid=2cd489e7-9fc4-435a-bf3e-1632e9209388ae3582; intercom-session-q07v75s8=azZPUnozMXp3VkJ2Q3RCaFRaSTZFWXFreWc1Q0FnZ0dGMkU3UTNkcEVJVjhDc3BSOXdOdXUvc05ONWZrenROczBiMTVXOWlYeEhId1hGcnNsQXdHR2F3ZlJoZ3ZWQzlqZUM0cEtEZHM5MXBWaGdvdGpiYnZtV05pdDI1Nms5dXJ4ZjZOUnNuMlpKdlZBUFZMY1pIaUQ3OEJkMitZQytxYkxqR3VqY3VqNm45d2wrOUx5eDBVN2ZRaTA3RGl2RnF3dFc0STlPZUxsOStXYnIwN3VGZDY1blp1Nkc2MGtkQnR2ODc1WDN2ek5xQStXY2E3Y09IV2J3bTFadXc5YmNuWDlpNXc3L3p6WlFwcTRkODZFUlpHTzgrcUlaNHBBSDhDNXFWU1MrbHNBbUdvVHVvM1ozb0tmd2dqV3YtLTVRTnlyWTVwb3lQbnpZakN5Yjh5SWc9PQ==--1000f00116b54aac3dc7cd422ad3bc993cea116d";
+    // Свежие токены из вашей активной сессии Docketwise
+    const DW_CSRF_TOKEN = process.env.DOCKETWISE_CSRF_TOKEN || "8BNcjQ7ckoI2oPKCgzHgHFNZhCJ_LCKRY0a_xZ5UlXTMynTDvIcxZujXwKxSRkTh8so-Nhfvk4hXxrYhPaESZQ";
+    const DW_COOKIE = process.env.DOCKETWISE_COOKIE || "__stripe_mid=7a09a5c6-21ec-4d21-886d-c0bf6cc90d9760274d; intercom-device-id-q07v75s8=345a6aa1-5a77-4f02-afd1-47df40c5c1cd; browser.timezone=America/Los_Angeles; browser_id=a6350fa1-3722-4eac-9f81-3a34c6aa9572; __stripe_sid=db75ef5c-3bed-481d-9646-b4fa6b7120d7837c9b; _borderwise_session=3cd68d33a3298f02414dfeed80b24a7e; intercom-session-q07v75s8=Y2wyUktEcHdjME4xL3RlSUp5U0p5M1owRy9YV2lIYThVWnBBd0dwbDBlQTZIekhJTU8yeFpXbGtyOE1XZ2lrcjRiRnowR01QdHYxZ1NLY2d2amY4RnRGSWNmSmNnTFR0MktyaDBwWm4xTURoM2RaOGQ5QjZBS2FaYXhjTG1UZTVRMW1IZXVyY1pIWEJjWnJTejZzK0d5eHp2NS9BazNiM1lUWFZjMzBvOUQzVTViRnlOS2hQaXFCWkNoSVhucmRZaHlzSjlEYUcrYTVTQjFjT3VPL3pydm5RS1VVdXFTdlRSSno2VDhtckRRZ1FrUzRtVERET0JjWEpxQWZVdlAvVm5tYWI4VkptQytTOXg0eldiY2ErVGZRWDJQc0R1MU8wT002a24xMGhIZHBRc3ZobDJNMVo4N0NoRkVKWGtqZ2wtLTZseUd5YUl4aldKQWt6M2oyVnYycFE9PQ==--9c23d3dc99d36c1984ef5b20403ef28fd3ce561c";
 
     async function fetchWithTimeout(url, options = {}, timeoutMs = 11000) {
         const controller = new AbortController();
@@ -100,23 +101,24 @@ export default async function handler(req, res) {
         const folders = [];
         const files = [];
 
-        const unescaped = rawText
+        const unescaped = String(rawText || '')
             .replace(/\\"/g, '"')
             .replace(/\\'/g, "'")
             .replace(/\\n/g, '\n')
             .replace(/\\t/g, ' ')
-            .replace(/\\\//g, '/');
+            .replace(/\\\//g, '/')
+            .replace(/&amp;/g, '&');
 
-        const folderRegex = /href=["']([^"']*folder_id=(\d+)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
+        const folderRegex1 = /href=["']([^"']*folder_id=(\d+)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
         let fMatch;
-        while ((fMatch = folderRegex.exec(unescaped)) !== null) {
+        while ((fMatch = folderRegex1.exec(unescaped)) !== null) {
             const href = fMatch[1];
             const folderId = fMatch[2];
-            const mIdMatch = href.match(/matter_id=(\d+)/i);
+            const mIdMatch = href.match(/matter_id=(\d+)/i) || href.match(/matters\/(\d+)/i);
             const mId = mIdMatch ? mIdMatch[1] : defaultMatterId;
-            const title = fMatch[3].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+            const title = fMatch[3].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 
-            if (title && title.length > 1 && !folders.some(x => String(x.folderId) === String(folderId))) {
+            if (title && title.length > 1 && !/^(delete|edit|rename|download)$/i.test(title) && !folders.some(x => String(x.folderId) === String(folderId))) {
                 folders.push({
                     folderId: folderId,
                     matterId: mId,
@@ -125,9 +127,22 @@ export default async function handler(req, res) {
             }
         }
 
+        const folderRegex2 = /href=["']([^"']*\/folders\/(\d+)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
+        while ((fMatch = folderRegex2.exec(unescaped)) !== null) {
+            const folderId = fMatch[2];
+            const title = fMatch[3].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+            if (title && title.length > 1 && !/^(delete|edit|rename|download)$/i.test(title) && !folders.some(x => String(x.folderId) === String(folderId))) {
+                folders.push({
+                    folderId: folderId,
+                    matterId: defaultMatterId,
+                    name: title
+                });
+            }
+        }
+
         const rowBlocks = unescaped.split(/<tr/i);
         rowBlocks.forEach(tr => {
-            if (tr.includes('folder_id=')) return;
+            if (/folder_id=\d+/i.test(tr) && !/\/documents\/\d+\/download/i.test(tr)) return;
 
             const idMatch =
                 tr.match(/\/(?:documents|files|attachments)\/(\d+)/i) ||
@@ -137,6 +152,7 @@ export default async function handler(req, res) {
 
             if (!idMatch) return;
             const docId = idMatch[1];
+            if (folders.some(fld => String(fld.folderId) === String(docId))) return;
             if (files.some(x => String(x.id) === String(docId))) return;
 
             const dlMatch = tr.match(/href=["']([^"']*(?:download|amazonaws\.com|active_storage|\/documents\/\d+)[^"']*)["']/i);
@@ -144,12 +160,12 @@ export default async function handler(req, res) {
                 ? (dlMatch[1].startsWith('http') ? dlMatch[1] : `https://app.docketwise.com${dlMatch[1]}`)
                 : `https://app.docketwise.com/documents/${docId}`;
 
-            const allCells = [...tr.matchAll(/<(?:td|th)[^>]*>([\s\S]*?)<\/(?:td|th)>/gi)]
+            const allCells = [...tr.matchAll(/<(?:td|th|a|span|div)[^>]*>([\s\S]*?)<\/(?:td|th|a|span|div)>/gi)]
                 .map(m => m[1].replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim())
                 .filter(Boolean);
 
             let bestFileName = '';
-            const extCell = allCells.find(c => /\.(jpeg|jpg|pdf|png|doc|docx|heic)$/i.test(c));
+            const extCell = allCells.find(c => /\.(jpeg|jpg|pdf|png|doc|docx|heic|txt|rtf|webp)$/i.test(c));
             if (extCell) {
                 bestFileName = extCell;
             } else {
@@ -158,7 +174,7 @@ export default async function handler(req, res) {
                     !/^\d+(\.\d+)?(\s*(mb|kb|bytes))?$/i.test(c) &&
                     !/^\d{2}\/\d{2}\/\d{2,4}$/.test(c) &&
                     !c.includes('@') &&
-                    !/^(delete|edit|download|view|actions|name|size)$/i.test(c)
+                    !/^(delete|edit|download|view|actions|name|size|active|--)$/i.test(c)
                 );
                 if (textCell) bestFileName = textCell;
             }
@@ -177,22 +193,22 @@ export default async function handler(req, res) {
 
     function classifyClientFile(fileName = '', folderName = '') {
         const lower = (fileName + ' ' + folderName).toLowerCase();
-        if (/(zelle|receipt|invoice|payment|retainer|contract|08\.\s*firm)/i.test(lower)) {
+        if (/(zelle|receipt|invoice|payment|retainer|contract|06\.\s*firm|08\.\s*firm)/i.test(lower)) {
             return { category: 'ignore', badge: '💸 Contract/Fee', priority: 10, autoSelect: false };
         }
-        if (/(01\.|personal|identification|driver|license|dl|passport|birth|marriage|ssn|social|id_card|state_id|green_card|greencard|permanent resident|naturalization|medi-cal|bic|i-94|i94|visa)/i.test(lower)) {
-            return { category: 'identity', badge: '🪪 01. Personal/Civil ID', priority: 100, autoSelect: true };
+        if (/(01\.|personal|identification|identity|status|driver|license|dl|passport|birth|marriage|ssn|social|id_card|state_id|green_card|greencard|permanent resident|naturalization|medi-cal|bic|i-94|i94|visa)/i.test(lower)) {
+            return { category: 'identity', badge: '🪪 01. Identity/Status', priority: 100, autoSelect: true };
         }
-        if (/(02\.|589|asylum|declaration|statement|story|persecution|mc_223|mc223|mc 223|soc|873|804|814|453|839|medical|doctor|dr\.|clinic|hospital|meds|medication|rx|diagnosis|visit|summary|noa|ssi|capi|disability|pharmacy|discharge|lab|quest)/i.test(lower)) {
-            return { category: 'medical_form', badge: '🩺 02. Case/Medical/Decl', priority: 95, autoSelect: true };
+        if (/(02\.|589|asylum|declaration|statement|story|persecution|evidence|mc_223|mc223|mc 223|soc|873|804|814|453|839|medical|doctor|dr\.|clinic|hospital|meds|medication|rx|diagnosis|visit|summary|noa|ssi|capi|disability|pharmacy|discharge|lab|quest)/i.test(lower)) {
+            return { category: 'medical_form', badge: '🩺 02. Case/Evidence/Med', priority: 95, autoSelect: true };
         }
-        if (/(04\.|education|work|job|employment|school|diploma)/i.test(lower)) {
-            return { category: 'work_edu', badge: '🏫 04. Edu/Work', priority: 85, autoSelect: true };
+        if (/(03\.|04\.|education|work|job|employment|school|diploma|court|eoir|ice|filing|history|travel)/i.test(lower)) {
+            return { category: 'work_edu', badge: '🏫 03-04. Court/Work/Edu', priority: 85, autoSelect: true };
         }
-        if (/(05\.|financial|living|bank|lease|rent|utility|expense)/i.test(lower)) {
-            return { category: 'financial', badge: '💰 05. Financials', priority: 80, autoSelect: false };
+        if (/(05\.|financial|living|bank|lease|rent|utility|expense|final|packet)/i.test(lower)) {
+            return { category: 'financial', badge: '📂 05. Packet/Docs', priority: 80, autoSelect: true };
         }
-        return { category: 'other', badge: '📄 Document', priority: 50, autoSelect: true };
+        return { category: 'other', badge: '📄 Document', priority: 60, autoSelect: true };
     }
 
     async function downloadValidFileFromDocketwise(docId, customUrl, matterId, clientId) {
@@ -211,7 +227,7 @@ export default async function handler(req, res) {
                         "Referer": matterId ? `https://app.docketwise.com/en/matters/${matterId}` : `https://app.docketwise.com/en/contacts/${clientId || ''}`
                     },
                     redirect: 'follow'
-                }, 5000);
+                }, 5500);
 
                 if (!fRes.ok) continue;
 
@@ -234,7 +250,7 @@ export default async function handler(req, res) {
                     const fullS3Url = rawS3Url.startsWith('http') ? rawS3Url : `https://app.docketwise.com${rawS3Url}`;
                     const s3Res = await fetchWithTimeout(fullS3Url, {
                         headers: rawS3Url.startsWith('http') ? {} : { "cookie": DW_COOKIE }
-                    }, 5000);
+                    }, 5500);
                     if (s3Res.ok) {
                         const s3Buf = Buffer.from(await s3Res.arrayBuffer());
                         const s3Mime = detectRealMimeType(s3Buf);
@@ -260,13 +276,18 @@ export default async function handler(req, res) {
                 });
             }
 
-            const { clientId, matterId = '', fileIds = [], fileUrls = [], uploadedFiles = [], clientName = '' } = req.body || {};
+            const { clientId, matterId = '', fileIds = [], fileUrls = [], uploadedFiles = [], clientName = '', extraNotes = '' } = req.body || {};
             const inlineParts = [];
             let textContext = `Target Client Full Name: ${clientName}\nIMPORTANT: Extract data ONLY for ${clientName} (and their spouse/children/parents where applicable for I-589)!\n`;
+            if (extraNotes) {
+                textContext += `\nClient Questionnaire / Additional Notes:\n${extraNotes}\n`;
+            }
 
             if (Array.isArray(uploadedFiles)) {
                 uploadedFiles.slice(0, 3).forEach(uf => {
-                    if (uf.base64) {
+                    if (uf.textContent) {
+                        textContext += `\nAttached Document (${uf.name || 'Text'}):\n${uf.textContent}\n`;
+                    } else if (uf.base64) {
                         const rawBuf = Buffer.from(uf.base64, 'base64');
                         const realMime = detectRealMimeType(rawBuf) || uf.mimeType || 'image/jpeg';
                         inlineParts.push({
@@ -291,28 +312,29 @@ export default async function handler(req, res) {
             });
 
             const systemPrompt = `You are a high-precision USCIS Form I-589 (Asylum) & California Medi-Cal/Disability (MC 223 / SOC) Legal Document Synthesizer AI.
-Analyze all attached client documents (Passports, I-94 Arrival/Departure Records, Visas, Birth Certificates with English translations, Marriage Certificates, Personal Asylum Declarations/Statements, Driver's Licenses, SSN cards, Medical Records, Pharmacy Reports, Lab Results) for client "${clientName}".
+Analyze all attached client documents (Passports, I-94 Arrival/Departure Records, Visas, Birth Certificates with English translations, Marriage Certificates, Personal Asylum Declarations/Statements, Client Questionnaires on School/University/Work/Residences/Travel History, Driver's Licenses, SSN cards, Medical Records, Pharmacy Reports, Lab Results) for client "${clientName}".
 
 CRITICAL RULES FOR I-589 & MC 223 EXTRACTION:
 1. HANDWRITING FILTER:
    - DO EXTRACT handwritten factual/medical/biographical info (medications, addresses, dates of birth, entry dates, checkmarks ☑/✓).
    - DO NOT EXTRACT signatures or signature dates from certification blocks.
 2. NO ALL-CAPS: Convert ALL-CAPS text into clean Title Case. Keep standard abbreviations uppercase (CA, USA, USCIS, B1/B2, F1, SSI, CAPI, IHSS, MD, NP, EKG, PFT, BNP, CBC, CMP, GED, eGFR).
-3. FORM I-589 SPECIFIC EXTRACTION (FROM BIRTH CERTIFICATES, MARRIAGE CERTIFICATES, PASSPORTS, I-94, AND DECLARATIONS):
-   - Birth Certificate: Extract the applicant's City/Town and Country of Birth, AND extract Mother's Full Name ("motherName", "motherBirthPlace") and Father's Full Name ("fatherName", "fatherBirthPlace") for Part A.III Item 5!
-   - Marriage Certificate & Spouse Docs: Extract "maritalStatus" ("Single", "Married", "Divorced", "Widowed"), "marriageDate" (MM/DD/YYYY), "marriagePlace" (City, Country), and full "spouse" details (lastName, firstName, middleName, dob, nationality, cityCountryBirth, gender, inUS, placeLastEntry, dateLastEntry, i94Number, lastEntryStatus, currentStatus, includeInApp).
-   - Children Docs (Birth Certificates / Passports): Extract up to 4 children into "children" array.
-   - Passport & I-94: Extract "aNumber", "uscisAccount", "nationality", "raceEthnicTribal", "religion", "nativeLanguage", "fluentEnglish" ("Yes" or "No"), "otherLanguages", "passportNumber", "passportCountry", "passportExp" (MM/DD/YYYY), "lastEntryDate" (MM/DD/YYYY), "i94Number", "lastEntryPlace" (e.g. "Los Angeles, CA" or "San Ysidro, CA"), "lastEntryStatus" (e.g. "B2", "Parole"), "statusExpDate" (MM/DD/YYYY), "leftHomeCountryDate" (MM/DD/YYYY).
+3. FORM I-589 SPECIFIC EXTRACTION (FROM BIRTH CERTIFICATES, MARRIAGE CERTIFICATES, PASSPORTS, I-94, QUESTIONNAIRES, AND DECLARATIONS):
+   - Birth Certificate: Extract the applicant's City/Town and Country of Birth ("cityCountryBirth"), AND extract Mother's Full Name ("motherName", "motherBirthPlace") and Father's Full Name ("fatherName", "fatherBirthPlace") for Part A.III Item 5!
+   - Marriage Certificate & Spouse Docs: Extract "maritalStatus" ("Single", "Married", "Divorced", "Widowed"), "marriageDate" (MM/DD/YYYY), "marriagePlace" (City, Country), and full "spouse" details.
+   - Children Docs: Extract up to 4 children into "children" array.
+   - Passport, I-94 & Travel History: Extract "aNumber", "uscisAccount", "nationality", "raceEthnicTribal", "religion", "nativeLanguage", "fluentEnglish" ("Yes" or "No"), "otherLanguages", "passportNumber", "passportCountry", "passportExp" (MM/DD/YYYY), "lastEntryDate" (MM/DD/YYYY), "i94Number", "lastEntryPlace", "lastEntryStatus" (e.g. "B2", "Parole"), "statusExpDate" (MM/DD/YYYY), "leftHomeCountryDate" (MM/DD/YYYY). If the client traveled through other countries before entering the US, set "traveledOtherCountries": "Yes" and summarize the countries, dates, and status in "otherCountriesSummary".
+   - Residences, Education (School/University), and Employment (Last 5 Years): Extract all addresses into "lastAddressBeforeUS" and "residences5Years", all schools/universities into "educationHistory", and all jobs into "employment5Years".
    - Asylum Declaration / Personal Statement (Part B & Part C):
-     * Identify asylum grounds ("asylumGrounds": array of any applicable from ["Race", "Religion", "Nationality", "Political Opinion", "Particular Social Group", "Torture Convention"]).
+     * Identify asylum grounds ("grounds": array of any applicable from ["Race", "Religion", "Nationality", "Political Opinion", "Particular Social Group", "Torture Convention"]).
      * Summarize the client's declaration into concise, factual, 3-to-4 sentence summaries (MAX 360 characters each so they fit inside the I-589 PDF boxes without overflowing!) for:
        - "harmSummary" (Part B.1.A: past mistreatment/threats, who caused it, and why)
        - "fearSummary" (Part B.1.B: why the applicant fears harm if returned)
-       - "arrestSummary" (Part B.2: any arrests, detentions, or interrogations)
-       - "orgSummary" (Part B.3.A: membership in political, religious, or social organizations)
+       - "arrestSummary" (Part B.2: any arrests, detentions, interrogations, or crimes)
+       - "orgSummary" (Part B.3.A: membership in political, religious, or social groups)
        - "tortureSummary" (Part B.4: fear of torture by government or officials)
-       - "priorReturnSummary" (Part C.1/C.2: any prior applications or travel through other countries)
-       - "oneYearReason" (Part C.5: if filing more than 1 year after arrival, explain changed/extraordinary circumstances)
+       - "otherCountriesSummary" (Part C.2.B: travel through other countries on the way to the US)
+       - "oneYearReason" (Part C.5: if filing more than 1 year after arrival)
      * Always end each summary box with: "Please see attached detailed Personal Declaration and supporting evidence."
 4. AI FEEDBACK / MISSING INFO AUDIT ("aiFeedback"):
    - List any ambiguous, missing, or unverified items that the legal specialist must clarify with the client (e.g., whether parents are deceased or their current city/country of residence, siblings' names, exact 5-year address/employment dates, or missing I-94 expiration date).
@@ -596,21 +618,21 @@ Return ONLY valid JSON matching this exact structure (leave "" if not mentioned 
 
     if (matterId || folderId) {
         try {
+            const reqHeaders = {
+                "accept": "*/*;q=0.5, text/javascript, application/javascript, application/ecmascript, application/x-ecmascript",
+                "accept-language": "en-US,en;q=0.5",
+                "x-csrf-token": DW_CSRF_TOKEN,
+                "x-requested-with": "XMLHttpRequest",
+                "cookie": DW_COOKIE,
+                "Referer": `https://app.docketwise.com/en/matters/${matterId || ''}`
+            };
+
             let targetUrl = `https://app.docketwise.com/documents?matter_id=${matterId || ''}`;
             if (folderId && folderId !== 'ALL_KEY_FOLDERS') {
                 targetUrl = `https://app.docketwise.com/documents?folder_id=${folderId}&matter_id=${matterId || ''}`;
             }
 
-            const docRes = await fetch(targetUrl, {
-                headers: {
-                    "accept": "*/*;q=0.5, text/javascript, application/javascript",
-                    "x-csrf-token": DW_CSRF_TOKEN,
-                    "x-requested-with": "XMLHttpRequest",
-                    "cookie": DW_COOKIE,
-                    "Referer": `https://app.docketwise.com/en/matters/${matterId || ''}`
-                }
-            });
-
+            const docRes = await fetch(targetUrl, { headers: reqHeaders });
             const rawText = await docRes.text();
             const parsed = parseDocketwiseDocumentsResponse(rawText, matterId);
 
@@ -620,33 +642,41 @@ Return ONLY valid JSON matching this exact structure (leave "" if not mentioned 
                 ...classifyClientFile(f.name, '')
             }));
 
+            // Заходим внутрь ВСЕХ папок дела (00, 01, 02, 03, 04, 05, кроме 06/08. Firm Contract & Fees)
             if ((!folderId || folderId === 'ALL_KEY_FOLDERS') && parsed.folders.length > 0) {
-                const keyFolders = parsed.folders.filter(fld =>
-                    /(00\.|01\.|02\.|03\.|04\.|05\.|07\.|personal|medical|upload|inbox|education|work|financial|final|packet|asylum|declaration|id)/i.test(fld.name)
-                ).slice(0, 6);
-
-                const foldersToScan = keyFolders.length > 0 ? keyFolders : parsed.folders.slice(0, 5);
+                const foldersToScan = parsed.folders.filter(fld => !/(06\.|08\.|contract|fee|invoice)/i.test(fld.name)).slice(0, 8);
 
                 const subResults = await Promise.all(foldersToScan.map(async (fld) => {
                     try {
                         const subUrl = `https://app.docketwise.com/documents?folder_id=${fld.folderId}&matter_id=${matterId}`;
-                        const subRes = await fetch(subUrl, {
-                            headers: {
-                                "accept": "*/*;q=0.5, text/javascript, application/javascript",
-                                "x-csrf-token": DW_CSRF_TOKEN,
-                                "x-requested-with": "XMLHttpRequest",
-                                "cookie": DW_COOKIE,
-                                "Referer": `https://app.docketwise.com/en/matters/${matterId}`
-                            }
-                        });
+                        const subRes = await fetch(subUrl, { headers: reqHeaders });
                         const subText = await subRes.text();
                         const subParsed = parseDocketwiseDocumentsResponse(subText, matterId);
-                        return subParsed.files.map(f => ({
+
+                        let collected = subParsed.files.map(f => ({
                             ...f,
                             folderId: fld.folderId,
                             folderName: fld.name,
                             ...classifyClientFile(f.name, fld.name)
                         }));
+
+                        // Если внутри папки есть еще вложенные подпапки — заходим и в них!
+                        if (subParsed.folders.length > 0) {
+                            const nestedArr = await Promise.all(subParsed.folders.slice(0, 4).map(async (nf) => {
+                                try {
+                                    const nfRes = await fetch(`https://app.docketwise.com/documents?folder_id=${nf.folderId}&matter_id=${matterId}`, { headers: reqHeaders });
+                                    const nfParsed = parseDocketwiseDocumentsResponse(await nfRes.text(), matterId);
+                                    return nfParsed.files.map(f => ({
+                                        ...f,
+                                        folderId: nf.folderId,
+                                        folderName: `${fld.name} / ${nf.name}`,
+                                        ...classifyClientFile(f.name, `${fld.name} ${nf.name}`)
+                                    }));
+                                } catch (e) { return []; }
+                            }));
+                            nestedArr.forEach(na => { collected = collected.concat(na); });
+                        }
+                        return collected;
                     } catch (e) {
                         return [];
                     }
@@ -665,7 +695,7 @@ Return ONLY valid JSON matching this exact structure (leave "" if not mentioned 
 
             let checkedCount = 0;
             allFiles = allFiles.map(f => {
-                if (f.autoSelect && checkedCount < 4) {
+                if (f.autoSelect && checkedCount < 6) {
                     checkedCount++;
                     return { ...f, autoSelect: true };
                 }
@@ -749,7 +779,7 @@ Return ONLY valid JSON matching this exact structure (leave "" if not mentioned 
                 const fn = firstName.toLowerCase();
                 if (/(susanna|mariam|gohar|rima|lilit|anna|anahit|karine|narine|marine|gayane|hasmik|lusine|naira|varduhi|knarik|sirarpie|eda|emma|lena|svetlana|elena|olga|tatiana|natalia|irina|armine|seda|sona|nelly|meri|ani|mane|liana)$/i.test(fn)) {
                     gender = 'Female';
-                } else if (/(petros|norayr|artak|argishti|armen|aram|karen|vahan|vahe|davtyan|david|tigran|gevorg|hayk|samvel|gagik|ashot|vigen|levon|ruben|artur|arthur|hovhannes|sargis|sevak|grigor|hakob|harutyun|yurik)$/i.test(fn)) {
+                } else if (/(petros|norayr|artak|argishti|armen|aram|karen|vahan|vahe|davtyan|david|tigran|gevorg|hayk|samvel|gagik|ashot|vigen|levon|ruben|artur|arthur|hovhannes|sargis|sevak|grigor|hakob|harutyun|yurik|sevada)$/i.test(fn)) {
                     gender = 'Male';
                 }
             }
