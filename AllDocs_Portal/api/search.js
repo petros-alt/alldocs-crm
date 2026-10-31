@@ -1,3 +1,5 @@
+import zlib from 'zlib';
+
 export const config = {
     api: {
         bodyParser: {
@@ -18,11 +20,10 @@ export default async function handler(req, res) {
     const apiKey = process.env.DOCKETWISE_CLIENT_SECRET || process.env.DOCKETWISE_CLIENT_ID;
     const geminiKey = process.env.GEMINI_API_KEY;
 
-    // Свежие токены из вашей активной сессии Docketwise
     const DW_CSRF_TOKEN = process.env.DOCKETWISE_CSRF_TOKEN || "8BNcjQ7ckoI2oPKCgzHgHFNZhCJ_LCKRY0a_xZ5UlXTMynTDvIcxZujXwKxSRkTh8so-Nhfvk4hXxrYhPaESZQ";
     const DW_COOKIE = process.env.DOCKETWISE_COOKIE || "__stripe_mid=7a09a5c6-21ec-4d21-886d-c0bf6cc90d9760274d; intercom-device-id-q07v75s8=345a6aa1-5a77-4f02-afd1-47df40c5c1cd; browser.timezone=America/Los_Angeles; browser_id=a6350fa1-3722-4eac-9f81-3a34c6aa9572; __stripe_sid=db75ef5c-3bed-481d-9646-b4fa6b7120d7837c9b; _borderwise_session=3cd68d33a3298f02414dfeed80b24a7e; intercom-session-q07v75s8=Y2wyUktEcHdjME4xL3RlSUp5U0p5M1owRy9YV2lIYThVWnBBd0dwbDBlQTZIekhJTU8yeFpXbGtyOE1XZ2lrcjRiRnowR01QdHYxZ1NLY2d2amY4RnRGSWNmSmNnTFR0MktyaDBwWm4xTURoM2RaOGQ5QjZBS2FaYXhjTG1UZTVRMW1IZXVyY1pIWEJjWnJTejZzK0d5eHp2NS9BazNiM1lUWFZjMzBvOUQzVTViRnlOS2hQaXFCWkNoSVhucmRZaHlzSjlEYUcrYTVTQjFjT3VPL3pydm5RS1VVdXFTdlRSSno2VDhtckRRZ1FrUzRtVERET0JjWEpxQWZVdlAvVm5tYWI4VkptQytTOXg0eldiY2ErVGZRWDJQc0R1MU8wT002a24xMGhIZHBRc3ZobDJNMVo4N0NoRkVKWGtqZ2wtLTZseUd5YUl4aldKQWt6M2oyVnYycFE9PQ==--9c23d3dc99d36c1984ef5b20403ef28fd3ce561c";
 
-    async function fetchWithTimeout(url, options = {}, timeoutMs = 11000) {
+    async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
         try {
@@ -41,7 +42,51 @@ export default async function handler(req, res) {
         if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) return 'image/jpeg';
         if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) return 'image/png';
         if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 && buffer[8] === 0x57 && buffer[9] === 0x45) return 'image/webp';
+        // PK.. ZIP header — это файл Microsoft Word (.docx)
+        if (buffer[0] === 0x50 && buffer[1] === 0x4B && buffer[2] === 0x03 && buffer[3] === 0x04) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
         return null;
+    }
+
+    // Встроенный распаковщик текста из файлов Microsoft Word (.docx) без внешних библиотек!
+    function extractTextFromDocxBuffer(buf) {
+        try {
+            let offset = 0;
+            const extractedChunks = [];
+            while (offset + 30 < buf.length) {
+                if (buf.readUInt32LE(offset) !== 0x04034b50) {
+                    offset++;
+                    continue;
+                }
+                const compression = buf.readUInt16LE(offset + 8);
+                const compressedSize = buf.readUInt32LE(offset + 18);
+                const fileNameLen = buf.readUInt16LE(offset + 26);
+                const extraLen = buf.readUInt16LE(offset + 28);
+                const fileName = buf.toString('utf8', offset + 30, offset + 30 + fileNameLen);
+                const dataStart = offset + 30 + fileNameLen + extraLen;
+
+                if (fileName === 'word/document.xml' && compressedSize > 0 && dataStart + compressedSize <= buf.length) {
+                    const compData = buf.subarray(dataStart, dataStart + compressedSize);
+                    const xmlBuffer = compression === 8 ? zlib.inflateRawSync(compData) : compData;
+                    const xmlStr = xmlBuffer.toString('utf8');
+                    const cleanText = xmlStr
+                        .replace(/<\/w:p>/gi, '\n')
+                        .replace(/<[^>]+>/g, ' ')
+                        .replace(/&amp;/g, '&')
+                        .replace(/&lt;/g, '<')
+                        .replace(/&gt;/g, '>')
+                        .replace(/&quot;/g, '"')
+                        .replace(/&#39;/g, "'")
+                        .replace(/[ \t]+/g, ' ')
+                        .trim();
+                    if (cleanText) extractedChunks.push(cleanText);
+                    break;
+                }
+                offset = dataStart + Math.max(1, compressedSize);
+            }
+            return extractedChunks.join('\n');
+        } catch (e) {
+            return '';
+        }
     }
 
     function formatProperCase(str) {
@@ -81,13 +126,15 @@ export default async function handler(req, res) {
                     out[key] = '';
                 } else if (key === 'state') {
                     out[key] = val.trim().toUpperCase() || 'CA';
+                } else if (key === 'aiFeedback') {
+                    out[key] = val.trim();
                 } else if (['ssn', 'dob', 'phone', 'zip', 'heightFt', 'heightIn', 'weight', 'caseNum', 'aNumber', 'i94Number', 'passportNumber', 'passportExp', 'lastEntryDate', 'statusExpDate', 'marriageDate', 'firstSeen', 'lastSeen', 'nextAppt', 'onsetDate', 'ssiDecisionDate', 'educationDate', 'educationGrade', 'dateFrom', 'dateTo', 'date'].includes(key)) {
                     out[key] = val.trim();
                 } else {
                     out[key] = formatProperCase(val);
                 }
             } else if (Array.isArray(val)) {
-                out[key] = val.map(v => typeof v === 'string' ? formatProperCase(v) : normalizeExtractedObject(v));
+                out[key] = key === 'aiFeedback' ? val : val.map(v => typeof v === 'string' ? formatProperCase(v) : normalizeExtractedObject(v));
             } else if (typeof val === 'object' && val !== null) {
                 out[key] = normalizeExtractedObject(val);
             } else {
@@ -193,22 +240,22 @@ export default async function handler(req, res) {
 
     function classifyClientFile(fileName = '', folderName = '') {
         const lower = (fileName + ' ' + folderName).toLowerCase();
-        if (/(zelle|receipt|invoice|payment|retainer|contract|06\.\s*firm|08\.\s*firm)/i.test(lower)) {
+        if (/(zelle|receipt|invoice|payment|retainer|contract|06\.\s*firm|08\.\s*firm|legal services agreement)/i.test(lower)) {
             return { category: 'ignore', badge: '💸 Contract/Fee', priority: 10, autoSelect: false };
         }
-        if (/(01\.|personal|identification|identity|status|driver|license|dl|passport|birth|marriage|ssn|social|id_card|state_id|green_card|greencard|permanent resident|naturalization|medi-cal|bic|i-94|i94|visa)/i.test(lower)) {
-            return { category: 'identity', badge: '🪪 01. Identity/Status', priority: 100, autoSelect: true };
+        if (/(declaration|statement|affidavit|story|fersion|version|chronological|589)/i.test(lower)) {
+            return { category: 'declaration', badge: '📝 Declaration/Story', priority: 105, autoSelect: true };
         }
-        if (/(02\.|589|asylum|declaration|statement|story|persecution|evidence|mc_223|mc223|mc 223|soc|873|804|814|453|839|medical|doctor|dr\.|clinic|hospital|meds|medication|rx|diagnosis|visit|summary|noa|ssi|capi|disability|pharmacy|discharge|lab|quest)/i.test(lower)) {
-            return { category: 'medical_form', badge: '🩺 02. Case/Evidence/Med', priority: 95, autoSelect: true };
+        if (/(01\.|personal|identification|identity|status|driver|license|dl|passport|birth|marriage|ssn|social|id_card|state_id|green_card|greencard|permanent resident|naturalization|medi-cal|bic|i-94|i94|visa|notice to appear|nta)/i.test(lower)) {
+            return { category: 'identity', badge: '🪪 01. Identity/Status/NTA', priority: 100, autoSelect: true };
         }
-        if (/(03\.|04\.|education|work|job|employment|school|diploma|court|eoir|ice|filing|history|travel)/i.test(lower)) {
+        if (/(02\.|asylum|persecution|evidence|police|criminal|court|mc_223|mc223|mc 223|soc|873|804|814|453|839|medical|doctor|dr\.|clinic|hospital|meds|medication|rx|diagnosis|visit|summary|noa|ssi|capi|disability|pharmacy|discharge|lab|quest)/i.test(lower)) {
+            return { category: 'medical_form', badge: '🩺 02. Case/Evidence/Med', priority: 90, autoSelect: true };
+        }
+        if (/(03\.|04\.|education|work|job|employment|school|diploma|eoir|ice|filing|history|travel)/i.test(lower)) {
             return { category: 'work_edu', badge: '🏫 03-04. Court/Work/Edu', priority: 85, autoSelect: true };
         }
-        if (/(05\.|financial|living|bank|lease|rent|utility|expense|final|packet)/i.test(lower)) {
-            return { category: 'financial', badge: '📂 05. Packet/Docs', priority: 80, autoSelect: true };
-        }
-        return { category: 'other', badge: '📄 Document', priority: 60, autoSelect: true };
+        return { category: 'other', badge: '📄 Document', priority: 60, autoSelect: false };
     }
 
     async function downloadValidFileFromDocketwise(docId, customUrl, matterId, clientId) {
@@ -227,7 +274,7 @@ export default async function handler(req, res) {
                         "Referer": matterId ? `https://app.docketwise.com/en/matters/${matterId}` : `https://app.docketwise.com/en/contacts/${clientId || ''}`
                     },
                     redirect: 'follow'
-                }, 5500);
+                }, 7000);
 
                 if (!fRes.ok) continue;
 
@@ -235,11 +282,18 @@ export default async function handler(req, res) {
                 const buf = Buffer.from(arrayBuf);
 
                 const detectedMime = detectRealMimeType(buf);
-                if (detectedMime && buf.length < 9 * 1024 * 1024) {
-                    return {
-                        mime_type: detectedMime,
-                        data: buf.toString('base64')
-                    };
+                if (detectedMime) {
+                    if (detectedMime.includes('wordprocessingml')) {
+                        const docxText = extractTextFromDocxBuffer(buf);
+                        if (docxText) {
+                            return { isText: true, textContent: docxText };
+                        }
+                    } else if (buf.length < 20 * 1024 * 1024) {
+                        return {
+                            mime_type: detectedMime,
+                            data: buf.toString('base64')
+                        };
+                    }
                 }
 
                 const textContent = buf.toString('utf8');
@@ -250,15 +304,20 @@ export default async function handler(req, res) {
                     const fullS3Url = rawS3Url.startsWith('http') ? rawS3Url : `https://app.docketwise.com${rawS3Url}`;
                     const s3Res = await fetchWithTimeout(fullS3Url, {
                         headers: rawS3Url.startsWith('http') ? {} : { "cookie": DW_COOKIE }
-                    }, 5500);
+                    }, 7000);
                     if (s3Res.ok) {
                         const s3Buf = Buffer.from(await s3Res.arrayBuffer());
                         const s3Mime = detectRealMimeType(s3Buf);
-                        if (s3Mime && s3Buf.length < 9 * 1024 * 1024) {
-                            return {
-                                mime_type: s3Mime,
-                                data: s3Buf.toString('base64')
-                            };
+                        if (s3Mime) {
+                            if (s3Mime.includes('wordprocessingml')) {
+                                const docxText = extractTextFromDocxBuffer(s3Buf);
+                                if (docxText) return { isText: true, textContent: docxText };
+                            } else if (s3Buf.length < 20 * 1024 * 1024) {
+                                return {
+                                    mime_type: s3Mime,
+                                    data: s3Buf.toString('base64')
+                                };
+                            }
                         }
                     }
                 }
@@ -278,7 +337,8 @@ export default async function handler(req, res) {
 
             const { clientId, matterId = '', fileIds = [], fileUrls = [], uploadedFiles = [], clientName = '', extraNotes = '' } = req.body || {};
             const inlineParts = [];
-            let textContext = `Target Client Full Name: ${clientName}\nIMPORTANT: Extract data ONLY for ${clientName} (and their spouse/children/parents where applicable for I-589)!\n`;
+            let filesScannedCount = 0;
+            let textContext = `Target Client Full Name: ${clientName}\nIMPORTANT: Extract data ONLY for ${clientName}!\n`;
             if (extraNotes) {
                 textContext += `\nClient Questionnaire / Additional Notes:\n${extraNotes}\n`;
             }
@@ -286,16 +346,26 @@ export default async function handler(req, res) {
             if (Array.isArray(uploadedFiles)) {
                 uploadedFiles.slice(0, 3).forEach(uf => {
                     if (uf.textContent) {
-                        textContext += `\nAttached Document (${uf.name || 'Text'}):\n${uf.textContent}\n`;
+                        textContext += `\n=== Attached Document (${uf.name || 'Text'}) ===\n${uf.textContent}\n`;
+                        filesScannedCount++;
                     } else if (uf.base64) {
                         const rawBuf = Buffer.from(uf.base64, 'base64');
                         const realMime = detectRealMimeType(rawBuf) || uf.mimeType || 'image/jpeg';
-                        inlineParts.push({
-                            inline_data: {
-                                mime_type: realMime,
-                                data: uf.base64
+                        if (realMime.includes('wordprocessingml')) {
+                            const docxText = extractTextFromDocxBuffer(rawBuf);
+                            if (docxText) {
+                                textContext += `\n=== Attached Word Document (${uf.name || 'Docx'}) ===\n${docxText}\n`;
+                                filesScannedCount++;
                             }
-                        });
+                        } else {
+                            inlineParts.push({
+                                inline_data: {
+                                    mime_type: realMime,
+                                    data: uf.base64
+                                }
+                            });
+                            filesScannedCount++;
+                        }
                     }
                 });
             }
@@ -307,39 +377,42 @@ export default async function handler(req, res) {
                     return downloadValidFileFromDocketwise(docId, customUrl, matterId, clientId);
                 })
             );
-            downloadedParts.forEach(part => {
-                if (part) inlineParts.push({ inline_data: part });
+            downloadedParts.forEach((part, idx) => {
+                if (!part) return;
+                if (part.isText && part.textContent) {
+                    textContext += `\n=== Client Declaration / Word Document #${idx + 1} ===\n${part.textContent}\n`;
+                    filesScannedCount++;
+                } else if (part.data) {
+                    inlineParts.push({ inline_data: part });
+                    filesScannedCount++;
+                }
             });
 
-            const systemPrompt = `You are a high-precision USCIS Form I-589 (Asylum) & California Medi-Cal/Disability (MC 223 / SOC) Legal Document Synthesizer AI.
-Analyze all attached client documents (Passports, I-94 Arrival/Departure Records, Visas, Birth Certificates with English translations, Marriage Certificates, Personal Asylum Declarations/Statements, Client Questionnaires on School/University/Work/Residences/Travel History, Driver's Licenses, SSN cards, Medical Records, Pharmacy Reports, Lab Results) for client "${clientName}".
+            const systemPrompt = `You are a senior USCIS Form I-589 (Asylum) & California Medi-Cal/Disability (MC 223) Legal Document & Armenian/Russian/English Translation AI.
+Analyze all attached documents and text (Passports, I-94 Records, Visas, Notice to Appear / NTA, Armenian/Russian Birth Certificates, Marriage Certificates, Personal Asylum Declarations/Statements, Police/Medical Records, Questionnaires) for client "${clientName}".
 
-CRITICAL RULES FOR I-589 & MC 223 EXTRACTION:
-1. HANDWRITING FILTER:
-   - DO EXTRACT handwritten factual/medical/biographical info (medications, addresses, dates of birth, entry dates, checkmarks ☑/✓).
-   - DO NOT EXTRACT signatures or signature dates from certification blocks.
-2. NO ALL-CAPS: Convert ALL-CAPS text into clean Title Case. Keep standard abbreviations uppercase (CA, USA, USCIS, B1/B2, F1, SSI, CAPI, IHSS, MD, NP, EKG, PFT, BNP, CBC, CMP, GED, eGFR).
-3. FORM I-589 SPECIFIC EXTRACTION (FROM BIRTH CERTIFICATES, MARRIAGE CERTIFICATES, PASSPORTS, I-94, QUESTIONNAIRES, AND DECLARATIONS):
-   - Birth Certificate: Extract the applicant's City/Town and Country of Birth ("cityCountryBirth"), AND extract Mother's Full Name ("motherName", "motherBirthPlace") and Father's Full Name ("fatherName", "fatherBirthPlace") for Part A.III Item 5!
-   - Marriage Certificate & Spouse Docs: Extract "maritalStatus" ("Single", "Married", "Divorced", "Widowed"), "marriageDate" (MM/DD/YYYY), "marriagePlace" (City, Country), and full "spouse" details.
-   - Children Docs: Extract up to 4 children into "children" array.
-   - Passport, I-94 & Travel History: Extract "aNumber", "uscisAccount", "nationality", "raceEthnicTribal", "religion", "nativeLanguage", "fluentEnglish" ("Yes" or "No"), "otherLanguages", "passportNumber", "passportCountry", "passportExp" (MM/DD/YYYY), "lastEntryDate" (MM/DD/YYYY), "i94Number", "lastEntryPlace", "lastEntryStatus" (e.g. "B2", "Parole"), "statusExpDate" (MM/DD/YYYY), "leftHomeCountryDate" (MM/DD/YYYY). If the client traveled through other countries before entering the US, set "traveledOtherCountries": "Yes" and summarize the countries, dates, and status in "otherCountriesSummary".
-   - Residences, Education (School/University), and Employment (Last 5 Years): Extract all addresses into "lastAddressBeforeUS" and "residences5Years", all schools/universities into "educationHistory", and all jobs into "employment5Years".
-   - Asylum Declaration / Personal Statement (Part B & Part C):
-     * Identify asylum grounds ("grounds": array of any applicable from ["Race", "Religion", "Nationality", "Political Opinion", "Particular Social Group", "Torture Convention"]).
-     * Summarize the client's declaration into concise, factual, 3-to-4 sentence summaries (MAX 360 characters each so they fit inside the I-589 PDF boxes without overflowing!) for:
-       - "harmSummary" (Part B.1.A: past mistreatment/threats, who caused it, and why)
-       - "fearSummary" (Part B.1.B: why the applicant fears harm if returned)
-       - "arrestSummary" (Part B.2: any arrests, detentions, interrogations, or crimes)
-       - "orgSummary" (Part B.3.A: membership in political, religious, or social groups)
-       - "tortureSummary" (Part B.4: fear of torture by government or officials)
-       - "otherCountriesSummary" (Part C.2.B: travel through other countries on the way to the US)
-       - "oneYearReason" (Part C.5: if filing more than 1 year after arrival)
-     * Always end each summary box with: "Please see attached detailed Personal Declaration and supporting evidence."
-4. AI FEEDBACK / MISSING INFO AUDIT ("aiFeedback"):
-   - List any ambiguous, missing, or unverified items that the legal specialist must clarify with the client (e.g., whether parents are deceased or their current city/country of residence, siblings' names, exact 5-year address/employment dates, or missing I-94 expiration date).
+CRITICAL RULES FOR ACCURACY:
+1. ARMENIAN / RUSSIAN BIRTH CERTIFICATES & PATRONYMICS (PARENTS - PART A.III LINE 5):
+   - In Armenian documents ("Ծննդյան վկայական"), "Հայրը" (Father) is listed FIRST and "Մայրը" (Mother) is listed SECOND. DO NOT swap Father and Mother!
+   - Also check the client's patronymic / middle name (for example, "Sevada Taroni Safaryan" means his Father's first name is "Taron" -> "Taron Safaryan"!).
+   - Never put a male name in "motherName" or a female name in "fatherName". Transliterate Armenian/Russian names accurately into English.
+2. PASSPORT vs I-94 vs A-NUMBER (PART A.I):
+   - "aNumber": 9-digit Alien Registration Number (often starts with A or 2, found on Notice to Appear / NTA, I-94, or EAD).
+   - "i94Number": 11-character Arrival/Departure Record number from Form I-94. NEVER put a Passport number or Visa number into "i94Number"!
+   - "immigrationCourtStatus": If there is a "Notice to Appear" (NTA) or EOIR filing, set to "now" (I am now in Immigration Court proceedings). Otherwise "never".
+3. ASYLUM DECLARATION / PERSONAL STATEMENT (PART B & PART C):
+   - Carefully read any attached Declaration / Affidavit / Statement / Police / Medical evidence.
+   - Determine all applicable "grounds": ["Political Opinion", "Religion", "Race", "Nationality", "Particular Social Group", "Torture Convention"].
+   - If the client experienced past harm, threats, beatings, detention, or persecution, set "experiencedHarm": "Yes" and write a clear, factual 3-4 sentence summary (250-360 characters) in "harmSummary" answering: What happened, When, Who caused it, and Why, ending with "See attached Declaration."
+   - If the client fears harm upon return, set "fearReturn": "Yes" and write a 3-4 sentence summary (250-360 characters) in "fearSummary".
+   - If the client was detained/arrested/interrogated or had a criminal case fabricated against them abroad, set "arrestedAbroad": "Yes" and summarize in "arrestSummary".
+   - If the client belonged to a party/church/organization/group, set "orgMember": "Yes" and summarize in "orgSummary".
+   - If the client fears torture by authorities, set "fearTorture": "Yes" and summarize in "tortureSummary".
+   - For Part C: Unless the documents explicitly state otherwise, "priorAsylumApp" is "No", "causedHarm" is "No", and "usCrimes" is "No". If the client traveled through transit countries before entering the US, set "traveledOtherCountries": "Yes" and list them in "otherCountriesSummary".
+4. AI FEEDBACK ("aiFeedback") — STRICTLY IN RUSSIAN, CLEAR & CHRONOLOGICAL:
+   - Provide specific notes in Russian about any unclear or missing details found in the scanned documents.
 
-Return ONLY valid JSON matching this exact structure (leave "" if not mentioned in the current batch of files):
+Return ONLY valid JSON matching this exact structure (use empty string "" if not mentioned in the current batch of files):
 {
   "firstName": "",
   "lastName": "",
@@ -370,7 +443,7 @@ Return ONLY valid JSON matching this exact structure (leave "" if not mentioned 
   "phone": "",
   "language": "Armenian",
   "caseNum": "",
-  "immigrationCourtStatus": "never, now, or past",
+  "immigrationCourtStatus": "",
   "leftHomeCountryDate": "MM/DD/YYYY",
   "lastEntryDate": "MM/DD/YYYY",
   "lastEntryPlace": "",
@@ -464,29 +537,29 @@ Return ONLY valid JSON matching this exact structure (leave "" if not mentioned 
   },
   "asylum": {
     "grounds": [],
-    "experiencedHarm": "Yes or No",
+    "experiencedHarm": "",
     "harmSummary": "",
-    "fearReturn": "Yes or No",
+    "fearReturn": "",
     "fearSummary": "",
-    "arrestedAbroad": "Yes or No",
+    "arrestedAbroad": "",
     "arrestSummary": "",
-    "orgMember": "Yes or No",
+    "orgMember": "",
     "orgSummary": "",
-    "continueOrg": "Yes or No",
+    "continueOrg": "",
     "continueOrgSummary": "",
-    "fearTorture": "Yes or No",
+    "fearTorture": "",
     "tortureSummary": "",
-    "priorAsylumApp": "Yes or No",
+    "priorAsylumApp": "",
     "priorAsylumSummary": "",
-    "traveledOtherCountries": "Yes or No",
-    "lawfulStatusOtherCountry": "Yes or No",
+    "traveledOtherCountries": "",
+    "lawfulStatusOtherCountry": "",
     "otherCountriesSummary": "",
-    "causedHarm": "No",
-    "returnedToHomeCountry": "Yes or No",
+    "causedHarm": "",
+    "returnedToHomeCountry": "",
     "returnedSummary": "",
-    "filedAfterOneYear": "Yes or No",
+    "filedAfterOneYear": "",
     "oneYearReason": "",
-    "usCrimes": "No"
+    "usCrimes": ""
   },
   "ssiApplied": "",
   "ssiStatus": "",
@@ -542,18 +615,17 @@ Return ONLY valid JSON matching this exact structure (leave "" if not mentioned 
     "rateOfPay": "",
     "description": ""
   },
-  "aiFeedback": [
-    ""
-  ]
+  "aiFeedback": []
 }`;
 
             const requestParts = [{ text: systemPrompt + "\n\n" + textContext }, ...inlineParts];
 
+// Приоритет: Флагманские модели Pro и Thinking (глубокий анализ армянских/русских документов и деклараций I-589)
             const modelsPool = [
-                'gemini-2.0-flash',
-                'gemini-flash-lite-latest',
-                'gemini-2.0-flash-lite',
-                'gemini-2.5-flash'
+                'gemini-2.5-pro',
+                'gemini-pro-latest',
+                'gemini-2.5-flash',
+                'gemini-2.0-flash'
             ];
 
             let aiJson = null;
@@ -562,11 +634,18 @@ Return ONLY valid JSON matching this exact structure (leave "" if not mentioned 
 
             for (const modelName of modelsPool) {
                 try {
-                    const genConfig = { temperature: 0.05 };
+                    const genConfig = {
+                        temperature: 0.1
+                    };
+
+                    // Включаем режим глубокого мышления (Thinking) для сложных задач и переводов!
                     if (modelName.includes('2.5')) {
-                        genConfig.thinkingConfig = { thinkingBudget: 0 };
+                        genConfig.thinkingConfig = {
+                            thinkingBudget: 4096
+                        };
                     }
 
+                    // Даем флагманской Pro/Thinking модели до 28 секунд на глубокий анализ документов
                     const gRes = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -574,12 +653,13 @@ Return ONLY valid JSON matching this exact structure (leave "" if not mentioned 
                             contents: [{ parts: requestParts }],
                             generationConfig: genConfig
                         })
-                    }, 12000);
+                    }, 28000);
 
                     if (gRes.ok) {
                         const gData = await gRes.json();
                         const partsArr = gData.candidates?.[0]?.content?.parts || [];
-                        const textPart = partsArr.find(p => p.text && p.text.includes('{')) || partsArr[partsArr.length - 1] || {};
+                        // Ищем финальный JSON-ответ после блока размышлений (thinking)
+                        const textPart = partsArr.find(p => p.text && p.text.includes('{') && p.text.includes('"firstName"')) || partsArr[partsArr.length - 1] || {};
                         const rawText = textPart.text || '{}';
                         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
                         const cleaned = jsonMatch ? jsonMatch[0] : rawText.replace(/```json|```/g, '').trim();
@@ -594,7 +674,6 @@ Return ONLY valid JSON matching this exact structure (leave "" if not mentioned 
                     lastErr = mErr.name === 'AbortError' ? `${modelName} timeout` : mErr.message;
                 }
             }
-
             if (!aiJson) {
                 throw new Error(`AI Scan busy: ${lastErr.slice(0, 140)}`);
             }
@@ -603,7 +682,7 @@ Return ONLY valid JSON matching this exact structure (leave "" if not mentioned 
                 success: true,
                 model: usedModel,
                 extracted: aiJson,
-                filesScanned: inlineParts.length
+                filesScanned: filesScannedCount || inlineParts.length
             });
 
         } catch (error) {
@@ -636,13 +715,37 @@ Return ONLY valid JSON matching this exact structure (leave "" if not mentioned 
             const rawText = await docRes.text();
             const parsed = parseDocketwiseDocumentsResponse(rawText, matterId);
 
+            let allFoldersList = [...parsed.folders];
             let allFiles = parsed.files.map(f => ({
                 ...f,
                 folderName: 'Root',
                 ...classifyClientFile(f.name, '')
             }));
 
-            // Заходим внутрь ВСЕХ папок дела (00, 01, 02, 03, 04, 05, кроме 06/08. Firm Contract & Fees)
+            // Если открыта конкретная папка (например, 02. EVIDENCE OF PERSECUTION), а внутри неё есть подпапки (Affidavit, Photo) — заходим и в них!
+            if (folderId && folderId !== 'ALL_KEY_FOLDERS' && parsed.folders.length > 0) {
+                const subArr = await Promise.all(parsed.folders.slice(0, 8).map(async (sf) => {
+                    try {
+                        const sfRes = await fetch(`https://app.docketwise.com/documents?folder_id=${sf.folderId}&matter_id=${matterId}`, { headers: reqHeaders });
+                        const sfParsed = parseDocketwiseDocumentsResponse(await sfRes.text(), matterId);
+                        return sfParsed.files.map(f => ({
+                            ...f,
+                            folderId: sf.folderId,
+                            folderName: `↳ ${sf.name}`,
+                            ...classifyClientFile(f.name, sf.name)
+                        }));
+                    } catch (e) { return []; }
+                }));
+                subArr.forEach(sa => {
+                    sa.forEach(fileItem => {
+                        if (!allFiles.some(existing => String(existing.id) === String(fileItem.id))) {
+                            allFiles.push(fileItem);
+                        }
+                    });
+                });
+            }
+
+            // Если выбрано ALL_KEY_FOLDERS — обходим ВСЕ папки дела И ВСЕ вложенные подпапки (Affidavit, Photo и т.д.)!
             if ((!folderId || folderId === 'ALL_KEY_FOLDERS') && parsed.folders.length > 0) {
                 const foldersToScan = parsed.folders.filter(fld => !/(06\.|08\.|contract|fee|invoice)/i.test(fld.name)).slice(0, 8);
 
@@ -660,9 +763,18 @@ Return ONLY valid JSON matching this exact structure (leave "" if not mentioned 
                             ...classifyClientFile(f.name, fld.name)
                         }));
 
-                        // Если внутри папки есть еще вложенные подпапки — заходим и в них!
                         if (subParsed.folders.length > 0) {
-                            const nestedArr = await Promise.all(subParsed.folders.slice(0, 4).map(async (nf) => {
+                            subParsed.folders.forEach(nf => {
+                                if (!allFoldersList.some(x => String(x.folderId) === String(nf.folderId))) {
+                                    allFoldersList.push({
+                                        folderId: nf.folderId,
+                                        matterId: matterId,
+                                        name: `${fld.name.slice(0, 18)} ➔ ${nf.name}`
+                                    });
+                                }
+                            });
+
+                            const nestedArr = await Promise.all(subParsed.folders.slice(0, 6).map(async (nf) => {
                                 try {
                                     const nfRes = await fetch(`https://app.docketwise.com/documents?folder_id=${nf.folderId}&matter_id=${matterId}`, { headers: reqHeaders });
                                     const nfParsed = parseDocketwiseDocumentsResponse(await nfRes.text(), matterId);
@@ -704,7 +816,7 @@ Return ONLY valid JSON matching this exact structure (leave "" if not mentioned 
 
             return res.status(200).json({
                 success: true,
-                folders: parsed.folders,
+                folders: allFoldersList,
                 files: allFiles
             });
         } catch (err) {
