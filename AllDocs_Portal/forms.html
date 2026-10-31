@@ -2379,7 +2379,7 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
         return { totalFields: fields.length, filledCount };
     }
 
-    async function openEditor(formCode) {
+   async function openEditor(formCode) {
         currentOpenedFormCode = formCode;
         document.getElementById('modalFormName').innerText = formCode;
         document.getElementById('pdfModal').style.display = 'flex';
@@ -2393,29 +2393,20 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
         iframe.src = "";
 
         try {
-           const cleanCode = formCode.trim();
+            const cleanCode = formCode.trim();
             const lowerCode = cleanCode.toLowerCase();
             const upperCode = cleanCode.toUpperCase();
 
             const possibleUrls = [
-                // 1. Точное совпадение и нижний/верхний регистр (например: "MC 223.pdf", "i-589.pdf", "I-589.pdf")
                 `pdf-templates/${cleanCode}.pdf`,
                 `pdf-templates/${lowerCode}.pdf`,
                 `pdf-templates/${upperCode}.pdf`,
-
-                // 2. Через нижнее подчеркивание (например: "SSP_14.pdf", "ssp_14.pdf", "I_589.pdf")
                 `pdf-templates/${cleanCode.replace(/[\s\-]+/g, '_')}.pdf`,
                 `pdf-templates/${lowerCode.replace(/[\s\-]+/g, '_')}.pdf`,
-
-                // 3. Через дефис (например: "MC-223.pdf", "mc-223.pdf", "i-589.pdf")
                 `pdf-templates/${cleanCode.replace(/[\s_]+/g, '-')}.pdf`,
                 `pdf-templates/${lowerCode.replace(/[\s_]+/g, '-')}.pdf`,
-
-                // 4. Через пробел (например: "I 589.pdf", "SSP 14.pdf")
                 `pdf-templates/${cleanCode.replace(/[\-_]+/g, ' ')}.pdf`,
                 `pdf-templates/${lowerCode.replace(/[\-_]+/g, ' ')}.pdf`,
-
-                // 5. Слитно без пробелов и тире (например: "MC223.pdf", "mc223.pdf", "i589.pdf")
                 `pdf-templates/${cleanCode.replace(/[\s\-_]+/g, '')}.pdf`,
                 `pdf-templates/${lowerCode.replace(/[\s\-_]+/g, '')}.pdf`
             ];
@@ -2442,7 +2433,20 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
 
             statsBadge.textContent = `✓ Auto-Filled ${stats.filledCount} exact fields`;
 
-            const pdfBytes = await pdfDoc.save();
+            // Безопасная отрисовка шрифтов (защита от ошибки "Expected instance of e, but got instance of undefined" в I-589 и др.)
+            let pdfBytes;
+            try {
+                const helveticaFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+                try {
+                    form.updateFieldAppearances(helveticaFont);
+                } catch (appErr) {
+                    console.warn('Skipped appearance update for XFA/custom fields:', appErr.message);
+                }
+                pdfBytes = await pdfDoc.save({ updateFieldAppearances: false });
+            } catch (saveErr) {
+                pdfBytes = await pdfDoc.save({ updateFieldAppearances: false });
+            }
+
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
             const blobUrl = URL.createObjectURL(blob);
             
@@ -2452,29 +2456,6 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
         } catch (error) {
             console.error(error);
             loader.innerHTML = `<div style="color:#dc2626;">❌ Ошибка: ${error.message}</div>`;
-        }
-    }
-
-    function closeEditor() {
-        document.getElementById('pdfModal').style.display = 'none';
-        const iframe = document.getElementById('pdfIframe');
-        if (iframe.src && iframe.src.startsWith('blob:')) {
-            URL.revokeObjectURL(iframe.src);
-        }
-        iframe.src = ""; 
-    }
-
-    function downloadPDF() {
-        const iframeSrc = document.getElementById('pdfIframe').src;
-        if (iframeSrc) {
-            const link = document.createElement('a');
-            link.href = iframeSrc;
-            const cName = (currentClient && currentClient.name) ? currentClient.name.replace(/\s+/g, '_') : 'Client';
-            const formName = currentOpenedFormCode.replace(/\s+/g, '_');
-            link.download = `${formName}_${cName}.pdf`; 
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
         }
     }
 </script>
