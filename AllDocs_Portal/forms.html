@@ -2393,9 +2393,31 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
         iframe.src = "";
 
         try {
+           const cleanCode = formCode.trim();
+            const lowerCode = cleanCode.toLowerCase();
+            const upperCode = cleanCode.toUpperCase();
+
             const possibleUrls = [
-                `pdf-templates/${formCode}.pdf`,
-                `pdf-templates/${formCode.replace(/\s+/g, '_')}.pdf`
+                // 1. Точное совпадение и нижний/верхний регистр (например: "MC 223.pdf", "i-589.pdf", "I-589.pdf")
+                `pdf-templates/${cleanCode}.pdf`,
+                `pdf-templates/${lowerCode}.pdf`,
+                `pdf-templates/${upperCode}.pdf`,
+
+                // 2. Через нижнее подчеркивание (например: "SSP_14.pdf", "ssp_14.pdf", "I_589.pdf")
+                `pdf-templates/${cleanCode.replace(/[\s\-]+/g, '_')}.pdf`,
+                `pdf-templates/${lowerCode.replace(/[\s\-]+/g, '_')}.pdf`,
+
+                // 3. Через дефис (например: "MC-223.pdf", "mc-223.pdf", "i-589.pdf")
+                `pdf-templates/${cleanCode.replace(/[\s_]+/g, '-')}.pdf`,
+                `pdf-templates/${lowerCode.replace(/[\s_]+/g, '-')}.pdf`,
+
+                // 4. Через пробел (например: "I 589.pdf", "SSP 14.pdf")
+                `pdf-templates/${cleanCode.replace(/[\-_]+/g, ' ')}.pdf`,
+                `pdf-templates/${lowerCode.replace(/[\-_]+/g, ' ')}.pdf`,
+
+                // 5. Слитно без пробелов и тире (например: "MC223.pdf", "mc223.pdf", "i589.pdf")
+                `pdf-templates/${cleanCode.replace(/[\s\-_]+/g, '')}.pdf`,
+                `pdf-templates/${lowerCode.replace(/[\s\-_]+/g, '')}.pdf`
             ];
 
             let response = null;
