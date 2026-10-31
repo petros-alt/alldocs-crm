@@ -524,7 +524,7 @@
             box-shadow: 0 0 12px rgba(16, 185, 129, 0.65);
         }
 
-        /* ПРАВАЯ ЧАСТЬ С ФИЛЬТРОМ ГРУПП ПРОГРАММ И СЕТКОЙ 13 ФОРМ */
+        /* ПРАВАЯ ЧАСТЬ С ФИЛЬТРОМ ГРУПП ПРОГРАММ И СЕТКОЙ 14 ФОРМ */
         .forms-area { flex: 1; padding: 28px 34px; overflow-y: auto; box-sizing: border-box; }
         .area-header {
             background: linear-gradient(135deg, #24140e 0%, #3e2723 55%, #5d3618 100%);
@@ -634,18 +634,76 @@
             transform: translateY(-2px);
         }
 
-        /* МОДАЛЬНОЕ ОКНО РЕДАКТОРА PDF */
+        /* МОДАЛЬНОЕ ОКНО РЕДАКТОРА PDF + БОКОВАЯ ПАНЕЛЬ ОБРАТНОЙ СВЯЗИ ИИ */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(18, 10, 7, 0.82); z-index: 1000; justify-content: center; align-items: center; padding: 18px; backdrop-filter: blur(8px); }
         .modal-container { background: #ffffff; width: 96%; max-width: 1420px; height: 94vh; border-radius: 22px; display: flex; flex-direction: column; box-shadow: 0 30px 80px rgba(0,0,0,0.65); overflow: hidden; border: 2px solid #d48c46; }
-        .modal-header { padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #24140e 0%, #3e271c 100%); color: white; }
+        .modal-header { padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #24140e 0%, #3e271c 100%); color: white; gap: 10px; }
         .modal-title { font-size: 18px; font-weight: 800; color: #ffffff; margin: 0; display: flex; align-items: center; gap: 10px; }
-        .fill-stats-badge { background: rgba(16, 185, 129, 0.25); color: #6ee7b7; border: 1px solid #10b981; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; margin-left: 10px; }
+        .fill-stats-badge { background: rgba(16, 185, 129, 0.25); color: #6ee7b7; border: 1px solid #10b981; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; }
+        .ai-review-toggle-btn {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #ffffff;
+            border: 1px solid #fde68a;
+            border-bottom: 3px solid #92400e;
+            padding: 6px 14px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.35);
+            transition: all 0.2s ease;
+        }
+        .ai-review-toggle-btn:hover { transform: translateY(-1px); filter: brightness(1.08); }
         .modal-close { background: rgba(255,255,255,0.12); border: none; font-size: 22px; color: #f5cba7; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; }
         .modal-close:hover { background: #dc2626; color: white; }
         
         .modal-body { flex: 1; padding: 0; background: #525659; display: flex; width: 100%; height: 100%; overflow: hidden; position: relative; }
         .loader-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.95); display: flex; justify-content: center; align-items: center; font-size: 17px; font-weight: 800; color: var(--primary-color); z-index: 5; flex-direction: column; gap: 10px; }
         iframe { width: 100%; height: 100%; border: none; flex: 1; }
+
+        /* ВЫДВИЖНАЯ 3D ПАНЕЛЬ ОБРАТНОЙ СВЯЗИ ИИ ПОВЕРХ PDF */
+        .ai-feedback-drawer {
+            width: 390px;
+            max-width: 90%;
+            background: linear-gradient(165deg, #fffdf9 0%, #f5efe6 100%);
+            border-left: 2px solid #d48c46;
+            box-shadow: -15px 0 40px rgba(0,0,0,0.35);
+            display: none;
+            flex-direction: column;
+            z-index: 6;
+            height: 100%;
+            box-sizing: border-box;
+        }
+        .ai-feedback-drawer.open { display: flex; }
+        .ai-drawer-header {
+            padding: 14px 18px;
+            background: linear-gradient(135deg, #3e271c 0%, #24140e 100%);
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #d48c46;
+        }
+        .ai-drawer-header h4 { margin: 0; font-size: 14px; font-weight: 800; color: #fde68a; }
+        .ai-drawer-body { padding: 14px 16px; overflow-y: auto; flex: 1; }
+        .audit-card {
+            background: #ffffff;
+            border: 1.5px solid rgba(184, 115, 51, 0.32);
+            border-left: 5px solid #f59e0b;
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 9px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #2c1a14;
+            box-shadow: 0 3px 8px rgba(44, 26, 20, 0.06);
+        }
+        .audit-card.critical { border-left-color: #ef4444; background: #fff5f5; }
+        .audit-card.ok { border-left-color: #10b981; background: #f0fdf4; }
+        .audit-card-title { font-size: 11px; font-weight: 900; text-transform: uppercase; margin-bottom: 3px; display: block; color: #8b552b; }
 
         .modal-footer { padding: 14px 24px; border-top: 1px solid var(--border-color); background: var(--surface-color); display: flex; justify-content: space-between; align-items: center; }
         .footer-note { font-size: 13px; color: var(--secondary-color); font-weight: 600; }
@@ -713,7 +771,7 @@
             </div>
             <h3 id="displayClientName" style="margin:0 0 4px 0; font-size:17px; font-weight:800; color:#24140e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Client Name</h3>
 
-            <!-- Краткая сводка найденных данных (SSN, DOB, Адрес, Диагнозы, Врачи) -->
+            <!-- Краткая сводка найденных данных -->
             <div class="summary-pills-box" id="clientDataSummaryPills"></div>
 
             <!-- 3D БЛОК ВЫБОРА MATTER (ШАГ 2) И ПАПКИ (ШАГ 3) -->
@@ -726,7 +784,7 @@
                 <div>
                     <label style="color:#6e4223; font-size:10px; margin-bottom:4px;">📁 3. Folder Inside Matter:</label>
                     <select id="dfFolderSelect" class="select-3d-dark" onchange="handleFolderChange()">
-                        <option value="ALL_KEY_FOLDERS">⚡ All Key Folders (01. ID, 02. Medical, 04. Work)</option>
+                        <option value="ALL_KEY_FOLDERS">⚡ All Key Folders (01. ID, 02. Medical/Decl, 04. Work)</option>
                     </select>
                 </div>
             </div>
@@ -743,7 +801,7 @@
 
                 <!-- Загрузка дополнительных файлов с компьютера -->
                 <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(184,115,51,0.28);">
-                    <label style="font-size:9.5px; color:#6e4223; margin-bottom:4px;">📎 Or attach local file (Passport / Medical PDF/JPG):</label>
+                    <label style="font-size:9.5px; color:#6e4223; margin-bottom:4px;">📎 Or attach local file (Passport / I-94 / Birth Cert / Declaration PDF/JPG):</label>
                     <input type="file" id="localAiFilesInput" multiple accept=".pdf,image/*" style="padding:6px; font-size:11px; background:#faf6f0;">
                 </div>
 
@@ -782,14 +840,14 @@
                 <p>1. Select Client & Matter ➔ 2. Scan Files with Gemini AI ➔ 3. Open & Auto-Fill Form</p>
             </div>
             <div style="background: linear-gradient(135deg, #d48c46 0%, #9a5b22 100%); color: #ffffff; font-size: 11px; font-weight: 800; letter-spacing: 1.2px; padding: 8px 16px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.35);">
-                ⚡ 13 TEMPLATES READY
+                ⚡ 14 TEMPLATES READY
             </div>
         </div>
 
         <!-- ФИЛЬТР ФОРМ ПО ГРУППАМ ПРОГРАММ -->
         <div class="program-filter-bar" id="programFilterBar">
+            <button type="button" class="prog-tab-btn active" data-prog="all" onclick="filterFormsByProgram('all', this)">📂 All Forms (14)</button>
             <button type="button" class="prog-tab-btn" data-prog="uscis" onclick="filterFormsByProgram('uscis', this)">🛂 USCIS & Asylum (I-589)</button>
-            <button type="button" class="prog-tab-btn active" data-prog="all" onclick="filterFormsByProgram('all', this)">📂 All Forms (13)</button>
             <button type="button" class="prog-tab-btn" data-prog="medical" onclick="filterFormsByProgram('medical', this)">🏥 Medi-Cal & Disability (MC 223, MC 220, MC 382, MC 383)</button>
             <button type="button" class="prog-tab-btn" data-prog="capi" onclick="filterFormsByProgram('capi', this)">💰 CAPI & SSI (SOC 453, 455, 804, 814, SSP 14)</button>
             <button type="button" class="prog-tab-btn" data-prog="ihss" onclick="filterFormsByProgram('ihss', this)">🏠 IHSS (SOC 839, SOC 840)</button>
@@ -797,6 +855,7 @@
         </div>
 
         <div class="forms-grid" id="formsGrid">
+            
             <div class="form-item" data-prog="uscis">
                 <div><div class="form-icon">🛂</div>
                     <h4>I-589</h4>
@@ -804,7 +863,7 @@
                 </div>
                 <button class="btn-download" onclick="openEditor('I-589')">⚡ Open & Auto-Fill PDF</button>
             </div>
-            
+
             <div class="form-item" data-prog="medical capi">
                 <div><div class="form-icon">📋</div>
                     <h4>MC 223</h4>
@@ -920,7 +979,10 @@
                 <span>✍️</span> Form Editor: <span id="modalFormName">Form Name</span>
                 <span class="fill-stats-badge" id="fillStatsBadge">Auto-Filled</span>
             </h3>
-            <button type="button" id="copyPdfFieldsBtn" style="margin-left:auto; margin-right:12px; background:rgba(255,255,255,0.14); color:#fde68a; border:1px solid rgba(253,230,138,0.45); padding:6px 12px; border-radius:10px; font-size:11.5px; font-weight:800; cursor:pointer;">📋 Copy PDF Field Names</button>
+            <button type="button" class="ai-review-toggle-btn" id="aiReviewToggleBtn" onclick="toggleAiFeedbackDrawer()">
+                ⚠️ AI Audit & Missing Info (<span id="aiReviewCount">0</span>)
+            </button>
+            <button type="button" id="copyPdfFieldsBtn" style="margin-left:auto; margin-right:6px; background:rgba(255,255,255,0.14); color:#fde68a; border:1px solid rgba(253,230,138,0.45); padding:6px 12px; border-radius:10px; font-size:11.5px; font-weight:800; cursor:pointer;">📋 Copy PDF Field Names</button>
             <button class="modal-close" onclick="closeEditor()">&times;</button>
         </div>
         
@@ -929,10 +991,19 @@
                 <div>⏳ Загрузка данных и автозаполнение PDF...</div>
             </div>
             <iframe id="pdfIframe" src="" title="PDF Viewer"></iframe>
+
+            <!-- ВЫДВИЖНАЯ ПАНЕЛЬ ОБРАТНОЙ СВЯЗИ ОТ ИИ (ЧТО НУЖНО УТОЧНИТЬ У КЛИЕНТА ИЛИ ДОЗАПОЛНИТЬ) -->
+            <div class="ai-feedback-drawer" id="aiFeedbackDrawer">
+                <div class="ai-drawer-header">
+                    <h4>🧠 AI Audit & Client Questions</h4>
+                    <button type="button" onclick="toggleAiFeedbackDrawer()" style="background:transparent; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
+                </div>
+                <div class="ai-drawer-body" id="aiFeedbackList"></div>
+            </div>
         </div>
         
         <div class="modal-footer">
-            <div class="footer-note">💡 Все поля привязаны строго к своим ячейкам. Вы можете дописать любой текст прямо внутри PDF перед скачиванием.</div>
+            <div class="footer-note">💡 Все поля привязаны строго к своим ячейкам. Проверьте список <b>AI Audit & Client Questions</b> справа для уточнения недостающих деталей у клиента.</div>
             <div class="footer-actions">
                 <button class="btn-cancel" onclick="closeEditor()">Close</button>
                 <button class="btn-save" onclick="downloadPDF()">⬇️ Download Filled PDF</button>
@@ -948,12 +1019,17 @@
     let clientMemoryStore = {};
     let selectedFilesBasket = new Map();
 
+    window.toggleAiFeedbackDrawer = function() {
+        const dr = document.getElementById('aiFeedbackDrawer');
+        if (dr) dr.classList.toggle('open');
+    };
+
     function toCleanTitleCase(str) {
         if (str === null || str === undefined) return '';
         const s = String(str).trim();
         if (!s) return '';
         if (/^\d/.test(s) && !/[a-zA-Z]{3,}/.test(s)) return s;
-        if (/^(CA|NY|TX|FL|NV|AZ|WA|OR|IL|PA|OH|GA|NC|MI|NJ|VA|MA|MD|SSI|SSDI|CAPI|IHSS|NOA|SOC|MC|USCIS|USA|II|III|IV|LLC|INC|RN|NP|GED|12\+)$/i.test(s)) {
+        if (/^(CA|NY|TX|FL|NV|AZ|WA|OR|IL|PA|OH|GA|NC|MI|NJ|VA|MA|MD|SSI|SSDI|CAPI|IHSS|NOA|SOC|MC|USCIS|USA|II|III|IV|LLC|INC|RN|NP|GED|12\+|B1|B2|B1\/B2|F1|J1)$/i.test(s)) {
             return s.toUpperCase();
         }
         const upperCount = (s.match(/[A-Z]/g) || []).length;
@@ -961,7 +1037,7 @@
         if ((upperCount > 2 && lowerCount === 0) || (lowerCount > 2 && upperCount === 0)) {
             return s.toLowerCase().replace(/\b([a-z])([a-z']*)/g, (match, first, rest, offset) => {
                 const up = match.toUpperCase();
-                if (/^(CA|SSI|SSDI|CAPI|IHSS|NOA|MD|DO|RN|NP|LLC|INC|PO|II|III|IV|UCLA|USC|DMV|EKG|PFT|BNP|CBC|CMP|UTI|GED)$/.test(up)) return up;
+                if (/^(CA|SSI|SSDI|CAPI|IHSS|NOA|MD|DO|RN|NP|LLC|INC|PO|II|III|IV|UCLA|USC|DMV|EKG|PFT|BNP|CBC|CMP|UTI|GED|USA|USCIS)$/.test(up)) return up;
                 if (offset > 0 && /^(and|or|of|in|on|at|to|for|with|from|by|the|a|an)$/.test(match)) return match;
                 return first.toUpperCase() + rest;
             });
@@ -993,16 +1069,18 @@
         if (!box) return;
         const m = clientMemoryStore;
         const pills = [];
+        if (m.aNumber || m.caseNum) pills.push(`🛂 A#: ${m.aNumber || m.caseNum}`);
         if (m.ssn) pills.push(`🔐 SSN: ${m.ssn}`);
         if (m.dob) pills.push(`🎂 DOB: ${m.dob}`);
         if (m.gender) pills.push(`👤 ${toCleanTitleCase(m.gender)}`);
-        if (m.heightFt || m.weight) pills.push(`📏 ${m.heightFt || '?'}'${m.heightIn || '0'}", ${m.weight || '?'} lbs`);
+        if (m.i94Number) pills.push(`✈️ I-94: ${m.i94Number}`);
         if (m.street) pills.push(`🏠 ${toCleanTitleCase(m.street)}, ${toCleanTitleCase(m.city || '')}`);
+        if (m.family?.motherName || m.family?.fatherName) pills.push(`👪 Parents Linked`);
         if (Array.isArray(m.diagnoses) && m.diagnoses.length > 0 && m.diagnoses[0].problem) {
             pills.push(`🩺 ${m.diagnoses.length} Diagnoses`);
         }
         if (Array.isArray(m.clinics) && m.clinics.length > 0 && (m.clinics[0].clinicName || m.clinics[0].doctorName)) {
-            pills.push(`🏥 ${m.clinics.length} Doctors/Clinics`);
+            pills.push(`🏥 ${m.clinics.length} Clinics`);
         }
         box.innerHTML = pills.map(p => `<span class="summary-pill">${p}</span>`).join('');
     }
@@ -1125,8 +1203,8 @@
         const folderSel = document.getElementById('dfFolderSelect');
         const matterId = matterSel.value;
         const matterTitle = (matterSel.options[matterSel.selectedIndex]?.text || '').toLowerCase();
-        
-if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle.includes('uscis')) {
+
+        if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle.includes('uscis')) {
             filterFormsByProgram('uscis', null);
         } else if (matterTitle.includes('capi') || matterTitle.includes('ssi')) {
             filterFormsByProgram('capi', null);
@@ -1143,14 +1221,14 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
             return;
         }
 
-        document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#b87333; font-weight:800; font-size:11.5px; padding:8px 0;">⏳ Opening Matter folders (01. ID, 02. Medical, 04. Work)...</div>';
+        document.getElementById('dwSmartFilesList').innerHTML = '<div style="color:#b87333; font-weight:800; font-size:11.5px; padding:8px 0;">⏳ Opening Matter folders...</div>';
         folderSel.innerHTML = '<option value="ALL_KEY_FOLDERS">⏳ Loading folders...</option>';
 
         try {
             const res = await fetch(`/api/search?matterId=${encodeURIComponent(matterId)}`);
             const data = await res.json();
 
-            folderSel.innerHTML = '<option value="ALL_KEY_FOLDERS">⚡ All Key Folders (01. ID, 02. Medical, 04. Work)</option>';
+            folderSel.innerHTML = '<option value="ALL_KEY_FOLDERS">⚡ All Key Folders (01. ID, 02. Medical/Decl, 04. Work)</option>';
             if (data.success && Array.isArray(data.folders)) {
                 data.folders.forEach(fld => {
                     const opt = document.createElement('option');
@@ -1342,7 +1420,8 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
                 lastName: parts.slice(1).join(' ') || '',
                 phone: client.phone || '',
                 state: 'CA',
-                language: 'Armenian'
+                language: 'Armenian',
+                nativeLanguage: 'Armenian'
             };
             renderSummaryPills();
 
@@ -1361,18 +1440,22 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
                         ...clientMemoryStore,
                         firstName: toCleanTitleCase(p.firstName || clientMemoryStore.firstName),
                         lastName: toCleanTitleCase(p.lastName || clientMemoryStore.lastName),
+                        middleName: toCleanTitleCase(p.middleName || ''),
                         ssn: p.ssn || clientMemoryStore.ssn || '',
                         dob: p.dob || clientMemoryStore.dob || '',
                         street: toCleanTitleCase(p.street || clientMemoryStore.street || ''),
+                        apt: toCleanTitleCase(p.apt || ''),
                         city: toCleanTitleCase(p.city || 'Glendale'),
                         state: (p.state || 'CA').toUpperCase(),
                         zip: p.zip || clientMemoryStore.zip || '',
                         gender: toCleanTitleCase(p.gender || clientMemoryStore.gender || ''),
                         language: toCleanTitleCase(p.language || 'Armenian'),
+                        nativeLanguage: toCleanTitleCase(p.language || 'Armenian'),
                         heightFt: p.heightFeet || clientMemoryStore.heightFt || '',
                         heightIn: p.heightInches || clientMemoryStore.heightIn || '',
                         weight: p.weight || clientMemoryStore.weight || '',
-                        caseNum: p.aNumber || clientMemoryStore.caseNum || ''
+                        caseNum: p.aNumber || clientMemoryStore.caseNum || '',
+                        aNumber: p.aNumber || clientMemoryStore.aNumber || ''
                     };
                     renderSummaryPills();
                     document.getElementById('dossierStatusBadge').textContent = '✓ Profile Ready';
@@ -1474,7 +1557,7 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
         }, 160);
     }
 
-   // Умное объединение данных из 10 разных файлов (выписки, аптека, анализы, ID)
+    // Умное объединение данных из 10 разных файлов (Паспорт, I-94, Св-во о рождении, Св-во о браке, Декларация, Выписки)
     function mergeExtractedDataIntoMemory(ex) {
         if (!ex || typeof ex !== 'object') return;
         clientMemoryStore.aiScanned = true;
@@ -1503,7 +1586,6 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
                             cleanedClinic[ck] = ck === 'state' ? (cItem[ck] || 'CA').toUpperCase() : toCleanTitleCase(cItem[ck]);
                         });
 
-                        // Если это чисто аптечная выписка (Pharmacy Report) — сохраняем лекарства в общий буфер и прикрепляем к основной клинике
                         if (!cleanedClinic.clinicName && !cleanedClinic.doctorName && cleanedClinic.medicines) {
                             clientMemoryStore.pharmacyMeds = clientMemoryStore.pharmacyMeds
                                 ? (clientMemoryStore.pharmacyMeds.includes(cleanedClinic.medicines.slice(0, 12)) ? clientMemoryStore.pharmacyMeds : clientMemoryStore.pharmacyMeds + ', ' + cleanedClinic.medicines)
@@ -1514,7 +1596,6 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
                             return;
                         }
 
-                        // Не добавляем диагностические лаборатории (Quest Diagnostics / Dignity Health EKG) как отдельные амбулаторные клиники, если они уже идут в Таблицу №10
                         const isPureLabOrTestHosp = /quest diagnostics|dignity health/i.test(cleanedClinic.clinicName || '') && /ekg|x-ray|electrocardio|blood/i.test((cleanedClinic.reason || '') + ' ' + (cleanedClinic.treatments || ''));
                         if (isPureLabOrTestHosp && existingClinics.length >= 2) {
                             return;
@@ -1574,6 +1655,31 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
                     }
                 });
                 clientMemoryStore.tests = currentTests;
+            } else if (['children', 'residences5Years', 'educationHistory', 'employment5Years'].includes(k) && Array.isArray(val)) {
+                const existingList = Array.isArray(clientMemoryStore[k]) ? clientMemoryStore[k] : [];
+                val.forEach(item => {
+                    if (item && typeof item === 'object' && Object.values(item).some(v => v && String(v).trim() !== '')) {
+                        existingList.push(item);
+                    }
+                });
+                clientMemoryStore[k] = existingList;
+            } else if (['spouse', 'lastAddressBeforeUS', 'family', 'asylum', 'job'].includes(k) && typeof val === 'object') {
+                const currentObj = clientMemoryStore[k] || {};
+                Object.keys(val).forEach(subK => {
+                    const subV = val[subK];
+                    if (subV === null || subV === undefined || subV === '') return;
+                    if (Array.isArray(subV)) {
+                        const nonEmpty = subV.filter(x => x && (typeof x === 'string' ? x.trim() !== '' : Object.values(x).some(Boolean)));
+                        if (nonEmpty.length > 0) {
+                            currentObj[subK] = [...(Array.isArray(currentObj[subK]) ? currentObj[subK] : []), ...nonEmpty];
+                        }
+                    } else {
+                        if (!currentObj[subK] || (/^n/i.test(currentObj[subK]) && /^y/i.test(subV))) {
+                            currentObj[subK] = subV;
+                        }
+                    }
+                });
+                clientMemoryStore[k] = currentObj;
             } else if (Array.isArray(val)) {
                 const nonEmpty = val.filter(Boolean).map(v => typeof v === 'string' ? toCleanTitleCase(v) : v);
                 if (nonEmpty.length > 0) {
@@ -1583,12 +1689,6 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
                     });
                     clientMemoryStore[k] = existingArr;
                 }
-            } else if (typeof val === 'object') {
-                const cleanedObj = {};
-                Object.keys(val).forEach(ok => {
-                    if (val[ok]) cleanedObj[ok] = toCleanTitleCase(val[ok]);
-                });
-                clientMemoryStore[k] = { ...(clientMemoryStore[k] || {}), ...cleanedObj };
             } else {
                 const strVal = k === 'state' ? String(val).toUpperCase() : toCleanTitleCase(val);
                 if (!strVal) return;
@@ -1789,12 +1889,14 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
         const m = clientMemoryStore || {};
         const firstName = toCleanTitleCase(m.firstName || '');
         const lastName = toCleanTitleCase(m.lastName || '');
+        const middleName = toCleanTitleCase(m.middleName || '');
         const fullName = `${firstName} ${lastName}`.trim() || toCleanTitleCase(currentClient ? currentClient.name : '');
         const lastFirst = lastName ? `${lastName}, ${firstName}` : fullName;
         const phone = document.getElementById('phoneNumber').value.trim() || m.phone || (currentClient ? currentClient.phone : '');
         const ssn = (m.ssn || '').trim();
         const dob = (m.dob || '').trim();
         const street = toCleanTitleCase(m.street || '');
+        const apt = toCleanTitleCase(m.apt || '');
         const city = toCleanTitleCase(m.city || 'Glendale');
         const state = (m.state || 'CA').trim().toUpperCase();
         const zip = (m.zip || '').trim();
@@ -1805,19 +1907,20 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
         const heightFt = String(m.heightFt || '').replace(/\D/g, '').trim();
         const heightIn = String(m.heightIn || '').replace(/\D/g, '').trim();
         const weight = String(m.weight || '').replace(/\D/g, '').trim();
-        const caseNum = (m.caseNum || '').trim();
+        const caseNum = (m.aNumber || m.caseNum || '').trim();
         const today = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
 
         return {
-            firstName, lastName, fullName, lastFirst,
+            firstName, lastName, middleName, fullName, lastFirst,
             phone, ssn, dob,
-            street, city, state, zip, fullAddress, cityStateZip,
+            street, apt, city, state, zip, fullAddress, cityStateZip,
             gender, language, heightFt, heightIn, weight, caseNum,
             ai: m,
             today,
             repName: "Mariam Djaradjian",
             repOrg: "All Docs Consulting",
-            repStreet: "400 W Colorado St, Suite 202",
+            repStreet: "400 W Colorado St",
+            repApt: "Suite 202",
             repCity: "Glendale",
             repState: "CA",
             repZip: "91204",
@@ -1863,6 +1966,88 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
         };
     }
 
+    // Генерация умного отчета обратной связи (AI Audit & Missing Info) для любой открытой формы!
+    function buildAndRenderAiAuditReport(formCode, d) {
+        const ai = d.ai || {};
+        const items = [];
+
+        if (!ai.aiScanned) {
+            items.push({
+                type: 'critical',
+                title: '🔴 AI Scan Not Run Yet',
+                text: 'Вы еще не нажали синюю кнопку "5. Scan Checked Files with Gemini AI". Сейчас заполнены только базовые контактные данные из профиля Docketwise.'
+            });
+        }
+
+        if (formCode === 'I-589') {
+            if (!cleanVal(d.caseNum) && !cleanVal(ai.aNumber)) {
+                items.push({ type: 'warn', title: '🟡 Part A.I Line 1 — A-Number', text: 'A-Number не найден в документах. Если у клиента уже есть A-Number (например, из NTA или EAD), впишите его.' });
+            }
+            if (!cleanVal(ai.i94Number) || !cleanVal(ai.lastEntryDate)) {
+                items.push({ type: 'critical', title: '🔴 Part A.I Line 19 — I-94 & Last Entry Date', text: 'Не найден номер I-94 или точная дата последнего въезда в США. Прикрепите форму I-94 или визу/штамп в паспорте.' });
+            }
+            if (!cleanVal(ai.passportNumber) || !cleanVal(ai.passportExp)) {
+                items.push({ type: 'warn', title: '🟡 Part A.I Line 20-25 — Passport Details', text: 'Проверьте номер паспорта, страну выдачи и срок действия паспорта (Expiration Date).' });
+            }
+            const fam = ai.family || {};
+            if (!cleanVal(fam.motherName) || !cleanVal(fam.fatherName)) {
+                items.push({ type: 'critical', title: '🔴 Part A.III Line 5 (Page 4) — Parents (Birth Certificate)', text: 'Имена родителей (Мать и Отец) не найдены. Отсканируйте Свидетельство о рождении клиента (Birth Certificate) для автозаполнения родителей.' });
+            } else if (!cleanVal(fam.motherLocation) || !cleanVal(fam.fatherLocation)) {
+                items.push({ type: 'warn', title: '🟡 Part A.III Line 5 (Page 4) — Parents Current Location / Deceased', text: `Имена родителей (${fam.motherName || ''} / ${fam.fatherName || ''}) внесены из св-ва о рождении! Уточните со слов клиента: живы ли родители и в каком городе/стране находятся сейчас.` });
+            }
+            if (!Array.isArray(fam.siblings) || fam.siblings.length === 0) {
+                items.push({ type: 'warn', title: '🟡 Part A.III Line 5 (Page 4) — Siblings (Братья / Сестры)', text: 'В официальных документах нет сведений о родных братьях/сестрах. Уточните у клиента их ФИО, место рождения и текущий город проживания.' });
+            }
+            if (!Array.isArray(ai.residences5Years) || ai.residences5Years.length === 0) {
+                items.push({ type: 'warn', title: '🟡 Part A.III Line 1-2 (Page 4) — 5-Year Address History', text: 'Уточните у клиента точные даты (MM/YYYY) проживания по последнему адресу в родной стране и в США за последние 5 лет.' });
+            }
+            if (!Array.isArray(ai.employment5Years) || ai.employment5Years.length === 0) {
+                items.push({ type: 'warn', title: '🟡 Part A.III Line 4 (Page 4) — 5-Year Employment History', text: 'Сведения о местах работы за последние 5 лет не найдены в документах. Уточните со слов клиента (работодатель, должность, даты MM/YYYY).' });
+            }
+            if (!cleanVal(ai.asylum?.harmSummary)) {
+                items.push({ type: 'critical', title: '🔴 Part B (Pages 5-6) — Asylum Declaration / Persecution', text: 'Декларация клиента (Personal Statement) не была отсканирована. Выберите файл Декларации и нажмите Scan, чтобы ИИ заполнил мотив преследования в Part B и Part C.' });
+            }
+        } else if (formCode === 'MC 223') {
+            if (!Array.isArray(ai.diagnoses) || ai.diagnoses.length === 0) {
+                items.push({ type: 'critical', title: '🔴 Item 6 — Medical Problems / Diagnoses', text: 'Диагнозы еще не загружены. Выберите медицинские выписки клиента в папке 02. Medical и нажмите Scan.' });
+            }
+            if (!Array.isArray(ai.clinics) || ai.clinics.length === 0) {
+                items.push({ type: 'warn', title: '🟡 Item 7-9 — Clinics & Doctors', text: 'Не найдены клиники или врачи за последние 12 месяцев.' });
+            }
+            if (!cleanVal(ai.educationDate)) {
+                items.push({ type: 'warn', title: '🟡 Item 15b (Page 4) — School Completion Date', text: 'Уточните у клиента месяц и год окончания школы/вуза (MM/YYYY).' });
+            }
+        }
+
+        if (Array.isArray(ai.aiFeedback)) {
+            ai.aiFeedback.forEach(note => {
+                if (note && String(note).trim().length > 4) {
+                    items.push({ type: 'warn', title: '🧠 Gemini AI Note', text: String(note).trim() });
+                }
+            });
+        }
+
+        if (items.length === 0) {
+            items.push({
+                type: 'ok',
+                title: '🟢 All Key Sections Populated',
+                text: 'Все основные разделы формы успешно заполнены из документов клиента! Проверьте даты и подписи перед скачиванием.'
+            });
+        }
+
+        const countEl = document.getElementById('aiReviewCount');
+        const listEl = document.getElementById('aiFeedbackList');
+        if (countEl) countEl.textContent = items.length;
+        if (listEl) {
+            listEl.innerHTML = items.map(it => `
+                <div class="audit-card ${it.type}">
+                    <span class="audit-card-title">${it.title}</span>
+                    <div>${it.text}</div>
+                </div>
+            `).join('');
+        }
+    }
+
     function smartAutoFillPdfForm(form, d, pdfDoc) {
         const fields = form.getFields();
         const pages = pdfDoc ? pdfDoc.getPages() : [];
@@ -1886,9 +2071,9 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
         const dobYY = dobParts[2] || '';
 
         const ai = d.ai || {};
-        // Был ли уже выполнен AI Scan документов клиента?
         const hasAiScanRun = Boolean(ai.aiScanned || (Array.isArray(ai.diagnoses) && ai.diagnoses.length > 0) || (Array.isArray(ai.clinics) && ai.clinics.length > 0));
 
+        // 1. ДАННЫЕ ДЛЯ MC 223
         const diag1 = cleanVal(ai.diagnoses?.[0]?.problem);
         const diagDate1 = cleanVal(ai.diagnoses?.[0]?.onsetDate);
         const diag2 = cleanVal(ai.diagnoses?.[1]?.problem);
@@ -1914,20 +2099,15 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
 
         const [c0Med1, c0Med2] = splitTextToLines(c0.medicines, 48, 95);
         const [c0Trt1, c0Trt2] = splitTextToLines(c0.treatments, 24, 95);
-
         const [c1Med1, c1Med2] = splitTextToLines(c1.medicines, 48, 95);
         const [c1Trt1, c1Trt2] = splitTextToLines(c1.treatments, 24, 95);
-
         const [c2Med1, c2Med2] = splitTextToLines(c2.medicines, 48, 95);
         const [c2Trt1, c2Trt2] = splitTextToLines(c2.treatments, 24, 95);
-
         const [c3Med1, c3Med2] = splitTextToLines(c3.medicines, 48, 95);
         const [c3Trt1, c3Trt2] = splitTextToLines(c3.treatments, 24, 95);
-
         const [jobDesc1, jobDesc2, jobDesc3] = splitTextToLines(job.description, 75, 85);
 
         const findClinicForTest = (regex) => (ai.clinics || []).find(cl => regex.test((cl.reason + ' ' + cl.treatments + ' ' + cl.clinicName).toLowerCase())) || {};
-
         const ekgCl = findClinicForTest(/ekg|electrocardio|ecg/);
         const xrayCl = findClinicForTest(/x-ray|xray|chest|radiology/);
         const bloodCl = findClinicForTest(/blood|cbc|cmp|lipid|hba1c|quest|lab/);
@@ -1936,25 +2116,265 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
         const tEkg = (tests.ekg && (tests.ekg.name || tests.ekg.performed)) ? tests.ekg : (ekgCl.clinicName ? {
             performed: 'Yes', name: ekgCl.clinicName, address: ekgCl.address, city: ekgCl.city, state: ekgCl.state || 'CA', zip: ekgCl.zip, date: (ekgCl.firstSeen || '').replace(/^(\d{2})\/\d{2}\/(\d{4})$/, '$1/$2') || diagDate1
         } : { performed: 'No' });
-
         const tTread = (tests.treadmill && (tests.treadmill.name || tests.treadmill.performed)) ? tests.treadmill : { performed: 'No' };
-
         const tXray = (tests.chestXray && (tests.chestXray.name || tests.chestXray.performed)) ? tests.chestXray : (xrayCl.clinicName ? {
             performed: 'Yes', name: xrayCl.clinicName, address: xrayCl.address, city: xrayCl.city, state: xrayCl.state || 'CA', zip: xrayCl.zip, date: (xrayCl.firstSeen || '').replace(/^(\d{2})\/\d{2}\/(\d{4})$/, '$1/$2') || diagDate1
         } : { performed: 'No' });
-
         const tPft = (tests.breathing && (tests.breathing.name || tests.breathing.performed)) ? tests.breathing : { performed: 'No' };
-
         const tBlood = (tests.blood && (tests.blood.name || tests.blood.performed)) ? tests.blood : (bloodCl.clinicName ? {
             performed: 'Yes', name: bloodCl.clinicName, address: bloodCl.address, city: bloodCl.city, state: bloodCl.state || 'CA', zip: bloodCl.zip, date: (bloodCl.lastSeen || bloodCl.firstSeen || '').replace(/^(\d{2})\/\d{2}\/(\d{4})$/, '$1/$2')
         } : { performed: 'No' });
-
         const tOther = (tests.other && (tests.other.name || tests.other.performed)) ? tests.other : (otherCl.clinicName ? {
             performed: 'Yes', name: otherCl.clinicName, address: otherCl.address, city: otherCl.city, state: otherCl.state || 'CA', zip: otherCl.zip, date: (otherCl.lastSeen || otherCl.firstSeen || '').replace(/^(\d{2})\/\d{2}\/(\d{4})$/, '$1/$2')
         } : { performed: 'No' });
 
+        // 2. ДАННЫЕ ДЛЯ FORM I-589 (ВСЕ 12 СТРАНИЦ!)
+        let streetOnly = d.street;
+        let aptOnly = d.apt || '';
+        const aptMatch = streetOnly.match(/^(.*?),\s*(?:Apt|Suite|Ste|Unit|#)\s*([A-Za-z0-9\-]+)$/i);
+        if (aptMatch) {
+            streetOnly = aptMatch[1].trim();
+            if (!aptOnly) aptOnly = aptMatch[2].trim();
+        }
+
+        const sp = ai.spouse || {};
+        const ch1 = ai.children?.[0] || {};
+        const ch2 = ai.children?.[1] || {};
+        const ch3 = ai.children?.[2] || {};
+        const ch4 = ai.children?.[3] || {};
+        const lastAddr = ai.lastAddressBeforeUS || {};
+        const res0 = ai.residences5Years?.[0] || { street: streetOnly, city: d.city, state: d.state, country: 'USA', dateFrom: cleanVal(ai.lastEntryDate)?.replace(/^(\d{2})\/\d{2}\/(\d{4})$/, '$1/$2') || '', dateTo: 'Present' };
+        const res1 = ai.residences5Years?.[1] || lastAddr;
+        const res2 = ai.residences5Years?.[2] || {};
+        const res3 = ai.residences5Years?.[3] || {};
+        const res4 = ai.residences5Years?.[4] || {};
+
+        const edu0 = ai.educationHistory?.[0] || {};
+        const edu1 = ai.educationHistory?.[1] || {};
+        const edu2 = ai.educationHistory?.[2] || {};
+        const edu3 = ai.educationHistory?.[3] || {};
+
+        const emp0 = ai.employment5Years?.[0] || {};
+        const emp1 = ai.employment5Years?.[1] || {};
+        const emp2 = ai.employment5Years?.[2] || {};
+
+        const fam = ai.family || {};
+        const sib0 = fam.siblings?.[0] || {};
+        const sib1 = fam.siblings?.[1] || {};
+        const sib2 = fam.siblings?.[2] || {};
+        const sib3 = fam.siblings?.[3] || {};
+        const asy = ai.asylum || {};
+
+        const exactI589Map = {
+            // СТРАНИЦА 1 — PART A.I (INFORMATION ABOUT YOU)
+            "form1[0].#subform[0].PtAILine1_ANumber[0]": cleanVal(d.caseNum || ai.aNumber).replace(/^A-?/i, ''),
+            "form1[0].#subform[0].TextField1[0]": formattedSsn,
+            "form1[0].#subform[0].TextField1[8]": cleanVal(ai.uscisAccount),
+            "form1[0].#subform[0].PtAILine4_LastName[0]": d.lastName,
+            "form1[0].#subform[0].PtAILine5_FirstName[0]": d.firstName,
+            "form1[0].#subform[0].PtAILine6_MiddleName[0]": d.middleName || "N/A",
+            "form1[0].#subform[0].TextField1[1]": cleanVal(ai.otherNames) || "N/A",
+            "form1[0].#subform[0].PtAILine8_StreetNumandName[0]": streetOnly,
+            "form1[0].#subform[0].PtAILine8_AptNumber[0]": aptOnly,
+            "form1[0].#subform[0].TextField1[2]": d.city,
+            "form1[0].#subform[0].PtAILine8_State[0]": d.state,
+            "form1[0].#subform[0].PtAILine8_Zipcode[0]": d.zip,
+            "form1[0].#subform[0].PtAILine8_AreaCode[0]": phoneArea,
+            "form1[0].#subform[0].PtAILine8_TelephoneNumber[0]": phoneRest.replace(/\D/g, ''),
+            "form1[0].#subform[0].DateTimeField1[0]": d.dob,
+            "form1[0].#subform[0].TextField1[4]": cleanVal(ai.cityCountryBirth),
+            "form1[0].#subform[0].TextField1[3]": cleanVal(ai.nationality) || "Armenia",
+            "form1[0].#subform[0].TextField1[5]": cleanVal(ai.nationalityAtBirth || ai.nationality) || "Armenia",
+            "form1[0].#subform[0].TextField1[6]": cleanVal(ai.raceEthnicTribal) || "Armenian",
+            "form1[0].#subform[0].TextField1[7]": cleanVal(ai.religion) || "Christian",
+            "form1[0].#subform[0].DateTimeField6[0]": cleanVal(ai.leftHomeCountryDate),
+            "form1[0].#subform[0].TextField3[0]": cleanVal(ai.i94Number),
+            "form1[0].#subform[0].DateTimeField2[0]": cleanVal(ai.lastEntryDate),
+            "form1[0].#subform[0].TextField4[0]": cleanVal(ai.lastEntryPlace),
+            "form1[0].#subform[0].TextField4[1]": cleanVal(ai.lastEntryStatus),
+            "form1[0].#subform[0].DateTimeField2[1]": cleanVal(ai.statusExpDate),
+            "form1[0].#subform[0].TextField5[0]": cleanVal(ai.passportCountry) || cleanVal(ai.nationality) || "Armenia",
+            "form1[0].#subform[0].TextField5[1]": cleanVal(ai.passportNumber),
+            "form1[0].#subform[0].DateTimeField2[2]": cleanVal(ai.passportExp),
+            "form1[0].#subform[0].TextField7[0]": cleanVal(ai.nativeLanguage || d.language) || "Armenian",
+            "form1[0].#subform[0].TextField7[1]": cleanVal(ai.otherLanguages),
+
+            // СТРАНИЦА 2 — PART A.II (SPOUSE & CHILD 1)
+            "form1[0].#subform[1].NotMarried[0].PtAIILine1_ANumber[0]": cleanVal(sp.aNumber),
+            "form1[0].#subform[1].NotMarried[0].TextField10[1]": cleanVal(sp.passportNumber),
+            "form1[0].#subform[1].NotMarried[0].DateTimeField7[0]": cleanVal(sp.dob),
+            "form1[0].#subform[1].NotMarried[0].TextField10[2]": cleanVal(sp.ssn),
+            "form1[0].#subform[1].NotMarried[0].PtAIILine5_LastName[0]": cleanVal(sp.lastName),
+            "form1[0].#subform[1].NotMarried[0].PtAIILine6_FirstName[0]": cleanVal(sp.firstName),
+            "form1[0].#subform[1].NotMarried[0].PtAIILine7_MiddleName[0]": cleanVal(sp.middleName),
+            "form1[0].#subform[1].NotMarried[0].TextField10[3]": cleanVal(sp.maidenName),
+            "form1[0].#subform[1].NotMarried[0].DateTimeField8[0]": cleanVal(sp.marriageDate),
+            "form1[0].#subform[1].NotMarried[0].TextField10[4]": cleanVal(sp.marriagePlace),
+            "form1[0].#subform[1].NotMarried[0].TextField10[5]": cleanVal(sp.cityCountryBirth),
+            "form1[0].#subform[1].NotMarried[0].TextField10[0]": cleanVal(sp.nationality),
+            "form1[0].#subform[1].NotMarried[0].TextField10[6]": cleanVal(sp.race),
+            "form1[0].#subform[1].NotMarried[0].PtAIILine15_Specify[0]": cleanVal(sp.locationIfNotUS),
+            "form1[0].#subform[1].NotMarried[0].PtAIILine16_PlaceofLastEntry[0]": cleanVal(sp.placeLastEntry),
+            "form1[0].#subform[1].NotMarried[0].PtAIILine17_DateofLastEntry[0]": cleanVal(sp.dateLastEntry),
+            "form1[0].#subform[1].NotMarried[0].PtAIILine18_I94Number[0]": cleanVal(sp.i94Number),
+            "form1[0].#subform[1].NotMarried[0].PtAIILine19_StatusofLastAdmission[0]": cleanVal(sp.lastEntryStatus),
+            "form1[0].#subform[1].NotMarried[0].PtAIILine20_SpouseCurrentStatus[0]": cleanVal(sp.currentStatus),
+            "form1[0].#subform[1].NotMarried[0].PtAIILine21_ExpDateofAuthorizedStay[0]": cleanVal(sp.statusExpDate),
+
+            "form1[0].#subform[1].TotalChild[0]": Array.isArray(ai.children) && ai.children.length > 0 ? String(ai.children.length) : "",
+            "form1[0].#subform[1].ChildAlien1[0]": cleanVal(ch1.aNumber),
+            "form1[0].#subform[1].ChildPassport1[0]": cleanVal(ch1.passportNumber),
+            "form1[0].#subform[1].ChildMarital1[0]": cleanVal(ch1.maritalStatus) || (ch1.firstName ? "Single" : ""),
+            "form1[0].#subform[1].ChildSSN1[0]": cleanVal(ch1.ssn),
+            "form1[0].#subform[1].ChildLast1[0]": cleanVal(ch1.lastName),
+            "form1[0].#subform[1].ChildFirst1[0]": cleanVal(ch1.firstName),
+            "form1[0].#subform[1].ChildMiddle1[0]": cleanVal(ch1.middleName),
+            "form1[0].#subform[1].ChildDOB1[0]": cleanVal(ch1.dob),
+            "form1[0].#subform[1].ChildCity1[0]": cleanVal(ch1.cityCountryBirth),
+            "form1[0].#subform[1].ChildNat1[0]": cleanVal(ch1.nationality),
+            "form1[0].#subform[1].ChildRace1[0]": cleanVal(ch1.race),
+            "form1[0].#subform[1].PtAIILine13_Specify[0]": cleanVal(ch1.locationIfNotUS),
+            "form1[0].#subform[1].PtAIILine14_PlaceofLastEntry[0]": cleanVal(ch1.placeLastEntry),
+            "form1[0].#subform[1].PtAIILine15_ExpirationDate[0]": cleanVal(ch1.dateLastEntry),
+            "form1[0].#subform[1].PtAIILine16_I94Number[0]": cleanVal(ch1.i94Number),
+            "form1[0].#subform[1].PtAIILine17_StatusofLastAdmission[0]": cleanVal(ch1.lastEntryStatus),
+            "form1[0].#subform[1].PtAIILine18_CurrentStatusofChild[0]": cleanVal(ch1.currentStatus),
+            "form1[0].#subform[1].PtAIILine19_ExpDateofAuthorizedStay[0]": cleanVal(ch1.statusExpDate),
+
+            // СТРАНИЦА 3 — CHILDREN 2, 3, 4
+            "form1[0].#subform[3].ChildAlien2[0]": cleanVal(ch2.aNumber),
+            "form1[0].#subform[3].ChildPassport2[0]": cleanVal(ch2.passportNumber),
+            "form1[0].#subform[3].ChildMarital2[0]": cleanVal(ch2.maritalStatus) || (ch2.firstName ? "Single" : ""),
+            "form1[0].#subform[3].ChildSSN2[0]": cleanVal(ch2.ssn),
+            "form1[0].#subform[3].ChildLast2[0]": cleanVal(ch2.lastName),
+            "form1[0].#subform[3].ChildFirst2[0]": cleanVal(ch2.firstName),
+            "form1[0].#subform[3].ChildMiddle2[0]": cleanVal(ch2.middleName),
+            "form1[0].#subform[3].ChildDOB2[0]": cleanVal(ch2.dob),
+            "form1[0].#subform[3].ChildCity2[0]": cleanVal(ch2.cityCountryBirth),
+            "form1[0].#subform[3].ChildNat2[0]": cleanVal(ch2.nationality),
+            "form1[0].#subform[3].ChildRace2[0]": cleanVal(ch2.race),
+
+            "form1[0].#subform[3].ChildAlien3[0]": cleanVal(ch3.aNumber),
+            "form1[0].#subform[3].ChildPassport3[0]": cleanVal(ch3.passportNumber),
+            "form1[0].#subform[3].ChildMarital3[0]": cleanVal(ch3.maritalStatus) || (ch3.firstName ? "Single" : ""),
+            "form1[0].#subform[3].ChildSSN3[0]": cleanVal(ch3.ssn),
+            "form1[0].#subform[3].ChildLast3[0]": cleanVal(ch3.lastName),
+            "form1[0].#subform[3].ChildFirst3[0]": cleanVal(ch3.firstName),
+            "form1[0].#subform[3].ChildMiddle3[0]": cleanVal(ch3.middleName),
+            "form1[0].#subform[3].ChildDOB3[0]": cleanVal(ch3.dob),
+            "form1[0].#subform[3].ChildCity3[0]": cleanVal(ch3.cityCountryBirth),
+            "form1[0].#subform[3].ChildNat3[0]": cleanVal(ch3.nationality),
+            "form1[0].#subform[3].ChildRace3[0]": cleanVal(ch3.race),
+
+            // СТРАНИЦА 4 — PART A.III (ADDRESSES, EDUCATION, EMPLOYMENT, PARENTS & SIBLINGS)
+            "form1[0].#subform[4].TextField13[0]": cleanVal(lastAddr.street),
+            "form1[0].#subform[4].TextField13[2]": cleanVal(lastAddr.city),
+            "form1[0].#subform[4].TextField13[4]": cleanVal(lastAddr.departmentState),
+            "form1[0].#subform[4].TextField13[6]": cleanVal(lastAddr.country) || cleanVal(ai.nationality),
+            "form1[0].#subform[4].DateTimeField21[0]": cleanVal(lastAddr.dateFrom),
+            "form1[0].#subform[4].DateTimeField20[0]": cleanVal(lastAddr.dateTo),
+
+            // Residences last 5 years (Line 2)
+            "form1[0].#subform[4].TextField13[8]": cleanVal(res0.street),
+            "form1[0].#subform[4].TextField13[10]": cleanVal(res0.city),
+            "form1[0].#subform[4].TextField13[12]": cleanVal(res0.state),
+            "form1[0].#subform[4].TextField13[14]": cleanVal(res0.country),
+            "form1[0].#subform[4].DateTimeField24[0]": cleanVal(res0.dateFrom),
+            "form1[0].#subform[4].DateTimeField26[0]": cleanVal(res0.dateTo),
+
+            "form1[0].#subform[4].TextField13[9]": cleanVal(res1.street),
+            "form1[0].#subform[4].TextField13[11]": cleanVal(res1.city),
+            "form1[0].#subform[4].TextField13[13]": cleanVal(res1.state || res1.departmentState),
+            "form1[0].#subform[4].TextField13[15]": cleanVal(res1.country),
+            "form1[0].#subform[4].DateTimeField25[0]": cleanVal(res1.dateFrom),
+            "form1[0].#subform[4].DateTimeField27[0]": cleanVal(res1.dateTo),
+
+            "form1[0].#subform[4].TextField13[16]": cleanVal(res2.street),
+            "form1[0].#subform[4].TextField13[17]": cleanVal(res2.city),
+            "form1[0].#subform[4].TextField13[18]": cleanVal(res2.state),
+            "form1[0].#subform[4].TextField13[19]": cleanVal(res2.country),
+            "form1[0].#subform[4].DateTimeField28[0]": cleanVal(res2.dateFrom),
+            "form1[0].#subform[4].DateTimeField29[0]": cleanVal(res2.dateTo),
+
+            // Education (Line 3)
+            "form1[0].#subform[4].TextField13[28]": cleanVal(edu0.schoolName),
+            "form1[0].#subform[4].TextField13[30]": cleanVal(edu0.schoolType),
+            "form1[0].#subform[4].TextField13[32]": cleanVal(edu0.location),
+            "form1[0].#subform[4].DateTimeField41[0]": cleanVal(edu0.dateFrom),
+            "form1[0].#subform[4].DateTimeField40[0]": cleanVal(edu0.dateTo),
+
+            "form1[0].#subform[4].TextField13[29]": cleanVal(edu1.schoolName),
+            "form1[0].#subform[4].TextField13[31]": cleanVal(edu1.schoolType),
+            "form1[0].#subform[4].TextField13[33]": cleanVal(edu1.location),
+            "form1[0].#subform[4].DateTimeField38[0]": cleanVal(edu1.dateFrom),
+            "form1[0].#subform[4].DateTimeField39[0]": cleanVal(edu1.dateTo),
+
+            // Employment last 5 years (Line 4)
+            "form1[0].#subform[4].TextField13[40]": cleanVal(emp0.employerAndAddress),
+            "form1[0].#subform[4].TextField13[42]": cleanVal(emp0.occupation),
+            "form1[0].#subform[4].DateTimeField42[0]": cleanVal(emp0.dateFrom),
+            "form1[0].#subform[4].DateTimeField44[0]": cleanVal(emp0.dateTo),
+
+            "form1[0].#subform[4].TextField13[41]": cleanVal(emp1.employerAndAddress),
+            "form1[0].#subform[4].TextField13[43]": cleanVal(emp1.occupation),
+            "form1[0].#subform[4].DateTimeField43[0]": cleanVal(emp1.dateFrom),
+            "form1[0].#subform[4].DateTimeField45[0]": cleanVal(emp1.dateTo),
+
+            "form1[0].#subform[4].TextField13[44]": cleanVal(emp2.employerAndAddress),
+            "form1[0].#subform[4].TextField13[45]": cleanVal(emp2.occupation),
+            "form1[0].#subform[4].DateTimeField46[0]": cleanVal(emp2.dateFrom),
+            "form1[0].#subform[4].DateTimeField47[0]": cleanVal(emp2.dateTo),
+
+            // Mother, Father & Siblings (Line 5 — from Birth Certificate!)
+            "form1[0].#subform[4].TextField13[46]": cleanVal(fam.motherName),
+            "form1[0].#subform[4].TextField13[49]": cleanVal(fam.motherBirthPlace),
+            "form1[0].#subform[4].TextField35[0]": cleanVal(fam.motherLocation),
+
+            "form1[0].#subform[4].TextField13[47]": cleanVal(fam.fatherName),
+            "form1[0].#subform[4].TextField13[50]": cleanVal(fam.fatherBirthPlace),
+            "form1[0].#subform[4].TextField35[1]": cleanVal(fam.fatherLocation),
+
+            "form1[0].#subform[4].TextField13[48]": cleanVal(sib0.name),
+            "form1[0].#subform[4].TextField13[51]": cleanVal(sib0.birthPlace),
+            "form1[0].#subform[4].TextField35[2]": cleanVal(sib0.location),
+
+            "form1[0].#subform[4].TextField13[52]": cleanVal(sib1.name),
+            "form1[0].#subform[4].TextField13[53]": cleanVal(sib1.birthPlace),
+            "form1[0].#subform[4].TextField35[3]": cleanVal(sib1.location),
+
+            "form1[0].#subform[4].TextField13[54]": cleanVal(sib2.name),
+            "form1[0].#subform[4].TextField13[55]": cleanVal(sib2.birthPlace),
+            "form1[0].#subform[4].TextField35[4]": cleanVal(sib2.location),
+
+            "form1[0].#subform[4].TextField13[56]": cleanVal(sib3.name),
+            "form1[0].#subform[4].TextField13[57]": cleanVal(sib3.birthPlace),
+            "form1[0].#subform[4].TextField35[5]": cleanVal(sib3.location),
+
+            // СТРАНИЦЫ 5, 6, 7, 8 — PART B & PART C (MOTIVES OF PERSECUTION FROM DECLARATION)
+            "form1[0].#subform[5].#subform[6].TextField14[0]": cleanVal(asy.harmSummary),
+            "form1[0].#subform[5].#subform[6].TextField15[0]": cleanVal(asy.fearSummary),
+            "form1[0].#subform[7].PBL2_TextField[0]": cleanVal(asy.arrestSummary),
+            "form1[0].#subform[7].PBL3A_TextField[0]": cleanVal(asy.orgSummary),
+            "form1[0].#subform[7].PBL3B_TextField[0]": cleanVal(asy.continueOrgSummary),
+            "form1[0].#subform[7].PB4_TextField[0]": cleanVal(asy.tortureSummary),
+            "form1[0].#subform[8].PCL1_TextField[0]": cleanVal(asy.priorAsylumSummary),
+            "form1[0].#subform[8].PCL2B_TextField[0]": cleanVal(asy.otherCountriesSummary),
+            "form1[0].#subform[9].PCL4_TextField[0]": cleanVal(asy.returnedSummary),
+            "form1[0].#subform[9].PCL5_TextField[0]": cleanVal(asy.oneYearReason),
+
+            // СТРАНИЦА 9 — PART D & PART E (SIGNATURE & PREPARER DECLARATION)
+            "form1[0].#subform[10].TextField20[0]": d.fullName,
+            "form1[0].#subform[10].PtE_PreparerName[0]": d.repName,
+            "form1[0].#subform[10].TextField25[1]": d.repArea,
+            "form1[0].#subform[10].TextField25[0]": d.repPhoneOnly,
+            "form1[0].#subform[10].PtE_StreetNumAndName[0]": d.repStreet,
+            "form1[0].#subform[10].PtE_AptNumber[0]": d.repApt,
+            "form1[0].#subform[10].PtE_City[0]": d.repCity,
+            "form1[0].#subform[10].PtE_State[0]": d.repState,
+            "form1[0].#subform[10].PtE_ZipCode[0]": d.repZip
+        };
+
         const exactMc223Map = {
-            // СТРАНИЦА 1
             "1a name": d.lastFirst,
             "1b 3 SSA": ssn1,
             "1b 2 SSA": ssn2,
@@ -1991,7 +2411,6 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
             "6d medical problem": diag4,
             "6d month year": diagDate4,
 
-            // СТРАНИЦА 2 — КЛИНИКА №7
             "7 name": cleanVal(c0.clinicName),
             "7 member": cleanVal(c0.memberId),
             "7 area": c0Ph.area,
@@ -2011,7 +2430,6 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
             "7 treatment": c0Trt1,
             "7 more treatment": c0Trt2,
 
-            // СТРАНИЦА 2 — КЛИНИКА №8
             "8 name": cleanVal(c1.clinicName),
             "8 member": cleanVal(c1.memberId),
             "8 area": c1Ph.area,
@@ -2031,7 +2449,6 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
             "8 treatment": c1Trt1,
             "8 more treatment": c1Trt2,
 
-            // СТРАНИЦА 3 — ВРАЧ №9
             "9 name": cleanVal(c2.doctorName || c2.clinicName),
             "9 member": cleanVal(c2.memberId),
             "9 area": c2Ph.area,
@@ -2048,7 +2465,6 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
             "9 treatment": c2Trt1,
             "9 more treatment": c2Trt2,
 
-            // СТРАНИЦА 3 — ТАБЛИЦА ТЕСТОВ №10
             "10 electrocardio facility name": cleanVal(tEkg.name),
             "10 electrocardio address": cleanVal(tEkg.address),
             "10 electrocardio city": cleanVal(tEkg.city),
@@ -2091,7 +2507,6 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
             "10 other test facility ZIP": cleanVal(tOther.zip),
             "10 other test facility date": cleanVal(tOther.date),
 
-            // СТРАНИЦА 4 & 5 & 8
             "12 first name": d.repName,
             "12 first relationship": "",
             "12 first address": d.repFullAddress,
@@ -2133,6 +2548,7 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
         };
 
         const isMc223 = (currentOpenedFormCode === 'MC 223');
+        const isI589 = (currentOpenedFormCode === 'I-589');
 
         function forceSelectPdfWidgetByPosition(field, preferPosition) {
             try {
@@ -2229,6 +2645,130 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
             });
 
             try {
+                // =========================================================
+                // 1. ТОЧНОЕ АВТОЗАПОЛНЕНИЕ FORM I-589 (ВСЕ 12 СТРАНИЦ!)
+                // =========================================================
+                if (isI589) {
+                    if (typeof field.setText === 'function') {
+                        if (Object.prototype.hasOwnProperty.call(exactI589Map, rawName)) {
+                            const val = exactI589Map[rawName];
+                            if (val !== null && val !== undefined && String(val).trim() !== '') {
+                                field.setText(String(val));
+                                filledCount++;
+                            }
+                        }
+                    }
+
+                    const isYes = (val) => /^y/i.test(String(val || '').trim());
+                    const isNo = (val) => /^n/i.test(String(val || '').trim());
+                    const isFem = d.gender && d.gender.toLowerCase().startsWith('f');
+                    const isMale = d.gender && d.gender.toLowerCase().startsWith('m');
+                    const mStat = (ai.maritalStatus || '').toLowerCase();
+                    const hasSpouse = Boolean(cleanVal(sp.lastName) || cleanVal(sp.firstName) || mStat.includes('marr'));
+                    const hasChildren = Array.isArray(ai.children) && ai.children.length > 0 && Boolean(cleanVal(ch1.firstName));
+                    const groundsArr = Array.isArray(asy.grounds) ? asy.grounds.map(g => String(g).toLowerCase()) : [];
+
+                    // Пол и Семейное положение (Страница 1)
+                    if (rawName === 'form1[0].#subform[0].PartALine9Sex[0]' && isMale) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[0].PartALine9Sex[1]' && isFem) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[0].Marital[0]' && (mStat.includes('single') || (!hasSpouse && ai.aiScanned && !mStat))) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[0].Marital[1]' && hasSpouse) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[0].Marital[2]' && mStat.includes('divorc')) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[0].Marital[3]' && mStat.includes('widow')) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[0].CheckBox31[0]') {
+                        // Also apply for Withholding under Torture Convention
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[0].CheckBox3[2]' && (!ai.immigrationCourtStatus || /never/i.test(ai.immigrationCourtStatus))) {
+                        // Line 18a: I have never been in Immigration Court proceedings
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[0].CheckBox3[0]' && /now/i.test(ai.immigrationCourtStatus || '')) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[0].CheckBox4[0]' && isYes(ai.fluentEnglish)) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[0].CheckBox4[1]' && !isYes(ai.fluentEnglish)) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    }
+
+                    // Страница 2 — Spouse & Children checkboxes
+                    if (rawName === 'form1[0].#subform[1].CheckBox5[0]' && !hasSpouse && ai.aiScanned) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[1].NotMarried[0].CheckBox14_Sex[0]' && hasSpouse && /^m/i.test(sp.gender || '')) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[1].NotMarried[0].CheckBox14_Sex[1]' && hasSpouse && /^f/i.test(sp.gender || '')) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[1].NotMarried[0].PtAIILine15_CheckBox15[1]' && hasSpouse && isYes(sp.inUS)) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[1].NotMarried[0].PtAIILine15_CheckBox15[0]' && hasSpouse && isNo(sp.inUS)) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[1].NotMarried[0].PtAIILine24_Yes[0]' && hasSpouse && isYes(sp.includeInApp)) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[1].NotMarried[0].PtAIILine24_No[0]' && hasSpouse && isNo(sp.includeInApp)) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[1].ChildrenCheckbox[1]' && !hasChildren && ai.aiScanned) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[1].ChildrenCheckbox[0]' && hasChildren) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    }
+
+                    // Страница 4 — Родители (Deceased checkboxes)
+                    if (rawName === 'form1[0].#subform[4].CheckBoxAIII5\\.m[0]' && isYes(fam.motherDeceased)) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[4].CheckBoxAIII5\\.f[0]' && isYes(fam.fatherDeceased)) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    }
+
+                    // Страницы 5-8 — Галочки Part B & Part C (ставятся только после AI Scan декларации!)
+                    if (!hasAiScanRun && !asy.harmSummary) return;
+
+                    if (rawName === 'form1[0].#subform[5].#subform[6].CheckBoxrace[0]' && groundsArr.some(g => g.includes('race'))) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[5].#subform[6].CheckBoxreligion[0]' && groundsArr.some(g => g.includes('relig'))) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[5].#subform[6].CheckBoxnationality[0]' && groundsArr.some(g => g.includes('nation'))) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[5].#subform[6].CheckBoxpolitics[0]' && (groundsArr.some(g => g.includes('polit')) || cleanVal(asy.harmSummary))) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[5].#subform[6].CheckBoxsocial[0]' && groundsArr.some(g => g.includes('social') || g.includes('group'))) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[5].#subform[6].CheckBoxtorture[0]' && (groundsArr.some(g => g.includes('tortur')) || isYes(asy.fearTorture))) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[5].#subform[6].ckboxyn1a[1]' && (isYes(asy.experiencedHarm) || cleanVal(asy.harmSummary))) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[5].#subform[6].ckboxyn1a[0]' && isNo(asy.experiencedHarm) && !cleanVal(asy.harmSummary)) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[5].#subform[6].ckboxyn1b[1]' && (isYes(asy.fearReturn) || cleanVal(asy.fearSummary))) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[7].ckboxyn2[1]' && (isYes(asy.arrestedAbroad) || cleanVal(asy.arrestSummary))) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[7].ckboxyn2[0]' && isNo(asy.arrestedAbroad) && !cleanVal(asy.arrestSummary)) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[7].ckboxyn3a[1]' && (isYes(asy.orgMember) || cleanVal(asy.orgSummary))) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[7].ckboxyn3a[0]' && isNo(asy.orgMember) && !cleanVal(asy.orgSummary)) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[7].ckboxyn4[1]' && (isYes(asy.fearTorture) || cleanVal(asy.tortureSummary))) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[7].ckboxyn4[0]' && isNo(asy.fearTorture) && !cleanVal(asy.tortureSummary)) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[8].ckboxync1[0]' && !isYes(asy.priorAsylumApp)) {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[8].ckboxync3[0]') {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    } else if (rawName === 'form1[0].#subform[9].ckboxync6[0]') {
+                        if (forceSelectPdfWidgetByPosition(field, 'on')) filledCount++;
+                    }
+                    return;
+                }
+
+                // =========================================================
+                // 2. ТОЧНОЕ АВТОЗАПОЛНЕНИЕ FORM MC 223
+                // =========================================================
                 if (isMc223) {
                     if (typeof field.setText === 'function') {
                         if (Object.prototype.hasOwnProperty.call(exactMc223Map, rawName)) {
@@ -2242,7 +2782,6 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
                         }
                     }
 
-                    // Базовые галочки профиля клиента и представителя (ставятся всегда):
                     if (rawName === 'sex' && d.gender) {
                         const isFem = d.gender.toLowerCase().startsWith('f');
                         if (forceSelectPdfWidgetByPosition(field, isFem ? 'bottom' : 'top')) filledCount++;
@@ -2257,7 +2796,6 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
                         if (forceSelectPdfWidgetByPosition(field, 'left')) filledCount++;
                     }
 
-                    // МЕДИЦИНСКИЕ И ИСТОРИЧЕСКИЕ ГАЛОЧКИ СТАВЯТСЯ ТОЛЬКО ПОСЛЕ ТОГО, КАК ВЫ НАЖАЛИ AI SCAN!
                     if (!hasAiScanRun) return;
 
                     const isYes = (val) => /^y/i.test(String(val || '').trim());
@@ -2334,7 +2872,9 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
                     return;
                 }
 
-                // УНИВЕРСАЛЬНОЕ УМНОЕ ЗАПОЛНЕНИЕ ДЛЯ ОСТАЛЬНЫХ 12 ФОРМ
+                // =========================================================
+                // 3. УНИВЕРСАЛЬНОЕ УМНОЕ ЗАПОЛНЕНИЕ ДЛЯ ОСТАЛЬНЫХ 12 ФОРМ
+                // =========================================================
                 if (typeof field.setText === 'function') {
                     let valToSet = null;
                     const isRepField = key.includes('rep') || key.includes('agent') || key.includes('org') || key.includes('helper') || key.includes('assister') || key.includes('preparer') || key.includes('interpreter') || key.includes('designee') || key.includes('attorney');
@@ -2376,13 +2916,15 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
             } catch (err) {}
         });
 
+        buildAndRenderAiAuditReport(currentOpenedFormCode, d);
         return { totalFields: fields.length, filledCount };
     }
 
-   async function openEditor(formCode) {
+    async function openEditor(formCode) {
         currentOpenedFormCode = formCode;
         document.getElementById('modalFormName').innerText = formCode;
         document.getElementById('pdfModal').style.display = 'flex';
+        document.getElementById('aiFeedbackDrawer').classList.remove('open');
         
         const loader = document.getElementById('pdfLoader');
         const iframe = document.getElementById('pdfIframe');
@@ -2433,7 +2975,6 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
 
             statsBadge.textContent = `✓ Auto-Filled ${stats.filledCount} exact fields`;
 
-            // Безопасная отрисовка шрифтов (защита от ошибки "Expected instance of e, but got instance of undefined" в I-589 и др.)
             let pdfBytes;
             try {
                 const helveticaFont = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
@@ -2456,6 +2997,29 @@ if (matterTitle.includes('asylum') || matterTitle.includes('589') || matterTitle
         } catch (error) {
             console.error(error);
             loader.innerHTML = `<div style="color:#dc2626;">❌ Ошибка: ${error.message}</div>`;
+        }
+    }
+
+    function closeEditor() {
+        document.getElementById('pdfModal').style.display = 'none';
+        const iframe = document.getElementById('pdfIframe');
+        if (iframe.src && iframe.src.startsWith('blob:')) {
+            URL.revokeObjectURL(iframe.src);
+        }
+        iframe.src = ""; 
+    }
+
+    function downloadPDF() {
+        const iframeSrc = document.getElementById('pdfIframe').src;
+        if (iframeSrc) {
+            const link = document.createElement('a');
+            link.href = iframeSrc;
+            const cName = (currentClient && currentClient.name) ? currentClient.name.replace(/\s+/g, '_') : 'Client';
+            const formName = currentOpenedFormCode.replace(/\s+/g, '_');
+            link.download = `${formName}_${cName}.pdf`; 
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     }
 </script>
